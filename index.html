@@ -12,12 +12,12 @@
       font-family: 'Segoe UI', sans-serif;
       background-color: #f4f7f6;
       margin: 0;
-      padding: 0;
+      padding: 40px 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       min-height: 100vh;
+      box-sizing: border-box;
     }
 
     .container {
@@ -153,6 +153,12 @@
       color: #7f8c8d;
       margin-bottom: 10px;
     }
+
+    .last-update {
+      margin-top: 30px;
+      font-size: 0.75rem;
+      color: #95a5a6;
+    }
   </style>
 </head>
 
@@ -210,6 +216,8 @@
       <i class="fas fa-sync"></i> Atualizar Tudo
     </button>
     <button class="btn-logout" onclick="logout()">Sair</button>
+
+    <div class="last-update" id="lastUpdateDate">Nunca atualizado</div>
   </div>
 
   <div id="installBanner" class="install-banner">
@@ -226,7 +234,6 @@
       const menu = document.getElementById('menuGrid');
 
       statusBox.style.display = 'block';
-      // menu.style.opacity = '0.5';
 
       const updateProgress = (pct, text) => {
         progFill.style.width = pct + '%';
@@ -264,30 +271,22 @@
         const json6 = await res6.json();
         localStorage.setItem('offline_imagens', JSON.stringify(json6.data));
 
-        localStorage.setItem('last_full_sync', new Date().toISOString());
-
-        // Show System Notification
-        if (Notification.permission === 'granted') {
-          try {
-            const notif = new Notification("Louvor App", {
-              body: "Todos os dados foram atualizados com sucesso!",
-              icon: "icon.png",
-              vibrate: [200, 100, 200]
-            });
-            setTimeout(() => notif.close(), 5000);
-          } catch (e) { }
-        }
+        // Atualiza Data
+        const now = new Date();
+        localStorage.setItem('last_full_sync', now.toISOString());
+        updateLastUpdateText();
 
         updateProgress(100, "Dados Atualizados!");
         setTimeout(() => {
           statusBox.style.display = 'none';
-          menu.style.opacity = '1';
         }, 1000);
 
       } catch (e) {
         console.error(e);
         updateProgress(0, "Erro ao conectar. Tente novamente.");
-        setTimeout(() => { statusBox.style.display = 'none'; menu.style.opacity = '1'; }, 2000);
+        setTimeout(() => {
+          statusBox.style.display = 'none';
+        }, 2000);
       }
     }
 
@@ -298,15 +297,23 @@
       }
     }
 
+    function updateLastUpdateText() {
+      const last = localStorage.getItem('last_full_sync');
+      const el = document.getElementById('lastUpdateDate');
+      if (last) {
+        const d = new Date(last);
+        el.innerText = "Última atualização: " + d.toLocaleString('pt-BR');
+      } else {
+        el.innerText = "Requer atualização inicial";
+      }
+    }
+
     // Auto-Sync on first load
     window.onload = () => {
       // Set User Name
       if (userData.Nome) document.getElementById('userName').innerText = userData.Nome.split(' ')[0];
 
-      // Request Notification Permission
-      if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-        Notification.requestPermission();
-      }
+      updateLastUpdateText();
 
       if (!localStorage.getItem('last_full_sync')) {
         syncAllData();
