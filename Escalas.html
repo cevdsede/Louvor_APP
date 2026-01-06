@@ -35,19 +35,34 @@
       top: 0;
       z-index: 100;
       background: #fff;
-      padding: 15px;
+      padding: 10px 15px;
       border-bottom: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     #searchInput {
-      width: 100%;
-      max-width: 600px;
+      flex-grow: 1;
       display: block;
-      margin: 0 auto;
-      padding: 12px 20px;
+      padding: 10px 15px;
       border: 2px solid #ddd;
       border-radius: 30px;
       outline: none;
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      font-size: 1.3rem;
+      cursor: pointer;
+      color: var(--primary);
+      transition: transform 0.2s;
+      padding: 5px;
+    }
+
+    .nav-btn:active {
+      transform: scale(0.9);
     }
 
     .container {
@@ -283,7 +298,10 @@
 <body>
 
   <div class="search-container">
-    <input type="text" id="searchInput" placeholder="Pesquisar por nome ou culto..." onkeyup="filterEscala()">
+    <button class="nav-btn" onclick="window.location.href='index.html'" title="Voltar"><i
+        class="fas fa-arrow-left"></i></button>
+    <input type="text" id="searchInput" placeholder="Pesquisar..." onkeyup="filterEscala()">
+    <button class="nav-btn" onclick="loadAll(true)" title="Atualizar Dados"><i class="fas fa-sync-alt"></i></button>
   </div>
 
   <div id="loader" class="loading"><i class="fas fa-sync fa-spin"></i> Carregando Escalas...</div>
@@ -299,15 +317,46 @@
       "Guitarra": "fa-guitar-electric", "Teclado": "fa-keyboard", "Bateria": "fa-drum", "Baixo": "fa-drum-steelpan"
     };
 
-    async function loadAll() {
+    async function loadAll(forceUpdate = false) {
+      const loader = document.getElementById('loader');
+
+      // Tenta carregar do Cache Local (Offline) primeiro
+      const cachedEscala = localStorage.getItem('offline_escala');
+      const cachedRepertorio = localStorage.getItem('offline_repertorio');
+
+      if (!forceUpdate && cachedEscala && cachedRepertorio) {
+        console.log("Carregando do Cache...");
+        renderMaster(JSON.parse(cachedEscala), JSON.parse(cachedRepertorio));
+        loader.style.display = 'none';
+        return; // Se tem cache, não baixa de novo a menos que force
+      }
+
+      // Se não tem cache ou forçou atualização
+      loader.style.display = 'block';
+      loader.innerHTML = '<i class="fas fa-sync fa-spin"></i> Atualizando dados...';
+
       try {
         const [resEscala, resRepertorio] = await Promise.all([fetch(urlEscala), fetch(urlRepertorio)]);
         const escalaJson = await resEscala.json();
         const repertorioJson = await resRepertorio.json();
-        document.getElementById('loader').style.display = 'none';
+
+        // Salva no Cache
+        localStorage.setItem('offline_escala', JSON.stringify(escalaJson.data));
+        localStorage.setItem('offline_repertorio', JSON.stringify(repertorioJson.data));
+        localStorage.setItem('last_sync', new Date().toISOString());
+
+        loader.style.display = 'none';
         renderMaster(escalaJson.data, repertorioJson.data);
+        alert("Escalas atualizadas com sucesso!");
+
       } catch (e) {
-        document.getElementById('loader').innerText = "Erro ao carregar dados.";
+        console.error(e);
+        loader.innerText = "Erro ao carregar dados. Verifique sua conexão.";
+        // Se falhar e tiver cache antigo, mostra ele
+        if (cachedEscala && cachedRepertorio) {
+          alert("Sem internet. Mostrando versão offline.");
+          renderMaster(JSON.parse(cachedEscala), JSON.parse(cachedRepertorio));
+        }
       }
     }
 
@@ -389,6 +438,7 @@
               <div class="repertorio-list">
                 ${musicasDoCulto.length > 0 ? musicasDoCulto.map(m => {
           const queryBusca = encodeURIComponent(`${m.Músicas}`);
+          const querySpotify = encodeURIComponent(`${m.Músicas} ${m.Cantor || ''}`);
           return `
                   <div class="musica-item">
                     <span class="m-nome-musica">${m.Músicas}</span>
@@ -399,6 +449,7 @@
                       ${m.Tons ? `<span class="m-tom">${m.Tons}</span>` : '<span class="m-tom">--</span>'}
                       <div class="m-links">
                         <a href="https://www.youtube.com/results?search_query=${queryBusca}" target="_blank" class="l-yt" title="YouTube"><i class="fab fa-youtube"></i></a>
+                        <a href="https://open.spotify.com/search/${querySpotify}" target="_blank" class="l-sp" title="Spotify"><i class="fab fa-spotify"></i></a>
                         <a href="https://www.cifraclub.com.br/?q=${queryBusca}" target="_blank" class="l-cf" title="Cifra Club"><i class="fas fa-guitar"></i></a>
                         <a href="https://www.letras.mus.br/?q=${queryBusca}" target="_blank" class="l-lt" title="Letras.mus"><i class="fas fa-align-left"></i></a>
                       </div>
@@ -458,8 +509,8 @@
           body: JSON.stringify({ action: "delete", sheet: "Repertório", musica: musica, culto: cultoData, cantor: cantor })
         });
         const res = await response.json();
-        if (res.status === "success") { alert("Removido!"); loadAll(); }
-      } catch (e) { setTimeout(() => loadAll(), 1500); }
+        if (res.status === "success") { alert("Removido!"); loadAll(true); }
+      } catch (e) { setTimeout(() => loadAll(true), 1500); }
     }
 
     function filterEscala() {
@@ -469,7 +520,7 @@
       });
     }
 
-    loadAll();
+    loadAll(); // Carrega inicial (cache ou rede)
   </script>
 
 </body>

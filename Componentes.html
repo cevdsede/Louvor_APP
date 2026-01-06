@@ -26,9 +26,33 @@
       margin: 0 auto;
     }
 
+    /* CSS Update */
     .header {
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       margin-bottom: 25px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+    }
+
+    .header h2 {
+      margin: 0;
+      font-size: 1.4rem;
+      color: var(--primary);
+    }
+
+    .header p {
+      display: none;
+    }
+
+    /* Hide subtitle for cleaner look */
+    .nav-btn {
+      background: none;
+      border: none;
+      font-size: 1.3rem;
+      color: var(--primary);
+      cursor: pointer;
     }
 
     .comp-card {
@@ -151,8 +175,9 @@
 
   <div class="container">
     <div class="header">
-      <h2><i class="fas fa-microphone-lines"></i> Equipe de Louvor</h2>
-      <p>Apenas Componentes Ativos</p>
+      <button class="nav-btn" onclick="window.location.href='index.html'"><i class="fas fa-arrow-left"></i></button>
+      <h2><i class="fas fa-microphone-lines"></i> Equipe</h2>
+      <button class="nav-btn" onclick="iniciar(true)"><i class="fas fa-sync-alt"></i></button>
     </div>
     <div id="listaComponentes">
       <div style="text-align:center; padding:50px;"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
@@ -160,28 +185,60 @@
   </div>
 
   <script>
-    // SUBSTITUA PELA SUA URL DE EXPORTAÇÃO
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwjwn6-sdv8f4BLLwaqQWPc4yNI8CS40gO8J77GrJDqLncENJncWIfAV-FBkZuZP6k/exec";
 
     let bancoImagens = [];
 
-    async function iniciar() {
+    async function iniciar(force = false) {
+      const container = document.getElementById('listaComponentes');
+      const cachedComp = localStorage.getItem('offline_componentes');
+
+      // Se tiver cache e não for forçado, usa cache.
+      // As imagens são menos críticas, se não tiver cache delas, busca em background, mas renderiza os nomes.
+      if (!force && cachedComp) {
+        const cachedImg = localStorage.getItem('offline_imagens');
+        if (cachedImg) bancoImagens = JSON.parse(cachedImg);
+        renderizar(JSON.parse(cachedComp).filter(c => c.Ativo && c.Ativo.toString().toUpperCase().trim() === "SIM"));
+        // Se não tiver imagens no cache, busca silenciosamente
+        if (!cachedImg) fetchImages();
+        return;
+      }
+
+      container.innerHTML = '<div style="text-align:center; padding:50px;"><i class="fas fa-spinner fa-spin"></i> Atualizando...</div>';
+
       try {
-        // 1. Fotos do Drive
-        const resDrive = await fetch(SCRIPT_URL + "?action=getImages");
-        const dataDrive = await resDrive.json();
-        bancoImagens = dataDrive.data || [];
+        // Busca Paralela
+        const [resComp, resImg] = await Promise.all([
+          fetch(SCRIPT_URL + "?sheet=Componentes"),
+          fetch(SCRIPT_URL + "?action=getImages")
+        ]);
 
-        // 2. Dados dos Componentes
-        const resComp = await fetch(SCRIPT_URL + "?sheet=Componentes");
         const dataComp = await resComp.json();
+        const dataImg = await resImg.json();
 
-        // FILTRO: Somente Ativo: "SIM"
+        localStorage.setItem('offline_componentes', JSON.stringify(dataComp.data));
+        localStorage.setItem('offline_imagens', JSON.stringify(dataImg.data));
+        bancoImagens = dataImg.data;
+
         const ativos = dataComp.data.filter(c => c.Ativo && c.Ativo.toString().toUpperCase().trim() === "SIM");
         renderizar(ativos);
+        if (force) alert("Lista atualizada!");
+
       } catch (e) {
-        document.getElementById('listaComponentes').innerHTML = "Erro ao conectar. Verifique a URL do Script.";
+        container.innerHTML = "Erro ao conectar.";
+        if (cachedComp) {
+          renderizar(JSON.parse(cachedComp).filter(c => c.Ativo && c.Ativo.toString().toUpperCase().trim() === "SIM"));
+        }
       }
+    }
+
+    async function fetchImages() {
+      try {
+        const res = await fetch(SCRIPT_URL + "?action=getImages");
+        const json = await res.json();
+        bancoImagens = json.data;
+        localStorage.setItem('offline_imagens', JSON.stringify(json.data));
+      } catch (e) { }
     }
 
     function renderizar(lista) {
@@ -192,8 +249,7 @@
         const nomeLimpo = item.Nome.trim();
         const idHTML = nomeLimpo.replace(/\s/g, '');
 
-        // Busca Foto
-        const nomeArquivo = item.Foto.split('/').pop();
+        const nomeArquivo = item.Foto ? item.Foto.split('/').pop() : "";
         const fotoObj = bancoImagens.find(img => img.nome === nomeArquivo);
         const urlFoto = fotoObj ? fotoObj.url : "https://via.placeholder.com/150?text=Foto";
 
@@ -214,23 +270,21 @@
           
           <div class="action-btns">
             <a href="tel:${item["Tel sem Espaço"]}" class="btn-icon btn-tel"><i class="fas fa-phone"></i> Ligar</a>
-            <a href="${item.Whatsapp.link}" target="_blank" class="btn-icon btn-wpp"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+            <a href="${item.Whatsapp?.link || '#'}" target="_blank" class="btn-icon btn-wpp"><i class="fab fa-whatsapp"></i> WhatsApp</a>
           </div>
 
           <div class="extra-section">
             <h4><i class="fas fa-calendar-check"></i> Próximas Escalas</h4>
-            <div id="esc-${idHTML}" class="loading-small">Buscando em Transformar...</div>
+            <div id="esc-${idHTML}" class="loading-small">Buscando...</div>
           </div>
 
           <div class="extra-section">
             <h4><i class="fas fa-music"></i> Últimas Músicas (Tom)</h4>
-            <div id="hist-${idHTML}" class="loading-small">Verificando função...</div>
+            <div id="hist-${idHTML}" class="loading-small">Verificando...</div>
           </div>
         </div>
       `;
         container.appendChild(card);
-
-        // Dispara as buscas secundárias
         buscarEscalas(nomeLimpo, idHTML);
         buscarHistorico(nomeLimpo, idHTML, item.Função);
       });
@@ -238,104 +292,80 @@
 
     async function buscarEscalas(nome, id) {
       const box = document.getElementById(`esc-${id}`);
-
-      // Mapeamento de Ícones conforme solicitado
-      const iconsMap = {
-        "Ministro": "fa-microphone-lines",
-        "Back": "fa-microphone",
-        "Violão": "fa-guitar",
-        "Guitarra": "fa-guitar-electric",
-        "Teclado": "fa-keyboard",
-        "Bateria": "fa-drum",
-        "Baixo": "fa-drum-steelpan"
-      };
+      const iconsMap = { "Ministro": "fa-microphone-lines", "Back": "fa-microphone", "Violão": "fa-guitar", "Guitarra": "fa-guitar-electric", "Teclado": "fa-keyboard", "Bateria": "fa-drum", "Baixo": "fa-drum-steelpan" };
 
       try {
-        const res = await fetch(SCRIPT_URL + "?sheet=Transformar");
-        const json = await res.json();
+        // Tenta usar cache global de escalas se existir
+        let data = [];
+        const cachedEscala = localStorage.getItem('offline_escala');
 
-        // 1. Filtra as escalas da pessoa
-        const escalasPessoa = json.data.filter(e =>
-          e.Nome && e.Nome.trim().toLowerCase() === nome.trim().toLowerCase()
-        );
+        if (cachedEscala) {
+          data = JSON.parse(cachedEscala);
+        } else {
+          const res = await fetch(SCRIPT_URL + "?sheet=Transformar");
+          const json = await res.json();
+          data = json.data;
+          // Não salva cache aqui para não conflitar com a lógica central
+        }
+
+        const escalasPessoa = data.filter(e => e.Nome && e.Nome.trim().toLowerCase() === nome.trim().toLowerCase());
 
         if (escalasPessoa.length > 0) {
-          // 2. Agrupa por Culto e Data para não repetir linhas do mesmo dia
           const agrupado = {};
           escalasPessoa.forEach(e => {
             const chave = (e["Nome dos Cultos"] || 'Culto') + (e.Data || '');
-            if (!agrupado[chave]) {
-              agrupado[chave] = {
-                nomeCulto: e["Nome dos Cultos"] || 'Culto',
-                dataRaw: e.Data,
-                funcoes: []
-              };
-            }
+            if (!agrupado[chave]) { agrupado[chave] = { nomeCulto: e["Nome dos Cultos"] || 'Culto', dataRaw: e.Data, funcoes: [] }; }
             if (e.Função) agrupado[chave].funcoes.push(e.Função.trim());
           });
-
-          // 3. Transforma em Array e pega as 3 mais recentes/próximas
           const listaAgrupada = Object.values(agrupado).slice(0, 3);
-
           box.innerHTML = listaAgrupada.map(e => {
-            // Formatação da Data (DD/MM)
             let dataFormatada = "---";
-            if (e.dataRaw) {
-              const d = new Date(e.dataRaw);
-              dataFormatada = ("0" + d.getUTCDate()).slice(-2) + "/" + ("0" + (d.getUTCMonth() + 1)).slice(-2);
-            }
-
-            // Gera os ícones das funções
+            if (e.dataRaw) { const d = new Date(e.dataRaw); dataFormatada = ("0" + d.getUTCDate()).slice(-2) + "/" + ("0" + (d.getUTCMonth() + 1)).slice(-2); }
             const funcoesHtml = e.funcoes.map(f => {
-              const iconClass = iconsMap[f] || "fa-music"; // Ícone padrão caso não encontre no mapa
+              const iconClass = iconsMap[f] || "fa-music";
               return `<span><i class="fa-solid ${iconClass}" style="font-size:0.7rem"></i> ${f}</span>`;
             }).join(' <span style="color:#ccc">|</span> ');
-
             return `
-          <div class="list-item" style="flex-direction: column; align-items: flex-start; gap: 4px; padding: 8px 0;">
-            <div style="display: flex; justify-content: space-between; width: 100%; font-weight: 600; color: #2c3e50;">
-              <span><i class="far fa-calendar-check" style="color:#3498db"></i> ${dataFormatada}</span>
-              <span style="font-size: 0.8rem;"><i class="fas fa-church" style="color:#95a5a6"></i> ${e.nomeCulto}</span>
-            </div>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px; color: #7f8c8d; font-size: 0.75rem; padding-left: 2px;">
-              ${funcoesHtml}
-            </div>
-          </div>
-        `;
+            <div class="list-item" style="flex-direction: column; align-items: flex-start; gap: 4px; padding: 8px 0;">
+              <div style="display: flex; justify-content: space-between; width: 100%; font-weight: 600; color: #2c3e50;">
+                <span><i class="far fa-calendar-check" style="color:#3498db"></i> ${dataFormatada}</span>
+                <span style="font-size: 0.8rem;"><i class="fas fa-church" style="color:#95a5a6"></i> ${e.nomeCulto}</span>
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; color: #7f8c8d; font-size: 0.75rem; padding-left: 2px;">${funcoesHtml}</div>
+            </div>`;
           }).join('');
         } else {
           box.innerHTML = '<div class="loading-small">Nenhuma escala encontrada.</div>';
         }
-      } catch (e) {
-        console.error("Erro ao buscar escalas:", e);
-        box.innerHTML = '<div class="loading-small">Erro ao carregar escalas.</div>';
-      }
+      } catch (e) { box.innerHTML = '<div class="loading-small">Erro.</div>'; }
     }
-
-
 
     async function buscarHistorico(nome, id, funcao) {
       const box = document.getElementById(`hist-${id}`);
       const f = funcao.toUpperCase();
-
-      // REGRA: Apenas Ministro ou Back
-      if (!f.includes("MINISTRO") && !f.includes("BACK")) {
-        box.innerHTML = "Histórico disponível para vocal.";
-        return;
-      }
+      if (!f.includes("MINISTRO") && !f.includes("BACK")) { box.innerHTML = "Histórico disponível para vocal."; return; }
 
       try {
-        const res = await fetch(SCRIPT_URL + "?sheet=Historico%20de%20Músicas");
-        const json = await res.json();
-        const historico = json.data.filter(h => h.Cantor && h.Cantor.trim() === nome).reverse().slice(0, 3);
+        // Tenta cache historico
+        let data = [];
+        const cachedHist = localStorage.getItem('offline_historico');
+        if (cachedHist) {
+          data = JSON.parse(cachedHist);
+        } else {
+          const res = await fetch(SCRIPT_URL + "?sheet=Historico%20de%20Músicas");
+          const json = await res.json();
+          data = json.data;
+          localStorage.setItem('offline_historico', JSON.stringify(data));
+        }
 
+        const historico = data.filter(h => h.Cantor && h.Cantor.trim() === nome).reverse().slice(0, 3);
         box.innerHTML = historico.length > 0 ?
           historico.map(h => `<div class="list-item"><span>${h.Música || h.Músicas}</span><span>(${h.Tom || h.Tons || '--'})</span></div>`).join('') :
           "Sem histórico.";
-      } catch (e) { box.innerHTML = "Erro ao carregar histórico."; }
+      } catch (e) { box.innerHTML = "Erro."; }
     }
 
-    window.onload = iniciar;
+    window.onload = () => iniciar();
   </script>
 
 </body>

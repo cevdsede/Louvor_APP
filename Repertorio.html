@@ -29,21 +29,28 @@
       margin: 0 auto;
     }
 
-    /* Cabeçalho igual ao anterior */
+    /* Cabeçalho */
     .header-main {
-      text-align: center;
-      margin-bottom: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ddd;
     }
 
     .header-main h2 {
+      margin: 0;
+      font-size: 1.5rem;
       color: var(--primary);
-      font-size: 1.8rem;
-      margin-bottom: 5px;
     }
 
-    .header-main p {
-      color: #666;
-      font-size: 0.9rem;
+    .nav-btn {
+      background: none;
+      border: none;
+      font-size: 1.3rem;
+      color: var(--primary);
+      cursor: pointer;
     }
 
     /* Estilo do Grupo (Culto) */
@@ -223,8 +230,9 @@
 
   <div class="container">
     <div class="header-main">
-      <h2><i class="fas fa-list-ul"></i> Cronograma de Louvor</h2>
-      <p>Clique no culto para expandir</p>
+      <button class="nav-btn" onclick="window.location.href='index.html'"><i class="fas fa-arrow-left"></i></button>
+      <h2><i class="fas fa-list-ul"></i> Cronograma</h2>
+      <button class="nav-btn" onclick="carregarRepertorio(true)"><i class="fas fa-sync-alt"></i></button>
     </div>
 
     <div id="repertorioAgrupado">
@@ -235,43 +243,67 @@
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwjwn6-sdv8f4BLLwaqQWPc4yNI8CS40gO8J77GrJDqLncENJncWIfAV-FBkZuZP6k/exec"; // Certifique-se de usar sua URL atual
 
-    async function carregarRepertorio() {
+    async function carregarRepertorio(force = false) {
+      const container = document.getElementById('repertorioAgrupado');
+      const cached = localStorage.getItem('offline_repertorio');
+
+      if (!force && cached) {
+        render(JSON.parse(cached));
+        return;
+      }
+
+      container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Atualizando...</div>';
+
       try {
         const response = await fetch(SCRIPT_URL + "?sheet=Repertório");
         const json = await response.json();
-        const container = document.getElementById('repertorioAgrupado');
 
-        if (!json.data || json.data.length === 0) {
-          container.innerHTML = '<div class="loading">Nenhum repertório encontrado.</div>';
-          return;
+        localStorage.setItem('offline_repertorio', JSON.stringify(json.data));
+        render(json.data);
+        if (force) alert("Atualizado!");
+
+      } catch (e) {
+        container.innerHTML = '<div class="loading">Erro ao carregar dados.</div>';
+        if (cached) {
+          render(JSON.parse(cached));
+          alert("Modo Offline");
         }
+      }
+    }
 
-        const dadosOrdenados = json.data.sort((a, b) => new Date(b.Data) - new Date(a.Data));
-        const grupos = {};
-        dadosOrdenados.forEach(item => {
-          const chave = item["Culto+Data"];
-          if (!grupos[chave]) {
-            grupos[chave] = { nome: item.Culto, dataFull: item.Data, musicas: [] };
-          }
-          grupos[chave].musicas.push(item);
-        });
+    function render(data) {
+      const container = document.getElementById('repertorioAgrupado');
+      if (!data || data.length === 0) {
+        container.innerHTML = '<div class="loading">Nenhum repertório encontrado.</div>';
+        return;
+      }
 
-        container.innerHTML = '';
+      const dadosOrdenados = data.sort((a, b) => new Date(b.Data) - new Date(a.Data));
+      const grupos = {};
+      dadosOrdenados.forEach(item => {
+        const chave = item["Culto+Data"];
+        if (!grupos[chave]) {
+          grupos[chave] = { nome: item.Culto, dataFull: item.Data, musicas: [] };
+        }
+        grupos[chave].musicas.push(item);
+      });
 
-        for (let chave in grupos) {
-          const grupo = grupos[chave];
-          const d = new Date(grupo.dataFull);
-          const dataFmt = ("0" + d.getUTCDate()).slice(-2) + "/" + ("0" + (d.getUTCMonth() + 1)).slice(-2) + "/" + d.getUTCFullYear();
+      container.innerHTML = '';
 
-          const section = document.createElement('div');
-          section.className = 'culto-group';
+      for (let chave in grupos) {
+        const grupo = grupos[chave];
+        const d = new Date(grupo.dataFull);
+        const dataFmt = ("0" + d.getUTCDate()).slice(-2) + "/" + ("0" + (d.getUTCMonth() + 1)).slice(-2) + "/" + d.getUTCFullYear();
 
-          // Forma segura de armazenar os dados para o botão Add All
-          section.dataset.musicas = JSON.stringify(grupo.musicas.map(m => ({
-            musica: m.Músicas, cantor: m.Cantor, tom: m.Tons
-          })));
+        const section = document.createElement('div');
+        section.className = 'culto-group';
 
-          section.innerHTML = `
+        // Forma segura de armazenar os dados para o botão Add All
+        section.dataset.musicas = JSON.stringify(grupo.musicas.map(m => ({
+          musica: m.Músicas, cantor: m.Cantor, tom: m.Tons
+        })));
+
+        section.innerHTML = `
           <div class="culto-header">
             <div class="header-left" onclick="toggleAccordion(this)">
               <span class="data-badge">${dataFmt}</span>
@@ -302,11 +334,7 @@
             `).join('')}
           </div>
         `;
-          container.appendChild(section);
-        }
-      } catch (e) {
-        console.error(e);
-        document.getElementById('repertorioAgrupado').innerHTML = '<div class="loading">Erro ao carregar dados.</div>';
+        container.appendChild(section);
       }
     }
 

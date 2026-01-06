@@ -31,19 +31,29 @@
       top: 0;
       z-index: 1000;
       background: #fff;
-      padding: 15px;
+      padding: 10px 15px;
       border-bottom: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     #searchInput {
-      width: 100%;
-      max-width: 600px;
+      flex-grow: 1;
       display: block;
-      margin: 0 auto;
-      padding: 12px 20px;
+      padding: 10px 20px;
       border-radius: 50px;
       border: 2px solid #dfe6e9;
       outline: none;
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      font-size: 1.3rem;
+      cursor: pointer;
+      color: var(--primary);
+      padding: 5px;
     }
 
     .container {
@@ -220,7 +230,9 @@
 <body>
 
   <div class="search-outer">
+    <button class="nav-btn" onclick="window.location.href='index.html'"><i class="fas fa-arrow-left"></i></button>
     <input type="text" id="searchInput" placeholder="Pesquisar música ou artista..." onkeyup="filterMusics()">
+    <button class="nav-btn" onclick="loadData(true)"><i class="fas fa-sync-alt"></i></button>
   </div>
 
   <div id="loader" class="loading"><i class="fas fa-list-ul fa-spin"></i> Organizando por Tema e Estilo...</div>
@@ -230,14 +242,34 @@
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwjwn6-sdv8f4BLLwaqQWPc4yNI8CS40gO8J77GrJDqLncENJncWIfAV-FBkZuZP6k/exec";
     const urlGet = SCRIPT_URL + "?sheet=Musicas";
 
-    async function loadData() {
+    async function loadData(force = false) {
+      const loader = document.getElementById('loader');
+      const cached = localStorage.getItem('offline_musicas');
+
+      if (!force && cached) {
+        renderAccordion(JSON.parse(cached));
+        loader.style.display = 'none';
+        return;
+      }
+
+      loader.style.display = 'block';
+      loader.innerHTML = '<i class="fas fa-sync fa-spin"></i> Atualizando...';
+
       try {
         const response = await fetch(urlGet);
         const json = await response.json();
-        document.getElementById('loader').style.display = 'none';
+
+        localStorage.setItem('offline_musicas', JSON.stringify(json.data));
+
+        loader.style.display = 'none';
         renderAccordion(json.data);
+        if (force) alert("Lista de músicas atualizada!");
       } catch (e) {
-        document.getElementById('loader').innerText = "Erro ao conectar.";
+        loader.innerText = "Erro ao conectar.";
+        if (cached) {
+          renderAccordion(JSON.parse(cached));
+          alert("Modo Offline");
+        }
       }
     }
 
