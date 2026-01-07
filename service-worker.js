@@ -1,4 +1,4 @@
-const CACHE_NAME = 'louvor-app-v9';
+const CACHE_NAME = 'louvor-app-v10';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -18,7 +18,8 @@ const ASSETS_TO_CACHE = [
   './assets/Leão.png',
   './assets/backgroud.png',
   './manifest.json',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css'
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css',
+  'https://html2canvas.hertzen.com/dist/html2canvas.min.js'
 ];
 
 self.addEventListener('install', (event) => {

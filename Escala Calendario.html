@@ -8,6 +8,7 @@
   <link rel="manifest" href="manifest.json">
   <script src="config.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     :root {
       --primary: #2c3e50;
@@ -236,6 +237,99 @@
       color: #888;
       margin-top: 20px;
     }
+
+    /* ESTILOS DO CARTÃO DE EXPORTAÇÃO (ESCONDIDO) */
+    #exportTemplate {
+      position: absolute;
+      left: -9999px;
+      top: -9999px;
+      width: 400px;
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      color: white;
+      padding: 25px;
+      border-radius: 0;
+      /* Para parecer um post */
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .export-header {
+      text-align: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      padding-bottom: 15px;
+    }
+
+    .export-header img {
+      width: 60px;
+      margin-bottom: 10px;
+    }
+
+    .export-header h2 {
+      margin: 0;
+      font-size: 1.4rem;
+      letter-spacing: 1px;
+    }
+
+    .export-header p {
+      margin: 5px 0 0;
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+
+    .export-item {
+      background: rgba(255, 255, 255, 0.1);
+      margin-bottom: 10px;
+      padding: 12px;
+      border-radius: 8px;
+      border-left: 4px solid var(--accent);
+    }
+
+    .export-date {
+      font-weight: bold;
+      font-size: 0.85rem;
+      color: var(--accent);
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .export-culto {
+      font-size: 1rem;
+      display: block;
+    }
+
+    .export-funcao {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 3px;
+      display: block;
+    }
+
+    .export-footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.7rem;
+      opacity: 0.5;
+    }
+
+    .btn-export {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 25px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px auto;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s;
+    }
+
+    .btn-export:active {
+      transform: scale(0.95);
+    }
   </style>
 </head>
 
@@ -247,9 +341,14 @@
     <div style="width: 24px;"></div>
   </div>
 
-  <div class="search-box">
-    <i class="fas fa-search"></i>
-    <input type="text" id="personSearch" placeholder="Filtrar por nome..." onkeyup="renderCalendars()">
+  <div class="search-box" style="display: flex; gap: 10px; align-items: center;">
+    <div style="position: relative; flex-grow: 1;">
+      <i class="fas fa-search"></i>
+      <input type="text" id="personSearch" placeholder="Filtrar por nome..." onkeyup="renderCalendars()">
+    </div>
+    <button class="btn-export" onclick="exportarEscala()" id="btnExport" style="display: none; margin: 0;">
+      <i class="fas fa-camera"></i> Foto
+    </button>
   </div>
 
   <div id="loader" class="loader"><i class="fas fa-sync fa-spin"></i> Carregando...</div>
@@ -264,6 +363,21 @@
       <span class="close-modal" onclick="document.getElementById('eventModal').style.display='none'">×</span>
       <h3 id="modalDate" style="color: var(--primary); margin-top: 0;">Data</h3>
       <div id="modalDetails"></div>
+    </div>
+  </div>
+
+  <!-- TEMPLATE PARA EXPORTAÇÃO -->
+  <div id="exportTemplate">
+    <div class="export-header">
+      <img src="assets/backgroud.png" alt="Logo">
+      <h2>MINHA ESCALA</h2>
+      <p id="exportUserName">Nome do Integrante</p>
+    </div>
+    <div id="exportItems">
+      <!-- Itens serão gerados via JS -->
+    </div>
+    <div class="export-footer">
+      Gerado por Louvor CEVD App
     </div>
   </div>
 
@@ -375,6 +489,84 @@
 
       html += `</div>`;
       container.innerHTML = html;
+
+      // Mostrar/Esconder botão de exportar
+      const btnExport = document.getElementById('btnExport');
+      if (searchTerm.length > 2) {
+        btnExport.style.display = 'flex';
+      } else {
+        btnExport.style.display = 'none';
+      }
+    }
+
+    async function exportarEscala() {
+      const searchTerm = document.getElementById('personSearch').value.trim();
+      if (!searchTerm) return;
+
+      const template = document.getElementById('exportTemplate');
+      const itemsContainer = document.getElementById('exportItems');
+      const userName = document.getElementById('exportUserName');
+
+      userName.innerText = searchTerm.toUpperCase();
+      itemsContainer.innerHTML = '';
+
+      // Filtra todas as escalas do usuário
+      const minhasEscalas = globalEscalas.filter(e => e.Nome.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      if (minhasEscalas.length === 0) {
+        alert("Nenhuma escala encontrada para este nome.");
+        return;
+      }
+
+      // Ordena por data
+      minhasEscalas.sort((a, b) => new Date(a.Data) - new Date(b.Data));
+
+      // Limita às próximas 10 para não ficar gigante
+      minhasEscalas.slice(0, 10).forEach(e => {
+        const d = new Date(e.Data + "T12:00:00");
+        const dataFormatada = d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+
+        const item = document.createElement('div');
+        item.className = 'export-item';
+        item.innerHTML = `
+          <span class="export-date">${dataFormatada.toUpperCase()}</span>
+          <span class="export-culto">${e["Nome dos Cultos"]}</span>
+          <span class="export-funcao">${e.Função}</span>
+        `;
+        itemsContainer.appendChild(item);
+      });
+
+      // Gera a imagem
+      const btn = document.getElementById('btnExport');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-sync fa-spin"></i>';
+      btn.disabled = true;
+
+      try {
+        // Pequeno delay para garantir que o DOM renderizou o template
+        await new Promise(r => setTimeout(r, 100));
+
+        const canvas = await html2canvas(template, {
+          backgroundColor: '#2c3e50',
+          scale: 2, // Melhor qualidade
+          useCORS: true
+        });
+
+        // Converte para link e baixa/compartilha
+        const image = canvas.toDataURL("image/png");
+        const link = document.createElement('a');
+        link.download = `Escala_${searchTerm}.png`;
+        link.href = image;
+        link.click();
+
+        alert("Imagem gerada com sucesso!");
+      } catch (err) {
+        console.error(err);
+        alert("Erro ao gerar imagem.");
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
     }
 
     window.openDetails = function (dateStr) {
