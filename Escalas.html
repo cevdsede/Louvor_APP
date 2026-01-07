@@ -305,7 +305,7 @@
     <button class="nav-btn" onclick="loadAll(true)" title="Atualizar Dados"><i class="fas fa-sync-alt"></i></button>
   </div>
 
-  <div id="loader" class="loading"><i class="fas fa-sync fa-spin"></i> Carregando Escalas...</div>
+  <div id="loader" class="loading" style="display:none"><i class="fas fa-sync fa-spin"></i> Carregando Escalas...</div>
   <div id="escala-container" class="container"></div>
 
   <script>
@@ -320,19 +320,15 @@
 
     async function loadAll(forceUpdate = false) {
       const loader = document.getElementById('loader');
-
-      // Tenta carregar do Cache Local (Offline) primeiro
       const cachedEscala = localStorage.getItem('offline_escala');
       const cachedRepertorio = localStorage.getItem('offline_repertorio');
 
       if (!forceUpdate && cachedEscala && cachedRepertorio) {
-        console.log("Carregando do Cache...");
         renderMaster(JSON.parse(cachedEscala), JSON.parse(cachedRepertorio));
-        loader.style.display = 'none';
-        return; // Se tem cache, não baixa de novo a menos que force
+        setTimeout(() => silentSync(), 500);
+        return;
       }
 
-      // Se não tem cache ou forçou atualização
       loader.style.display = 'block';
       loader.innerHTML = '<i class="fas fa-sync fa-spin"></i> Atualizando dados...';
 
@@ -341,24 +337,29 @@
         const escalaJson = await resEscala.json();
         const repertorioJson = await resRepertorio.json();
 
-        // Salva no Cache
         localStorage.setItem('offline_escala', JSON.stringify(escalaJson.data));
         localStorage.setItem('offline_repertorio', JSON.stringify(repertorioJson.data));
-        localStorage.setItem('last_sync', new Date().toISOString());
 
         loader.style.display = 'none';
         renderMaster(escalaJson.data, repertorioJson.data);
-        alert("Escalas atualizadas com sucesso!");
-
+        if (forceUpdate) alert("Escalas atualizadas!");
       } catch (e) {
-        console.error(e);
-        loader.innerText = "Erro ao carregar dados. Verifique sua conexão.";
-        // Se falhar e tiver cache antigo, mostra ele
-        if (cachedEscala && cachedRepertorio) {
-          alert("Sem internet. Mostrando versão offline.");
-          renderMaster(JSON.parse(cachedEscala), JSON.parse(cachedRepertorio));
-        }
+        if (cachedEscala && cachedRepertorio) renderMaster(JSON.parse(cachedEscala), JSON.parse(cachedRepertorio));
+        else loader.innerText = "Erro ao carregar dados.";
       }
+    }
+
+    async function silentSync() {
+      try {
+        const [resEscala, resRepertorio] = await Promise.all([fetch(urlEscala), fetch(urlRepertorio)]);
+        const escalaJson = await resEscala.json();
+        const repertorioJson = await resRepertorio.json();
+        localStorage.setItem('offline_escala', JSON.stringify(escalaJson.data));
+        localStorage.setItem('offline_repertorio', JSON.stringify(repertorioJson.data));
+        if (document.getElementById('searchInput').value === "") {
+          renderMaster(escalaJson.data, repertorioJson.data);
+        }
+      } catch (e) { console.log("Silent sync failed"); }
     }
 
     function renderMaster(escalas, musicas) {
@@ -521,7 +522,7 @@
       });
     }
 
-    loadAll(); // Carrega inicial (cache ou rede)
+    window.onload = () => loadAll();
   </script>
 
 </body>

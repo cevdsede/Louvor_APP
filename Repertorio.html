@@ -250,8 +250,10 @@
       const loader = document.getElementById('loader');
       const cached = localStorage.getItem('offline_repertorio');
 
+      // Se tem cache e não é forçado, renderiza e busca em silêncio
       if (!force && cached) {
         render(JSON.parse(cached));
+        setTimeout(() => silentSync(), 500);
         return;
       }
 
@@ -261,18 +263,23 @@
       try {
         const response = await fetch(SCRIPT_URL + "?sheet=Repertório");
         const json = await response.json();
-
         localStorage.setItem('offline_repertorio', JSON.stringify(json.data));
         render(json.data);
+        loader.style.display = 'none';
         if (force) alert("Atualizado!");
-
       } catch (e) {
-        container.innerHTML = '<div class="loading">Erro ao carregar dados.</div>';
-        if (cached) {
-          render(JSON.parse(cached));
-          alert("Modo Offline");
-        }
+        if (cached) render(JSON.parse(cached));
+        else container.innerHTML = '<div class="loading">Erro ao carregar dados.</div>';
       }
+    }
+
+    async function silentSync() {
+      try {
+        const response = await fetch(SCRIPT_URL + "?sheet=Repertório");
+        const json = await response.json();
+        localStorage.setItem('offline_repertorio', JSON.stringify(json.data));
+        render(json.data);
+      } catch (e) { console.log("Silent sync failed"); }
     }
 
     function render(data) {

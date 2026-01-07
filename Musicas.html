@@ -248,31 +248,41 @@
       const loader = document.getElementById('loader');
       const cached = localStorage.getItem('offline_musicas');
 
+      // Se tem cache e não for forçado pelo botão, mostra logo e atualiza quieto
       if (!force && cached) {
         renderAccordion(JSON.parse(cached));
+        // Sincronização silenciosa em background após carregar o cache
+        setTimeout(() => silentSync(), 500);
         return;
       }
 
-      // Se não tiver cache ou for forçado, mostra loader
+      // Se for forçado (botão) ou não tiver cache, mostra loader
       loader.style.display = 'block';
       loader.innerHTML = '<i class="fas fa-sync fa-spin"></i> Atualizando...';
 
       try {
         const response = await fetch(urlGet);
         const json = await response.json();
-
         localStorage.setItem('offline_musicas', JSON.stringify(json.data));
-
-        loader.style.display = 'none';
         renderAccordion(json.data);
+        loader.style.display = 'none';
         if (force) alert("Lista de músicas atualizada!");
       } catch (e) {
         loader.innerText = "Erro ao conectar.";
-        if (cached) {
-          renderAccordion(JSON.parse(cached));
-          alert("Modo Offline");
-        }
+        if (cached) renderAccordion(JSON.parse(cached));
       }
+    }
+
+    async function silentSync() {
+      try {
+        const response = await fetch(urlGet);
+        const json = await response.json();
+        localStorage.setItem('offline_musicas', JSON.stringify(json.data));
+        // Só renderiza de novo se o usuário não estiver digitando na busca
+        if (document.getElementById('searchInput').value === "") {
+          renderAccordion(json.data);
+        }
+      } catch (e) { console.log("Silent sync failed"); }
     }
 
     function renderAccordion(data) {

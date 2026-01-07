@@ -351,7 +351,7 @@
     </button>
   </div>
 
-  <div id="loader" class="loader"><i class="fas fa-sync fa-spin"></i> Carregando...</div>
+  <div id="loader" class="loader" style="display:none"><i class="fas fa-sync fa-spin"></i> Carregando...</div>
 
   <div class="calendar-container" id="calendarsContainer" style="display:none">
     <div class="month-wrapper" id="month1"></div>
@@ -394,38 +394,48 @@
 
     async function loadData() {
       const loader = document.getElementById('loader');
-
       const cachedE = localStorage.getItem('offline_escala');
       const cachedR = localStorage.getItem('offline_repertorio');
 
-      // Tenta cache primeiro
       if (cachedE && cachedR) {
         globalEscalas = JSON.parse(cachedE);
-        const repData = JSON.parse(cachedR);
-        processRepertorio(repData);
+        processRepertorio(JSON.parse(cachedR));
+        document.getElementById('calendarsContainer').style.display = 'flex';
+        renderCalendars();
+        setTimeout(() => silentSync(), 500);
+        return;
+      }
+
+      loader.style.display = 'block';
+      try {
+        const [resE, resR] = await Promise.all([fetch(SCRIPT_URL + "?sheet=Transformar"), fetch(SCRIPT_URL + "?sheet=Repertório")]);
+        const jsonE = await resE.json();
+        const jsonR = await resR.json();
+        globalEscalas = jsonE.data;
+        processRepertorio(jsonR.data);
+        localStorage.setItem('offline_escala', JSON.stringify(jsonE.data));
+        localStorage.setItem('offline_repertorio', JSON.stringify(jsonR.data));
         loader.style.display = 'none';
         document.getElementById('calendarsContainer').style.display = 'flex';
         renderCalendars();
-      } else {
-        // Fallback network (mas idealmente o index.html já baixou)
-        try {
-          const [resE, resR] = await Promise.all([fetch(SCRIPT_URL + "?sheet=Transformar"), fetch(SCRIPT_URL + "?sheet=Repertório")]);
-          const jsonE = await resE.json();
-          const jsonR = await resR.json();
-
-          globalEscalas = jsonE.data;
-          processRepertorio(jsonR.data);
-
-          localStorage.setItem('offline_escala', JSON.stringify(jsonE.data));
-          localStorage.setItem('offline_repertorio', JSON.stringify(jsonR.data));
-
-          loader.style.display = 'none';
-          document.getElementById('calendarsContainer').style.display = 'flex';
-          renderCalendars();
-        } catch (e) {
-          loader.innerText = "Erro ao carregar dados. Verifique a internet.";
-        }
+      } catch (e) {
+        loader.innerText = "Erro ao carregar dados.";
       }
+    }
+
+    async function silentSync() {
+      try {
+        const [resE, resR] = await Promise.all([fetch(SCRIPT_URL + "?sheet=Transformar"), fetch(SCRIPT_URL + "?sheet=Repertório")]);
+        const jsonE = await resE.json();
+        const jsonR = await resR.json();
+        globalEscalas = jsonE.data;
+        localStorage.setItem('offline_escala', JSON.stringify(jsonE.data));
+        localStorage.setItem('offline_repertorio', JSON.stringify(jsonR.data));
+        if (document.getElementById('personSearch').value === "") {
+          processRepertorio(jsonR.data);
+          renderCalendars();
+        }
+      } catch (e) { console.log("Silent sync failed"); }
     }
 
     function processRepertorio(data) {
@@ -615,7 +625,7 @@
       document.getElementById('eventModal').style.display = 'block';
     }
 
-    loadData();
+    window.onload = () => loadData();
   </script>
 </body>
 
