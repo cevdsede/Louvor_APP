@@ -1,4 +1,4 @@
-const CACHE_NAME = 'louvor-app-v21';
+const CACHE_NAME = 'louvor-app-v22';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -12,6 +12,7 @@ const ASSETS_TO_CACHE = [
   './Escala Calendario.html',
   './Musicas.html',
   './Repertorio.html',
+  './Limpeza.html',
   './Componentes.html',
   './Cadastro de Musicas.html',
   './Cadastro de Repertorio.html',

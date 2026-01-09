@@ -108,6 +108,14 @@
       font-size: 0.9rem;
     }
 
+    .estilo-header .count {
+      background: rgba(230, 126, 34, 0.1);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+    }
+
     .estilo-content {
       max-height: 0;
       overflow: hidden;
@@ -230,7 +238,7 @@
     @media (min-width: 800px) {
       #main-content {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr;
         gap: 20px;
         align-items: flex-start;
       }
@@ -292,8 +300,10 @@
         const response = await fetch(urlGet);
         const json = await response.json();
         localStorage.setItem('offline_musicas', JSON.stringify(json.data));
-        // Só renderiza de novo se o usuário não estiver digitando na busca
-        if (document.getElementById('searchInput').value === "") {
+
+        // Só renderiza se não houver busca ativa E nenhum item aberto
+        const hasOpenItems = document.querySelector('.open') !== null;
+        if (document.getElementById('searchInput').value === "" && !hasOpenItems) {
           renderAccordion(json.data);
         }
       } catch (e) { console.log("Silent sync failed"); }

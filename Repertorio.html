@@ -229,7 +229,7 @@
     @media (min-width: 900px) {
       #repertorioAgrupado {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr;
         gap: 20px;
         align-items: flex-start;
       }
@@ -295,8 +295,10 @@
         const response = await fetch(SCRIPT_URL + "?sheet=Repertório");
         const json = await response.json();
         localStorage.setItem('offline_repertorio', JSON.stringify(json.data));
-        // Se houver itens na fila de sincronização, não sobrepõe para não perder o otimismo da UI
-        if (SyncManager.getQueue().length === 0) {
+
+        // Só renderiza se não houver busca ativa E nenhum item aberto (para não fechar na cara do usuário)
+        const hasActiveItems = document.querySelector('.active') !== null;
+        if (SyncManager.getQueue().length === 0 && !hasActiveItems) {
           render(json.data);
         }
       } catch (e) { console.log("Silent sync failed"); }

@@ -288,8 +288,10 @@
         const response = await fetch(url);
         const json = await response.json();
         localStorage.setItem('offline_historico', JSON.stringify(json.data));
-        // Só renderiza de novo se não houver busca ativa
-        if (document.getElementById('searchInput').value === "") {
+
+        // Só renderiza se não houver busca ativa E nenhum item aberto (para não fechar na cara do usuário)
+        const hasOpenItems = document.querySelector('.open') !== null;
+        if (document.getElementById('searchInput').value === "" && !hasOpenItems) {
           renderHistory(json.data);
         }
       } catch (e) { console.log("Silent sync failed"); }

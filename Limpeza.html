@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escala de Limpeza</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 15px;
+        }
+
+        .header h2 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 1.3rem;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            color: #2c3e50;
+            cursor: pointer;
+        }
+
+        .image-container {
+            background: white;
+            padding: 10px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            display: block;
+        }
+
+        .status-msg {
+            margin-top: 15px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">
+            <button class="nav-btn" onclick="window.location.href='MenuEscalas.html'"><i
+                    class="fas fa-arrow-left"></i></button>
+            <h2>Escala de Limpeza</h2>
+            <div style="width: 24px;"></div>
+        </div>
+
+        <div class="image-container">
+            <!-- Caminho da imagem conforme solicitado pelo usuário -->
+            <img src="assets/Escala Limpeza.png" alt="Escala de Limpeza"
+                onerror="this.src='https://placehold.co/600x400?text=Escala+Limpeza.png+não+encontrada'">
+        </div>
+
+        <div class="status-msg">
+            <i class="fas fa-info-circle"></i> A escala é atualizada periodicamente pela equipe.
+        </div>
+    </div>
+
+</body>
+
+</html>
