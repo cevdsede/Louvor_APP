@@ -171,6 +171,107 @@
       color: #95a5a6;
     }
 
+    /* NOTIFICATION CENTER */
+    .notif-bell {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      background: white;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      z-index: 999;
+      color: var(--primary);
+      transition: 0.3s;
+    }
+
+    .notif-bell:hover {
+      transform: scale(1.1);
+    }
+
+    .notif-badge {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: #e74c3c;
+      color: white;
+      font-size: 0.6rem;
+      padding: 3px 6px;
+      border-radius: 10px;
+      font-weight: bold;
+      display: none;
+    }
+
+    .notif-item {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      transition: 0.2s;
+    }
+
+    .notif-item.unread {
+      background: #f0f7ff;
+    }
+
+    .notif-type {
+      font-size: 0.7rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+      align-self: flex-start;
+    }
+
+    .type-escala {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .type-aviso {
+      background: #fff3e0;
+      color: #f57c00;
+    }
+
+    .type-musica {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .notif-msg {
+      font-size: 0.85rem;
+      color: #333;
+    }
+
+    .notif-time {
+      font-size: 0.7rem;
+      color: #999;
+    }
+
+    .notif-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 5px;
+    }
+
+    .btn-notif-del {
+      background: none;
+      border: none;
+      color: #e74c3c;
+      font-size: 0.75rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
     .hidden-permission {
       display: none !important;
     }
@@ -414,6 +515,11 @@
     const userData = JSON.parse(user || '{}');
   </script>
 
+  <div class="notif-bell" onclick="abrirNotificacoes()">
+    <i class="fas fa-bell"></i>
+    <span id="notifBadge" class="notif-badge">0</span>
+  </div>
+
   <div class="container">
     <img src="assets/backgroud.png" alt="Logo" class="logo">
     <h1>Louvor CEVD</h1>
@@ -483,7 +589,7 @@
     <button class="btn-logout" onclick="logout()">Sair</button>
 
     <div class="last-update">
-      <span id="lastUpdateDate">Nunca atualizado</span> | <span id="appVersion">Versão v25</span>
+      <span id="lastUpdateDate">Nunca atualizado</span> | <span id="appVersion">Versão v27</span>
     </div>
   </div>
 
@@ -499,6 +605,28 @@
     </div>
   </div>
 
+
+  <!-- MODAL NOTIFICAÇÕES -->
+  <div id="notifModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="fecharNotificacoes()">&times;</span>
+      <div class="modal-header">
+        <h3 style="margin:0; font-size: 1.1rem;">Central de Notificações</h3>
+        <small style="color: #7f8c8d;">Alertas para você</small>
+      </div>
+      <div id="notifLista" style="max-height: 350px; overflow-y: auto;">
+        <!-- Notificações aqui -->
+      </div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
+        <button onclick="marcarTodasLidas()"
+          style="padding:10px; background:none; border:1px solid #ddd; border-radius:8px; cursor:pointer; font-size:0.75rem; color:#666;">Ler
+          todas</button>
+        <button onclick="limparNotificacoesLidas()"
+          style="padding:10px; background:none; border:1px solid #e74c3c; border-radius:8px; cursor:pointer; font-size:0.75rem; color:#e74c3c;">Limpar
+          lidas</button>
+      </div>
+    </div>
+  </div>
 
   <div id="installBanner" class="install-banner">
     <i class="fas fa-download"></i> Instalar Aplicativo
@@ -535,6 +663,7 @@
       try {
         await performFetches(updateProgress);
         updateProgress(100, "Dados Atualizados!");
+        initDashboard(); // Atualiza o gráfico após o sync manual
         setTimeout(() => { statusBox.style.display = 'none'; }, 1000);
       } catch (e) {
         console.error(e);
@@ -575,6 +704,11 @@
       const resTemas = await fetch(SCRIPT_URL + "?sheet=" + encodeURIComponent("Tema Músicas"));
       localStorage.setItem('offline_temas', JSON.stringify((await resTemas.json()).data));
 
+      progressCb(85, "Lembretes...");
+      const resLemb = await fetch(SCRIPT_URL + "?sheet=Lembretes");
+      const lembData = (await resLemb.json()).data;
+      localStorage.setItem('offline_lembretes', JSON.stringify(lembData));
+
       progressCb(90, "Histórico...");
       const res5 = await fetch(SCRIPT_URL + "?sheet=" + encodeURIComponent("Historico de Músicas"));
       localStorage.setItem('offline_historico', JSON.stringify((await res5.json()).data));
@@ -585,6 +719,10 @@
 
       const now = new Date();
       localStorage.setItem('last_full_sync', now.toISOString());
+
+      // PROCESSA NOTIFICAÇÕES APÓS SYNC
+      processarNotificacoes();
+      initDashboard(); // Garante que o gráfico atualiza após sync pleno
       updateLastUpdateText();
     }
 
@@ -732,8 +870,198 @@
       updateLastUpdateText();
       checkSession();
       initDashboard();
-      setTimeout(backgroundSync, 1000);
+      processarNotificacoes();
+      solicitarPermisaoNotificacao();
+
+      // Listener para atualizar o gráfico se os dados mudarem em outra aba/página
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'offline_escala') {
+          console.log("Dados de escala alterados, atualizando dashboard...");
+          initDashboard();
+        }
+        if (e.key === 'user_notificacoes') {
+          atualizarBadge();
+        }
+      });
+
+      setTimeout(backgroundSync, 5000); // Primeiro sync após 5s
+      setInterval(backgroundSync, 300000); // Repete a cada 5 min (300000ms)
     };
+
+    function solicitarPermisaoNotificacao() {
+      if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        Notification.requestPermission();
+      }
+    }
+
+    function mostrarNotificacaoNativa(titulo, corpo) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        navigator.serviceWorker.ready.then(registration => {
+          registration.showNotification(titulo, {
+            body: corpo,
+            icon: 'assets/backgroud.png',
+            badge: 'assets/backgroud.png',
+            vibrate: [200, 100, 200]
+          });
+        });
+      }
+    }
+
+    // --- LOGICA DE NOTIFICAÇÕES ---
+    function processarNotificacoes() {
+      const user = JSON.parse(localStorage.getItem('user_token') || '{}');
+      if (!user.Nome) return;
+      const meuNome = user.Nome.toLowerCase().trim();
+
+      const escalas = JSON.parse(localStorage.getItem('offline_escala') || '[]');
+      const lembretes = JSON.parse(localStorage.getItem('offline_lembretes') || '[]');
+      const repertorios = JSON.parse(localStorage.getItem('offline_repertorio') || '[]');
+
+      let notificacoes = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
+      let conhecidasMaster = JSON.parse(localStorage.getItem('notificacoes_conhecidas_ids') || '[]');
+      const hashesVisiveis = new Set(notificacoes.map(n => n.id));
+      const hashesConhecidos = new Set(conhecidasMaster);
+
+      let novosHashes = [];
+
+      const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+
+      // 1. Verificar Novas Escalas
+      escalas.forEach(e => {
+        const dataE = new Date(e.Data);
+        if (dataE >= hoje && e.Nome.toLowerCase().trim().includes(meuNome)) {
+          const id = `ESC-${e.Data}-${e.Cultos}-${e.Função}`;
+          if (!hashesConhecidos.has(id)) {
+            notificacoes.unshift({
+              id, type: 'escala', read: false, time: Date.now(),
+              msg: `Você foi escalado: ${e["Nome dos Cultos"]} (${dataE.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}) como ${e.Função}`
+            });
+            conhecidasMaster.push(id);
+            hashesConhecidos.add(id);
+            mostrarNotificacaoNativa("Nova Escala! 📅", `${e["Nome dos Cultos"]} como ${e.Função}`);
+          }
+        }
+      });
+
+      // 2. Verificar Avisos em cultos que estou escalado
+      const meusCultosIds = new Set(escalas.filter(e => e.Nome.toLowerCase().trim().includes(meuNome)).map(e => e.Cultos));
+      lembretes.forEach(l => {
+        // Lógica de vínculo: Se o culto do lembrete estiver nos meus cultos
+        const id = `AVISO-${l.id_Lembrete}`;
+        if (!hashesConhecidos.has(id)) {
+          // Verifica se o lembrete pertence a um culto onde estou
+          const matchesMe = meusCultosIds.has(l.Culto.split('(')[0].trim()) || (l.Culto && meusCultosIds.has(l.Culto));
+          let escalaMatch = escalas.find(e => l.Culto.includes(e["Nome dos Cultos"]) && l.Culto.includes(new Date(e.Data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })) && e.Nome.toLowerCase().trim().includes(meuNome));
+
+          if (escalaMatch && l.Componente.toLowerCase().trim() !== meuNome) {
+            notificacoes.unshift({
+              id, type: 'aviso', read: false, time: Date.now(),
+              msg: `Novo aviso no seu culto ${l.Culto}: ${l.Componente} disse "${l.Info}"`
+            });
+            conhecidasMaster.push(id);
+            hashesConhecidos.add(id);
+            mostrarNotificacaoNativa("Novo Aviso! 🔔", `${l.Componente}: ${l.Info}`);
+          }
+        }
+      });
+
+      // 3. Verificar Repertório definido
+      repertorios.forEach(r => {
+        const id = `REP-${r["Culto+Data"]}-${r.Músicas}`;
+        if (!hashesConhecidos.has(id)) {
+          const matchMeuCulto = scalesMatchForRepertorio(r, escalas, meuNome);
+          if (matchMeuCulto) {
+            notificacoes.unshift({
+              id, type: 'musica', read: false, time: Date.now(),
+              msg: `Repertório definido para ${r["Culto+Data"]}: "${r.Músicas}"`
+            });
+            conhecidasMaster.push(id);
+            hashesConhecidos.add(id);
+            mostrarNotificacaoNativa("Repertório Definido! 🎶", `${r["Culto+Data"]}: ${r.Músicas}`);
+          }
+        }
+      });
+
+      localStorage.setItem('user_notificacoes', JSON.stringify(notificacoes.slice(0, 50)));
+      localStorage.setItem('notificacoes_conhecidas_ids', JSON.stringify(conhecidasMaster.slice(-500))); // Guarda os últimos 500 hashes
+      atualizarBadge();
+    }
+
+    function scalesMatchForRepertorio(rep, escalas, meuNome) {
+      // Verifica se o usuário está na escala do culto/data desse repertório
+      return escalas.some(e => {
+        const dataE = new Date(e.Data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        const keyE = `${e.Cultos} (${dataE})`;
+        return keyE === rep["Culto+Data"] && e.Nome.toLowerCase().trim().includes(meuNome);
+      });
+    }
+
+    function atualizarBadge() {
+      const notifs = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
+      const unread = notifs.filter(n => !n.read).length;
+      const b = document.getElementById('notifBadge');
+      if (unread > 0) {
+        b.innerText = unread > 9 ? '9+' : unread;
+        b.style.display = 'block';
+      } else {
+        b.style.display = 'none';
+      }
+    }
+
+    function abrirNotificacoes() {
+      const notifs = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
+      const container = document.getElementById('notifLista');
+
+      if (notifs.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:#999; padding:20px;">Nenhuma notificação por enquanto.</div>';
+      } else {
+        container.innerHTML = notifs.map(n => `
+          <div class="notif-item ${n.read ? '' : 'unread'}">
+            <span class="notif-type type-${n.type}">${n.type}</span>
+            <div class="notif-msg">${n.msg}</div>
+            <div class="notif-time">${new Date(n.time).toLocaleString('pt-BR')}</div>
+            <div class="notif-actions">
+              <button class="btn-notif-del" onclick="excluirNotificacao('${n.id}', event)">
+                <i class="fas fa-trash"></i> Remover
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+      document.getElementById('notifModal').style.display = 'flex';
+    }
+
+    function excluirNotificacao(id, event) {
+      if (event) event.stopPropagation();
+      let notifs = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
+      notifs = notifs.filter(n => n.id !== id);
+      localStorage.setItem('user_notificacoes', JSON.stringify(notifs));
+      abrirNotificacoes(); // Re-renderiza o modal
+      atualizarBadge();
+    }
+
+    function limparNotificacoesLidas() {
+      if (!confirm("Deseja remover todas as notificações lidas?")) return;
+      let notifs = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
+      notifs = notifs.filter(n => !n.read);
+      localStorage.setItem('user_notificacoes', JSON.stringify(notifs));
+      abrirNotificacoes();
+      atualizarBadge();
+    }
+
+    function fecharNotificacoes() {
+      document.getElementById('notifModal').style.display = 'none';
+      marcarTodasLidas();
+    }
+
+    function marcarTodasLidas() {
+      let notifs = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
+      notifs.forEach(n => n.read = true);
+      localStorage.setItem('user_notificacoes', JSON.stringify(notifs));
+      atualizarBadge();
+      const items = document.querySelectorAll('.notif-item');
+      items.forEach(i => i.classList.remove('unread'));
+    }
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js').then(reg => {

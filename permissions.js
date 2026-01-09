@@ -23,7 +23,7 @@ const PERMISSIONS = {
         },
         "User": {
             allowedMenus: ["menuEscalas", "menuMusicas", "menuEquipe", "menuMontarRepertorio"], // Apenas Acesso a Mesa oculto
-            allowedPages: ["Historico de Musicas.html"] // Bloqueado nas páginas de cadastro e mesa
+            allowedPages: ["Cadastro de Musicas.html", "Cadastro de Repertorio.html", "Historico de Musicas.html"]
         }
     }
 };
