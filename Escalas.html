@@ -504,8 +504,14 @@
                 <div class="extra-section" style="margin-top:15px; border-top:1px dashed #eee; padding-top:10px;">
                   <span class="section-title" style="color:#e74c3c; font-size:0.7rem;"><i class="fas fa-exclamation-circle"></i> Avisos</span>
                   ${avisosDoCulto.map(a => `
-                    <div style="font-size:0.8rem; background:#fff5f5; padding:8px; border-radius:5px; margin-top:5px; border-left:3px solid #e74c3c;">
+                    <div style="font-size:0.8rem; background:#fff5f5; padding:8px; border-radius:5px; margin-top:5px; border-left:3px solid #e74c3c; position:relative;">
                       <b>${a.Componente}:</b> ${a.Info}
+                      ${a.Componente.toLowerCase().trim() === meuNomeLogado ? `
+                        <i class="fas fa-trash-alt" 
+                           onclick="excluirAviso('${a.id_Lembrete}', event)" 
+                           style="position:absolute; right:8px; top:8px; color:#e74c3c; cursor:pointer; font-size:0.7rem;"
+                           title="Remover Aviso"></i>
+                      ` : ''}
                     </div>
                   `).join('')}
                 </div>
@@ -591,7 +597,7 @@
       const userToken = JSON.parse(localStorage.getItem('user_token') || '{}');
       const meuNome = userToken.Nome || "Membro";
 
-      const info = prompt(`Olá ${meuNome}, por favor informe o motivo da possível ausência para o culto do dia ${dataCulto} (${nomeCulto}):`);
+      const info = prompt(`Olá ${meuNome}, qual aviso você deseja comunicar para o culto do dia ${dataCulto} (${nomeCulto}):`);
 
       if (!info || info.trim() === "") return;
 
@@ -612,7 +618,7 @@
         });
         const res = await response.json();
         if (res.status === "success") {
-          alert("✅ Ausência comunicada com sucesso! A liderança será notificada.");
+          alert("✅ Aviso enviado com sucesso! Os Componentes serão notificados.");
         } else {
           alert("⚠️ Erro ao enviar: " + res.message);
         }
@@ -624,6 +630,31 @@
         } else {
           alert("❌ Erro de conexão. Tente novamente mais tarde.");
         }
+      }
+    }
+
+    async function excluirAviso(id_Aviso, event) {
+      if (event) event.stopPropagation();
+      if (!confirm("Deseja remover este aviso?")) return;
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: "delete",
+            sheet: "Lembretes",
+            id_Lembrete: id_Aviso
+          })
+        });
+        const res = await response.json();
+        if (res.status === "success") {
+          alert("✅ Aviso removido!");
+          loadAll(true);
+        } else {
+          alert("⚠️ Erro ao remover: " + res.message);
+        }
+      } catch (e) {
+        alert("❌ Erro de conexão.");
       }
     }
 
