@@ -1,4 +1,4 @@
-const CACHE_NAME = 'louvor-app-v36';
+const CACHE_NAME = 'louvor-app-v37';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
