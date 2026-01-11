@@ -592,7 +592,7 @@
     <button class="btn-logout" onclick="logout()">Sair</button>
 
     <div class="last-update">
-      <span id="lastUpdateDate">Nunca atualizado</span> | <span id="appVersion">Versão v35</span>
+      <span id="lastUpdateDate">Nunca atualizado</span> | <span id="appVersion">Versão v36</span>
     </div>
   </div>
 
@@ -938,17 +938,26 @@
             body: corpo,
             icon: 'assets/backgroud.png',
             badge: 'assets/backgroud.png',
-            vibrate: [200, 100, 200]
+            vibrate: [300, 100, 300, 100, 300], // Vibração mais forte
+            renotify: true, // Forçar notificação se o título for igual
+            tag: 'louvor-app-rem'
           });
         });
+
+        // Tentativa de tocar som (requer interação prévia do usuário)
+        try {
+          const audio = new Audio('https://notificationsounds.com/storage/sounds/file-sounds-1150-pristine.mp3');
+          audio.play().catch(e => console.log("Bloqueio de áudio automático:", e));
+        } catch (e) { }
       }
     }
 
     // --- LOGICA DE NOTIFICAÇÕES ---
     function processarNotificacoes() {
       const user = JSON.parse(localStorage.getItem('user_token') || '{}');
-      if (!user.Nome) return;
-      const meuNome = user.Nome.toLowerCase().trim();
+      const lastUserName = localStorage.getItem('last_user_name');
+      const meuNome = (user.Nome || lastUserName || "").toLowerCase().trim();
+      if (!meuNome) return;
 
       const escalas = JSON.parse(localStorage.getItem('offline_escala') || '[]');
       const lembretes = JSON.parse(localStorage.getItem('offline_lembretes') || '[]');
@@ -1015,6 +1024,41 @@
             conhecidasMaster.push(id);
             hashesConhecidos.add(id);
             mostrarNotificacaoNativa("Repertório Definido! 🎶", `${r["Culto+Data"]}: ${r.Músicas}`);
+          }
+        }
+      });
+
+      // 4. Lembretes de Escala (1 dia antes e No Dia)
+      escalas.forEach(e => {
+        const dataE = new Date(e.Data);
+        dataE.setHours(0, 0, 0, 0);
+        const dataEStr = dataE.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+
+        if (e.Nome.toLowerCase().trim().includes(meuNome)) {
+          const diffDays = Math.ceil((dataE - hoje) / (1000 * 60 * 60 * 24));
+
+          if (diffDays === 1) { // Amanhã
+            const id = `REM-1D-${e.Data}-${e.Cultos}`;
+            if (!hashesConhecidos.has(id)) {
+              notificacoes.unshift({
+                id, type: 'escala', read: false, time: Date.now(),
+                msg: `Lembrete: Você está na escala de AMANHÃ (${dataEStr}) - ${e["Nome dos Cultos"]}`
+              });
+              conhecidasMaster.push(id);
+              hashesConhecidos.add(id);
+              mostrarNotificacaoNativa("Escala Amanhã! 📅", `Você toca amanhã no ${e["Nome dos Cultos"]}`);
+            }
+          } else if (diffDays === 0) { // Hoje
+            const id = `REM-0D-${e.Data}-${e.Cultos}`;
+            if (!hashesConhecidos.has(id)) {
+              notificacoes.unshift({
+                id, type: 'escala', read: false, time: Date.now(),
+                msg: `HOJE TEM ESCALA! (${dataEStr}) - ${e["Nome dos Cultos"]}. Não se atrase!`
+              });
+              conhecidasMaster.push(id);
+              hashesConhecidos.add(id);
+              mostrarNotificacaoNativa("É HOJE! 🎸", `Sua escala é hoje no ${e["Nome dos Cultos"]}!`);
+            }
           }
         }
       });

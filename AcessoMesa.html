@@ -93,13 +93,19 @@
 
     <div class="error-msg">
         <p><i class="fas fa-microchip"></i> Conectando à Mesa de Som...</p>
-        <p style="font-size:0.85rem; color:#ccc; max-width: 300px; margin: 10px auto;">
-            <i class="fas fa-shield-alt"></i> <b>Nota de Segurança:</b> Se os controles não aparecerem, é porque o
-            navegador bloqueia conexões locais inseguras via HTTPS.
-        </p>
-        <a href="http://10.10.10.2" target="_blank" class="btn-open-new">
-            <i class="fas fa-external-link-alt"></i> Abrir Mesa em Nova Aba
-        </a>
+        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin: 20px auto; max-width: 320px; border: 1px solid rgba(255,255,255,0.2);">
+            <p style="font-size:0.9rem; color:#fff; margin-bottom: 15px;">
+                <i class="fas fa-exclamation-triangle" style="color: #f1c40f;"></i> <b>Atenção:</b> 
+                Por segurança, o navegador pode bloquear o acesso à mesa de som dentro do app (Mixed Content).
+            </p>
+            <p style="font-size:0.8rem; color:#ccc; line-height: 1.4;">
+                Se os controles não aparecerem abaixo, utilize o botão azul para abrir em uma janela dedicada.
+            </p>
+            <a href="http://10.10.10.2" target="_blank" class="btn-open-new" style="display: block; margin-top: 15px; font-size: 1.1rem; padding: 12px;">
+                <i class="fas fa-external-link-alt"></i> ABRIR CONTROLES AGORA
+            </a>
+        </div>
+        <p style="font-size: 0.75rem; color: #888;">IP da Mesa: 10.10.10.2</p>
     </div>
 
     <!-- A permissão 'allow-same-origin' e 'allow-scripts' é necessária. 

@@ -188,6 +188,7 @@
                     usuarioValido.Role = role;
 
                     localStorage.setItem('user_token', JSON.stringify(usuarioValido)); // Salva sessão
+                    localStorage.setItem('last_user_name', usuarioValido.Nome); // Salva último usuário logado para notificações
                     localStorage.setItem('offline_componentes', JSON.stringify(json.data)); // Já aproveita e salva cache
                     window.location.href = 'index.html';
                 } else {
