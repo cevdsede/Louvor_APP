@@ -58,16 +58,23 @@ const SyncManager = {
      * Registra a sincronização periódica no navegador
      */
     async registerPeriodicSync() {
-        if ('serviceWorker' in navigator && 'periodicSync' in registration) {
-            const registration = await navigator.serviceWorker.ready;
+        if ('serviceWorker' in navigator) {
             try {
-                // Tenta registrar para rodar a cada 12 horas (mínimo recomendado pelo Chrome)
-                await registration.periodicSync.register(this.PERIODIC_TAG, {
-                    minInterval: 12 * 60 * 60 * 1000
-                });
-                console.log("Periodic Sync registrado com sucesso!");
-            } catch (error) {
-                console.log("Periodic Sync não pôde ser registrado (PWA não instalada ou suporte ausente).");
+                const registration = await navigator.serviceWorker.ready;
+
+                // Verifica se o navegador suporta periodicSync
+                if ('periodicSync' in registration) {
+                    try {
+                        await registration.periodicSync.register(this.PERIODIC_TAG, {
+                            minInterval: 12 * 60 * 60 * 1000 // 12 horas
+                        });
+                        console.log("Periodic Sync registrado!");
+                    } catch (error) {
+                        console.log("Periodic Sync não pôde ser registrado: ", error);
+                    }
+                }
+            } catch (e) {
+                console.log("Service Worker não está pronto.");
             }
         }
     },

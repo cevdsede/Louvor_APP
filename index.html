@@ -26,6 +26,62 @@
       box-sizing: border-box;
     }
 
+    /* Container que agrupa os botões no canto da tela */
+    .floating-controls {
+      position: fixed !important;
+      /* Fixa na tela */
+      top: 25px !important;
+      /* 👈 agora fica em cima */
+      /* Distância do fundo */
+      right: 20px !important;
+      /* Distância da direita */
+      display: flex;
+      flex-direction: column;
+      /* Um em cima do outro */
+      gap: 15px;
+      /* Espaço entre eles */
+      z-index: 999999 !important;
+      /* Fica acima de TUDO */
+    }
+
+    .btn-floating {
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      background-color: white;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #2c3e50;
+      font-size: 1.3rem;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .btn-floating:active {
+      transform: scale(0.9);
+    }
+
+    /* Badge (bolinha vermelha) da notificação */
+    .notif-badge {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      background: #e74c3c;
+      color: white;
+      font-size: 0.75rem;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      border: 2px solid white;
+    }
+
     .container {
       text-align: center;
       width: 100%;
@@ -398,6 +454,29 @@
     }
 
     /* MODAL */
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(50px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #95a5a6;
+    }
+
+
     .modal {
       display: none;
       position: fixed;
@@ -574,375 +653,399 @@
       window.location.href = 'Login.html';
     }
     const userData = JSON.parse(user || '{}');
+
+    // Executar após o DOM carregar
+    window.addEventListener('DOMContentLoaded', () => {
+      // 1. Preencher o nome do usuário no "Olá, ..."
+      if (userData.Nome) {
+        // Pega apenas o primeiro nome para ficar mais bonito
+        document.getElementById('userName').innerText = userData.Nome.split(' ')[0];
+      }
+
+      // 2. Se você tiver botões que só Admin pode ver
+      // (Exemplo: um botão com a classe 'admin-only')
+      if (userData.Role !== 'Admin') {
+        document.querySelectorAll('.admin-only').forEach(el => el.style.removeProperty('display'));
+        // Ou esconda:
+        // document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+      }
+    });
   </script>
 
-  <div class="notif-bell" onclick="abrirNotificacoes()">
-    <i class="fas fa-bell"></i>
-    <span id="notifBadge" class="notif-badge">0</span>
-  </div>
+  <body>
 
-  <div class="container">
-    <img src="assets/backgroud.png" alt="Logo" class="logo">
-    <h1>Louvor CEVD</h1>
-    <div class="user-welcome">Olá, <span id="userName">...</span></div>
+    <div class="floating-controls">
+      <div class="btn-floating" onclick="abrirModalPerfil()" title="Meu Perfil">
+        <i class="fas fa-user-gear"></i>
+      </div>
 
-    <div class="dashboard-main">
-      <!-- DASHBOARD KPIs -->
-      <div class="kpi-container">
-        <div class="kpi-card">
-          <i class="fas fa-users"></i>
-          <span class="value" id="kpi-membros">0</span>
-          <span class="label">Membros</span>
+      <div class="btn-floating" onclick="abrirNotificacoes()" title="Notificações">
+        <i class="fas fa-bell"></i>
+        <span id="notifBadge" class="notif-badge">0</span>
+      </div>
+    </div>
+
+    <div class="container">
+      <img src="assets/backgroud.png" alt="Logo" class="logo">
+      <h1>Louvor CEVD</h1>
+      <div class="user-welcome">Olá, <span id="userName">...</span></div>
+      <div class="dashboard-main">
+        <!-- DASHBOARD KPIs -->
+        <div class="kpi-container">
+          <div class="kpi-card">
+            <i class="fas fa-users"></i>
+            <span class="value" id="kpi-membros">0</span>
+            <span class="label">Membros</span>
+          </div>
+          <div class="kpi-card" style="border-color: #27ae60;">
+            <i class="fas fa-calendar-check" style="color: #27ae60;"></i>
+            <span class="label">Sua Próxima Escala</span>
+            <span class="value" id="kpi-proxima" style="font-size: 0.9rem; white-space: nowrap;">Carregando...</span>
+          </div>
+          <div class="kpi-card" style="border-color: #e67e22;">
+            <i class="fas fa-church" style="color: #e67e22;"></i>
+            <span class="value" id="kpi-cultos">0</span>
+            <span class="label">Cultos</span>
+          </div>
         </div>
-        <div class="kpi-card" style="border-color: #27ae60;">
-          <i class="fas fa-calendar-check" style="color: #27ae60;"></i>
-          <span class="label">Sua Próxima Escala</span>
-          <span class="value" id="kpi-proxima" style="font-size: 0.9rem; white-space: nowrap;">Carregando...</span>
+
+        <!-- DASHBOARD CHART -->
+        <div class="dashboard-card">
+          <h2 style="margin:0 0 15px 0; font-size: 1rem;">Distribuição de Escalas</h2>
+          <div id="dashLoader"><i class="fas fa-sync fa-spin"></i></div>
+          <div class="chart-wrapper">
+            <canvas id="escalaChart"></canvas>
+          </div>
         </div>
-        <div class="kpi-card" style="border-color: #e67e22;">
-          <i class="fas fa-church" style="color: #e67e22;"></i>
-          <span class="value" id="kpi-cultos">0</span>
-          <span class="label">Cultos</span>
+
+        <!-- MENU GRID -->
+        <div class="menu-grid" id="menuGrid">
+          <a href="MenuEscalas.html" class="menu-item">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Escalas</span>
+          </a>
+          <a href="MenuMusicas.html" class="menu-item">
+            <i class="fas fa-music"></i>
+            <span>Músicas</span>
+          </a>
+          <a href="Componentes.html" class="menu-item">
+            <i class="fas fa-users"></i>
+            <span>Equipe</span>
+          </a>
+          <a href="http://10.10.10.2" class="menu-item" id="menuAcessoMesa" target="_blank">
+            <i class="fas fa-sliders-h" style="color: #34495e;"></i>
+            <span>Acesso a Mesa</span>
+          </a>
         </div>
       </div>
 
-      <!-- DASHBOARD CHART -->
-      <div class="dashboard-card">
-        <h2 style="margin:0 0 15px 0; font-size: 1rem;">Distribuição de Escalas</h2>
-        <div id="dashLoader"><i class="fas fa-sync fa-spin"></i></div>
-        <div class="chart-wrapper">
-          <canvas id="escalaChart"></canvas>
+      <div id="syncStatus" class="sync-status">
+        <div class="progress-track">
+          <div id="progFill" class="progress-fill"></div>
+        </div>
+        <span id="progText" class="status-text">Iniciando...</span>
+      </div>
+
+
+      <button class="btn-sync" onclick="syncAllData()">
+        <i class="fas fa-sync"></i> Atualizar Tudo
+      </button>
+      <button class="btn-logout" onclick="logout()">Sair</button>
+
+      <div class="last-update">
+        <span id="lastUpdateDate">Nunca atualizado</span> | <span id="appVersion">Versão v38</span>
+      </div>
+    </div>
+
+    <!-- MODAL DETALHES -->
+    <div id="detailModal" class="modal">
+      <div class="modal-content">
+        <span class="close-modal" onclick="fecharModal()">&times;</span>
+        <div class="modal-header">
+          <h3 id="modalNome" style="margin:0; font-size: 1.1rem;">Nome do Músico</h3>
+          <small style="color: #e67e22; font-weight: bold;">Programação de Escalas</small>
+        </div>
+        <div id="modalLista"></div>
+      </div>
+    </div>
+
+
+    <!-- MODAL NOTIFICAÇÕES -->
+    <div id="notifModal" class="modal">
+      <div class="modal-content">
+        <span class="close-modal" onclick="fecharNotificacoes()">&times;</span>
+        <div class="modal-header">
+          <h3 style="margin:0; font-size: 1.1rem;">Central de Notificações</h3>
+          <small style="color: #7f8c8d;">Alertas para você</small>
+        </div>
+        <div id="notifLista" style="max-height: 350px; overflow-y: auto;">
+          <!-- Notificações aqui -->
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
+          <button onclick="marcarTodasLidas()"
+            style="padding:10px; background:none; border:1px solid #ddd; border-radius:8px; cursor:pointer; font-size:0.75rem; color:#666;">Ler
+            todas</button>
+          <button onclick="limparNotificacoesLidas()"
+            style="padding:10px; background:none; border:1px solid #e74c3c; border-radius:8px; cursor:pointer; font-size:0.75rem; color:#e74c3c;">Limpar
+            lidas</button>
         </div>
       </div>
+    </div>
 
-      <!-- MENU GRID -->
-      <div class="menu-grid" id="menuGrid">
-        <a href="MenuEscalas.html" class="menu-item">
-          <i class="fas fa-calendar-alt"></i>
-          <span>Escalas</span>
-        </a>
-        <a href="MenuMusicas.html" class="menu-item">
-          <i class="fas fa-music"></i>
-          <span>Músicas</span>
-        </a>
-        <a href="Componentes.html" class="menu-item">
-          <i class="fas fa-users"></i>
-          <span>Equipe</span>
-        </a>
-        <a href="http://10.10.10.2" class="menu-item" id="menuAcessoMesa" target="_blank">
-          <i class="fas fa-sliders-h" style="color: #34495e;"></i>
-          <span>Acesso a Mesa</span>
-        </a>
+    <div id="installBanner">
+      <span class="close-banner" id="closeInstallBanner">×</span>
+
+      <div class="install-content">
+        <img src="assets/backgroud.png" class="install-icon" alt="Logo">
+        <div>
+          <strong style="display:block; color:#2c3e50">Louvor CEVD</strong>
+          <small style="color:#7f8c8d">Instale o app para acesso offline</small>
+        </div>
+        <button class="btn-instalar" id="btnInstall">INSTALAR</button>
       </div>
     </div>
 
-    <div id="syncStatus" class="sync-status">
-      <div class="progress-track">
-        <div id="progFill" class="progress-fill"></div>
-      </div>
-      <span id="progText" class="status-text">Iniciando...</span>
-    </div>
+    <script>
+      const SCRIPT_URL = APP_CONFIG.SCRIPT_URL;
 
+      // AUTO LOGOUT - 24 horas
+      const SESSION_TIMEOUT = 24 * 60 * 60 * 1000;
 
-    <button class="btn-sync" onclick="syncAllData()">
-      <i class="fas fa-sync"></i> Atualizar Tudo
-    </button>
-    <button class="btn-logout" onclick="logout()">Sair</button>
-
-    <div class="last-update">
-      <span id="lastUpdateDate">Nunca atualizado</span> | <span id="appVersion">Versão v38</span>
-    </div>
-  </div>
-
-  <!-- MODAL DETALHES -->
-  <div id="detailModal" class="modal">
-    <div class="modal-content">
-      <span class="close-modal" onclick="fecharModal()">&times;</span>
-      <div class="modal-header">
-        <h3 id="modalNome" style="margin:0; font-size: 1.1rem;">Nome do Músico</h3>
-        <small style="color: #e67e22; font-weight: bold;">Programação de Escalas</small>
-      </div>
-      <div id="modalLista"></div>
-    </div>
-  </div>
-
-
-  <!-- MODAL NOTIFICAÇÕES -->
-  <div id="notifModal" class="modal">
-    <div class="modal-content">
-      <span class="close-modal" onclick="fecharNotificacoes()">&times;</span>
-      <div class="modal-header">
-        <h3 style="margin:0; font-size: 1.1rem;">Central de Notificações</h3>
-        <small style="color: #7f8c8d;">Alertas para você</small>
-      </div>
-      <div id="notifLista" style="max-height: 350px; overflow-y: auto;">
-        <!-- Notificações aqui -->
-      </div>
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
-        <button onclick="marcarTodasLidas()"
-          style="padding:10px; background:none; border:1px solid #ddd; border-radius:8px; cursor:pointer; font-size:0.75rem; color:#666;">Ler
-          todas</button>
-        <button onclick="limparNotificacoesLidas()"
-          style="padding:10px; background:none; border:1px solid #e74c3c; border-radius:8px; cursor:pointer; font-size:0.75rem; color:#e74c3c;">Limpar
-          lidas</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="installBanner">
-    <span class="close-banner" id="closeInstallBanner">×</span>
-
-    <div class="install-content">
-      <img src="assets/backgroud.png" class="install-icon" alt="Logo">
-      <div>
-        <strong style="display:block; color:#2c3e50">Louvor CEVD</strong>
-        <small style="color:#7f8c8d">Instale o app para acesso offline</small>
-      </div>
-      <button class="btn-instalar" id="btnInstall">INSTALAR</button>
-    </div>
-  </div>
-
-  <script>
-    const SCRIPT_URL = APP_CONFIG.SCRIPT_URL;
-
-    // AUTO LOGOUT - 24 horas
-    const SESSION_TIMEOUT = 24 * 60 * 60 * 1000;
-
-    function checkSession() {
-      const last = localStorage.getItem('last_activity');
-      const now = Date.now();
-      if (last && (now - parseInt(last) > SESSION_TIMEOUT)) {
-        alert("Sessão expirada. Faça login novamente.");
-        logout(true);
-      }
-      localStorage.setItem('last_activity', now.toString());
-    }
-
-    async function syncAllData() {
-      const statusBox = document.getElementById('syncStatus');
-      const progFill = document.getElementById('progFill');
-      const progText = document.getElementById('progText');
-
-      statusBox.style.display = 'block';
-
-      const updateProgress = (pct, text) => {
-        progFill.style.width = pct + '%';
-        progText.innerText = text;
-      };
-
-      try {
-        await performFetches(updateProgress);
-        updateProgress(100, "Dados Atualizados!");
-        initDashboard(); // Atualiza o gráfico após o sync manual
-        setTimeout(() => { statusBox.style.display = 'none'; }, 1000);
-      } catch (e) {
-        console.error(e);
-        updateProgress(0, "Erro ao conectar.");
-        setTimeout(() => { statusBox.style.display = 'none'; }, 2000);
-      }
-    }
-
-    // Background Sync (Silencioso)
-    async function backgroundSync() {
-      try {
-        console.log("Iniciando Sync em Segundo Plano...");
-        await performFetches(() => { });
-        console.log("Sync em Segundo Plano Concluído.");
-      } catch (e) {
-        console.error("Erro no background sync:", e);
-      }
-    }
-
-    async function performFetches(progressCb) {
-      progressCb(10, "Escalas...");
-      const res1 = await fetch(SCRIPT_URL + "?sheet=Transformar");
-      localStorage.setItem('offline_escala', JSON.stringify((await res1.json()).data));
-
-      progressCb(30, "Repertório...");
-      const res2 = await fetch(SCRIPT_URL + "?sheet=Repertório");
-      localStorage.setItem('offline_repertorio', JSON.stringify((await res2.json()).data));
-
-      progressCb(50, "Músicas...");
-      const res3 = await fetch(SCRIPT_URL + "?sheet=Musicas");
-      localStorage.setItem('offline_musicas', JSON.stringify((await res3.json()).data));
-
-      progressCb(65, "Componentes...");
-      const res4 = await fetch(SCRIPT_URL + "?sheet=Componentes");
-      localStorage.setItem('offline_componentes', JSON.stringify((await res4.json()).data));
-
-      progressCb(80, "Temas...");
-      const resTemas = await fetch(SCRIPT_URL + "?sheet=" + encodeURIComponent("Tema Músicas"));
-      localStorage.setItem('offline_temas', JSON.stringify((await resTemas.json()).data));
-
-      progressCb(85, "Lembretes...");
-      const resLemb = await fetch(SCRIPT_URL + "?sheet=Lembretes");
-      const lembData = (await resLemb.json()).data;
-      localStorage.setItem('offline_lembretes', JSON.stringify(lembData));
-
-      progressCb(90, "Histórico...");
-      const res5 = await fetch(SCRIPT_URL + "?sheet=" + encodeURIComponent("Historico de Músicas"));
-      localStorage.setItem('offline_historico', JSON.stringify((await res5.json()).data));
-
-      progressCb(95, "Imagens...");
-      const res6 = await fetch(SCRIPT_URL + "?action=getImages");
-      localStorage.setItem('offline_imagens', JSON.stringify((await res6.json()).data));
-
-      const now = new Date();
-      localStorage.setItem('last_full_sync', now.toISOString());
-
-      // PROCESSA NOTIFICAÇÕES APÓS SYNC
-      processarNotificacoes();
-      initDashboard(); // Garante que o gráfico atualiza após sync pleno
-      updateLastUpdateText();
-    }
-
-    function logout(force = false) {
-      if (force || confirm("Deseja sair?")) {
-        localStorage.removeItem('user_token');
-        window.location.href = 'Login.html';
-      }
-    }
-
-    function updateLastUpdateText() {
-      const last = localStorage.getItem('last_full_sync');
-      const el = document.getElementById('lastUpdateDate');
-      if (last) {
-        const d = new Date(last);
-        el.innerText = "Última atualização: " + d.toLocaleString('pt-BR');
-      } else {
-        el.innerText = "Requer atualização inicial";
-      }
-    }
-
-    let participacoesDetalhas = {};
-
-    function initDashboard() {
-      const cached = localStorage.getItem('offline_escala');
-      if (cached) {
-        document.getElementById('dashLoader').style.display = 'none';
-        processarERenderizar(JSON.parse(cached));
-      } else {
-        document.getElementById('dashLoader').innerHTML = "Aguardando sincronização...";
-      }
-    }
-
-    function processarERenderizar(dados) {
-      const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-      const contagemMembros = {};
-      const cultosUnicosGerais = new Set();
-      participacoesDetalhas = {};
-
-      dados.forEach(item => {
-        const dataItem = new Date(item.Data);
-        // O filtro de data foi removido para processar todos os itens
-
-        const nome = item.Nome;
-        const idCulto = item.Cultos;
-        const nomeCulto = item["Nome dos Cultos"];
-        const funcao = item["Função"];
-        const dataFmt = dataItem.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-
-        cultosUnicosGerais.add(idCulto);
-
-        if (!contagemMembros[nome]) contagemMembros[nome] = new Set();
-        contagemMembros[nome].add(idCulto);
-
-        if (!participacoesDetalhas[nome]) participacoesDetalhas[nome] = {};
-        if (!participacoesDetalhas[nome][idCulto]) {
-          participacoesDetalhas[nome][idCulto] = { data: dataFmt, nomeCulto: nomeCulto, funcoes: [] };
+      function checkSession() {
+        const last = localStorage.getItem('last_activity');
+        const now = Date.now();
+        if (last && (now - parseInt(last) > SESSION_TIMEOUT)) {
+          alert("Sessão expirada. Faça login novamente.");
+          logout(true);
         }
-        if (!participacoesDetalhas[nome][idCulto].funcoes.includes(funcao)) {
-          participacoesDetalhas[nome][idCulto].funcoes.push(funcao);
+        localStorage.setItem('last_activity', now.toString());
+      }
+
+      async function syncAllData() {
+        const statusBox = document.getElementById('syncStatus');
+        const progFill = document.getElementById('progFill');
+        const progText = document.getElementById('progText');
+
+        statusBox.style.display = 'block';
+
+        const updateProgress = (pct, text) => {
+          progFill.style.width = pct + '%';
+          progText.innerText = text;
+        };
+
+        try {
+          await performFetches(updateProgress);
+          updateProgress(100, "Dados Atualizados!");
+          initDashboard(); // Atualiza o gráfico após o sync manual
+          setTimeout(() => { statusBox.style.display = 'none'; }, 1000);
+        } catch (e) {
+          console.error(e);
+          updateProgress(0, "Erro ao conectar.");
+          setTimeout(() => { statusBox.style.display = 'none'; }, 2000);
         }
-      });
+      }
 
-      const listaOrdenada = Object.keys(contagemMembros)
-        .map(nome => ({ nome, total: contagemMembros[nome].size }))
-        .sort((a, b) => b.total - a.total);
+      // Background Sync (Silencioso)
+      async function backgroundSync() {
+        try {
+          console.log("Iniciando Sync em Segundo Plano...");
+          await performFetches(() => { });
+          console.log("Sync em Segundo Plano Concluído.");
+        } catch (e) {
+          console.error("Erro no background sync:", e);
+        }
+      }
 
-      document.getElementById('kpi-membros').innerText = listaOrdenada.length;
-      document.getElementById('kpi-cultos').innerText = cultosUnicosGerais.size;
+      async function performFetches(progressCb) {
+        progressCb(10, "Escalas...");
+        const res1 = await fetch(SCRIPT_URL + "?sheet=Transformar");
+        localStorage.setItem('offline_escala', JSON.stringify((await res1.json()).data));
 
-      // CALCULAR PRÓXIMA ESCALA DO USUÁRIO
-      const user = JSON.parse(localStorage.getItem('user_token') || '{}');
-      const meuNome = (user.Nome || "").toLowerCase().trim();
+        progressCb(30, "Repertório...");
+        const res2 = await fetch(SCRIPT_URL + "?sheet=Repertório");
+        localStorage.setItem('offline_repertorio', JSON.stringify((await res2.json()).data));
 
-      const escalasUsuario = dados
-        .filter(e => {
-          const dataE = new Date(e.Data);
-          return dataE >= hoje && e.Nome.toLowerCase().trim().includes(meuNome);
-        })
-        .sort((a, b) => new Date(a.Data) - new Date(b.Data));
+        progressCb(50, "Músicas...");
+        const res3 = await fetch(SCRIPT_URL + "?sheet=Musicas");
+        localStorage.setItem('offline_musicas', JSON.stringify((await res3.json()).data));
 
-      const kpiProxima = document.getElementById('kpi-proxima');
-      if (escalasUsuario.length > 0) {
-        const primeira = escalasUsuario[0];
-        const dataRef = primeira.Data;
-        const cultoRef = primeira["Nome dos Cultos"];
+        progressCb(65, "Componentes...");
+        const res4 = await fetch(SCRIPT_URL + "?sheet=Componentes");
+        localStorage.setItem('offline_componentes', JSON.stringify((await res4.json()).data));
 
-        // Pega todas as funções para o mesmo dia e culto
-        const funcoes = escalasUsuario
-          .filter(e => e.Data === dataRef && e["Nome dos Cultos"] === cultoRef)
-          .map(e => e.Função);
+        progressCb(80, "Temas...");
+        const resTemas = await fetch(SCRIPT_URL + "?sheet=" + encodeURIComponent("Tema Músicas"));
+        localStorage.setItem('offline_temas', JSON.stringify((await resTemas.json()).data));
 
-        const funcoesUnicas = [...new Set(funcoes)].join(', ');
-        const d = new Date(primeira.Data);
-        const dataStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        progressCb(85, "Lembretes...");
+        const resLemb = await fetch(SCRIPT_URL + "?sheet=Lembretes");
+        const lembData = (await resLemb.json()).data;
+        localStorage.setItem('offline_lembretes', JSON.stringify(lembData));
 
-        kpiProxima.innerHTML = `
+        progressCb(90, "Histórico...");
+        const res5 = await fetch(SCRIPT_URL + "?sheet=" + encodeURIComponent("Historico de Músicas"));
+        localStorage.setItem('offline_historico', JSON.stringify((await res5.json()).data));
+
+        progressCb(95, "Imagens...");
+        const res6 = await fetch(SCRIPT_URL + "?action=getImages");
+        localStorage.setItem('offline_imagens', JSON.stringify((await res6.json()).data));
+
+        const now = new Date();
+        localStorage.setItem('last_full_sync', now.toISOString());
+
+        // PROCESSA NOTIFICAÇÕES APÓS SYNC
+        processarNotificacoes();
+        initDashboard(); // Garante que o gráfico atualiza após sync pleno
+        updateLastUpdateText();
+      }
+
+      function logout(force = false) {
+        if (force || confirm("Deseja sair?")) {
+          localStorage.removeItem('user_token');
+          window.location.href = 'Login.html';
+        }
+      }
+
+      function updateLastUpdateText() {
+        const last = localStorage.getItem('last_full_sync');
+        const el = document.getElementById('lastUpdateDate');
+        if (last) {
+          const d = new Date(last);
+          el.innerText = "Última atualização: " + d.toLocaleString('pt-BR');
+        } else {
+          el.innerText = "Requer atualização inicial";
+        }
+      }
+
+      let participacoesDetalhas = {};
+
+      function initDashboard() {
+        const cached = localStorage.getItem('offline_escala');
+        if (cached) {
+          document.getElementById('dashLoader').style.display = 'none';
+          processarERenderizar(JSON.parse(cached));
+        } else {
+          document.getElementById('dashLoader').innerHTML = "Aguardando sincronização...";
+        }
+      }
+
+      function processarERenderizar(dados) {
+        const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+        const contagemMembros = {};
+        const cultosUnicosGerais = new Set();
+        participacoesDetalhas = {};
+
+        dados.forEach(item => {
+          const dataItem = new Date(item.Data);
+          // O filtro de data foi removido para processar todos os itens
+
+          const nome = item.Nome;
+          const idCulto = item.Cultos;
+          const nomeCulto = item["Nome dos Cultos"];
+          const funcao = item["Função"];
+          const dataFmt = dataItem.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+
+          cultosUnicosGerais.add(idCulto);
+
+          if (!contagemMembros[nome]) contagemMembros[nome] = new Set();
+          contagemMembros[nome].add(idCulto);
+
+          if (!participacoesDetalhas[nome]) participacoesDetalhas[nome] = {};
+          if (!participacoesDetalhas[nome][idCulto]) {
+            participacoesDetalhas[nome][idCulto] = { data: dataFmt, nomeCulto: nomeCulto, funcoes: [] };
+          }
+          if (!participacoesDetalhas[nome][idCulto].funcoes.includes(funcao)) {
+            participacoesDetalhas[nome][idCulto].funcoes.push(funcao);
+          }
+        });
+
+        const listaOrdenada = Object.keys(contagemMembros)
+          .map(nome => ({ nome, total: contagemMembros[nome].size }))
+          .sort((a, b) => b.total - a.total);
+
+        document.getElementById('kpi-membros').innerText = listaOrdenada.length;
+        document.getElementById('kpi-cultos').innerText = cultosUnicosGerais.size;
+
+        // CALCULAR PRÓXIMA ESCALA DO USUÁRIO
+        const user = JSON.parse(localStorage.getItem('user_token') || '{}');
+        const meuNome = (user.Nome || "").toLowerCase().trim();
+
+        const escalasUsuario = dados
+          .filter(e => {
+            const dataE = new Date(e.Data);
+            return dataE >= hoje && e.Nome.toLowerCase().trim().includes(meuNome);
+          })
+          .sort((a, b) => new Date(a.Data) - new Date(b.Data));
+
+        const kpiProxima = document.getElementById('kpi-proxima');
+        if (escalasUsuario.length > 0) {
+          const primeira = escalasUsuario[0];
+          const dataRef = primeira.Data;
+          const cultoRef = primeira["Nome dos Cultos"];
+
+          // Pega todas as funções para o mesmo dia e culto
+          const funcoes = escalasUsuario
+            .filter(e => e.Data === dataRef && e["Nome dos Cultos"] === cultoRef)
+            .map(e => e.Função);
+
+          const funcoesUnicas = [...new Set(funcoes)].join(', ');
+          const d = new Date(primeira.Data);
+          const dataStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+
+          kpiProxima.innerHTML = `
           <div style="font-weight:bold; color:var(--primary);">${cultoRef.split(' ')[0]} (${dataStr})</div>
           <div style="font-size:0.65rem; color:#7f8c8d; margin-top:2px;">Função: ${funcoesUnicas}</div>
         `;
-        kpiProxima.style.fontSize = '0.9rem'; // Reset to base for the div structure
-      } else {
-        kpiProxima.innerText = "Nenhuma";
-        kpiProxima.style.fontSize = '1rem';
+          kpiProxima.style.fontSize = '0.9rem'; // Reset to base for the div structure
+        } else {
+          kpiProxima.innerText = "Nenhuma";
+          kpiProxima.style.fontSize = '1rem';
+        }
+
+        renderizarGrafico(listaOrdenada);
       }
 
-      renderizarGrafico(listaOrdenada);
-    }
+      let currentChart = null;
+      function renderizarGrafico(lista) {
+        const labels = lista.map(d => d.nome);
+        const valores = lista.map(d => d.total);
+        const cores = labels.map((_, i) => `hsla(${200 + (i * 10)}, 70%, 50%, 0.85)`);
 
-    let currentChart = null;
-    function renderizarGrafico(lista) {
-      const labels = lista.map(d => d.nome);
-      const valores = lista.map(d => d.total);
-      const cores = labels.map((_, i) => `hsla(${200 + (i * 10)}, 70%, 50%, 0.85)`);
+        const ctx = document.getElementById('escalaChart').getContext('2d');
+        if (currentChart) currentChart.destroy();
 
-      const ctx = document.getElementById('escalaChart').getContext('2d');
-      if (currentChart) currentChart.destroy();
-
-      currentChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{ data: valores, backgroundColor: cores, borderRadius: 5, barThickness: 15 }]
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
-          onClick: (evt, elements) => {
-            if (elements.length > 0) {
-              const index = elements[0].index;
-              abrirDetalhes(labels[index]);
-            }
+        currentChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{ data: valores, backgroundColor: cores, borderRadius: 5, barThickness: 15 }]
           },
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } },
-            y: { grid: { display: false }, ticks: { font: { weight: '600', size: 10 } } }
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            onClick: (evt, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                abrirDetalhes(labels[index]);
+              }
+            },
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } },
+              y: { grid: { display: false }, ticks: { font: { weight: '600', size: 10 } } }
+            }
           }
-        }
-      });
-    }
+        });
+      }
 
-    function abrirDetalhes(nome) {
-      document.getElementById('modalNome').innerText = nome;
-      const cultosMembro = participacoesDetalhas[nome] || {};
-      const container = document.getElementById('modalLista');
-      const listaAgrupada = Object.values(cultosMembro);
+      function abrirDetalhes(nome) {
+        document.getElementById('modalNome').innerText = nome;
+        const cultosMembro = participacoesDetalhas[nome] || {};
+        const container = document.getElementById('modalLista');
+        const listaAgrupada = Object.values(cultosMembro);
 
-      container.innerHTML = listaAgrupada.map(item => `
+        container.innerHTML = listaAgrupada.map(item => `
         <div class="detail-item">
           <div class="detail-top">
             <span class="detail-culto">${item.nomeCulto}</span>
@@ -951,231 +1054,231 @@
           <span class="detail-funcoes"><i class="fas fa-tag"></i> ${item.funcoes.join(', ')}</span>
         </div>
       `).join('');
-      document.getElementById('detailModal').style.display = 'flex';
-    }
+        document.getElementById('detailModal').style.display = 'flex';
+      }
 
-    function fecharModal() { document.getElementById('detailModal').style.display = 'none'; }
+      function fecharModal() { document.getElementById('detailModal').style.display = 'none'; }
 
-    function applyPermissions() {
-      if (userData.Role) {
-        if (!hasPermission(userData.Role, "menuAcessoMesa", "menu")) {
-          document.getElementById('menuAcessoMesa')?.classList.add('hidden-permission');
+      function applyPermissions() {
+        if (userData.Role) {
+          if (!hasPermission(userData.Role, "menuAcessoMesa", "menu")) {
+            document.getElementById('menuAcessoMesa')?.classList.add('hidden-permission');
+          }
         }
       }
-    }
 
-    window.onclick = (event) => {
-      if (event.target == document.getElementById('detailModal')) fecharModal();
-    }
-
-    window.onload = () => {
-      if (userData.Nome) document.getElementById('userName').innerText = userData.Nome.split(' ')[0];
-      applyPermissions();
-      updateLastUpdateText();
-      checkSession();
-      initDashboard();
-      processarNotificacoes();
-      solicitarPermisaoNotificacao();
-
-      // Listener para atualizar o gráfico se os dados mudarem em outra aba/página
-      let deferredPrompt;
-
-      window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-
-        const banner = document.getElementById('installBanner');
-        banner.style.display = 'block';
-
-        document.getElementById('btnInstall').addEventListener('click', async () => {
-          if (deferredPrompt) {
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            console.log(`Usuário respondeu à instalação: ${outcome}`);
-            deferredPrompt = null;
-            banner.style.animation = 'slideDown 0.5s reverse forwards'; // Animação de saída
-            setTimeout(() => banner.style.display = 'none', 500);
-          }
-        });
-      });
-
-
-      setTimeout(backgroundSync, 5000); // Primeiro sync após 5s
-      setInterval(backgroundSync, 300000); // Repete a cada 5 min (300000ms)
-    };
-
-    function solicitarPermisaoNotificacao() {
-      if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-        Notification.requestPermission();
+      window.onclick = (event) => {
+        if (event.target == document.getElementById('detailModal')) fecharModal();
       }
-    }
 
-    function mostrarNotificacaoNativa(titulo, corpo) {
-      if ('Notification' in window && Notification.permission === 'granted') {
-        navigator.serviceWorker.ready.then(registration => {
-          registration.showNotification(titulo, {
-            body: corpo,
-            icon: 'assets/backgroud.png',
-            badge: 'assets/backgroud.png',
-            vibrate: [300, 100, 300, 100, 300], // Vibração mais forte
-            renotify: true, // Forçar notificação se o título for igual
-            tag: 'louvor-app-rem'
+      window.onload = () => {
+        if (userData.Nome) document.getElementById('userName').innerText = userData.Nome.split(' ')[0];
+        applyPermissions();
+        updateLastUpdateText();
+        checkSession();
+        initDashboard();
+        processarNotificacoes();
+        solicitarPermisaoNotificacao();
+
+        // Listener para atualizar o gráfico se os dados mudarem em outra aba/página
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+          e.preventDefault();
+          deferredPrompt = e;
+
+          const banner = document.getElementById('installBanner');
+          banner.style.display = 'block';
+
+          document.getElementById('btnInstall').addEventListener('click', async () => {
+            if (deferredPrompt) {
+              deferredPrompt.prompt();
+              const { outcome } = await deferredPrompt.userChoice;
+              console.log(`Usuário respondeu à instalação: ${outcome}`);
+              deferredPrompt = null;
+              banner.style.animation = 'slideDown 0.5s reverse forwards'; // Animação de saída
+              setTimeout(() => banner.style.display = 'none', 500);
+            }
           });
         });
 
-        // Tentativa de tocar som (requer interação prévia do usuário)
-        try {
-          const audio = new Audio('https://notificationsounds.com/storage/sounds/file-sounds-1150-pristine.mp3');
-          audio.play().catch(e => console.log("Bloqueio de áudio automático:", e));
-        } catch (e) { }
+
+        setTimeout(backgroundSync, 5000); // Primeiro sync após 5s
+        setInterval(backgroundSync, 300000); // Repete a cada 5 min (300000ms)
+      };
+
+      function solicitarPermisaoNotificacao() {
+        if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+          Notification.requestPermission();
+        }
       }
-    }
 
-    // --- LOGICA DE NOTIFICAÇÕES ---
-    function processarNotificacoes() {
-      const user = JSON.parse(localStorage.getItem('user_token') || '{}');
-      const lastUserName = localStorage.getItem('last_user_name');
-      const meuNome = (user.Nome || lastUserName || "").toLowerCase().trim();
-      if (!meuNome) return;
+      function mostrarNotificacaoNativa(titulo, corpo) {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          navigator.serviceWorker.ready.then(registration => {
+            registration.showNotification(titulo, {
+              body: corpo,
+              icon: 'assets/backgroud.png',
+              badge: 'assets/backgroud.png',
+              vibrate: [300, 100, 300, 100, 300], // Vibração mais forte
+              renotify: true, // Forçar notificação se o título for igual
+              tag: 'louvor-app-rem'
+            });
+          });
 
-      const escalas = JSON.parse(localStorage.getItem('offline_escala') || '[]');
-      const lembretes = JSON.parse(localStorage.getItem('offline_lembretes') || '[]');
-      const repertorios = JSON.parse(localStorage.getItem('offline_repertorio') || '[]');
+          // Tentativa de tocar som (requer interação prévia do usuário)
+          try {
+            const audio = new Audio('https://notificationsounds.com/storage/sounds/file-sounds-1150-pristine.mp3');
+            audio.play().catch(e => console.log("Bloqueio de áudio automático:", e));
+          } catch (e) { }
+        }
+      }
 
-      let notificacoes = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
-      let conhecidasMaster = JSON.parse(localStorage.getItem('notificacoes_conhecidas_ids') || '[]');
-      const hashesVisiveis = new Set(notificacoes.map(n => n.id));
-      const hashesConhecidos = new Set(conhecidasMaster);
+      // --- LOGICA DE NOTIFICAÇÕES ---
+      function processarNotificacoes() {
+        const user = JSON.parse(localStorage.getItem('user_token') || '{}');
+        const lastUserName = localStorage.getItem('last_user_name');
+        const meuNome = (user.Nome || lastUserName || "").toLowerCase().trim();
+        if (!meuNome) return;
 
-      let novosHashes = [];
+        const escalas = JSON.parse(localStorage.getItem('offline_escala') || '[]');
+        const lembretes = JSON.parse(localStorage.getItem('offline_lembretes') || '[]');
+        const repertorios = JSON.parse(localStorage.getItem('offline_repertorio') || '[]');
 
-      const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+        let notificacoes = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
+        let conhecidasMaster = JSON.parse(localStorage.getItem('notificacoes_conhecidas_ids') || '[]');
+        const hashesVisiveis = new Set(notificacoes.map(n => n.id));
+        const hashesConhecidos = new Set(conhecidasMaster);
 
-      // 1. Verificar Novas Escalas
-      escalas.forEach(e => {
-        const dataE = new Date(e.Data);
-        if (dataE >= hoje && e.Nome.toLowerCase().trim().includes(meuNome)) {
-          const id = `ESC-${e.Data}-${e.Cultos}-${e.Função}`;
+        let novosHashes = [];
+
+        const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+
+        // 1. Verificar Novas Escalas
+        escalas.forEach(e => {
+          const dataE = new Date(e.Data);
+          if (dataE >= hoje && e.Nome.toLowerCase().trim().includes(meuNome)) {
+            const id = `ESC-${e.Data}-${e.Cultos}-${e.Função}`;
+            if (!hashesConhecidos.has(id)) {
+              notificacoes.unshift({
+                id, type: 'escala', read: false, time: Date.now(),
+                msg: `Você foi escalado: ${e["Nome dos Cultos"]} (${dataE.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}) como ${e.Função}`
+              });
+              conhecidasMaster.push(id);
+              hashesConhecidos.add(id);
+              mostrarNotificacaoNativa("Nova Escala! 📅", `${e["Nome dos Cultos"]} como ${e.Função}`);
+            }
+          }
+        });
+
+        // 2. Verificar Avisos em cultos que estou escalado
+        const meusCultosIds = new Set(escalas.filter(e => e.Nome.toLowerCase().trim().includes(meuNome)).map(e => e.Cultos));
+        lembretes.forEach(l => {
+          // Lógica de vínculo: Se o culto do lembrete estiver nos meus cultos
+          const id = `AVISO-${l.id_Lembrete}`;
           if (!hashesConhecidos.has(id)) {
-            notificacoes.unshift({
-              id, type: 'escala', read: false, time: Date.now(),
-              msg: `Você foi escalado: ${e["Nome dos Cultos"]} (${dataE.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}) como ${e.Função}`
-            });
-            conhecidasMaster.push(id);
-            hashesConhecidos.add(id);
-            mostrarNotificacaoNativa("Nova Escala! 📅", `${e["Nome dos Cultos"]} como ${e.Função}`);
-          }
-        }
-      });
+            // Verifica se o lembrete pertence a um culto onde estou
+            const matchesMe = meusCultosIds.has(l.Culto.split('(')[0].trim()) || (l.Culto && meusCultosIds.has(l.Culto));
+            let escalaMatch = escalas.find(e => l.Culto.includes(e["Nome dos Cultos"]) && l.Culto.includes(new Date(e.Data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })) && e.Nome.toLowerCase().trim().includes(meuNome));
 
-      // 2. Verificar Avisos em cultos que estou escalado
-      const meusCultosIds = new Set(escalas.filter(e => e.Nome.toLowerCase().trim().includes(meuNome)).map(e => e.Cultos));
-      lembretes.forEach(l => {
-        // Lógica de vínculo: Se o culto do lembrete estiver nos meus cultos
-        const id = `AVISO-${l.id_Lembrete}`;
-        if (!hashesConhecidos.has(id)) {
-          // Verifica se o lembrete pertence a um culto onde estou
-          const matchesMe = meusCultosIds.has(l.Culto.split('(')[0].trim()) || (l.Culto && meusCultosIds.has(l.Culto));
-          let escalaMatch = escalas.find(e => l.Culto.includes(e["Nome dos Cultos"]) && l.Culto.includes(new Date(e.Data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })) && e.Nome.toLowerCase().trim().includes(meuNome));
-
-          if (escalaMatch && l.Componente.toLowerCase().trim() !== meuNome) {
-            notificacoes.unshift({
-              id, type: 'aviso', read: false, time: Date.now(),
-              msg: `Novo aviso no seu culto ${l.Culto}: ${l.Componente} disse "${l.Info}"`
-            });
-            conhecidasMaster.push(id);
-            hashesConhecidos.add(id);
-            mostrarNotificacaoNativa("Novo Aviso! 🔔", `${l.Componente}: ${l.Info}`);
-          }
-        }
-      });
-
-      // 3. Verificar Repertório definido
-      repertorios.forEach(r => {
-        const id = `REP-${r["Culto+Data"]}-${r.Músicas}`;
-        if (!hashesConhecidos.has(id)) {
-          const matchMeuCulto = scalesMatchForRepertorio(r, escalas, meuNome);
-          if (matchMeuCulto) {
-            notificacoes.unshift({
-              id, type: 'musica', read: false, time: Date.now(),
-              msg: `Repertório definido para ${r["Culto+Data"]}: "${r.Músicas}"`
-            });
-            conhecidasMaster.push(id);
-            hashesConhecidos.add(id);
-            mostrarNotificacaoNativa("Repertório Definido! 🎶", `${r["Culto+Data"]}: ${r.Músicas}`);
-          }
-        }
-      });
-
-      // 4. Lembretes de Escala (1 dia antes e No Dia)
-      escalas.forEach(e => {
-        const dataE = new Date(e.Data);
-        dataE.setHours(0, 0, 0, 0);
-        const dataEStr = dataE.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-
-        if (e.Nome.toLowerCase().trim().includes(meuNome)) {
-          const diffDays = Math.ceil((dataE - hoje) / (1000 * 60 * 60 * 24));
-
-          if (diffDays === 1) { // Amanhã
-            const id = `REM-1D-${e.Data}-${e.Cultos}`;
-            if (!hashesConhecidos.has(id)) {
+            if (escalaMatch && l.Componente.toLowerCase().trim() !== meuNome) {
               notificacoes.unshift({
-                id, type: 'escala', read: false, time: Date.now(),
-                msg: `Lembrete: Você está na escala de AMANHÃ (${dataEStr}) - ${e["Nome dos Cultos"]}`
+                id, type: 'aviso', read: false, time: Date.now(),
+                msg: `Novo aviso no seu culto ${l.Culto}: ${l.Componente} disse "${l.Info}"`
               });
               conhecidasMaster.push(id);
               hashesConhecidos.add(id);
-              mostrarNotificacaoNativa("Escala Amanhã! 📅", `Você toca amanhã no ${e["Nome dos Cultos"]}`);
+              mostrarNotificacaoNativa("Novo Aviso! 🔔", `${l.Componente}: ${l.Info}`);
             }
-          } else if (diffDays === 0) { // Hoje
-            const id = `REM-0D-${e.Data}-${e.Cultos}`;
-            if (!hashesConhecidos.has(id)) {
+          }
+        });
+
+        // 3. Verificar Repertório definido
+        repertorios.forEach(r => {
+          const id = `REP-${r["Culto+Data"]}-${r.Músicas}`;
+          if (!hashesConhecidos.has(id)) {
+            const matchMeuCulto = scalesMatchForRepertorio(r, escalas, meuNome);
+            if (matchMeuCulto) {
               notificacoes.unshift({
-                id, type: 'escala', read: false, time: Date.now(),
-                msg: `HOJE TEM ESCALA! (${dataEStr}) - ${e["Nome dos Cultos"]}. Não se atrase!`
+                id, type: 'musica', read: false, time: Date.now(),
+                msg: `Repertório definido para ${r["Culto+Data"]}: "${r.Músicas}"`
               });
               conhecidasMaster.push(id);
               hashesConhecidos.add(id);
-              mostrarNotificacaoNativa("É HOJE! 🎸", `Sua escala é hoje no ${e["Nome dos Cultos"]}!`);
+              mostrarNotificacaoNativa("Repertório Definido! 🎶", `${r["Culto+Data"]}: ${r.Músicas}`);
             }
           }
-        }
-      });
+        });
 
-      localStorage.setItem('user_notificacoes', JSON.stringify(notificacoes.slice(0, 50)));
-      localStorage.setItem('notificacoes_conhecidas_ids', JSON.stringify(conhecidasMaster.slice(-500))); // Guarda os últimos 500 hashes
-      atualizarBadge();
-    }
+        // 4. Lembretes de Escala (1 dia antes e No Dia)
+        escalas.forEach(e => {
+          const dataE = new Date(e.Data);
+          dataE.setHours(0, 0, 0, 0);
+          const dataEStr = dataE.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 
-    function scalesMatchForRepertorio(rep, escalas, meuNome) {
-      // Verifica se o usuário está na escala do culto/data desse repertório
-      return escalas.some(e => {
-        const dataE = new Date(e.Data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-        const keyE = `${e.Cultos} (${dataE})`;
-        return keyE === rep["Culto+Data"] && e.Nome.toLowerCase().trim().includes(meuNome);
-      });
-    }
+          if (e.Nome.toLowerCase().trim().includes(meuNome)) {
+            const diffDays = Math.ceil((dataE - hoje) / (1000 * 60 * 60 * 24));
 
-    function atualizarBadge() {
-      const notifs = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
-      const unread = notifs.filter(n => !n.read).length;
-      const b = document.getElementById('notifBadge');
-      if (unread > 0) {
-        b.innerText = unread > 9 ? '9+' : unread;
-        b.style.display = 'block';
-      } else {
-        b.style.display = 'none';
+            if (diffDays === 1) { // Amanhã
+              const id = `REM-1D-${e.Data}-${e.Cultos}`;
+              if (!hashesConhecidos.has(id)) {
+                notificacoes.unshift({
+                  id, type: 'escala', read: false, time: Date.now(),
+                  msg: `Lembrete: Você está na escala de AMANHÃ (${dataEStr}) - ${e["Nome dos Cultos"]}`
+                });
+                conhecidasMaster.push(id);
+                hashesConhecidos.add(id);
+                mostrarNotificacaoNativa("Escala Amanhã! 📅", `Você toca amanhã no ${e["Nome dos Cultos"]}`);
+              }
+            } else if (diffDays === 0) { // Hoje
+              const id = `REM-0D-${e.Data}-${e.Cultos}`;
+              if (!hashesConhecidos.has(id)) {
+                notificacoes.unshift({
+                  id, type: 'escala', read: false, time: Date.now(),
+                  msg: `HOJE TEM ESCALA! (${dataEStr}) - ${e["Nome dos Cultos"]}. Não se atrase!`
+                });
+                conhecidasMaster.push(id);
+                hashesConhecidos.add(id);
+                mostrarNotificacaoNativa("É HOJE! 🎸", `Sua escala é hoje no ${e["Nome dos Cultos"]}!`);
+              }
+            }
+          }
+        });
+
+        localStorage.setItem('user_notificacoes', JSON.stringify(notificacoes.slice(0, 50)));
+        localStorage.setItem('notificacoes_conhecidas_ids', JSON.stringify(conhecidasMaster.slice(-500))); // Guarda os últimos 500 hashes
+        atualizarBadge();
       }
-    }
 
-    function abrirNotificacoes() {
-      const notifs = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
-      const container = document.getElementById('notifLista');
+      function scalesMatchForRepertorio(rep, escalas, meuNome) {
+        // Verifica se o usuário está na escala do culto/data desse repertório
+        return escalas.some(e => {
+          const dataE = new Date(e.Data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+          const keyE = `${e.Cultos} (${dataE})`;
+          return keyE === rep["Culto+Data"] && e.Nome.toLowerCase().trim().includes(meuNome);
+        });
+      }
 
-      if (notifs.length === 0) {
-        container.innerHTML = '<div style="text-align:center; color:#999; padding:20px;">Nenhuma notificação por enquanto.</div>';
-      } else {
-        container.innerHTML = notifs.map(n => `
+      function atualizarBadge() {
+        const notifs = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
+        const unread = notifs.filter(n => !n.read).length;
+        const b = document.getElementById('notifBadge');
+        if (unread > 0) {
+          b.innerText = unread > 9 ? '9+' : unread;
+          b.style.display = 'block';
+        } else {
+          b.style.display = 'none';
+        }
+      }
+
+      function abrirNotificacoes() {
+        const notifs = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
+        const container = document.getElementById('notifLista');
+
+        if (notifs.length === 0) {
+          container.innerHTML = '<div style="text-align:center; color:#999; padding:20px;">Nenhuma notificação por enquanto.</div>';
+        } else {
+          container.innerHTML = notifs.map(n => `
           <div class="notif-item ${n.read ? '' : 'unread'}">
             <span class="notif-type type-${n.type}">${n.type}</span>
             <div class="notif-msg">${n.msg}</div>
@@ -1187,85 +1290,85 @@
             </div>
           </div>
         `).join('');
+        }
+        document.getElementById('notifModal').style.display = 'flex';
       }
-      document.getElementById('notifModal').style.display = 'flex';
-    }
 
-    function excluirNotificacao(id, event) {
-      if (event) event.stopPropagation();
-      let notifs = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
-      notifs = notifs.filter(n => n.id !== id);
-      localStorage.setItem('user_notificacoes', JSON.stringify(notifs));
-      abrirNotificacoes(); // Re-renderiza o modal
-      atualizarBadge();
-    }
+      function excluirNotificacao(id, event) {
+        if (event) event.stopPropagation();
+        let notifs = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
+        notifs = notifs.filter(n => n.id !== id);
+        localStorage.setItem('user_notificacoes', JSON.stringify(notifs));
+        abrirNotificacoes(); // Re-renderiza o modal
+        atualizarBadge();
+      }
 
-    function limparNotificacoesLidas() {
-      if (!confirm("Deseja remover todas as notificações lidas?")) return;
-      let notifs = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
-      notifs = notifs.filter(n => !n.read);
-      localStorage.setItem('user_notificacoes', JSON.stringify(notifs));
-      abrirNotificacoes();
-      atualizarBadge();
-    }
+      function limparNotificacoesLidas() {
+        if (!confirm("Deseja remover todas as notificações lidas?")) return;
+        let notifs = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
+        notifs = notifs.filter(n => !n.read);
+        localStorage.setItem('user_notificacoes', JSON.stringify(notifs));
+        abrirNotificacoes();
+        atualizarBadge();
+      }
 
-    function fecharNotificacoes() {
-      document.getElementById('notifModal').style.display = 'none';
-      marcarTodasLidas();
-    }
+      function fecharNotificacoes() {
+        document.getElementById('notifModal').style.display = 'none';
+        marcarTodasLidas();
+      }
 
-    function marcarTodasLidas() {
-      let notifs = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
-      notifs.forEach(n => n.read = true);
-      localStorage.setItem('user_notificacoes', JSON.stringify(notifs));
-      atualizarBadge();
-      const items = document.querySelectorAll('.notif-item');
-      items.forEach(i => i.classList.remove('unread'));
-    }
+      function marcarTodasLidas() {
+        let notifs = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
+        notifs.forEach(n => n.read = true);
+        localStorage.setItem('user_notificacoes', JSON.stringify(notifs));
+        atualizarBadge();
+        const items = document.querySelectorAll('.notif-item');
+        items.forEach(i => i.classList.remove('unread'));
+      }
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js').then(reg => {
-        reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              showUpdateToast();
-            }
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js').then(reg => {
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                showUpdateToast();
+              }
+            });
           });
+        }).catch((err) => console.log('Erro Service Worker:', err));
+      }
+
+      function showUpdateToast() {
+        // Remove se já existir algum para não duplicar
+        const existing = document.getElementById('update-toast');
+        if (existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.id = 'update-toast';
+
+        // Estilização corrigida
+        Object.assign(toast.style, {
+          position: 'fixed',
+          bottom: '30px',
+          left: '20px',
+          right: '20px',
+          background: 'rgba(44, 62, 80, 0.95)',
+          backdropFilter: 'blur(10px)',
+          webkitBackdropFilter: 'blur(10px)',
+          color: '#fff',
+          padding: '16px 20px',
+          borderRadius: '16px',
+          zIndex: '10000',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+          border: '1px solid rgba(255,255,255,0.1)'
         });
-      }).catch((err) => console.log('Erro Service Worker:', err));
-    }
 
-    function showUpdateToast() {
-      // Remove se já existir algum para não duplicar
-      const existing = document.getElementById('update-toast');
-      if (existing) existing.remove();
-
-      const toast = document.createElement('div');
-      toast.id = 'update-toast';
-
-      // Estilização corrigida
-      Object.assign(toast.style, {
-        position: 'fixed',
-        bottom: '30px',
-        left: '20px',
-        right: '20px',
-        background: 'rgba(44, 62, 80, 0.95)',
-        backdropFilter: 'blur(10px)',
-        webkitBackdropFilter: 'blur(10px)',
-        color: '#fff',
-        padding: '16px 20px',
-        borderRadius: '16px',
-        zIndex: '10000',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
-        border: '1px solid rgba(255,255,255,0.1)'
-      });
-
-      // HTML com crases para evitar erro de aspas
-      toast.innerHTML = `
+        // HTML com crases para evitar erro de aspas
+        toast.innerHTML = `
     <div style="display:flex; align-items:center; gap:12px">
       <div style="background:#3498db; width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center">
         <i class="fas fa-cloud-download-alt"></i>
@@ -1281,51 +1384,142 @@
     </button>
   `;
 
-      document.body.appendChild(toast);
+        document.body.appendChild(toast);
 
-      // Adiciona o evento de clique de forma separada para evitar erro de aspas no HTML
-      document.getElementById('btn-refresh-app').addEventListener('click', function () {
-        this.innerHTML = '<i class="fas fa-sync fa-spin"></i>';
-        window.location.reload();
-      });
-    }
+        // Adiciona o evento de clique de forma separada para evitar erro de aspas no HTML
+        document.getElementById('btn-refresh-app').addEventListener('click', function () {
+          this.innerHTML = '<i class="fas fa-sync fa-spin"></i>';
+          window.location.reload();
+        });
+      }
 
 
-    let deferredPrompt;
+      let deferredPrompt;
 
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
 
-      const banner = document.getElementById('installBanner');
-      banner.style.display = 'block';
+        const banner = document.getElementById('installBanner');
+        banner.style.display = 'block';
 
-      // Lógica para o botão INSTALAR
-      document.getElementById('btnInstall').addEventListener('click', async () => {
-        if (deferredPrompt) {
-          deferredPrompt.prompt();
-          const { outcome } = await deferredPrompt.userChoice;
-          deferredPrompt = null;
+        // Lógica para o botão INSTALAR
+        document.getElementById('btnInstall').addEventListener('click', async () => {
+          if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            deferredPrompt = null;
+            fecharBanner();
+          }
+        });
+
+        // Lógica para o botão FECHAR (X)
+        document.getElementById('closeInstallBanner').addEventListener('click', (e) => {
+          e.stopPropagation(); // Evita disparar cliques indesejados
           fecharBanner();
+        });
+      });
+
+      // Função auxiliar para esconder o banner com animação
+      function fecharBanner() {
+        const banner = document.getElementById('installBanner');
+        banner.style.animation = 'slideDown 0.4s reverse forwards';
+        setTimeout(() => {
+          banner.style.display = 'none';
+        }, 400);
+      }
+      function abrirModalPerfil() {
+        const user = JSON.parse(localStorage.getItem('user_token') || '{}');
+        document.getElementById('editNome').value = user.Nome || "";
+        document.getElementById('editUser').value = user.User || ""; // Nome da coluna na sua aba Acesso
+        document.getElementById('editSenha').value = user.Senha || "";
+        document.getElementById('perfilModal').style.display = 'flex';
+      }
+
+      function fecharModalPerfil() {
+        document.getElementById('perfilModal').style.display = 'none';
+      }
+
+      async function salvarPerfil() {
+        const btn = document.getElementById('btnSalvarPerfil');
+        const nome = document.getElementById('editNome').value.trim();
+        const login = document.getElementById('editUser').value.trim();
+        const senha = document.getElementById('editSenha').value.trim();
+
+        // Pegamos o nome que está salvo atualmente no sistema antes de mudar
+        const userData = JSON.parse(localStorage.getItem('user_token') || '{}');
+        const originalNome = userData.Nome;
+
+        if (!nome || !login || !senha) {
+          alert("Preencha todos os campos!");
+          return;
         }
-      });
 
-      // Lógica para o botão FECHAR (X)
-      document.getElementById('closeInstallBanner').addEventListener('click', (e) => {
-        e.stopPropagation(); // Evita disparar cliques indesejados
-        fecharBanner();
-      });
-    });
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
 
-    // Função auxiliar para esconder o banner com animação
-    function fecharBanner() {
-      const banner = document.getElementById('installBanner');
-      banner.style.animation = 'slideDown 0.4s reverse forwards';
-      setTimeout(() => {
-        banner.style.display = 'none';
-      }, 400);
-    }
-  </script>
-</body>
+        try {
+          const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+              action: "updateUser",
+              nome: nome,
+              user: login,
+              senha: senha,
+              originalNome: originalNome
+            })
+          });
+
+          const result = await response.json();
+
+          if (result.status === "success") {
+            alert("Perfil atualizado! O app será reiniciado.");
+            // Limpa o token e desloga para o usuário entrar com os novos dados
+            localStorage.removeItem('user_token');
+            window.location.reload();
+          } else {
+            alert("Erro: " + result.message);
+          }
+        } catch (e) {
+          alert("Erro de conexão.");
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = 'SALVAR ALTERAÇÕES';
+        }
+      }
+    </script>
+
+    <div id="perfilModal" class="modal">
+      <div class="modal-content">
+        <span class="close-modal" onclick="fecharModalPerfil()">&times;</span>
+        <div class="modal-header">
+          <h3 style="margin:0; font-size: 1.1rem;">Meu Perfil</h3>
+          <small style="color: #7f8c8d;">Edite seus dados de acesso</small>
+        </div>
+
+        <div style="text-align: left; display: flex; flex-direction: column; gap: 15px;">
+          <div class="input-group">
+            <label style="font-size: 0.8rem; color: #7f8c8d;">Nome Completo</label>
+            <input type="text" id="editNome" style="width:100%; padding:8px; border-radius:8px; border:1px solid #ddd;">
+          </div>
+          <div class="input-group">
+            <label style="font-size: 0.8rem; color: #7f8c8d;">Usuário (Login)</label>
+            <input type="text" id="editUser" style="width:100%; padding:8px; border-radius:8px; border:1px solid #ddd;">
+          </div>
+          <div class="input-group">
+            <label style="font-size: 0.8rem; color: #7f8c8d;">Nova Senha</label>
+            <input type="password" id="editSenha"
+              style="width:100%; padding:8px; border-radius:8px; border:1px solid #ddd;">
+          </div>
+
+          <button id="btnSalvarPerfil" onclick="salvarPerfil()"
+            style="background:#27ae60; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; cursor:pointer; margin-top:10px;">
+            SALVAR ALTERAÇÕES
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </body>
 
 </html>

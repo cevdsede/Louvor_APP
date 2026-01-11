@@ -115,8 +115,8 @@
         <h2>Bem-vindo</h2>
 
         <div class="input-group">
-            <label for="user">Nome (Conforme Planilha)</label>
-            <input type="text" id="user" placeholder="Ex: João Silva"
+            <label for="user">Usuário</label>
+            <input type="text" id="user" placeholder="Ex: joao.silva"
                 onkeypress="if(event.key === 'Enter') fazerLogin()">
         </div>
 
@@ -143,64 +143,56 @@
             const userField = document.getElementById('user');
             const passField = document.getElementById('pass');
             const btn = document.querySelector('.btn-login');
-            const loader = document.getElementById('loader');
             const errorMsg = document.getElementById('errorMsg');
+            const loader = document.getElementById('loader');
 
             const user = userField.value.trim();
             const pass = passField.value.trim();
 
             if (!user || !pass) {
-                alert("Preencha todos os campos.");
+                alert("Por favor, preencha usuário e senha.");
                 return;
             }
 
+            // Feedback visual
             btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
             loader.style.display = 'block';
             errorMsg.style.display = 'none';
 
             try {
-                // Busca a lista de componentes
-                // OBS: Isso baixa a lista inteira. Idealmente, o script deveria validar, mas faremos localmente conforme solicitado.
-                const response = await fetch(SCRIPT_URL + "?sheet=Componentes");
+                // Busca especificamente na aba "Acesso"
+                const response = await fetch(SCRIPT_URL + "?sheet=Acesso");
                 const json = await response.json();
 
-                // Verifica se existe usuário e senha compatíveis
+                // Procura o usuário comparando com a coluna 'user' da planilha
                 const usuarioValido = json.data.find(c => {
-                    // Normaliza nomes para comparar (remove espaços extras e case insensitive)
-                    const nomePlanilha = (c.Nome || "").trim().toLowerCase();
-                    const nomeInput = user.toLowerCase();
-                    const senhaPlanilha = (c.Senha || "").toString().trim(); // Assume coluna "Senha"
-
-                    return nomePlanilha === nomeInput && senhaPlanilha === pass;
+                    const loginPlanilha = (c.User || "").trim().toLowerCase();
+                    const senhaPlanilha = (c.Senha || "").toString().trim();
+                    return loginPlanilha === user.toLowerCase() && senhaPlanilha === pass;
                 });
 
                 if (usuarioValido) {
-                    // ATRIBUIÇÃO DE PERFIS
-                    const nome = (usuarioValido.Nome || "").trim().toLowerCase();
-                    let role = "User";
+                    // Mapeia o Perfil para Role
+                    usuarioValido.Role = usuarioValido.Perfil || "User";
 
-                    if (nome.includes("ewerton")) {
-                        role = "Admin";
-                    } else if (["jhordan", "lucas", "felipe", "jesse"].some(n => nome.includes(n))) {
-                        role = "Advanced";
-                    }
+                    // Salva a sessão no navegador com todos os dados (incluindo o Nome Real)
+                    localStorage.setItem('user_token', JSON.stringify(usuarioValido));
+                    localStorage.setItem('last_user_name', usuarioValido.Nome); // Salva o nome real para o index
 
-                    usuarioValido.Role = role;
-
-                    localStorage.setItem('user_token', JSON.stringify(usuarioValido)); // Salva sessão
-                    localStorage.setItem('last_user_name', usuarioValido.Nome); // Salva último usuário logado para notificações
-                    localStorage.setItem('offline_componentes', JSON.stringify(json.data)); // Já aproveita e salva cache
                     window.location.href = 'index.html';
                 } else {
+                    errorMsg.innerText = "Usuário ou senha não conferem.";
                     errorMsg.style.display = 'block';
                     btn.disabled = false;
+                    btn.innerHTML = 'Entrar';
                     loader.style.display = 'none';
                 }
-
             } catch (e) {
-                alert("Erro de conexão. Tente novamente.");
                 console.error(e);
+                alert("Erro de conexão com o servidor.");
                 btn.disabled = false;
+                btn.innerHTML = 'Entrar';
                 loader.style.display = 'none';
             }
         }
