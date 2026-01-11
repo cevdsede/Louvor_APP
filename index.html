@@ -147,6 +147,22 @@
       text-decoration: underline;
     }
 
+    .close-banner {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #95a5a6;
+      cursor: pointer;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+
+    .close-banner:hover {
+      color: #2c3e50;
+    }
+
     #installBanner {
       display: none;
       position: fixed;
@@ -157,7 +173,7 @@
       backdrop-filter: blur(15px);
       -webkit-backdrop-filter: blur(15px);
       border: 1px solid rgba(255, 255, 255, 0.3);
-      padding: 20px;
+      padding: 25px 20px 20px 20px !important;
       border-radius: 20px;
       box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
       z-index: 10001;
@@ -674,6 +690,8 @@
   </div>
 
   <div id="installBanner">
+    <span class="close-banner" id="closeInstallBanner">×</span>
+
     <div class="install-content">
       <img src="assets/backgroud.png" class="install-icon" alt="Logo">
       <div>
@@ -1274,19 +1292,39 @@
 
 
     let deferredPrompt;
+
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
+
       const banner = document.getElementById('installBanner');
       banner.style.display = 'block';
-      banner.addEventListener('click', () => {
-        banner.style.display = 'none';
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then((choiceResult) => {
+
+      // Lógica para o botão INSTALAR
+      document.getElementById('btnInstall').addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
           deferredPrompt = null;
-        });
+          fecharBanner();
+        }
+      });
+
+      // Lógica para o botão FECHAR (X)
+      document.getElementById('closeInstallBanner').addEventListener('click', (e) => {
+        e.stopPropagation(); // Evita disparar cliques indesejados
+        fecharBanner();
       });
     });
+
+    // Função auxiliar para esconder o banner com animação
+    function fecharBanner() {
+      const banner = document.getElementById('installBanner');
+      banner.style.animation = 'slideDown 0.4s reverse forwards';
+      setTimeout(() => {
+        banner.style.display = 'none';
+      }, 400);
+    }
   </script>
 </body>
 
