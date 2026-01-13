@@ -42,6 +42,7 @@
 
 
     .btn-floating {
+      position: relative;
       width: 55px;
       height: 55px;
       border-radius: 50%;
@@ -664,6 +665,9 @@
 
   <script>
     // AUTH CHECK
+    if (!localStorage.getItem('user_token')) {
+      window.location.replace('Login.html');
+    }
     const userData = JSON.parse(localStorage.getItem('user_token') || '{}');
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -950,6 +954,12 @@
       participacoesDetalhas = {};
 
       dados.forEach(item => {
+        // FILTRO GLOBAL DE CONVIDADOS
+        if ((item.Nome && item.Nome.toUpperCase().includes("CONVIDADO")) ||
+          (item["Função"] && item["Função"].toUpperCase().includes("CONVIDADO"))) {
+          return;
+        }
+
         const dataItem = new Date(item.Data);
         // O filtro de data foi removido para processar todos os itens
 
@@ -980,14 +990,34 @@
       document.getElementById('kpi-membros').innerText = listaOrdenada.length;
       document.getElementById('kpi-cultos').innerText = cultosUnicosGerais.size;
 
+      // FUNÇÃO HELPER PARA NORMALIZAR TEXTO (remove acentos e diminui)
+      const normalize = (str) => {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+      };
+
       // CALCULAR PRÓXIMA ESCALA DO USUÁRIO
       const user = JSON.parse(localStorage.getItem('user_token') || '{}');
-      const meuNome = (user.Nome || "").toLowerCase().trim();
+      // Tenta usar Nome ou User, o que tiver
+      const rawNome = user.Nome || user.User || "";
+      const meuNome = normalize(rawNome);
+
+      // Verificação de debug (se quiser ver no console)
+      console.log("Meu Nome Normalizado:", meuNome);
 
       const escalasUsuario = dados
         .filter(e => {
+          if (!e.Nome) return false;
           const dataE = new Date(e.Data);
-          return dataE >= hoje && e.Nome.toLowerCase().trim().includes(meuNome);
+          // Ajusta timezone para evitar problemas de "ontem"
+          dataE.setHours(dataE.getHours() + 12);
+
+          const nomeEscala = normalize(e.Nome);
+
+          // Match Bidirecional: "João" == "João Silva" ou "João Silva" == "João"
+          const match = nomeEscala.includes(meuNome) || meuNome.includes(nomeEscala);
+
+          // Data deve ser >= Hoje (zerado)
+          return dataE >= hoje && match;
         })
         .sort((a, b) => new Date(a.Data) - new Date(b.Data));
 
@@ -1012,7 +1042,9 @@
         `;
         kpiProxima.style.fontSize = '0.9rem'; // Reset to base for the div structure
       } else {
-        kpiProxima.innerText = "Nenhuma";
+        // Mostra quem ele tentou buscar para facilitar debug
+        const nomeDisplay = user.Nome ? user.Nome.split(' ')[0] : 'Usuário';
+        kpiProxima.innerHTML = `<span style="font-size:0.8rem">Nenhuma<br><small style="color:#bdc3c7">Login: ${nomeDisplay}</small></span>`;
         kpiProxima.style.fontSize = '1rem';
       }
 
@@ -1523,7 +1555,9 @@
         </div>
         <div class="input-group">
           <label style="font-size: 0.8rem; color: #7f8c8d;">Usuário (Login)</label>
-          <input type="text" id="editUser" style="width:100%; padding:8px; border-radius:8px; border:1px solid #ddd;">
+          <input type="text" id="editUser"
+            style="width:100%; padding:8px; border-radius:8px; border:1px solid #ddd; background-color: #eee;" disabled
+            title="Não é permitido alterar o usuário">
         </div>
         <div class="input-group">
           <label style="font-size: 0.8rem; color: #7f8c8d;">Nova Senha</label>

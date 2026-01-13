@@ -192,6 +192,29 @@
       transform: scale(0.96);
     }
 
+    /* HOVER EFFECT (Igual Index) */
+    .comp-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    /* KPI COMO FILTRO */
+    .kpi-card {
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .kpi-card.active-filter {
+      border: 2px solid var(--accent);
+      background: white;
+    }
+
+
     .avatar {
       width: 75px;
       height: 75px;
@@ -404,25 +427,30 @@
     </div>
 
     <div id="graficoGenero" class="glass-card">
-      <div class="bar-info"><span>Masculino</span><span id="txtMasc">0%</span></div>
-      <div class="bar-bg">
-        <div id="barMasc" class="bar-fill masc"></div>
+      <!-- MASCULINO -->
+      <div class="gender-bar-container" onclick="filtrarPorGenero('MASC', this)"
+        style="cursor:pointer; margin-bottom:15px; transition:0.2s">
+        <div class="bar-info" style="margin-bottom:5px; font-weight:bold; font-size:0.85rem">
+          <span id="txtMasc">Masculino - 0% (0)</span>
+        </div>
+        <div class="bar-bg">
+          <div id="barMasc" class="bar-fill masc"></div>
+        </div>
       </div>
 
-      <div class="bar-info"><span>Feminino</span><span id="txtFem">0%</span></div>
-      <div class="bar-bg">
-        <div id="barFem" class="bar-fill fem"></div>
+      <!-- FEMININO -->
+      <div class="gender-bar-container" onclick="filtrarPorGenero('FEM', this)" style="cursor:pointer; transition:0.2s">
+        <div class="bar-info" style="margin-bottom:5px; font-weight:bold; font-size:0.85rem">
+          <span id="txtFem">Feminino - 0% (0)</span>
+        </div>
+        <div class="bar-bg">
+          <div id="barFem" class="bar-fill fem"></div>
+        </div>
       </div>
     </div>
 
     <div id="kpiFuncoes" class="kpi-grid"></div>
-    <div class="filter-container">
-      <div class="filter-pill active" onclick="filtrarPorFuncao('TODOS', this)">Todos</div>
-      <div class="filter-pill" onclick="filtrarPorFuncao('MINISTRO', this)">Vocal</div>
-      <div class="filter-pill" onclick="filtrarPorFuncao('VIOLÃO', this)">Cordas</div>
-      <div class="filter-pill" onclick="filtrarPorFuncao('TECLADO', this)">Teclas</div>
-      <div class="filter-pill" onclick="filtrarPorFuncao('BATERIA', this)">Bateria</div>
-    </div>
+    <!-- OS FILTROS DE PÍLULA FORAM REMOVIDOS E INTEGRADOS AOS KPIs -->
     <div id="listaComponentes">
       <div id="loader" style="display:none; text-align:center; padding:50px;">
         <i class="fas fa-circle-notch fa-spin fa-2x" style="color:var(--accent)"></i>
@@ -435,6 +463,7 @@
     /* AS FUNÇÕES ABAIXO PERMANECERAM IGUAIS, APENAS COM AJUSTES NO INNERHTML PARA O NOVO DESIGN */
     const SCRIPT_URL = APP_CONFIG.SCRIPT_URL;
     let bancoImagens = [];
+    let dadosMembros = [];
 
     async function iniciar(force = false) {
       const loader = document.getElementById('loader');
@@ -443,7 +472,14 @@
 
       if (!force && cachedComp && cachedImg) {
         bancoImagens = JSON.parse(cachedImg);
-        const ativos = JSON.parse(cachedComp).filter(c => c.Ativo && c.Ativo.toString().toUpperCase().trim() === "SIM");
+        // FILTRO GLOBAL DE CONVIDADOS
+        const ativos = JSON.parse(cachedComp).filter(c =>
+          c.Ativo &&
+          c.Ativo.toString().toUpperCase().trim() === "SIM" &&
+          !c.Função.toUpperCase().includes("CONVIDADO") &&
+          !c.Nome.toUpperCase().includes("CONVIDADO")
+        );
+        dadosMembros = ativos;
         atualizarDashboards(ativos);
         renderizar(ativos);
         return;
@@ -462,7 +498,15 @@
         localStorage.setItem('offline_imagens', JSON.stringify(dataImg.data));
 
         bancoImagens = dataImg.data;
-        const ativos = dataComp.data.filter(c => c.Ativo && c.Ativo.toString().toUpperCase().trim() === "SIM");
+        bancoImagens = dataImg.data;
+        // FILTRO GLOBAL DE CONVIDADOS
+        const ativos = dataComp.data.filter(c =>
+          c.Ativo &&
+          c.Ativo.toString().toUpperCase().trim() === "SIM" &&
+          !c.Função.toUpperCase().includes("CONVIDADO") &&
+          !c.Nome.toUpperCase().includes("CONVIDADO")
+        );
+        dadosMembros = ativos;
 
         loader.style.display = 'none';
         atualizarDashboards(ativos);
@@ -482,8 +526,8 @@
         "Violão": "fa-guitar",
         "Guitarra": "fa-guitar",
         "Teclado": "fa-keyboard",
+        "Baixo": "fa-guitar",
         "Bateria": "fa-drum",
-        "Baixo": "fa-guitar"
       };
 
       const counts = {};
@@ -491,6 +535,7 @@
 
       lista.forEach(p => {
         const funcaoCol = (p.Função || "").toUpperCase();
+        // Convidado já removido globalmente, mas mantemos segurança
         if (funcaoCol.includes("CONVIDADO")) return;
         Object.keys(iconsMap).forEach(f => {
           if (funcaoCol.includes(f.toUpperCase())) counts[f]++;
@@ -498,13 +543,25 @@
       });
 
       const container = document.getElementById("kpiFuncoes");
-      container.innerHTML = Object.entries(iconsMap).map(([nome, icone]) => `
-        <div class="kpi-card">
+
+      // Card TODOS
+      let html = `
+        <div class="kpi-card active-filter" onclick="filtrarPorFuncao('TODOS', this)">
+            <div class="kpi-icon"><i class="fas fa-users" style="color:var(--primary)"></i></div>
+            <div class="kpi-value">${lista.length}</div>
+            <div class="kpi-label">Todos</div>
+        </div>
+      `;
+
+      html += Object.entries(iconsMap).map(([nome, icone]) => `
+        <div class="kpi-card" onclick="filtrarPorFuncao('${nome.toUpperCase()}', this)">
           <div class="kpi-icon"><i class="fas ${icone} ${nome}"></i></div>
           <div class="kpi-value">${counts[nome]}</div>
           <div class="kpi-label">${nome}</div>
         </div>
       `).join('');
+
+      container.innerHTML = html;
     }
 
     function gerarGraficoGenero(lista) {
@@ -520,9 +577,9 @@
       const pFem = Math.round((fem / total) * 100);
 
       document.getElementById('barMasc').style.width = pMasc + "%";
-      document.getElementById('txtMasc').innerText = `${pMasc}% (${masc})`;
+      document.getElementById('txtMasc').innerText = `Masculino - ${pMasc}% (${masc})`;
       document.getElementById('barFem').style.width = pFem + "%";
-      document.getElementById('txtFem').innerText = `${pFem}% (${fem})`;
+      document.getElementById('txtFem').innerText = `Feminino - ${pFem}% (${fem})`;
     }
 
     // Função para abrir o modal e preencher dados
@@ -553,47 +610,78 @@
       buscarHistoricoNoModal(nome, funcao);
     }
 
-    // Busca Escalas focada no Modal
+    // Busca Escalas focada no Modal (CORRIGIDA)
     async function buscarEscalasNoModal(nome) {
       const box = document.getElementById('modalEscalas');
-      box.innerHTML = '<div class="loading-small">Carregando escalas...</div>';
+      box.innerHTML = '<div style="text-align:center; padding:10px; color:#ccc;">Carregando...</div>';
 
       try {
         const cached = localStorage.getItem('offline_escala');
-        if (!cached) return box.innerHTML = "Sem dados.";
+        if (!cached) {
+          box.innerHTML = "<small>Sem dados offline.</small>";
+          return;
+        }
 
         const data = JSON.parse(cached);
-        const filtrado = data.filter(e => e.Nome?.trim().toLowerCase() === nome.toLowerCase());
+        const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
 
-        box.innerHTML = filtrado.length > 0 ? filtrado.slice(0, 3).map(e => `
+        const filtrado = data
+          .filter(e => {
+            const d = new Date(e.Data);
+            return e.Nome && e.Nome.toLowerCase().trim() === nome.toLowerCase().trim() && d >= hoje;
+          })
+          .sort((a, b) => new Date(a.Data) - new Date(b.Data))
+          .slice(0, 3);
+
+        if (filtrado.length > 0) {
+          box.innerHTML = filtrado.map(e => `
             <div class="list-item">
-                <span style="font-weight:700">${new Date(e.Data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
-                <span>${e["Nome dos Cultos"] || 'Culto'}</span>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="font-weight:700; color:#2c3e50;">${new Date(e.Data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
+                    <span style="font-size:0.8rem; color:#7f8c8d;">${e["Nome dos Cultos"]}</span>
+                </div>
+                <small style="color:var(--accent); font-weight:600;">${e.Função}</small>
             </div>
-        `).join('') : '<div class="loading-small">Nenhuma escala.</div>';
-      } catch (e) { box.innerHTML = "Erro."; }
+            `).join('');
+        } else {
+          box.innerHTML = '<div style="padding:10px; text-align:center; color:#95a5a6; font-size:0.8rem;">Nenhuma escala futura.</div>';
+        }
+      } catch (e) { box.innerHTML = "Erro ao carregar."; console.log(e); }
     }
 
-    // Busca Histórico focado no Modal
+    // Busca Histórico focado no Modal (CORRIGIDA)
     async function buscarHistoricoNoModal(nome, funcao) {
       const box = document.getElementById('modalHistorico');
-      if (!funcao.toUpperCase().includes("MINISTRO") && !funcao.toUpperCase().includes("BACK")) {
-        box.innerHTML = '<div class="loading-small">Disponível apenas para vocal.</div>';
+
+      const f = funcao.toUpperCase();
+      if (!f.includes("MINISTRO") && !f.includes("BACK")) {
+        box.innerHTML = '<div style="padding:10px; text-align:center; color:#ccc; font-size:0.8rem;">-</div>';
         return;
       }
+
+      box.innerHTML = '<div style="text-align:center; padding:10px; color:#ccc;">Carregando...</div>';
 
       try {
         const cached = localStorage.getItem('offline_historico');
         const data = cached ? JSON.parse(cached) : [];
-        const hist = data.filter(h => h.Cantor?.trim().toLowerCase() === nome.toLowerCase()).reverse().slice(0, 3);
 
-        box.innerHTML = hist.length > 0 ? hist.map(h => `
-            <div class="list-item" style="display:flex; justify-content:space-between">
-                <span><i class="fas fa-music" style="font-size:0.7rem; color:#9b59b6"></i> ${h.Música || h.Músicas}</span>
-                <span style="color:#9b59b6; font-weight:700">${h.Tom || h.Tons || '--'}</span>
+        // Filtra pelo cantor
+        const hist = data.filter(h => h.Cantor && h.Cantor.toLowerCase().trim() === nome.toLowerCase().trim());
+
+        // Pega os últimos 5
+        const ultimos = hist.reverse().slice(0, 5);
+
+        if (ultimos.length > 0) {
+          box.innerHTML = ultimos.map(h => `
+            <div class="list-item" style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:600; font-size:0.8rem; color:#333;">${h.Música || h.Músicas}</span>
+                <span style="color:#9b59b6; font-weight:bold; font-size:0.75rem;">${h.Tom || h.Tons || ''}</span>
             </div>
-        `).join('') : '<div class="loading-small">Sem histórico.</div>';
-      } catch (e) { box.innerHTML = "Erro."; }
+            `).join('');
+        } else {
+          box.innerHTML = '<div style="padding:10px; text-align:center; color:#95a5a6; font-size:0.8rem;">Nenhum registro recente.</div>';
+        }
+      } catch (e) { box.innerHTML = "Erro ao carregar."; }
     }
     function renderizar(lista) {
       const container = document.getElementById('listaComponentes');
@@ -664,20 +752,47 @@
       }
     }
     function filtrarPorFuncao(categoria, elemento) {
-      // UI: Troca a pílula ativa
-      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-      elemento.classList.add('active');
+      // Reset visual do filtro de genero
+      document.querySelectorAll('.gender-bar-container').forEach(p => {
+        p.style.opacity = '1';
+        p.style.transform = 'scale(1)';
+      });
 
-      // Lógica: Filtra a lista original (assumindo que 'dadosMembros' é sua lista global)
+      // UI: Troca a classe active no elemento clicado (agora é o card)
+      document.querySelectorAll('.kpi-card').forEach(p => p.classList.remove('active-filter'));
+      if (elemento) elemento.classList.add('active-filter');
+
+      // Lógica: Filtra a lista original
       if (categoria === 'TODOS') {
         renderizar(dadosMembros);
       } else {
         const filtrados = dadosMembros.filter(m =>
-          m.Função.toUpperCase().includes(categoria) ||
-          (categoria === 'MINISTRO' && m.Função.toUpperCase().includes('BACK'))
+          m.Função.toUpperCase().includes(categoria)
         );
         renderizar(filtrados);
       }
+    }
+
+    function filtrarPorGenero(genero, elemento) {
+      // Reset visual dos KPIs
+      document.querySelectorAll('.kpi-card').forEach(p => p.classList.remove('active-filter'));
+
+      // UI: Feedback visual na barra clicada
+      document.querySelectorAll('.gender-bar-container').forEach(p => {
+        p.style.opacity = '0.4';
+        p.style.transform = 'scale(0.98)';
+      });
+      if (elemento) {
+        elemento.style.opacity = '1';
+        elemento.style.transform = 'scale(1.02)';
+      }
+
+      const filtrados = dadosMembros.filter(m => {
+        const g = (m.Genero || m["Gênero"] || "").toString().toUpperCase().trim();
+        if (genero === 'MASC') return g.includes("HOMEM") || g.includes("MASC");
+        return g.includes("MULHER") || g.includes("FEM");
+      });
+      renderizar(filtrados);
     }
     window.onload = () => iniciar();
   </script>
