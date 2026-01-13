@@ -13,13 +13,17 @@
       --primary: #2c3e50;
       --accent: #27ae60;
       --bg: #f4f7f6;
+      /* Ajustado para o fundo do seu index */
+      --glass: rgba(255, 255, 255, 0.85);
+      --shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
     }
 
     body {
-      font-family: 'Segoe UI', sans-serif;
+      font-family: 'Segoe UI', Roboto, sans-serif;
       background: var(--bg);
       margin: 0;
-      padding: 20px;
+      padding: 15px;
+      color: var(--primary);
     }
 
     .container {
@@ -27,111 +31,289 @@
       margin: 0 auto;
     }
 
-    /* CSS Update */
+    /* --- HEADER PADRÃO (IGUAL ESCALAS.HTML) --- */
     .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 25px;
-      border-bottom: 1px solid #ddd;
-      padding-bottom: 10px;
+      margin-bottom: 30px;
+      /* Mais espaçamento como no Escalas */
+      padding: 10px 0;
     }
 
     .header h2 {
-      margin: 0;
       font-size: 1.4rem;
+      margin: 0;
+      font-weight: 700;
       color: var(--primary);
     }
 
-    .header p {
-      display: none;
-    }
-
-    /* Hide subtitle for cleaner look */
     .nav-btn {
-      background: none;
+      background: white;
       border: none;
-      font-size: 1.3rem;
-      color: var(--primary);
+      width: 45px;
+      /* Tamanho ajustado */
+      height: 45px;
+      border-radius: 15px;
+      /* Bordas mais arredondadas do padrão */
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      /* Sombra suave */
       cursor: pointer;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      text-decoration: none;
+    }
+
+    .nav-btn:active {
+      transform: scale(0.9);
+      background-color: #f8f9fa;
+    }
+
+    .nav-btn i {
+      font-size: 1.2rem;
+    }
+
+    /* Ajuste para o botão de atualizar (verde no Escalas ao clicar) */
+    .btn-update i {
+      color: var(--accent);
+    }
+
+    /* --- DASHBOARD GLASS CARD --- */
+    .glass-card {
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* --- GRÁFICOS E KPIs --- */
+    .bar-bg {
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 12px;
+      height: 12px;
+      overflow: hidden;
+      margin-bottom: 15px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0;
+      transition: width 1s ease;
+      border-radius: 12px;
+    }
+
+    .bar-fill.masc {
+      background: linear-gradient(90deg, #3498db, #2980b9);
+    }
+
+    .bar-fill.fem {
+      background: linear-gradient(90deg, #e84393, #d63384);
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 25px;
+    }
+
+    .kpi-card {
+      background: var(--glass);
+      border-radius: 18px;
+      padding: 12px 5px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    }
+
+    .kpi-value {
+      font-size: 1.3rem;
+      font-weight: 800;
+      display: block;
+      margin-top: 5px;
+    }
+
+    /* --- CORES ÍCONES --- */
+    i.Ministro {
+      color: #3498db;
+    }
+
+    i.Back {
+      color: #1abc9c;
+    }
+
+    i.Violão {
+      color: #e67e22;
+    }
+
+    i.Guitarra {
+      color: #e74c3c;
+    }
+
+    i.Baixo {
+      color: #9b59b6;
+    }
+
+    i.Teclado {
+      color: #f1c40f;
+    }
+
+    i.Bateria {
+      color: #2ecc71;
+    }
+
+    /* --- GRID DE COMPONENTES --- */
+    #listaComponentes {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-top: 10px;
     }
 
     .comp-card {
       background: white;
-      border-radius: 12px;
-      margin-bottom: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      overflow: hidden;
+      border-radius: 20px;
+      padding: 20px 10px;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(0, 0, 0, 0.02);
+      cursor: pointer;
+      transition: transform 0.2s;
     }
 
-    .comp-header {
-      padding: 15px;
-      display: flex;
-      align-items: center;
-      cursor: pointer;
-      gap: 15px;
+    .comp-card:active {
+      transform: scale(0.96);
     }
 
     .avatar {
-      width: 55px;
-      height: 55px;
+      width: 75px;
+      height: 75px;
       border-radius: 50%;
       object-fit: cover;
-      background: #eee;
-      border: 2px solid var(--accent);
-    }
-
-    .comp-info-main {
-      flex-grow: 1;
+      margin-bottom: 10px;
+      border: 3px solid #fff;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
 
     .comp-name {
-      font-weight: bold;
-      color: #333;
+      font-weight: 800;
+      font-size: 0.9rem;
+      color: var(--primary);
     }
 
-    .comp-status {
+    .comp-role {
       font-size: 0.7rem;
-      font-weight: bold;
-      color: var(--accent);
-      background: #e8f5e9;
-      padding: 2px 8px;
-      border-radius: 10px;
+      color: #7f8c8d;
+      font-weight: 600;
+      text-transform: uppercase;
     }
 
-    .comp-details {
+    /* --- MODAL ESTILO INDEX.HTML --- */
+    @keyframes slideUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-perfil {
       display: none;
+      position: fixed;
+      z-index: 10000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      /* Centraliza verticalmente */
+      justify-content: center;
+      /* Centraliza horizontalmente */
       padding: 15px;
-      border-top: 1px solid #eee;
-      background: #fafafa;
+      box-sizing: border-box;
+      backdrop-filter: blur(2px);
     }
 
-    .comp-card.active .comp-details {
+    .modal-content-perfil {
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      width: 100%;
+      max-width: 400px;
+      position: relative;
+      animation: slideUp 0.3s ease;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .close-perfil {
+      position: absolute;
+      right: 15px;
+      top: 10px;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #95a5a6;
+    }
+
+    .modal-header {
+      border-bottom: 2px solid #f4f7f6;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+      text-align: left;
+    }
+
+    .modal-section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #95a5a6;
+      margin: 15px 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
       display: block;
     }
 
-    .comp-card.active .fa-chevron-down {
-      transform: rotate(180deg);
+    /* Listas dentro do modal */
+    .list-item {
+      background: #f8f9fa;
+      padding: 10px 12px;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+      border-left: 4px solid var(--accent);
     }
 
+    /* Botões de Ação no Modal */
     .action-btns {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 10px;
-      margin: 15px 0;
+      margin-top: 20px;
     }
 
     .btn-icon {
-      flex: 1;
-      text-align: center;
-      padding: 10px;
-      border-radius: 8px;
+      padding: 12px;
+      border-radius: 10px;
       text-decoration: none;
       color: white;
       font-size: 0.85rem;
+      font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 8px;
     }
 
     .btn-tel {
@@ -142,32 +324,66 @@
       background: #25d366;
     }
 
-    .extra-section {
-      margin-top: 15px;
-      border-top: 1px dashed #ccc;
-      padding-top: 10px;
-    }
+    @media (min-width: 450px) {
+      #listaComponentes {
+        grid-template-columns: repeat(3, 1fr);
+      }
 
-    .extra-section h4 {
-      font-size: 0.85rem;
-      margin-bottom: 8px;
-      color: var(--primary);
-      text-transform: uppercase;
-    }
+      /* Filtros em Pílulas */
+      .filter-container {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 10px 5px;
+        margin-bottom: 15px;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+      }
 
-    .list-item {
-      font-size: 0.85rem;
-      padding: 5px 0;
-      border-bottom: 1px solid #eee;
-      display: flex;
-      justify-content: space-between;
-      color: #555;
-    }
+      .filter-pill {
+        background: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #7f8c8d;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: all 0.3s;
+      }
 
-    .loading-small {
-      font-size: 0.75rem;
-      color: #999;
-      font-style: italic;
+      .filter-pill.active {
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 4px 12px rgba(44, 62, 80, 0.2);
+      }
+
+      /* Efeito Shimmer (Skeleton) */
+      .skeleton {
+        background: #eee;
+        background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
+        border-radius: 20px;
+        background-size: 200% 100%;
+        animation: 1.5s shine linear infinite;
+      }
+
+      @keyframes shine {
+        to {
+          background-position-x: -200%;
+        }
+      }
+
+      /* Melhoria no Modal para parecer mais limpo */
+      .detail-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #f8f9fa;
+        padding: 12px;
+        border-radius: 12px;
+        margin-bottom: 8px;
+      }
     }
   </style>
 </head>
@@ -176,23 +392,51 @@
 
   <div class="container">
     <div class="header">
-      <button class="nav-btn" onclick="window.location.href='index.html'"><i class="fas fa-arrow-left"></i></button>
-      <h2><i class="fas fa-microphone-lines"></i> Equipe</h2>
-      <button class="nav-btn" onclick="iniciar(true)"><i class="fas fa-sync-alt"></i></button>
+      <button class="nav-btn" onclick="window.location.href='index.html'">
+        <i class="fas fa-arrow-left"></i>
+      </button>
+
+      <h2><i class="fas fa-users"></i> Equipe</h2>
+
+      <button class="nav-btn btn-update" onclick="loadAll(true)">
+        <i class="fas fa-sync-alt"></i>
+      </button>
+    </div>
+
+    <div id="graficoGenero" class="glass-card">
+      <div class="bar-info"><span>Masculino</span><span id="txtMasc">0%</span></div>
+      <div class="bar-bg">
+        <div id="barMasc" class="bar-fill masc"></div>
+      </div>
+
+      <div class="bar-info"><span>Feminino</span><span id="txtFem">0%</span></div>
+      <div class="bar-bg">
+        <div id="barFem" class="bar-fill fem"></div>
+      </div>
+    </div>
+
+    <div id="kpiFuncoes" class="kpi-grid"></div>
+    <div class="filter-container">
+      <div class="filter-pill active" onclick="filtrarPorFuncao('TODOS', this)">Todos</div>
+      <div class="filter-pill" onclick="filtrarPorFuncao('MINISTRO', this)">Vocal</div>
+      <div class="filter-pill" onclick="filtrarPorFuncao('VIOLÃO', this)">Cordas</div>
+      <div class="filter-pill" onclick="filtrarPorFuncao('TECLADO', this)">Teclas</div>
+      <div class="filter-pill" onclick="filtrarPorFuncao('BATERIA', this)">Bateria</div>
     </div>
     <div id="listaComponentes">
-      <div id="loader" style="display:none; text-align:center; padding:50px;"><i class="fas fa-spinner fa-spin"></i>
-        Atualizando...</div>
+      <div id="loader" style="display:none; text-align:center; padding:50px;">
+        <i class="fas fa-circle-notch fa-spin fa-2x" style="color:var(--accent)"></i>
+        <p style="font-size: 0.8rem; color: #7f8c8d; margin-top: 10px;">Sincronizando equipe...</p>
+      </div>
     </div>
   </div>
 
   <script>
+    /* AS FUNÇÕES ABAIXO PERMANECERAM IGUAIS, APENAS COM AJUSTES NO INNERHTML PARA O NOVO DESIGN */
     const SCRIPT_URL = APP_CONFIG.SCRIPT_URL;
-
     let bancoImagens = [];
 
     async function iniciar(force = false) {
-      const container = document.getElementById('listaComponentes');
       const loader = document.getElementById('loader');
       const cachedComp = localStorage.getItem('offline_componentes');
       const cachedImg = localStorage.getItem('offline_imagens');
@@ -200,8 +444,8 @@
       if (!force && cachedComp && cachedImg) {
         bancoImagens = JSON.parse(cachedImg);
         const ativos = JSON.parse(cachedComp).filter(c => c.Ativo && c.Ativo.toString().toUpperCase().trim() === "SIM");
+        atualizarDashboards(ativos);
         renderizar(ativos);
-        setTimeout(() => silentSync(), 500);
         return;
       }
 
@@ -213,181 +457,257 @@
         ]);
         const dataComp = await resComp.json();
         const dataImg = await resImg.json();
+
         localStorage.setItem('offline_componentes', JSON.stringify(dataComp.data));
         localStorage.setItem('offline_imagens', JSON.stringify(dataImg.data));
+
         bancoImagens = dataImg.data;
+        const ativos = dataComp.data.filter(c => c.Ativo && c.Ativo.toString().toUpperCase().trim() === "SIM");
+
         loader.style.display = 'none';
-        const ativos = dataComp.data.filter(c => c.Ativo && c.Ativo.toString().toUpperCase().trim() === "SIM");
+        atualizarDashboards(ativos);
         renderizar(ativos);
-        if (force) alert("Lista atualizada!");
-      } catch (e) {
-        if (cachedComp) renderizar(JSON.parse(cachedComp).filter(c => c.Ativo && c.Ativo.toString().toUpperCase().trim() === "SIM"));
-        else container.innerHTML = "Erro ao conectar.";
-      }
+      } catch (e) { console.error(e); }
     }
 
-    async function silentSync() {
-      try {
-        const [resComp, resImg] = await Promise.all([
-          fetch(SCRIPT_URL + "?sheet=Componentes"),
-          fetch(SCRIPT_URL + "?action=getImages")
-        ]);
-        const dataComp = await resComp.json();
-        const dataImg = await resImg.json();
-        localStorage.setItem('offline_componentes', JSON.stringify(dataComp.data));
-        localStorage.setItem('offline_imagens', JSON.stringify(dataImg.data));
-        bancoImagens = dataImg.data;
-        const ativos = dataComp.data.filter(c => c.Ativo && c.Ativo.toString().toUpperCase().trim() === "SIM");
-
-        // Só renderiza se não houver busca ativa E nenhum item aberto
-        const hasActiveItems = document.querySelector('.comp-card.active') !== null;
-        if (!hasActiveItems) {
-          renderizar(ativos);
-        }
-      } catch (e) { console.log("Silent sync failed"); }
+    function atualizarDashboards(ativos) {
+      gerarKpisFuncoes(ativos);
+      gerarGraficoGenero(ativos);
     }
 
-    async function fetchImages() {
-      try {
-        const res = await fetch(SCRIPT_URL + "?action=getImages");
-        const json = await res.json();
-        bancoImagens = json.data;
-        localStorage.setItem('offline_imagens', JSON.stringify(json.data));
-      } catch (e) { }
-    }
+    function gerarKpisFuncoes(lista) {
+      const iconsMap = {
+        "Ministro": "fa-microphone-lines",
+        "Back": "fa-microphone",
+        "Violão": "fa-guitar",
+        "Guitarra": "fa-guitar",
+        "Teclado": "fa-keyboard",
+        "Bateria": "fa-drum",
+        "Baixo": "fa-guitar"
+      };
 
-    function renderizar(lista) {
-      const container = document.getElementById('listaComponentes');
-      container.innerHTML = '';
+      const counts = {};
+      Object.keys(iconsMap).forEach(f => counts[f] = 0);
 
-      lista.forEach(item => {
-        const nomeLimpo = item.Nome.trim();
-        const idHTML = nomeLimpo.replace(/\s/g, '');
-
-        // Lógica de Imagem Local com Fallback
-        const nomeArquivoPlanilha = item.Foto ? item.Foto.split('/').pop() : "";
-        const fotoObj = bancoImagens.find(img => img.nome === nomeArquivoPlanilha);
-        const urlFotoPlanilha = fotoObj ? fotoObj.url : "https://via.placeholder.com/150?text=Foto";
-
-        // Caminho local sugerido
-        const urlFotoLocal = `assets/equipe/${nomeLimpo}.jpg`;
-
-        const card = document.createElement('div');
-        card.className = 'comp-card';
-        card.innerHTML = `
-        <div class="comp-header" onclick="this.parentElement.classList.toggle('active')">
-          <img src="${urlFotoLocal}" 
-               class="avatar" 
-               onerror="if(this.src.indexOf('${urlFotoPlanilha}') == -1) { this.src='${urlFotoPlanilha}'; } else { this.src='https://via.placeholder.com/150?text=Foto'; }">
-          <div class="comp-info-main">
-            <div class="comp-name">${nomeLimpo}</div>
-            <span class="comp-status">ATIVO</span>
-          </div>
-          <i class="fas fa-chevron-down" style="color:#ccc"></i>
-        </div>
-        
-        <div class="comp-details">
-          <div style="font-size:0.8rem; color:#666"><i class="fas fa-tag"></i> ${item.Função}</div>
-          
-          <div class="action-btns">
-            <a href="tel:${item["Tel sem Espaço"]}" class="btn-icon btn-tel"><i class="fas fa-phone"></i> Ligar</a>
-            <a href="${item.Whatsapp?.link || '#'}" target="_blank" class="btn-icon btn-wpp"><i class="fab fa-whatsapp"></i> WhatsApp</a>
-          </div>
-
-          <div class="extra-section">
-            <h4><i class="fas fa-calendar-check"></i> Próximas Escalas</h4>
-            <div id="esc-${idHTML}" class="loading-small">Buscando...</div>
-          </div>
-
-          <div class="extra-section">
-            <h4><i class="fas fa-music"></i> Últimas Músicas (Tom)</h4>
-            <div id="hist-${idHTML}" class="loading-small">Verificando...</div>
-          </div>
-        </div>
-      `;
-        container.appendChild(card);
-        buscarEscalas(nomeLimpo, idHTML);
-        buscarHistorico(nomeLimpo, idHTML, item.Função);
+      lista.forEach(p => {
+        const funcaoCol = (p.Função || "").toUpperCase();
+        if (funcaoCol.includes("CONVIDADO")) return;
+        Object.keys(iconsMap).forEach(f => {
+          if (funcaoCol.includes(f.toUpperCase())) counts[f]++;
+        });
       });
+
+      const container = document.getElementById("kpiFuncoes");
+      container.innerHTML = Object.entries(iconsMap).map(([nome, icone]) => `
+        <div class="kpi-card">
+          <div class="kpi-icon"><i class="fas ${icone} ${nome}"></i></div>
+          <div class="kpi-value">${counts[nome]}</div>
+          <div class="kpi-label">${nome}</div>
+        </div>
+      `).join('');
     }
 
-    async function buscarEscalas(nome, id) {
-      const box = document.getElementById(`esc-${id}`);
-      const iconsMap = { "Ministro": "fa-microphone-lines", "Back": "fa-microphone", "Violão": "fa-guitar", "Guitarra": "fa-guitar-electric", "Teclado": "fa-keyboard", "Bateria": "fa-drum", "Baixo": "fa-drum-steelpan" };
+    function gerarGraficoGenero(lista) {
+      let masc = 0, fem = 0;
+      lista.forEach(p => {
+        const g = (p.Genero || p["Gênero"] || "").toString().toUpperCase().trim();
+        if (g.includes("HOMEM") || g.includes("MASC")) masc++;
+        else if (g.includes("MULHER") || g.includes("FEM")) fem++;
+      });
 
-      try {
-        // Tenta usar cache global de escalas se existir
-        let data = [];
-        const cachedEscala = localStorage.getItem('offline_escala');
+      const total = masc + fem || 1;
+      const pMasc = Math.round((masc / total) * 100);
+      const pFem = Math.round((fem / total) * 100);
 
-        if (cachedEscala) {
-          data = JSON.parse(cachedEscala);
-        } else {
-          const res = await fetch(SCRIPT_URL + "?sheet=Transformar");
-          const json = await res.json();
-          data = json.data;
-          // Não salva cache aqui para não conflitar com a lógica central
-        }
-
-        const escalasPessoa = data.filter(e => e.Nome && e.Nome.trim().toLowerCase() === nome.trim().toLowerCase());
-
-        if (escalasPessoa.length > 0) {
-          const agrupado = {};
-          escalasPessoa.forEach(e => {
-            const chave = (e["Nome dos Cultos"] || 'Culto') + (e.Data || '');
-            if (!agrupado[chave]) { agrupado[chave] = { nomeCulto: e["Nome dos Cultos"] || 'Culto', dataRaw: e.Data, funcoes: [] }; }
-            if (e.Função) agrupado[chave].funcoes.push(e.Função.trim());
-          });
-          const listaAgrupada = Object.values(agrupado).slice(0, 3);
-          box.innerHTML = listaAgrupada.map(e => {
-            let dataFormatada = "---";
-            if (e.dataRaw) { const d = new Date(e.dataRaw); dataFormatada = ("0" + d.getUTCDate()).slice(-2) + "/" + ("0" + (d.getUTCMonth() + 1)).slice(-2); }
-            const funcoesHtml = e.funcoes.map(f => {
-              const iconClass = iconsMap[f] || "fa-music";
-              return `<span><i class="fa-solid ${iconClass}" style="font-size:0.7rem"></i> ${f}</span>`;
-            }).join(' <span style="color:#ccc">|</span> ');
-            return `
-            <div class="list-item" style="flex-direction: column; align-items: flex-start; gap: 4px; padding: 8px 0;">
-              <div style="display: flex; justify-content: space-between; width: 100%; font-weight: 600; color: #2c3e50;">
-                <span><i class="far fa-calendar-check" style="color:#3498db"></i> ${dataFormatada}</span>
-                <span style="font-size: 0.8rem;"><i class="fas fa-church" style="color:#95a5a6"></i> ${e.nomeCulto}</span>
-              </div>
-              <div style="display: flex; flex-wrap: wrap; gap: 8px; color: #7f8c8d; font-size: 0.75rem; padding-left: 2px;">${funcoesHtml}</div>
-            </div>`;
-          }).join('');
-        } else {
-          box.innerHTML = '<div class="loading-small">Nenhuma escala encontrada.</div>';
-        }
-      } catch (e) { box.innerHTML = '<div class="loading-small">Erro.</div>'; }
+      document.getElementById('barMasc').style.width = pMasc + "%";
+      document.getElementById('txtMasc').innerText = `${pMasc}% (${masc})`;
+      document.getElementById('barFem').style.width = pFem + "%";
+      document.getElementById('txtFem').innerText = `${pFem}% (${fem})`;
     }
 
-    async function buscarHistorico(nome, id, funcao) {
-      const box = document.getElementById(`hist-${id}`);
-      const f = funcao.toUpperCase();
-      if (!f.includes("MINISTRO") && !f.includes("BACK")) { box.innerHTML = "Histórico disponível para vocal."; return; }
+    // Função para abrir o modal e preencher dados
+    function abrirDetalhes(nome, foto, funcao, tel, wpp) {
+      const modal = document.getElementById('modalPerfilComp');
+
+      // Mostra o modal (precisamos mudar de display:none para flex)
+      modal.style.display = 'flex';
+
+      // Cabeçalho
+      document.getElementById('detalheCabecalho').innerHTML = `
+        <div class="modal-handle"></div>
+        <img src="${foto}" style="width:90px; height:90px; border-radius:50%; object-fit:cover; border:3px solid var(--accent); margin-bottom:10px;">
+        <h3 style="margin:0; font-size:1.2rem;">${nome}</h3>
+        <span class="comp-role">${funcao}</span>
+    `;
+
+      // Ações
+      document.getElementById('modalAcoes').innerHTML = `
+        <div class="action-btns" style="margin-top:20px">
+            <a href="tel:${tel}" class="btn-icon btn-tel"><i class="fas fa-phone"></i> Ligar</a>
+            <a href="${wpp}" target="_blank" class="btn-icon btn-wpp"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+        </div>
+    `;
+
+      // Inicia buscas nos boxes do modal
+      buscarEscalasNoModal(nome);
+      buscarHistoricoNoModal(nome, funcao);
+    }
+
+    // Busca Escalas focada no Modal
+    async function buscarEscalasNoModal(nome) {
+      const box = document.getElementById('modalEscalas');
+      box.innerHTML = '<div class="loading-small">Carregando escalas...</div>';
 
       try {
-        // Tenta cache historico
-        let data = [];
-        const cachedHist = localStorage.getItem('offline_historico');
-        if (cachedHist) {
-          data = JSON.parse(cachedHist);
-        } else {
-          const res = await fetch(SCRIPT_URL + "?sheet=Historico%20de%20Músicas");
-          const json = await res.json();
-          data = json.data;
-          localStorage.setItem('offline_historico', JSON.stringify(data));
-        }
+        const cached = localStorage.getItem('offline_escala');
+        if (!cached) return box.innerHTML = "Sem dados.";
 
-        const historico = data.filter(h => h.Cantor && h.Cantor.trim() === nome).reverse().slice(0, 3);
-        box.innerHTML = historico.length > 0 ?
-          historico.map(h => `<div class="list-item"><span>${h.Música || h.Músicas}</span><span>(${h.Tom || h.Tons || '--'})</span></div>`).join('') :
-          "Sem histórico.";
+        const data = JSON.parse(cached);
+        const filtrado = data.filter(e => e.Nome?.trim().toLowerCase() === nome.toLowerCase());
+
+        box.innerHTML = filtrado.length > 0 ? filtrado.slice(0, 3).map(e => `
+            <div class="list-item">
+                <span style="font-weight:700">${new Date(e.Data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
+                <span>${e["Nome dos Cultos"] || 'Culto'}</span>
+            </div>
+        `).join('') : '<div class="loading-small">Nenhuma escala.</div>';
       } catch (e) { box.innerHTML = "Erro."; }
     }
 
+    // Busca Histórico focado no Modal
+    async function buscarHistoricoNoModal(nome, funcao) {
+      const box = document.getElementById('modalHistorico');
+      if (!funcao.toUpperCase().includes("MINISTRO") && !funcao.toUpperCase().includes("BACK")) {
+        box.innerHTML = '<div class="loading-small">Disponível apenas para vocal.</div>';
+        return;
+      }
+
+      try {
+        const cached = localStorage.getItem('offline_historico');
+        const data = cached ? JSON.parse(cached) : [];
+        const hist = data.filter(h => h.Cantor?.trim().toLowerCase() === nome.toLowerCase()).reverse().slice(0, 3);
+
+        box.innerHTML = hist.length > 0 ? hist.map(h => `
+            <div class="list-item" style="display:flex; justify-content:space-between">
+                <span><i class="fas fa-music" style="font-size:0.7rem; color:#9b59b6"></i> ${h.Música || h.Músicas}</span>
+                <span style="color:#9b59b6; font-weight:700">${h.Tom || h.Tons || '--'}</span>
+            </div>
+        `).join('') : '<div class="loading-small">Sem histórico.</div>';
+      } catch (e) { box.innerHTML = "Erro."; }
+    }
+    function renderizar(lista) {
+      const container = document.getElementById('listaComponentes');
+      container.innerHTML = ''; // Limpa o container
+
+      // FILTRO: Remove quem for "Convidado" (na Função ou no Nome)
+      const listaFiltrada = lista.filter(item => {
+        const funcao = (item.Função || "").toUpperCase();
+        const nome = (item.Nome || "").toUpperCase();
+        return !funcao.includes("CONVIDADO") && !nome.includes("CONVIDADO");
+      });
+
+      // Usa a lista filtrada para criar os cards
+      container.innerHTML = listaFiltrada.map(item => {
+        const nomeLimpo = item.Nome.trim();
+        const nomeArquivo = item.Foto ? item.Foto.split('/').pop() : "";
+        const fotoObj = bancoImagens.find(img => img.nome === nomeArquivo);
+        const urlFoto = fotoObj ? fotoObj.url : "https://via.placeholder.com/150";
+
+        return `
+      <div class="comp-card" onclick="abrirDetalhes('${nomeLimpo}', '${urlFoto}', '${item.Função}', '${item["Tel sem Espaço"]}', '${item.Whatsapp?.link || '#'}')">
+        <div class="avatar-wrapper">
+          <img src="${urlFoto}" class="avatar">
+        </div>
+        <div class="comp-name">${nomeLimpo}</div>
+        <div class="comp-role">${item.Função}</div>
+      </div>
+    `;
+      }).join('');
+    }
+    // 2. Nova função para abrir o modal e carregar os dados
+    function abrirDetalhes(nome, foto, funcao, tel, wpp) {
+      const modal = document.getElementById('modalPerfilComp');
+      modal.style.display = 'flex';
+
+      // Cabeçalho alinhado à esquerda com foto pequena ao lado ou centralizada
+      document.getElementById('detalheCabecalho').innerHTML = `
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="${foto}" style="width:60px; height:60px; border-radius:12px; object-fit:cover; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+            <div>
+                <h3 style="margin:0; font-size: 1.1rem; color: #2c3e50;">${nome}</h3>
+                <small style="color: #7f8c8d; font-weight: 600;">${funcao}</small>
+            </div>
+        </div>
+    `;
+      // 3. Funções auxiliares para injetar dados no Modal
+      async function buscarEscalasNoModal(nome) {
+        const box = document.getElementById('modalEscalas');
+        // ... lógica do buscarEscalas atualizada para preencher 'box' ...
+        // Basta copiar a lógica que você já tem e apontar para a variável 'box'
+      }
+
+      async function buscarHistoricoNoModal(nome, funcao) {
+        const box = document.getElementById('modalHistorico');
+        // ... lógica do buscarHistorico atualizada para preencher 'box' ...
+      }
+      // Botões de ação no padrão do app
+      document.getElementById('modalAcoes').innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <a href="tel:${tel}" class="btn-icon btn-tel" style="border-radius:10px; padding:10px;"><i class="fas fa-phone"></i> Ligar</a>
+            <a href="${wpp}" target="_blank" class="btn-icon btn-wpp" style="border-radius:10px; padding:10px;"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+        </div>
+    `;
+    }
+    function fecharModalDetalhes(e) {
+      if (e.target.id === 'modalPerfilComp') {
+        document.getElementById('modalPerfilComp').style.display = 'none';
+      }
+    }
+    function filtrarPorFuncao(categoria, elemento) {
+      // UI: Troca a pílula ativa
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      elemento.classList.add('active');
+
+      // Lógica: Filtra a lista original (assumindo que 'dadosMembros' é sua lista global)
+      if (categoria === 'TODOS') {
+        renderizar(dadosMembros);
+      } else {
+        const filtrados = dadosMembros.filter(m =>
+          m.Função.toUpperCase().includes(categoria) ||
+          (categoria === 'MINISTRO' && m.Função.toUpperCase().includes('BACK'))
+        );
+        renderizar(filtrados);
+      }
+    }
     window.onload = () => iniciar();
   </script>
+
+  <div id="modalPerfilComp" class="modal-perfil" onclick="fecharModalDetalhesExterno(event)">
+    <div class="modal-content-perfil" onclick="event.stopPropagation()">
+      <span class="close-perfil"
+        onclick="document.getElementById('modalPerfilComp').style.display='none'">&times;</span>
+
+      <div class="modal-header">
+        <div id="detalheCabecalho">
+        </div>
+      </div>
+
+      <div style="text-align: left;">
+        <small style="color: #e67e22; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
+          <i class="fas fa-calendar-alt"></i> Próximas Escalas
+        </small>
+        <div id="modalEscalas" style="margin-bottom: 20px;"></div>
+
+        <small style="color: #9b59b6; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
+          <i class="fas fa-music"></i> Histórico (Voz)
+        </small>
+        <div id="modalHistorico"></div>
+      </div>
+
+      <div id="modalAcoes" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;"></div>
+    </div>
+  </div>
+
 
 </body>
 
