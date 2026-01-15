@@ -560,19 +560,29 @@
   function gerarGraficoGenero(lista) {
     let masc = 0, fem = 0;
     lista.forEach(p => {
-      const g = (p.Genero || p["Gênero"] || "").toString().toUpperCase().trim();
-      if (g.includes("HOMEM") || g.includes("MASC")) masc++;
-      else if (g.includes("MULHER") || g.includes("FEM")) fem++;
+      // Tenta várias colunas comuns
+      const g = (p.Genero || p["Gênero"] || p.Sexo || "").toString().toUpperCase().trim();
+      if (g.includes("HOMEM") || g.includes("MASC") || g === "M") masc++;
+      else if (g.includes("MULHER") || g.includes("FEM") || g === "F") fem++;
     });
 
     const total = masc + fem || 1;
     const pMasc = Math.round((masc / total) * 100);
     const pFem = Math.round((fem / total) * 100);
 
-    document.getElementById('barMasc').style.width = pMasc + "%";
-    document.getElementById('txtMasc').innerText = `Masculino - ${pMasc}% (${masc})`;
-    document.getElementById('barFem').style.width = pFem + "%";
-    document.getElementById('txtFem').innerText = `Feminino - ${pFem}% (${fem})`;
+    const bMasc = document.getElementById('barMasc');
+    const tMasc = document.getElementById('txtMasc');
+    const bFem = document.getElementById('barFem');
+    const tFem = document.getElementById('txtFem');
+
+    if (bMasc && tMasc) {
+      bMasc.style.width = pMasc + "%";
+      tMasc.innerText = `Masculino - ${pMasc}% (${masc})`;
+    }
+    if (bFem && tFem) {
+      bFem.style.width = pFem + "%";
+      tFem.innerText = `Feminino - ${pFem}% (${fem})`;
+    }
   }
 
   // 2. Nova função para abrir o modal e carregar os dados
@@ -649,10 +659,12 @@
     const box = document.getElementById('modalHistorico');
 
     const f = funcao.toUpperCase();
+    const container = document.getElementById('modalHistoricoContainer');
     if (!f.includes("MINISTRO") && !f.includes("BACK")) {
-      box.innerHTML = '<div style="padding:10px; text-align:center; color:#ccc; font-size:0.8rem;">-</div>';
+      container.style.display = 'none';
       return;
     }
+    container.style.display = 'block';
 
     box.innerHTML = '<div style="text-align:center; padding:10px; color:#ccc;">Carregando...</div>';
 
@@ -846,10 +858,12 @@
       </small>
       <div id="modalEscalas" style="margin-bottom: 20px;"></div>
 
-      <small style="color: #9b59b6; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
-        <i class="fas fa-music"></i> Histórico (Voz)
-      </small>
-      <div id="modalHistorico" style="margin-bottom: 20px;"></div>
+      <div id="modalHistoricoContainer" style="display:none; margin-bottom: 20px;">
+        <small style="color: #9b59b6; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
+          <i class="fas fa-music"></i> Histórico (Voz)
+        </small>
+        <div id="modalHistorico"></div>
+      </div>
 
       <div id="modalAvisosGeraisContainer" style="display:none; margin-top:20px;">
         <small style="color: #e67e22; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
