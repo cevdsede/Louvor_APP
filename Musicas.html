@@ -19,6 +19,16 @@
       --danger: #e74c3c;
     }
 
+    @keyframes spin {
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+
     body {
       font-family: 'Segoe UI', sans-serif;
       background: var(--bg);
@@ -316,7 +326,9 @@
       <i class="fas fa-arrow-left"></i>
     </button>
     <h2 class="header-title">Lista de Músicas</h2>
-    <div style="width: 40px"></div>
+    <button class="nav-btn btn-update" onclick="loadData(true)" title="Atualizar Dados">
+      <i class="fas fa-sync-alt"></i>
+    </button>
   </div>
 
   <div class="search-container"
@@ -349,6 +361,9 @@
         }
 
         // Se for forçado (botão) ou não tiver cache, mostra loader
+        const btnIcon = document.querySelector('.btn-update i');
+        if (btnIcon) btnIcon.classList.add('spin');
+
         loader.style.display = 'block';
         loader.innerHTML = '<i class="fas fa-sync fa-spin"></i> Atualizando...';
 
@@ -362,6 +377,8 @@
         } catch (e) {
           loader.innerText = "Erro ao conectar.";
           if (cached) renderAccordion(JSON.parse(cached));
+        } finally {
+          if (btnIcon) btnIcon.classList.remove('spin');
         }
       }
 

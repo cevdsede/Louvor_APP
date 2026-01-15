@@ -740,7 +740,7 @@
           const normalize = str => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
           const nomeNormalizado = normalize(meuNomeLogado);
 
-          const estouEscalado = isAdmin || (nomeNormalizado && c.membros.some(m => {
+          const estouEscalado = (nomeNormalizado && c.membros.some(m => {
             const mNome = normalize(m.Nome);
             return mNome.includes(nomeNormalizado) || nomeNormalizado.includes(mNome);
           }));
