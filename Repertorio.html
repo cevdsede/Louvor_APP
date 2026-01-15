@@ -21,7 +21,7 @@
       font-family: 'Segoe UI', sans-serif;
       background: var(--bg);
       margin: 0;
-      padding: 20px;
+      padding: 0;
       color: #333;
     }
 
@@ -30,28 +30,41 @@
       margin: 0 auto;
     }
 
-    /* Cabeçalho */
-    .header-main {
+    .header-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 20px;
-      padding-bottom: 10px;
+      padding: 10px 15px;
+      background: #fff;
       border-bottom: 1px solid #ddd;
+      width: 100%;
+      box-sizing: border-box;
     }
 
-    .header-main h2 {
-      margin: 0;
-      font-size: 1.5rem;
+    .header-title {
+      font-size: 1.2rem;
+      font-weight: 700;
       color: var(--primary);
+      margin: 0;
+      flex-grow: 1;
+      text-align: center;
     }
 
     .nav-btn {
-      background: none;
+      background: white;
       border: none;
-      font-size: 1.3rem;
-      color: var(--primary);
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
       cursor: pointer;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      text-decoration: none;
     }
 
     /* Estilo do Grupo (Culto) */
@@ -243,13 +256,17 @@
 
 <body>
 
-  <div class="container">
-    <div class="header-main">
-      <button class="nav-btn" onclick="window.location.href='MenuMusicas.html'"><i
-          class="fas fa-arrow-left"></i></button>
-      <h2><i class="fas fa-list-ul"></i> Cronograma</h2>
-      <button class="nav-btn" onclick="carregarRepertorio(true)"><i class="fas fa-sync-alt"></i></button>
-    </div>
+  <div class="header-bar">
+    <button class="nav-btn" onclick="window.location.href='MenuMusicas.html'" title="Voltar">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <h2 class="header-title">Cronograma</h2>
+    <button class="nav-btn btn-update" onclick="carregarRepertorio(true)" title="Atualizar Dados">
+      <i class="fas fa-sync-alt"></i>
+    </button>
+  </div>
+
+  <div class="container" style="padding: 20px 15px;">
 
     <div id="repertorioAgrupado">
       <div id="loader" class="loading" style="display:none"><i class="fas fa-spinner fa-spin"></i> Carregando escalas...
@@ -443,6 +460,7 @@
     window.onload = () => carregarRepertorio();
   </script>
 
+  </div>
 </body>
 
 </html>

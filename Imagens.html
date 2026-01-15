@@ -19,7 +19,7 @@
       font-family: 'Segoe UI', sans-serif;
       background: var(--bg);
       margin: 0;
-      padding: 20px;
+      padding: 0;
     }
 
     .container {
@@ -27,13 +27,44 @@
       margin: 0 auto;
     }
 
-    .header {
-      text-align: center;
-      margin-bottom: 30px;
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 25px;
+      padding: 10px 15px;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      width: 100%;
+      box-sizing: border-box;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
     }
 
-    .header h2 {
+    .header-title {
+      font-size: 1.2rem;
+      font-weight: 700;
       color: var(--primary);
+      margin: 0;
+      flex-grow: 1;
+      text-align: center;
+    }
+
+    .nav-btn {
+      background: white;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      cursor: pointer;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      text-decoration: none;
     }
 
     .gallery-grid {
@@ -142,9 +173,12 @@
 <body>
 
   <div class="container">
-    <div class="header">
-      <h2><i class="fas fa-images"></i> Galeria de Partituras / Fotos</h2>
-      <p>Visualizando arquivos do Google Drive</p>
+    <div class="header-bar">
+      <button class="nav-btn" onclick="history.back()" title="Voltar">
+        <i class="fas fa-arrow-left"></i>
+      </button>
+      <h2 class="header-title">Galeria</h2>
+      <div style="width: 40px"></div>
     </div>
 
     <div id="gallery" class="gallery-grid">
@@ -205,6 +239,7 @@
 
     window.onload = carregarGaleria;
   </script>
+  </div>
 </body>
 
 </html>

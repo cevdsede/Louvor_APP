@@ -6,6 +6,7 @@ const PERMISSIONS = {
     // Perfis definidos no Login.html
     ROLES: {
         ADMIN: "Admin",
+        SUPERADMIN: "SuperAdmin",
         ADVANCED: "Advanced",
         USER: "User"
     },
@@ -13,6 +14,10 @@ const PERMISSIONS = {
     // Páginas ou IDs de menu que cada perfil pode acessar
     // Se não estiver na lista, o acesso é negado (ou o item é escondido)
     ACCESS_CONTROL: {
+        "SuperAdmin": {
+            allowedMenus: ["menuEscalas", "menuMusicas", "menuEquipe", "menuAcessoMesa", "menuMontarRepertorio"],
+            allowedPages: ["Cadastro de Musicas.html", "Cadastro de Repertorio.html", "AcessoMesa.html", "Historico de Musicas.html"]
+        },
         "Admin": {
             allowedMenus: ["menuEscalas", "menuMusicas", "menuEquipe", "menuAcessoMesa", "menuMontarRepertorio"],
             allowedPages: ["Cadastro de Musicas.html", "Cadastro de Repertorio.html", "AcessoMesa.html", "Historico de Musicas.html"]

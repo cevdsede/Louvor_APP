@@ -12,7 +12,7 @@
             font-family: 'Segoe UI', sans-serif;
             background-color: #f4f7f6;
             margin: 0;
-            padding: 20px;
+            padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -25,28 +25,44 @@
             text-align: center;
         }
 
-        .header {
-            margin-bottom: 20px;
+        .header-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            width: 100%;
+            margin-bottom: 25px;
+            padding: 10px 15px;
+            background: #fff;
             border-bottom: 1px solid #ddd;
-            padding-bottom: 15px;
+            width: 100%;
+            box-sizing: border-box;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
 
-        .header h2 {
-            margin: 0;
+        .header-title {
+            font-size: 1.2rem;
+            font-weight: 700;
             color: #2c3e50;
-            font-size: 1.3rem;
+            margin: 0;
+            flex-grow: 1;
+            text-align: center;
         }
 
         .nav-btn {
-            background: none;
+            background: white;
             border: none;
-            font-size: 1.3rem;
-            color: #2c3e50;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             cursor: pointer;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            text-decoration: none;
         }
 
         .image-container {
@@ -75,21 +91,24 @@
 <body>
 
     <div class="container">
-        <div class="header">
-            <button class="nav-btn" onclick="window.location.href='MenuEscalas.html'"><i
-                    class="fas fa-arrow-left"></i></button>
-            <h2>Escala de Limpeza</h2>
-            <div style="width: 24px;"></div>
+        <div class="header-bar">
+            <button class="nav-btn" onclick="window.location.href='MenuEscalas.html'" title="Voltar">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h2 class="header-title">Escala de Limpeza</h2>
+            <div style="width: 40px;"></div>
         </div>
 
-        <div class="image-container">
-            <!-- Caminho da imagem conforme solicitado pelo usuário -->
-            <img src="assets/Escala Limpeza.png" alt="Escala de Limpeza"
-                onerror="this.src='https://placehold.co/600x400?text=Escala+Limpeza.png+não+encontrada'">
-        </div>
+        <div class="container" style="padding: 20px;">
+            <div class="image-container">
+                <!-- Caminho da imagem conforme solicitado pelo usuário -->
+                <img src="assets/Escala Limpeza.png" alt="Escala de Limpeza"
+                    onerror="this.src='https://placehold.co/600x400?text=Escala+Limpeza.png+não+encontrada'">
+            </div>
 
-        <div class="status-msg">
-            <i class="fas fa-info-circle"></i> A escala é atualizada periodicamente pela equipe.
+            <div class="status-msg">
+                <i class="fas fa-info-circle"></i> A escala é atualizada periodicamente pela equipe.
+            </div>
         </div>
     </div>
 

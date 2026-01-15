@@ -22,7 +22,7 @@
             font-family: 'Segoe UI', sans-serif;
             background-color: var(--bg);
             margin: 0;
-            padding: 20px;
+            padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -34,27 +34,44 @@
             max-width: 600px;
         }
 
-        .header {
+        .header-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
             margin-bottom: 25px;
+            padding: 10px 15px;
+            background: #fff;
+            border-bottom: 1px solid #ddd;
             width: 100%;
+            box-sizing: border-box;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
 
-        .header h2 {
-            margin: 0;
+        .header-title {
+            font-size: 1.2rem;
+            font-weight: 700;
             color: var(--primary);
-            font-size: 1.4rem;
+            margin: 0;
+            flex-grow: 1;
+            text-align: center;
         }
 
         .nav-btn {
-            background: none;
+            background: white;
             border: none;
-            font-size: 1.3rem;
-            color: var(--primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             cursor: pointer;
-            padding: 5px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            text-decoration: none;
         }
 
         /* CARD DO GRÁFICO */
@@ -196,13 +213,17 @@
 
 <body>
 
-    <div class="container">
-        <div class="header">
-            <button class="nav-btn" onclick="window.location.href='index.html'"><i
-                    class="fas fa-arrow-left"></i></button>
-            <h2><i class="fas fa-music"></i> Total de Músicas (<span id="totalHeader">0</span>)</h2>
-            <button class="nav-btn" onclick="loadStats(true)"><i class="fas fa-sync-alt"></i></button>
-        </div>
+    <div class="header-bar">
+        <button class="nav-btn" onclick="window.location.href='index.html'" title="Voltar">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2 class="header-title">Músicas (<span id="totalHeader">0</span>)</h2>
+        <button class="nav-btn btn-update" onclick="loadStats(true)" title="Atualizar Dados">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+    </div>
+
+    <div class="container" style="padding: 20px;">
 
         <!-- ANALYTICS SECUNDÁRIOS -->
         <div class="analytics-row">
@@ -214,7 +235,8 @@
                 </div>
             </div>
             <div class="chart-card-small">
-                <div class="stat-lbl" style="margin-bottom:10px; font-weight:bold; text-align:center;">Gráfico de Temas
+                <div class="stat-lbl" style="margin-bottom:10px; font-weight:bold; text-align:center;">Gráfico de
+                    Temas
                 </div>
                 <div class="chart-wrapper" style="height: 180px;">
                     <canvas id="chartTemas"></canvas>

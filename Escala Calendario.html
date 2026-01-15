@@ -69,21 +69,46 @@
       font-family: 'Segoe UI', sans-serif;
       background-color: var(--bg);
       margin: 0;
-      padding: 15px;
+      padding: 0;
     }
 
     .header-bar {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       margin-bottom: 20px;
+      padding: 10px 15px;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      width: 100%;
+      box-sizing: border-box;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .header-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 0;
+      flex-grow: 1;
+      text-align: center;
     }
 
     .nav-btn {
-      background: none;
+      background: white;
       border: none;
-      font-size: 1.5rem;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
       cursor: pointer;
       color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
     }
 
     .calendar-container {
@@ -410,186 +435,193 @@
 <body>
 
   <div class="header-bar">
-    <button class="nav-btn" onclick="window.location.href='MenuEscalas.html'"><i class="fas fa-arrow-left"></i></button>
-    <h2 style="flex-grow:1; text-align:center; color:var(--primary); margin:0; font-size:1.2rem">Calendário</h2>
-    <div style="width: 24px;"></div>
-  </div>
-
-  <div class="search-box" style="display: flex; gap: 10px; align-items: center;">
-    <div style="position: relative; flex-grow: 1;">
-      <i class="fas fa-search"></i>
-      <input type="text" id="personSearch" placeholder="Filtrar por nome..." onkeyup="renderCalendars()">
-    </div>
-    <button class="btn-export" onclick="exportarEscala()" id="btnExport" style="display: none; margin: 0;">
-      <i class="fas fa-camera"></i> Foto
+    <button class="nav-btn" onclick="window.location.href='MenuEscalas.html'" title="Voltar">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <h2 class="header-title">Calendário</h2>
+    <button class="nav-btn btn-update" id="btnHeaderAction" onclick="loadData(true)" title="Atualizar Dados">
+      <i class="fas fa-sync-alt"></i>
     </button>
   </div>
 
-  <div id="loader" class="loader" style="display:none"><i class="fas fa-sync fa-spin"></i> Carregando...</div>
+  <div class="container" style="padding: 15px;">
 
-  <div class="calendar-container" id="calendarsContainer" style="display:none">
-    <div class="month-wrapper" id="month1"></div>
-    <div class="month-wrapper" id="month2"></div>
-  </div>
-
-  <div id="eventModal" class="modal">
-    <div class="modal-content">
-      <span class="close-modal" onclick="document.getElementById('eventModal').style.display='none'">×</span>
-      <h3 id="modalDate" style="color: var(--primary); margin-top: 0;">Data</h3>
-      <div id="modalDetails"></div>
+    <div class="search-box" style="display: flex; gap: 10px; align-items: center;">
+      <div style="position: relative; flex-grow: 1;">
+        <i class="fas fa-search"></i>
+        <input type="text" id="personSearch" placeholder="Filtrar por nome..." onkeyup="renderCalendars()">
+      </div>
+      <button class="btn-export" onclick="exportarEscala()" id="btnExport" style="display: none; margin: 0;">
+        <i class="fas fa-camera"></i> Foto
+      </button>
     </div>
-  </div>
 
-  <!-- TEMPLATE PARA EXPORTAÇÃO -->
-  <div id="exportTemplate">
-    <div class="export-header">
-      <img src="assets/backgroud.png" alt="Logo">
-      <h2>MINHA ESCALA</h2>
-      <p id="exportUserName">Nome do Integrante</p>
+    <div id="loader" class="loader" style="display:none"><i class="fas fa-sync fa-spin"></i> Carregando...</div>
+
+    <div class="calendar-container" id="calendarsContainer" style="display:none">
+      <div class="month-wrapper" id="month1"></div>
+      <div class="month-wrapper" id="month2"></div>
     </div>
-    <div id="exportItems">
-      <!-- Itens serão gerados via JS -->
+
+    <div id="eventModal" class="modal">
+      <div class="modal-content">
+        <span class="close-modal" onclick="document.getElementById('eventModal').style.display='none'">×</span>
+        <h3 id="modalDate" style="color: var(--primary); margin-top: 0;">Data</h3>
+        <div id="modalDetails"></div>
+      </div>
     </div>
-    <div class="export-footer">
-      Gerado por Louvor CEVD App
+
+    <!-- TEMPLATE PARA EXPORTAÇÃO -->
+    <div id="exportTemplate">
+      <div class="export-header">
+        <img src="assets/backgroud.png" alt="Logo">
+        <h2>MINHA ESCALA</h2>
+        <p id="exportUserName">Nome do Integrante</p>
+      </div>
+      <div id="exportItems">
+        <!-- Itens serão gerados via JS -->
+      </div>
+      <div class="export-footer">
+        Gerado por Louvor CEVD App
+      </div>
     </div>
-  </div>
 
-  <script>
-    const SCRIPT_URL = APP_CONFIG.SCRIPT_URL;
+    <script>
+      const SCRIPT_URL = APP_CONFIG.SCRIPT_URL;
 
-    let globalEscalas = [];
-    let globalRepertorio = {};
-    let globalLembretes = [];
-    const iconsMap = {
-      "Ministro": "fa-microphone-lines",
-      "Back": "fa-microphone",
-      "Violão": "fa-guitar",
-      "Guitarra": "fa-guitar",
-      "Teclado": "fa-keyboard",
-      "Bateria": "fa-drum",
-      "Baixo": "fa-guitar"
-    };
+      let globalEscalas = [];
+      let globalRepertorio = {};
+      let globalLembretes = [];
+      const iconsMap = {
+        "Ministro": "fa-microphone-lines",
+        "Back": "fa-microphone",
+        "Violão": "fa-guitar",
+        "Guitarra": "fa-guitar",
+        "Teclado": "fa-keyboard",
+        "Bateria": "fa-drum",
+        "Baixo": "fa-guitar"
+      };
 
-    async function loadData() {
-      const loader = document.getElementById('loader');
-      const cachedE = localStorage.getItem('offline_escala');
-      const cachedR = localStorage.getItem('offline_repertorio');
-      const cachedL = localStorage.getItem('offline_lembretes');
+      async function loadData(force = false) {
+        const loader = document.getElementById('loader');
+        const cachedE = localStorage.getItem('offline_escala');
+        const cachedR = localStorage.getItem('offline_repertorio');
+        const cachedL = localStorage.getItem('offline_lembretes');
 
-      if (cachedE && cachedR && cachedL) {
-        globalEscalas = JSON.parse(cachedE);
-        globalLembretes = JSON.parse(cachedL);
-        processRepertorio(JSON.parse(cachedR));
-        document.getElementById('calendarsContainer').style.display = 'flex';
-        renderCalendars();
-        setTimeout(() => silentSync(), 500);
-        return;
-      }
-
-      loader.style.display = 'block';
-      try {
-        const [resE, resR, resL] = await Promise.all([
-          fetch(SCRIPT_URL + "?sheet=Transformar"),
-          fetch(SCRIPT_URL + "?sheet=Repertório"),
-          fetch(SCRIPT_URL + "?sheet=Lembretes")
-        ]);
-        const jsonE = await resE.json();
-        const jsonR = await resR.json();
-        const jsonL = await resL.json();
-
-        globalEscalas = jsonE.data;
-        globalLembretes = jsonL.data;
-        processRepertorio(jsonR.data);
-
-        localStorage.setItem('offline_escala', JSON.stringify(jsonE.data));
-        localStorage.setItem('offline_repertorio', JSON.stringify(jsonR.data));
-        localStorage.setItem('offline_lembretes', JSON.stringify(jsonL.data));
-
-        loader.style.display = 'none';
-        document.getElementById('calendarsContainer').style.display = 'flex';
-        renderCalendars();
-      } catch (e) {
-        loader.innerText = "Erro ao carregar dados.";
-      }
-    }
-
-    async function silentSync() {
-      try {
-        const [resE, resR, resL] = await Promise.all([
-          fetch(SCRIPT_URL + "?sheet=Transformar"),
-          fetch(SCRIPT_URL + "?sheet=Repertório"),
-          fetch(SCRIPT_URL + "?sheet=Lembretes")
-        ]);
-        const jsonE = await resE.json();
-        const jsonR = await resR.json();
-        const jsonL = await resL.json();
-
-        globalEscalas = jsonE.data;
-        globalLembretes = jsonL.data;
-
-        localStorage.setItem('offline_escala', JSON.stringify(jsonE.data));
-        localStorage.setItem('offline_repertorio', JSON.stringify(jsonR.data));
-        localStorage.setItem('offline_lembretes', JSON.stringify(jsonL.data));
-
-        const modalOpen = document.getElementById('eventModal').style.display === 'block';
-        if (document.getElementById('personSearch').value === "" && !modalOpen) {
-          processRepertorio(jsonR.data);
+        if (!force && cachedE && cachedR && cachedL) {
+          globalEscalas = JSON.parse(cachedE);
+          globalLembretes = JSON.parse(cachedL);
+          processRepertorio(JSON.parse(cachedR));
+          document.getElementById('calendarsContainer').style.display = 'flex';
           renderCalendars();
+          setTimeout(() => silentSync(), 500);
+          return;
         }
-      } catch (e) { console.log("Silent sync failed"); }
-    }
 
-    function processRepertorio(data) {
-      globalRepertorio = data.reduce((acc, item) => {
-        const key = item["Culto+Data"];
-        if (!acc[key]) acc[key] = [];
-        acc[key].push(item);
-        return acc;
-      }, {});
-    }
+        loader.style.display = 'block';
+        try {
+          const [resE, resR, resL] = await Promise.all([
+            fetch(SCRIPT_URL + "?sheet=Transformar"),
+            fetch(SCRIPT_URL + "?sheet=Repertório"),
+            fetch(SCRIPT_URL + "?sheet=Lembretes")
+          ]);
+          const jsonE = await resE.json();
+          const jsonR = await resR.json();
+          const jsonL = await resL.json();
 
-    function renderCalendars() {
-      const now = new Date();
-      // Render Current Month
-      renderMonth(now, 'month1');
+          globalEscalas = jsonE.data;
+          globalLembretes = jsonL.data;
+          processRepertorio(jsonR.data);
 
-      // Render Next Month
-      const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      renderMonth(next, 'month2');
-    }
+          localStorage.setItem('offline_escala', JSON.stringify(jsonE.data));
+          localStorage.setItem('offline_repertorio', JSON.stringify(jsonR.data));
+          localStorage.setItem('offline_lembretes', JSON.stringify(jsonL.data));
 
-    function renderMonth(date, containerId) {
-      const container = document.getElementById(containerId);
-      const year = date.getFullYear();
-      const month = date.getMonth();
-      const searchTerm = document.getElementById('personSearch').value.toLowerCase().trim();
+          loader.style.display = 'none';
+          document.getElementById('calendarsContainer').style.display = 'flex';
+          renderCalendars();
+          if (force) alert("Dados atualizados!");
+        } catch (e) {
+          loader.innerText = "Erro ao carregar dados.";
+        }
+      }
 
-      let html = `
+      async function silentSync() {
+        try {
+          const [resE, resR, resL] = await Promise.all([
+            fetch(SCRIPT_URL + "?sheet=Transformar"),
+            fetch(SCRIPT_URL + "?sheet=Repertório"),
+            fetch(SCRIPT_URL + "?sheet=Lembretes")
+          ]);
+          const jsonE = await resE.json();
+          const jsonR = await resR.json();
+          const jsonL = await resL.json();
+
+          globalEscalas = jsonE.data;
+          globalLembretes = jsonL.data;
+
+          localStorage.setItem('offline_escala', JSON.stringify(jsonE.data));
+          localStorage.setItem('offline_repertorio', JSON.stringify(jsonR.data));
+          localStorage.setItem('offline_lembretes', JSON.stringify(jsonL.data));
+
+          const modalOpen = document.getElementById('eventModal').style.display === 'block';
+          if (document.getElementById('personSearch').value === "" && !modalOpen) {
+            processRepertorio(jsonR.data);
+            renderCalendars();
+          }
+        } catch (e) { console.log("Silent sync failed"); }
+      }
+
+      function processRepertorio(data) {
+        globalRepertorio = data.reduce((acc, item) => {
+          const key = item["Culto+Data"];
+          if (!acc[key]) acc[key] = [];
+          acc[key].push(item);
+          return acc;
+        }, {});
+      }
+
+      function renderCalendars() {
+        const now = new Date();
+        // Render Current Month
+        renderMonth(now, 'month1');
+
+        // Render Next Month
+        const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        renderMonth(next, 'month2');
+      }
+
+      function renderMonth(date, containerId) {
+        const container = document.getElementById(containerId);
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const searchTerm = document.getElementById('personSearch').value.toLowerCase().trim();
+
+        let html = `
         <div class="cal-header"><h2>${new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(date)}</h2></div>
         <div class="calendar-grid">
       `;
 
-      ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].forEach(d => html += `<div class="day-name">${d}</div>`);
+        ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].forEach(d => html += `<div class="day-name">${d}</div>`);
 
-      const firstDay = new Date(year, month, 1).getDay();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-      for (let i = 0; i < firstDay; i++) html += `<div></div>`;
+        for (let i = 0; i < firstDay; i++) html += `<div></div>`;
 
-      for (let d = 1; d <= daysInMonth; d++) {
-        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        const dayEscalas = globalEscalas.filter(e => e.Data.split('T')[0] === dateStr);
-        const nomesNoDia = [...new Set(dayEscalas.map(e => e.Nome))];
-        const isMatch = searchTerm !== "" && nomesNoDia.some(n => n.toLowerCase().includes(searchTerm));
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          const dayEscalas = globalEscalas.filter(e => e.Data.split('T')[0] === dateStr);
+          const nomesNoDia = [...new Set(dayEscalas.map(e => e.Nome))];
+          const isMatch = searchTerm !== "" && nomesNoDia.some(n => n.toLowerCase().includes(searchTerm));
 
-        let classes = `day ${dayEscalas.length > 0 ? 'has-event' : ''} ${isMatch ? 'match-person' : ''}`;
+          let classes = `day ${dayEscalas.length > 0 ? 'has-event' : ''} ${isMatch ? 'match-person' : ''}`;
 
-        // Convert to string for onclick (careful with quotes)
-        // Storing data in a global map might be cleaner, but simple approach:
-        const onclick = dayEscalas.length ? `openDetails('${dateStr}')` : '';
+          // Convert to string for onclick (careful with quotes)
+          // Storing data in a global map might be cleaner, but simple approach:
+          const onclick = dayEscalas.length ? `openDetails('${dateStr}')` : '';
 
-        html += `
+          html += `
           <div class="${classes}" onclick="${onclick}">
             <span class="day-number">${d}</span>
             <div class="event-preview">
@@ -597,122 +629,138 @@
             </div>
           </div>
         `;
+        }
+
+        html += `</div>`;
+        container.innerHTML = html;
+
+        // Mostrar/Esconder botão de exportar
+        const btnExport = document.getElementById('btnExport');
+        if (searchTerm.length > 2) {
+          btnExport.style.display = 'flex';
+        } else {
+          btnExport.style.display = 'none';
+        }
       }
 
-      html += `</div>`;
-      container.innerHTML = html;
+      async function exportarEscala() {
+        const searchTerm = document.getElementById('personSearch').value.trim();
+        if (!searchTerm) return;
 
-      // Mostrar/Esconder botão de exportar
-      const btnExport = document.getElementById('btnExport');
-      if (searchTerm.length > 2) {
-        btnExport.style.display = 'flex';
-      } else {
-        btnExport.style.display = 'none';
-      }
-    }
+        const template = document.getElementById('exportTemplate');
+        const itemsContainer = document.getElementById('exportItems');
+        const userName = document.getElementById('exportUserName');
 
-    async function exportarEscala() {
-      const searchTerm = document.getElementById('personSearch').value.trim();
-      if (!searchTerm) return;
+        userName.innerText = searchTerm.toUpperCase();
+        itemsContainer.innerHTML = '';
 
-      const template = document.getElementById('exportTemplate');
-      const itemsContainer = document.getElementById('exportItems');
-      const userName = document.getElementById('exportUserName');
+        // Filtra todas as escalas do usuário
+        const minhasEscalas = globalEscalas.filter(e => e.Nome.toLowerCase().includes(searchTerm.toLowerCase()));
 
-      userName.innerText = searchTerm.toUpperCase();
-      itemsContainer.innerHTML = '';
+        if (minhasEscalas.length === 0) {
+          alert("Nenhuma escala encontrada para este nome.");
+          return;
+        }
 
-      // Filtra todas as escalas do usuário
-      const minhasEscalas = globalEscalas.filter(e => e.Nome.toLowerCase().includes(searchTerm.toLowerCase()));
+        // Ordena por data
+        minhasEscalas.sort((a, b) => new Date(a.Data) - new Date(b.Data));
 
-      if (minhasEscalas.length === 0) {
-        alert("Nenhuma escala encontrada para este nome.");
-        return;
-      }
+        // Limita às próximas 10 para não ficar gigante
+        minhasEscalas.slice(0, 10).forEach(e => {
+          // Correção de parsing de data: pega apenas a parte YYYY-MM-DD
+          const dataBase = e.Data.includes('T') ? e.Data.split('T')[0] : e.Data;
+          const d = new Date(dataBase + "T12:00:00");
 
-      // Ordena por data
-      minhasEscalas.sort((a, b) => new Date(a.Data) - new Date(b.Data));
+          const dataFormatada = isNaN(d.getTime()) ? "DATA INVÁLIDA" : d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace(',', '');
 
-      // Limita às próximas 10 para não ficar gigante
-      minhasEscalas.slice(0, 10).forEach(e => {
-        // Correção de parsing de data: pega apenas a parte YYYY-MM-DD
-        const dataBase = e.Data.includes('T') ? e.Data.split('T')[0] : e.Data;
-        const d = new Date(dataBase + "T12:00:00");
-
-        const dataFormatada = isNaN(d.getTime()) ? "DATA INVÁLIDA" : d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace(',', '');
-
-        const item = document.createElement('div');
-        item.className = 'export-item';
-        item.innerHTML = `
+          const item = document.createElement('div');
+          item.className = 'export-item';
+          item.innerHTML = `
           <span class="export-date">${dataFormatada.toUpperCase()}</span>
           <span class="export-culto">${e["Nome dos Cultos"]}</span>
           <span class="export-funcao">${e.Função}</span>
         `;
-        itemsContainer.appendChild(item);
-      });
-
-      // Gera a imagem
-      const btn = document.getElementById('btnExport');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = '<i class="fas fa-sync fa-spin"></i>';
-      btn.disabled = true;
-
-      try {
-        // Pequeno delay para garantir que o DOM renderizou o template
-        await new Promise(r => setTimeout(r, 100));
-
-        const canvas = await html2canvas(template, {
-          backgroundColor: '#2c3e50',
-          scale: 2, // Melhor qualidade
-          useCORS: true
+          itemsContainer.appendChild(item);
         });
 
-        // Converte para link e baixa/compartilha
-        const image = canvas.toDataURL("image/png");
-        const link = document.createElement('a');
-        link.download = `Escala_${searchTerm}.png`;
-        link.href = image;
-        link.click();
+        // Gera a imagem
+        const btn = document.getElementById('btnExport');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-sync fa-spin"></i>';
+        btn.disabled = true;
 
-        alert("Imagem gerada com sucesso!");
-      } catch (err) {
-        console.error(err);
-        alert("Erro ao gerar imagem.");
-      } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+        try {
+          // Pequeno delay para garantir que o DOM renderizou o template
+          await new Promise(r => setTimeout(r, 100));
+
+          const canvas = await html2canvas(template, {
+            backgroundColor: '#2c3e50',
+            scale: 2, // Melhor qualidade
+            useCORS: true
+          });
+
+          // Converte para link e baixa/compartilha
+          const image = canvas.toDataURL("image/png");
+          const link = document.createElement('a');
+          link.download = `Escala_${searchTerm}.png`;
+          link.href = image;
+          link.click();
+
+          alert("Imagem gerada com sucesso!");
+        } catch (err) {
+          console.error(err);
+          alert("Erro ao gerar imagem.");
+        } finally {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+        }
       }
-    }
 
-    window.openDetails = function (dateStr) {
-      const dayEscalas = globalEscalas.filter(e => e.Data.split('T')[0] === dateStr);
-      const details = document.getElementById('modalDetails');
-      const d = new Date(dateStr + "T12:00:00");
-      document.getElementById('modalDate').innerText = d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+      window.openDetails = function (dateStr) {
+        const dayEscalas = globalEscalas.filter(e => e.Data.split('T')[0] === dateStr);
+        const details = document.getElementById('modalDetails');
+        const d = new Date(dateStr + "T12:00:00");
+        document.getElementById('modalDate').innerText = d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
 
-      const cultos = dayEscalas.reduce((acc, item) => {
-        if (!acc[item.Cultos]) acc[item.Cultos] = { info: item, membros: [] };
-        acc[item.Cultos].membros.push(item);
-        return acc;
-      }, {});
+        const cultos = dayEscalas.reduce((acc, item) => {
+          if (!acc[item.Cultos]) acc[item.Cultos] = { info: item, membros: [] };
+          acc[item.Cultos].membros.push(item);
+          return acc;
+        }, {});
 
-      details.innerHTML = Object.values(cultos).map(c => {
-        const musicas = globalRepertorio[c.info.Cultos] || [];
+        details.innerHTML = Object.values(cultos).map(c => {
+          const musicas = globalRepertorio[c.info.Cultos] || [];
 
-        return `
+          // Verifica se o usuário logado está escalado neste culto
+          const userToken = JSON.parse(localStorage.getItem('user_token') || '{}');
+          const meuNomeLogado = (userToken.Nome || "").toLowerCase().trim();
+          const isAdmin = userToken.Role === "Admin" || userToken.Role === "SuperAdmin";
+
+          // Helper para normalizar nomes
+          const normalize = str => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+          const nomeNormalizado = normalize(meuNomeLogado);
+
+          const estouEscalado = (meuNomeLogado && c.membros.some(m => normalize(m.Nome).includes(nomeNormalizado)));
+
+          return `
            <div class="culto-detalhe">
-             <div class="culto-header">
+             <div class="culto-header" style="display:flex; justify-content:space-between; align-items:center;">
                <span><i class="fas fa-church"></i> ${c.info["Nome dos Cultos"]}</span>
+               ${estouEscalado ? `
+                 <button onclick="comunicarAviso('${c.info.Data.split('T')[0]}', '${c.info["Nome dos Cultos"]}', event)" style="background:#e74c3c; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer;">
+                   <i class="fas fa-bell"></i> Aviso
+                 </button>
+               ` : ''}
              </div>
              <div class="culto-body">
                <div style="font-weight:bold; margin-bottom:5px; color:#aaa; font-size:0.7rem">EQUIPE</div>
 ${c.membros.map(m => {
-          // Pega a primeira palavra da função para definir a cor (ex: "Violão" de "Violão 1")
-          const categoria = m.Função.split(' ')[0].trim();
-          // Busca o desenho do ícone no mapa
-          const iconeBase = iconsMap[categoria] || 'fa-user';
+            // Pega a primeira palavra da função para definir a cor (ex: "Violão" de "Violão 1")
+            const categoria = m.Função.split(' ')[0].trim();
+            // Busca o desenho do ícone no mapa
+            const iconeBase = iconsMap[categoria] || 'fa-user';
 
-          return `
+            return `
       <div class="member-item">
         <span>
           <i class="fa-solid ${iconeBase} ${categoria}"></i> 
@@ -721,34 +769,40 @@ ${c.membros.map(m => {
         <span style="color:#888; font-size:0.75rem">${m.Função}</span>
       </div>
     `;
-        }).join('')}
+          }).join('')}
                
                ${globalLembretes.filter(l => {
-          const dataAviso = new Date(dateStr + "T12:00:00").toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-          const matchData = l.Culto && l.Culto.includes(dataAviso);
-          const matchNome = l.Culto && l.Culto.toLowerCase().includes(c.info["Nome dos Cultos"].toLowerCase());
-          return matchData && matchNome;
-        }).length > 0 ? `
+            const dataAviso = new Date(dateStr + "T12:00:00").toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+            const matchData = l.Culto && l.Culto.includes(dataAviso);
+            const matchNome = l.Culto && l.Culto.toLowerCase().includes(c.info["Nome dos Cultos"].toLowerCase());
+            return matchData && matchNome;
+          }).length > 0 ? `
                 <div style="margin-top:10px; border-top:1px dashed #eee; padding-top:5px;">
                   <div style="font-weight:bold; color:#e74c3c; font-size:0.7rem">AVISOS</div>
                   ${globalLembretes.filter(l => {
-          const dataAviso = new Date(dateStr + "T12:00:00").toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-          const matchData = l.Culto && l.Culto.includes(dataAviso);
-          const matchNome = l.Culto && l.Culto.toLowerCase().includes(c.info["Nome dos Cultos"].toLowerCase());
-          return matchData && matchNome;
-        }).map(a => `
-                    <div style="font-size:0.75rem; color:#c0392b; margin-top:3px;">
+            const dataAviso = new Date(dateStr + "T12:00:00").toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+            const matchData = l.Culto && l.Culto.includes(dataAviso);
+            const matchNome = l.Culto && l.Culto.toLowerCase().includes(c.info["Nome dos Cultos"].toLowerCase());
+            return matchData && matchNome;
+          }).map(a => `
+                    <div style="font-size:0.75rem; color:#c0392b; margin-top:3px; position:relative;">
                       <b>${a.Componente}:</b> ${a.Info}
+                      ${a.Componente.toLowerCase().trim() === meuNomeLogado ? `
+                        <i class="fas fa-trash-alt" onclick="excluirAviso('${a.id_Lembrete}', event)" style="margin-left:5px; cursor:pointer;" title="Remover"></i>
+                      ` : ''}
                     </div>
                   `).join('')}
                 </div>
                ` : ''}
 
-               <div style="font-weight:bold; margin-top:10px; margin-bottom:5px; color:#aaa; font-size:0.7rem">REPERTÓRIO</div>
+               <div style="font-weight:bold; margin-top:10px; margin-bottom:5px; color:#aaa; font-size:0.7rem; display:flex; justify-content:space-between; align-items:center;">
+                 <span>REPERTÓRIO</span>
+                 ${estouEscalado ? `<a href="Cadastro%20de%20Repertorio.html?culto=${encodeURIComponent(c.info.Cultos)}&source=Escala%20Calendario.html" style="color:var(--accent); font-size:1rem;"><i class="fas fa-plus-circle"></i></a>` : ''}
+               </div>
                ${musicas.map(m => {
-          const queryBusca = encodeURIComponent(`${m.Músicas}`);
-          const querySpotify = encodeURIComponent(`${m.Músicas} ${m.Cantor || ''}`);
-          return `
+            const queryBusca = encodeURIComponent(`${m.Músicas}`);
+            const querySpotify = encodeURIComponent(`${m.Músicas} ${m.Cantor || ''}`);
+            return `
                  <div class="musica-item">
                    <div style="font-weight:bold">${m.Músicas}</div>
                    <div style="font-size:0.75rem; color:#666; margin-top:2px">Tom: <b>${m.Tons || '--'}</b></div>
@@ -759,16 +813,63 @@ ${c.membros.map(m => {
                      <a href="https://www.letras.mus.br/?q=${queryBusca}" target="_blank" class="l-lt" title="Letras.mus"><i class="fas fa-align-left"></i></a>
                    </div>
                  </div>`;
-        }).join('') || '<div style="color:#ccc; font-size:0.8rem">Sem músicas.</div>'}
+          }).join('') || '<div style="color:#ccc; font-size:0.8rem">Sem músicas.</div>'}
              </div>
            </div>`;
-      }).join('');
+        }).join('');
 
-      document.getElementById('eventModal').style.display = 'block';
-    }
+        document.getElementById('eventModal').style.display = 'block';
+      }
 
-    window.onload = () => loadData();
-  </script>
+      window.onload = () => loadData();
+
+      async function comunicarAviso(dataCulto, nomeCulto, event) {
+        if (event) event.stopPropagation();
+        const userToken = JSON.parse(localStorage.getItem('user_token') || '{}');
+        const meuNome = userToken.Nome || "Membro";
+
+        const info = prompt(`Olá ${meuNome}, qual aviso você deseja comunicar para o culto do dia ${dataCulto} (${nomeCulto}):`);
+        if (!info || info.trim() === "") return;
+
+        const id_Lembrete = Math.random().toString(16).slice(2, 10);
+        const payload = {
+          action: "add",
+          sheet: "Lembretes",
+          id_Lembrete,
+          Componente: meuNome,
+          Data: new Date().toLocaleDateString('pt-BR'),
+          Culto: `${nomeCulto} (${dataCulto})`,
+          Info: info
+        };
+
+        try {
+          const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          });
+          const res = await response.json();
+          if (res.status === "success") {
+            alert("✅ Aviso enviado!");
+            loadData(true);
+          } else alert("⚠️ Erro: " + res.message);
+        } catch (e) { alert("❌ Erro de conexão."); }
+      }
+
+      async function excluirAviso(id_Aviso, event) {
+        if (event) event.stopPropagation();
+        if (!confirm("Deseja remover este aviso?")) return;
+        try {
+          const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "delete", sheet: "Lembretes", id_Lembrete: id_Aviso })
+          });
+          const res = await response.json();
+          if (res.status === "success") { alert("✅ Removido!"); loadData(true); }
+        } catch (e) { alert("❌ Erro."); }
+      }
+    </script>
+  </div>
+  </div>
 </body>
 
 </html>

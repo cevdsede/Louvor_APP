@@ -28,8 +28,13 @@
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: var(--bg);
-      display: flex;
-      justify-content: center;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
       padding: 20px;
     }
 
@@ -102,32 +107,39 @@
       cursor: not-allowed;
     }
 
-    /* BOTÃO VOLTAR AJUSTADO */
-    .btn-back {
-      background: none !important;
-      border: none !important;
-      padding: 5px !important;
-      width: auto !important;
-      font-size: 1.2rem !important;
-      color: var(--primary) !important;
-      cursor: pointer !important;
-      margin-top: 0 !important;
-      position: absolute;
-      left: 20px;
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding: 10px 15px;
+      border-bottom: 1px solid #ddd;
+      width: 100%;
+      box-sizing: border-box;
     }
 
-    .btn-back:hover {
-      transform: scale(1.1) !important;
-      background: none !important;
+    .header-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 0;
+      flex-grow: 1;
+      text-align: center;
     }
 
-    .header-cad {
+    .nav-btn {
+      background: white;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      cursor: pointer;
+      color: var(--primary);
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 25px;
-      position: relative;
-      min-height: 40px;
+      transition: all 0.2s;
     }
 
 
@@ -154,15 +166,16 @@
   </style>
 </head>
 
-<body>
+<div class="header-bar">
+  <button class="nav-btn" onclick="window.location.href='Cadastro%20de%20Repertorio.html'" title="Voltar">
+    <i class="fas fa-arrow-left"></i>
+  </button>
+  <h2 class="header-title">Cadastrar Música</h2>
+  <div style="width: 40px"></div>
+</div>
 
-  <div class="card">
-    <div class="header-cad">
-      <button onclick="window.location.href='index.html'" class="btn-back" title="Voltar">
-        <i class="fas fa-arrow-left"></i>
-      </button>
-      <h2 style="margin:0; font-size:1.1rem;"><i class="fas fa-music"></i> Cadastrar Música</h2>
-    </div>
+<div class="container">
+  <div class="card" style="border-top: none;">
 
     <form id="musicForm">
       <input type="hidden" name="sheet" value="Musicas">
@@ -274,6 +287,8 @@
     window.addEventListener('DOMContentLoaded', loadTemas);
   </script>
 
+</div>
+</div>
 </body>
 
 </html>

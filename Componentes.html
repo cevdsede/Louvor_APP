@@ -22,7 +22,7 @@
       font-family: 'Segoe UI', Roboto, sans-serif;
       background: var(--bg);
       margin: 0;
-      padding: 15px;
+      padding: 0;
       color: var(--primary);
     }
 
@@ -31,54 +31,48 @@
       margin: 0 auto;
     }
 
-    /* --- HEADER PADRÃO (IGUAL ESCALAS.HTML) --- */
-    .header {
+    .header-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 30px;
-      /* Mais espaçamento como no Escalas */
-      padding: 10px 0;
+      margin-bottom: 25px;
+      padding: 10px 15px;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      width: 100%;
+      box-sizing: border-box;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
     }
 
-    .header h2 {
-      font-size: 1.4rem;
-      margin: 0;
+    .header-title {
+      font-size: 1.2rem;
       font-weight: 700;
       color: var(--primary);
+      margin: 0;
+      flex-grow: 1;
+      text-align: center;
+    }
+
+    .btn-update i {
+      color: var(--accent);
     }
 
     .nav-btn {
       background: white;
       border: none;
-      width: 45px;
-      /* Tamanho ajustado */
-      height: 45px;
-      border-radius: 15px;
-      /* Bordas mais arredondadas do padrão */
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-      /* Sombra suave */
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
       cursor: pointer;
       color: var(--primary);
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.2s;
       text-decoration: none;
-    }
-
-    .nav-btn:active {
-      transform: scale(0.9);
-      background-color: #f8f9fa;
-    }
-
-    .nav-btn i {
-      font-size: 1.2rem;
-    }
-
-    /* Ajuste para o botão de atualizar (verde no Escalas ao clicar) */
-    .btn-update i {
-      color: var(--accent);
     }
 
     /* --- DASHBOARD GLASS CARD --- */
@@ -411,141 +405,140 @@
   </style>
 </head>
 
-<body>
+<div class="header-bar">
+  <button class="nav-btn" onclick="window.location.href='index.html'" title="Voltar">
+    <i class="fas fa-arrow-left"></i>
+  </button>
+  <div class="header-title">
+    <h2><i class="fas fa-users"></i> Equipe</h2>
+  </div>
+  <button class="nav-btn btn-update" onclick="iniciar(true)" title="Atualizar Dados">
+    <i class="fas fa-sync-alt"></i>
+  </button>
+</div>
 
-  <div class="container">
-    <div class="header">
-      <button class="nav-btn" onclick="window.location.href='index.html'">
-        <i class="fas fa-arrow-left"></i>
-      </button>
-
-      <h2><i class="fas fa-users"></i> Equipe</h2>
-
-      <button class="nav-btn btn-update" onclick="loadAll(true)">
-        <i class="fas fa-sync-alt"></i>
-      </button>
-    </div>
-
-    <div id="graficoGenero" class="glass-card">
-      <!-- MASCULINO -->
-      <div class="gender-bar-container" onclick="filtrarPorGenero('MASC', this)"
-        style="cursor:pointer; margin-bottom:15px; transition:0.2s">
-        <div class="bar-info" style="margin-bottom:5px; font-weight:bold; font-size:0.85rem">
-          <span id="txtMasc">Masculino - 0% (0)</span>
-        </div>
-        <div class="bar-bg">
-          <div id="barMasc" class="bar-fill masc"></div>
-        </div>
+<div class="container" style="padding: 20px 15px;">
+  <div id="graficoGenero" class="glass-card">
+    <!-- MASCULINO -->
+    <div class="gender-bar-container" onclick="filtrarPorGenero('MASC', this)"
+      style="cursor:pointer; margin-bottom:15px; transition:0.2s">
+      <div class="bar-info" style="margin-bottom:5px; font-weight:bold; font-size:0.85rem">
+        <span id="txtMasc">Masculino - 0% (0)</span>
       </div>
-
-      <!-- FEMININO -->
-      <div class="gender-bar-container" onclick="filtrarPorGenero('FEM', this)" style="cursor:pointer; transition:0.2s">
-        <div class="bar-info" style="margin-bottom:5px; font-weight:bold; font-size:0.85rem">
-          <span id="txtFem">Feminino - 0% (0)</span>
-        </div>
-        <div class="bar-bg">
-          <div id="barFem" class="bar-fill fem"></div>
-        </div>
+      <div class="bar-bg">
+        <div id="barMasc" class="bar-fill masc"></div>
       </div>
     </div>
 
-    <div id="kpiFuncoes" class="kpi-grid"></div>
-    <!-- OS FILTROS DE PÍLULA FORAM REMOVIDOS E INTEGRADOS AOS KPIs -->
-    <div id="listaComponentes">
-      <div id="loader" style="display:none; text-align:center; padding:50px;">
-        <i class="fas fa-circle-notch fa-spin fa-2x" style="color:var(--accent)"></i>
-        <p style="font-size: 0.8rem; color: #7f8c8d; margin-top: 10px;">Sincronizando equipe...</p>
+    <!-- FEMININO -->
+    <div class="gender-bar-container" onclick="filtrarPorGenero('FEM', this)" style="cursor:pointer; transition:0.2s">
+      <div class="bar-info" style="margin-bottom:5px; font-weight:bold; font-size:0.85rem">
+        <span id="txtFem">Feminino - 0% (0)</span>
+      </div>
+      <div class="bar-bg">
+        <div id="barFem" class="bar-fill fem"></div>
       </div>
     </div>
   </div>
 
-  <script>
-    /* AS FUNÇÕES ABAIXO PERMANECERAM IGUAIS, APENAS COM AJUSTES NO INNERHTML PARA O NOVO DESIGN */
-    const SCRIPT_URL = APP_CONFIG.SCRIPT_URL;
-    let bancoImagens = [];
-    let dadosMembros = [];
+  <div id="kpiFuncoes" class="kpi-grid"></div>
+  <!-- OS FILTROS DE PÍLULA FORAM REMOVIDOS E INTEGRADOS AOS KPIs -->
+  <div id="listaComponentes">
+    <div id="loader" style="display:none; text-align:center; padding:50px;">
+      <i class="fas fa-circle-notch fa-spin fa-2x" style="color:var(--accent)"></i>
+      <p style="font-size: 0.8rem; color: #7f8c8d; margin-top: 10px;">Sincronizando equipe...</p>
+    </div>
+  </div>
+</div>
 
-    async function iniciar(force = false) {
-      const loader = document.getElementById('loader');
-      const cachedComp = localStorage.getItem('offline_componentes');
-      const cachedImg = localStorage.getItem('offline_imagens');
+<script>
+  /* AS FUNÇÕES ABAIXO PERMANECERAM IGUAIS, APENAS COM AJUSTES NO INNERHTML PARA O NOVO DESIGN */
+  const SCRIPT_URL = APP_CONFIG.SCRIPT_URL;
+  let bancoImagens = [];
+  let dadosMembros = [];
 
-      if (!force && cachedComp && cachedImg) {
-        bancoImagens = JSON.parse(cachedImg);
-        // FILTRO GLOBAL DE CONVIDADOS
-        const ativos = JSON.parse(cachedComp).filter(c =>
-          c.Ativo &&
-          c.Ativo.toString().toUpperCase().trim() === "SIM" &&
-          !c.Função.toUpperCase().includes("CONVIDADO") &&
-          !c.Nome.toUpperCase().includes("CONVIDADO")
-        );
-        dadosMembros = ativos;
-        atualizarDashboards(ativos);
-        renderizar(ativos);
-        return;
-      }
+  async function iniciar(force = false) {
+    const loader = document.getElementById('loader');
+    const cachedComp = localStorage.getItem('offline_componentes');
+    const cachedImg = localStorage.getItem('offline_imagens');
 
-      loader.style.display = 'block';
-      try {
-        const [resComp, resImg] = await Promise.all([
-          fetch(SCRIPT_URL + "?sheet=Componentes"),
-          fetch(SCRIPT_URL + "?action=getImages")
-        ]);
-        const dataComp = await resComp.json();
-        const dataImg = await resImg.json();
-
-        localStorage.setItem('offline_componentes', JSON.stringify(dataComp.data));
-        localStorage.setItem('offline_imagens', JSON.stringify(dataImg.data));
-
-        bancoImagens = dataImg.data;
-        bancoImagens = dataImg.data;
-        // FILTRO GLOBAL DE CONVIDADOS
-        const ativos = dataComp.data.filter(c =>
-          c.Ativo &&
-          c.Ativo.toString().toUpperCase().trim() === "SIM" &&
-          !c.Função.toUpperCase().includes("CONVIDADO") &&
-          !c.Nome.toUpperCase().includes("CONVIDADO")
-        );
-        dadosMembros = ativos;
-
-        loader.style.display = 'none';
-        atualizarDashboards(ativos);
-        renderizar(ativos);
-      } catch (e) { console.error(e); }
+    if (!force && cachedComp && cachedImg) {
+      bancoImagens = JSON.parse(cachedImg);
+      const ativos = JSON.parse(cachedComp).filter(c =>
+        c.Ativo &&
+        c.Ativo.toString().toUpperCase().trim() === "SIM" &&
+        !c.Função.toUpperCase().includes("CONVIDADO") &&
+        !c.Nome.toUpperCase().includes("CONVIDADO")
+      );
+      dadosMembros = ativos;
+      atualizarDashboards(ativos);
+      renderizar(ativos);
+      return;
     }
 
-    function atualizarDashboards(ativos) {
-      gerarKpisFuncoes(ativos);
-      gerarGraficoGenero(ativos);
+    loader.style.display = 'block';
+    try {
+      const [resComp, resImg] = await Promise.all([
+        fetch(SCRIPT_URL + "?sheet=Componentes"),
+        fetch(SCRIPT_URL + "?action=getImages")
+      ]);
+      const dataComp = await resComp.json();
+      const dataImg = await resImg.json();
+
+      bancoImagens = dataImg.data;
+      localStorage.setItem('offline_imagens', JSON.stringify(dataImg.data));
+
+      // FILTRO GLOBAL DE CONVIDADOS
+      const ativos = dataComp.data.filter(c =>
+        c.Ativo &&
+        c.Ativo.toString().toUpperCase().trim() === "SIM" &&
+        !c.Função.toUpperCase().includes("CONVIDADO") &&
+        !c.Nome.toUpperCase().includes("CONVIDADO")
+      );
+      dadosMembros = ativos;
+      localStorage.setItem('offline_componentes', JSON.stringify(ativos));
+
+      loader.style.display = 'none';
+      atualizarDashboards(ativos);
+      renderizar(ativos);
+    } catch (e) {
+      console.error(e);
+      loader.innerText = "Erro ao carregar dados.";
     }
+  }
 
-    function gerarKpisFuncoes(lista) {
-      const iconsMap = {
-        "Ministro": "fa-microphone-lines",
-        "Back": "fa-microphone",
-        "Violão": "fa-guitar",
-        "Guitarra": "fa-guitar",
-        "Teclado": "fa-keyboard",
-        "Baixo": "fa-guitar",
-        "Bateria": "fa-drum",
-      };
+  function atualizarDashboards(ativos) {
+    gerarKpisFuncoes(ativos);
+    gerarGraficoGenero(ativos);
+  }
 
-      const counts = {};
-      Object.keys(iconsMap).forEach(f => counts[f] = 0);
+  function gerarKpisFuncoes(lista) {
+    const iconsMap = {
+      "Ministro": "fa-microphone-lines",
+      "Back": "fa-microphone",
+      "Violão": "fa-guitar",
+      "Guitarra": "fa-guitar",
+      "Teclado": "fa-keyboard",
+      "Baixo": "fa-guitar",
+      "Bateria": "fa-drum",
+    };
 
-      lista.forEach(p => {
-        const funcaoCol = (p.Função || "").toUpperCase();
-        // Convidado já removido globalmente, mas mantemos segurança
-        if (funcaoCol.includes("CONVIDADO")) return;
-        Object.keys(iconsMap).forEach(f => {
-          if (funcaoCol.includes(f.toUpperCase())) counts[f]++;
-        });
+    const counts = {};
+    Object.keys(iconsMap).forEach(f => counts[f] = 0);
+
+    lista.forEach(p => {
+      const funcaoCol = (p.Função || "").toUpperCase();
+      // Convidado já removido globalmente, mas mantemos segurança
+      if (funcaoCol.includes("CONVIDADO")) return;
+      Object.keys(iconsMap).forEach(f => {
+        if (funcaoCol.includes(f.toUpperCase())) counts[f]++;
       });
+    });
 
-      const container = document.getElementById("kpiFuncoes");
+    const container = document.getElementById("kpiFuncoes");
 
-      // Card TODOS
-      let html = `
+    // Card TODOS
+    let html = `
         <div class="kpi-card active-filter" onclick="filtrarPorFuncao('TODOS', this)">
             <div class="kpi-icon"><i class="fas fa-users" style="color:var(--primary)"></i></div>
             <div class="kpi-value">${lista.length}</div>
@@ -553,7 +546,7 @@
         </div>
       `;
 
-      html += Object.entries(iconsMap).map(([nome, icone]) => `
+    html += Object.entries(iconsMap).map(([nome, icone]) => `
         <div class="kpi-card" onclick="filtrarPorFuncao('${nome.toUpperCase()}', this)">
           <div class="kpi-icon"><i class="fas ${icone} ${nome}"></i></div>
           <div class="kpi-value">${counts[nome]}</div>
@@ -561,164 +554,34 @@
         </div>
       `).join('');
 
-      container.innerHTML = html;
-    }
+    container.innerHTML = html;
+  }
 
-    function gerarGraficoGenero(lista) {
-      let masc = 0, fem = 0;
-      lista.forEach(p => {
-        const g = (p.Genero || p["Gênero"] || "").toString().toUpperCase().trim();
-        if (g.includes("HOMEM") || g.includes("MASC")) masc++;
-        else if (g.includes("MULHER") || g.includes("FEM")) fem++;
-      });
+  function gerarGraficoGenero(lista) {
+    let masc = 0, fem = 0;
+    lista.forEach(p => {
+      const g = (p.Genero || p["Gênero"] || "").toString().toUpperCase().trim();
+      if (g.includes("HOMEM") || g.includes("MASC")) masc++;
+      else if (g.includes("MULHER") || g.includes("FEM")) fem++;
+    });
 
-      const total = masc + fem || 1;
-      const pMasc = Math.round((masc / total) * 100);
-      const pFem = Math.round((fem / total) * 100);
+    const total = masc + fem || 1;
+    const pMasc = Math.round((masc / total) * 100);
+    const pFem = Math.round((fem / total) * 100);
 
-      document.getElementById('barMasc').style.width = pMasc + "%";
-      document.getElementById('txtMasc').innerText = `Masculino - ${pMasc}% (${masc})`;
-      document.getElementById('barFem').style.width = pFem + "%";
-      document.getElementById('txtFem').innerText = `Feminino - ${pFem}% (${fem})`;
-    }
+    document.getElementById('barMasc').style.width = pMasc + "%";
+    document.getElementById('txtMasc').innerText = `Masculino - ${pMasc}% (${masc})`;
+    document.getElementById('barFem').style.width = pFem + "%";
+    document.getElementById('txtFem').innerText = `Feminino - ${pFem}% (${fem})`;
+  }
 
-    // Função para abrir o modal e preencher dados
-    function abrirDetalhes(nome, foto, funcao, tel, wpp) {
-      const modal = document.getElementById('modalPerfilComp');
+  // 2. Nova função para abrir o modal e carregar os dados
+  function abrirDetalhes(nome, foto, funcao, tel, wpp) {
+    const modal = document.getElementById('modalPerfilComp');
+    modal.style.display = 'flex';
 
-      // Mostra o modal (precisamos mudar de display:none para flex)
-      modal.style.display = 'flex';
-
-      // Cabeçalho
-      document.getElementById('detalheCabecalho').innerHTML = `
-        <div class="modal-handle"></div>
-        <img src="${foto}" style="width:90px; height:90px; border-radius:50%; object-fit:cover; border:3px solid var(--accent); margin-bottom:10px;">
-        <h3 style="margin:0; font-size:1.2rem;">${nome}</h3>
-        <span class="comp-role">${funcao}</span>
-    `;
-
-      // Ações
-      document.getElementById('modalAcoes').innerHTML = `
-        <div class="action-btns" style="margin-top:20px">
-            <a href="tel:${tel}" class="btn-icon btn-tel"><i class="fas fa-phone"></i> Ligar</a>
-            <a href="${wpp}" target="_blank" class="btn-icon btn-wpp"><i class="fab fa-whatsapp"></i> WhatsApp</a>
-        </div>
-    `;
-
-      // Inicia buscas nos boxes do modal
-      buscarEscalasNoModal(nome);
-      buscarHistoricoNoModal(nome, funcao);
-    }
-
-    // Busca Escalas focada no Modal (CORRIGIDA)
-    async function buscarEscalasNoModal(nome) {
-      const box = document.getElementById('modalEscalas');
-      box.innerHTML = '<div style="text-align:center; padding:10px; color:#ccc;">Carregando...</div>';
-
-      try {
-        const cached = localStorage.getItem('offline_escala');
-        if (!cached) {
-          box.innerHTML = "<small>Sem dados offline.</small>";
-          return;
-        }
-
-        const data = JSON.parse(cached);
-        const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-
-        const filtrado = data
-          .filter(e => {
-            const d = new Date(e.Data);
-            return e.Nome && e.Nome.toLowerCase().trim() === nome.toLowerCase().trim() && d >= hoje;
-          })
-          .sort((a, b) => new Date(a.Data) - new Date(b.Data))
-          .slice(0, 3);
-
-        if (filtrado.length > 0) {
-          box.innerHTML = filtrado.map(e => `
-            <div class="list-item">
-                <div style="display:flex; justify-content:space-between;">
-                    <span style="font-weight:700; color:#2c3e50;">${new Date(e.Data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
-                    <span style="font-size:0.8rem; color:#7f8c8d;">${e["Nome dos Cultos"]}</span>
-                </div>
-                <small style="color:var(--accent); font-weight:600;">${e.Função}</small>
-            </div>
-            `).join('');
-        } else {
-          box.innerHTML = '<div style="padding:10px; text-align:center; color:#95a5a6; font-size:0.8rem;">Nenhuma escala futura.</div>';
-        }
-      } catch (e) { box.innerHTML = "Erro ao carregar."; console.log(e); }
-    }
-
-    // Busca Histórico focado no Modal (CORRIGIDA)
-    async function buscarHistoricoNoModal(nome, funcao) {
-      const box = document.getElementById('modalHistorico');
-
-      const f = funcao.toUpperCase();
-      if (!f.includes("MINISTRO") && !f.includes("BACK")) {
-        box.innerHTML = '<div style="padding:10px; text-align:center; color:#ccc; font-size:0.8rem;">-</div>';
-        return;
-      }
-
-      box.innerHTML = '<div style="text-align:center; padding:10px; color:#ccc;">Carregando...</div>';
-
-      try {
-        const cached = localStorage.getItem('offline_historico');
-        const data = cached ? JSON.parse(cached) : [];
-
-        // Filtra pelo cantor
-        const hist = data.filter(h => h.Cantor && h.Cantor.toLowerCase().trim() === nome.toLowerCase().trim());
-
-        // Pega os últimos 5
-        const ultimos = hist.reverse().slice(0, 5);
-
-        if (ultimos.length > 0) {
-          box.innerHTML = ultimos.map(h => `
-            <div class="list-item" style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-weight:600; font-size:0.8rem; color:#333;">${h.Música || h.Músicas}</span>
-                <span style="color:#9b59b6; font-weight:bold; font-size:0.75rem;">${h.Tom || h.Tons || ''}</span>
-            </div>
-            `).join('');
-        } else {
-          box.innerHTML = '<div style="padding:10px; text-align:center; color:#95a5a6; font-size:0.8rem;">Nenhum registro recente.</div>';
-        }
-      } catch (e) { box.innerHTML = "Erro ao carregar."; }
-    }
-    function renderizar(lista) {
-      const container = document.getElementById('listaComponentes');
-      container.innerHTML = ''; // Limpa o container
-
-      // FILTRO: Remove quem for "Convidado" (na Função ou no Nome)
-      const listaFiltrada = lista.filter(item => {
-        const funcao = (item.Função || "").toUpperCase();
-        const nome = (item.Nome || "").toUpperCase();
-        return !funcao.includes("CONVIDADO") && !nome.includes("CONVIDADO");
-      });
-
-      // Usa a lista filtrada para criar os cards
-      container.innerHTML = listaFiltrada.map(item => {
-        const nomeLimpo = item.Nome.trim();
-        const nomeArquivo = item.Foto ? item.Foto.split('/').pop() : "";
-        const fotoObj = bancoImagens.find(img => img.nome === nomeArquivo);
-        const urlFoto = fotoObj ? fotoObj.url : "https://via.placeholder.com/150";
-
-        return `
-      <div class="comp-card" onclick="abrirDetalhes('${nomeLimpo}', '${urlFoto}', '${item.Função}', '${item["Tel sem Espaço"]}', '${item.Whatsapp?.link || '#'}')">
-        <div class="avatar-wrapper">
-          <img src="${urlFoto}" class="avatar">
-        </div>
-        <div class="comp-name">${nomeLimpo}</div>
-        <div class="comp-role">${item.Função}</div>
-      </div>
-    `;
-      }).join('');
-    }
-    // 2. Nova função para abrir o modal e carregar os dados
-    function abrirDetalhes(nome, foto, funcao, tel, wpp) {
-      const modal = document.getElementById('modalPerfilComp');
-      modal.style.display = 'flex';
-
-      // Cabeçalho alinhado à esquerda com foto pequena ao lado ou centralizada
-      document.getElementById('detalheCabecalho').innerHTML = `
+    // Cabeçalho alinhado à esquerda com foto pequena ao lado ou centralizada
+    document.getElementById('detalheCabecalho').innerHTML = `
         <div style="display: flex; align-items: center; gap: 15px;">
             <img src="${foto}" style="width:60px; height:60px; border-radius:12px; object-fit:cover; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
             <div>
@@ -727,103 +590,281 @@
             </div>
         </div>
     `;
-      // 3. Funções auxiliares para injetar dados no Modal
-      async function buscarEscalasNoModal(nome) {
-        const box = document.getElementById('modalEscalas');
-        // ... lógica do buscarEscalas atualizada para preencher 'box' ...
-        // Basta copiar a lógica que você já tem e apontar para a variável 'box'
-      }
 
-      async function buscarHistoricoNoModal(nome, funcao) {
-        const box = document.getElementById('modalHistorico');
-        // ... lógica do buscarHistorico atualizada para preencher 'box' ...
-      }
-      // Botões de ação no padrão do app
-      document.getElementById('modalAcoes').innerHTML = `
+    // Botões de ação no padrão do app
+    document.getElementById('modalAcoes').innerHTML = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <a href="tel:${tel}" class="btn-icon btn-tel" style="border-radius:10px; padding:10px;"><i class="fas fa-phone"></i> Ligar</a>
             <a href="${wpp}" target="_blank" class="btn-icon btn-wpp" style="border-radius:10px; padding:10px;"><i class="fab fa-whatsapp"></i> WhatsApp</a>
         </div>
     `;
-    }
-    function fecharModalDetalhes(e) {
-      if (e.target.id === 'modalPerfilComp') {
-        document.getElementById('modalPerfilComp').style.display = 'none';
+
+    // Inicia buscas nos boxes do modal
+    buscarEscalasNoModal(nome);
+    buscarHistoricoNoModal(nome, funcao);
+    buscarAvisosGeraisNoModal(nome);
+  }
+
+  // Busca Escalas focada no Modal (CORRIGIDA)
+  async function buscarEscalasNoModal(nome) {
+    const box = document.getElementById('modalEscalas');
+    box.innerHTML = '<div style="text-align:center; padding:10px; color:#ccc;">Carregando...</div>';
+
+    try {
+      const cached = localStorage.getItem('offline_escala');
+      if (!cached) {
+        box.innerHTML = "<small>Sem dados offline.</small>";
+        return;
       }
-    }
-    function filtrarPorFuncao(categoria, elemento) {
-      // Reset visual do filtro de genero
-      document.querySelectorAll('.gender-bar-container').forEach(p => {
-        p.style.opacity = '1';
-        p.style.transform = 'scale(1)';
-      });
 
-      // UI: Troca a classe active no elemento clicado (agora é o card)
-      document.querySelectorAll('.kpi-card').forEach(p => p.classList.remove('active-filter'));
-      if (elemento) elemento.classList.add('active-filter');
+      const data = JSON.parse(cached);
+      const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
 
-      // Lógica: Filtra a lista original
-      if (categoria === 'TODOS') {
-        renderizar(dadosMembros);
+      const filtrado = data
+        .filter(e => {
+          const d = new Date(e.Data);
+          return e.Nome && e.Nome.toLowerCase().trim() === nome.toLowerCase().trim() && d >= hoje;
+        })
+        .sort((a, b) => new Date(a.Data) - new Date(b.Data))
+        .slice(0, 3);
+
+      if (filtrado.length > 0) {
+        box.innerHTML = filtrado.map(e => `
+            <div class="list-item">
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="font-weight:700; color:#2c3e50;">${new Date(e.Data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
+                    <span style="font-size:0.8rem; color:#7f8c8d;">${e["Nome dos Cultos"]}</span>
+                </div>
+                <small style="color:var(--accent); font-weight:600;">${e.Função}</small>
+            </div>
+            `).join('');
       } else {
-        const filtrados = dadosMembros.filter(m =>
-          m.Função.toUpperCase().includes(categoria)
-        );
-        renderizar(filtrados);
+        box.innerHTML = '<div style="padding:10px; text-align:center; color:#95a5a6; font-size:0.8rem;">Nenhuma escala futura.</div>';
       }
+    } catch (e) { box.innerHTML = "Erro ao carregar."; console.log(e); }
+  }
+
+  // Busca Histórico focado no Modal (CORRIGIDA)
+  async function buscarHistoricoNoModal(nome, funcao) {
+    const box = document.getElementById('modalHistorico');
+
+    const f = funcao.toUpperCase();
+    if (!f.includes("MINISTRO") && !f.includes("BACK")) {
+      box.innerHTML = '<div style="padding:10px; text-align:center; color:#ccc; font-size:0.8rem;">-</div>';
+      return;
     }
 
-    function filtrarPorGenero(genero, elemento) {
-      // Reset visual dos KPIs
-      document.querySelectorAll('.kpi-card').forEach(p => p.classList.remove('active-filter'));
+    box.innerHTML = '<div style="text-align:center; padding:10px; color:#ccc;">Carregando...</div>';
 
-      // UI: Feedback visual na barra clicada
-      document.querySelectorAll('.gender-bar-container').forEach(p => {
-        p.style.opacity = '0.4';
-        p.style.transform = 'scale(0.98)';
-      });
-      if (elemento) {
-        elemento.style.opacity = '1';
-        elemento.style.transform = 'scale(1.02)';
+    try {
+      const cached = localStorage.getItem('offline_historico');
+      const data = cached ? JSON.parse(cached) : [];
+
+      // Filtra pelo cantor
+      const hist = data.filter(h => h.Cantor && h.Cantor.toLowerCase().trim() === nome.toLowerCase().trim());
+
+      // Pega os últimos 5
+      const ultimos = hist.reverse().slice(0, 5);
+
+      if (ultimos.length > 0) {
+        box.innerHTML = ultimos.map(h => `
+            <div class="list-item" style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:600; font-size:0.8rem; color:#333;">${h.Música || h.Músicas}</span>
+                <span style="color:#9b59b6; font-weight:bold; font-size:0.75rem;">${h.Tom || h.Tons || ''}</span>
+            </div>
+            `).join('');
+      } else {
+        box.innerHTML = '<div style="padding:10px; text-align:center; color:#95a5a6; font-size:0.8rem;">Nenhum registro recente.</div>';
       }
+    } catch (e) { box.innerHTML = "Erro ao carregar."; }
+  }
 
-      const filtrados = dadosMembros.filter(m => {
-        const g = (m.Genero || m["Gênero"] || "").toString().toUpperCase().trim();
-        if (genero === 'MASC') return g.includes("HOMEM") || g.includes("MASC");
-        return g.includes("MULHER") || g.includes("FEM");
-      });
+  function renderizar(lista) {
+    const container = document.getElementById('listaComponentes');
+    container.innerHTML = ''; // Limpa o container
+
+    // Filtra para remover convidados
+    const listaFiltrada = lista.filter(item => {
+      const funcao = (item.Função || "").toUpperCase();
+      const nome = (item.Nome || "").toUpperCase();
+      return !funcao.includes("CONVIDADO") && !nome.includes("CONVIDADO");
+    });
+
+    container.innerHTML = listaFiltrada.map(item => {
+      const nomeLimpo = item.Nome.trim();
+      const nomeArquivo = item.Foto ? item.Foto.split('/').pop() : "";
+      const fotoObj = bancoImagens.find(img => img.nome === nomeArquivo);
+      const urlFoto = fotoObj ? fotoObj.url : "https://via.placeholder.com/150";
+
+      return `
+      <div class="comp-card" onclick="abrirDetalhes('${nomeLimpo}', '${urlFoto}', '${item.Função}', '${item["Tel sem Espaço"]}', '${item.Whatsapp?.link || '#'}')">
+        <div class="avatar-wrapper">
+          <img src="${urlFoto}" class="avatar">
+        </div>
+        <div class="comp-name">${nomeLimpo}</div>
+        <div class="comp-role">${item.Função}</div>
+      </div>
+    `;
+    }).join('');
+  }
+  function fecharModalDetalhes(e) {
+    if (e.target.id === 'modalPerfilComp') {
+      document.getElementById('modalPerfilComp').style.display = 'none';
+    }
+  }
+  function filtrarPorFuncao(categoria, elemento) {
+    // Reset visual do filtro de genero
+    document.querySelectorAll('.gender-bar-container').forEach(p => {
+      p.style.opacity = '1';
+      p.style.transform = 'scale(1)';
+    });
+
+    // UI: Troca a classe active no elemento clicado (agora é o card)
+    document.querySelectorAll('.kpi-card').forEach(p => p.classList.remove('active-filter'));
+    if (elemento) elemento.classList.add('active-filter');
+
+    // Lógica: Filtra a lista original
+    if (categoria === 'TODOS') {
+      renderizar(dadosMembros);
+    } else {
+      const filtrados = dadosMembros.filter(m =>
+        m.Função.toUpperCase().includes(categoria)
+      );
       renderizar(filtrados);
     }
-    window.onload = () => iniciar();
-  </script>
+  }
 
-  <div id="modalPerfilComp" class="modal-perfil" onclick="fecharModalDetalhesExterno(event)">
-    <div class="modal-content-perfil" onclick="event.stopPropagation()">
-      <span class="close-perfil"
-        onclick="document.getElementById('modalPerfilComp').style.display='none'">&times;</span>
+  function filtrarPorGenero(genero, elemento) {
+    // Reset visual dos KPIs
+    document.querySelectorAll('.kpi-card').forEach(p => p.classList.remove('active-filter'));
 
-      <div class="modal-header">
-        <div id="detalheCabecalho">
-        </div>
+    // UI: Feedback visual na barra clicada
+    document.querySelectorAll('.gender-bar-container').forEach(p => {
+      p.style.opacity = '0.4';
+      p.style.transform = 'scale(0.98)';
+    });
+    if (elemento) {
+      elemento.style.opacity = '1';
+      elemento.style.transform = 'scale(1.02)';
+    }
+
+    const filtrados = dadosMembros.filter(m => {
+      const g = (m.Genero || m["Gênero"] || "").toString().toUpperCase().trim();
+      if (genero === 'MASC') return g.includes("HOMEM") || g.includes("MASC");
+      return g.includes("MULHER") || g.includes("FEM");
+    });
+    renderizar(filtrados);
+  }
+  async function buscarAvisosGeraisNoModal(nome) {
+    const container = document.getElementById('modalAvisosGeraisContainer');
+    const box = document.getElementById('modalAvisosGerais');
+    const userToken = JSON.parse(localStorage.getItem('user_token') || '{}');
+    const isAdmin = userToken.Role === "Admin" || userToken.Role === "SuperAdmin";
+
+    if (!isAdmin) {
+      container.style.display = 'none';
+      return;
+    }
+
+    box.innerHTML = '<div style="text-align:center; padding:10px; color:#ccc;">Carregando...</div>';
+
+    try {
+      const cached = localStorage.getItem('offline_lembretes');
+      const lembretes = cached ? JSON.parse(cached) : [];
+
+      const normalize = str => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      const nomeNormalizado = normalize(nome);
+
+      const avisos = lembretes.filter(l =>
+        l.Culto === "Aviso Geral" &&
+        (normalize(l.Componente).includes(nomeNormalizado) || nomeNormalizado.includes(normalize(l.Componente)))
+      );
+
+      if (avisos.length > 0) {
+        container.style.display = 'block';
+        box.innerHTML = avisos.map(a => `
+          <div style="background:#fffafa; border-left:3px solid #e67e22; padding:8px; border-radius:5px; margin-top:8px; font-size:0.8rem; position:relative;">
+            <div style="font-weight:bold; margin-bottom:3px; display:flex; justify-content:space-between;">
+              <span>${a.Componente}</span>
+              <span style="font-size:0.7rem; color:#95a5a6;">${a.Data}</span>
+            </div>
+            <div style="color:#555;">${a.Info}</div>
+            <i class="fas fa-trash-alt" onclick="excluirAviso('${a.id_Lembrete}', event)" style="position:absolute; right:8px; bottom:8px; color:#ddd; cursor:pointer; font-size:0.75rem;" title="Remover"></i>
+          </div>
+        `).join('');
+      } else {
+        container.style.display = 'none';
+      }
+    } catch (e) { console.log(e); }
+  }
+
+  async function excluirAviso(id, event) {
+    if (event) event.stopPropagation();
+    if (!confirm("Deseja realmente excluir este aviso?")) return;
+
+    try {
+      const response = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: "delete", sheet: "Lembretes", id_Lembrete: id })
+      });
+      const res = await response.json();
+      if (res.status === "success") {
+        alert("Aviso excluído!");
+        // Atualiza localmente
+        let lembretes = JSON.parse(localStorage.getItem('offline_lembretes') || '[]');
+        lembretes = lembretes.filter(l => l.id_Lembrete !== id);
+        localStorage.setItem('offline_lembretes', JSON.stringify(lembretes));
+
+        // Recarrega se o modal ainda estiver aberto
+        const modal = document.getElementById('modalPerfilComp');
+        if (modal.style.display === 'flex') {
+          // Aqui precisaria do nome, mas vamos apenas sumir com o item do DOM pra ser mais rápido
+          const el = event.target.closest('div');
+          if (el) el.remove();
+        }
+      } else {
+        alert("Erro ao excluir: " + res.message);
+      }
+    } catch (e) { alert("Erro de conexão."); }
+  }
+
+  window.onload = () => iniciar();
+</script>
+
+<div id="modalPerfilComp" class="modal-perfil" onclick="fecharModalDetalhesExterno(event)">
+  <div class="modal-content-perfil" onclick="event.stopPropagation()">
+    <span class="close-perfil" onclick="document.getElementById('modalPerfilComp').style.display='none'">&times;</span>
+
+    <div class="modal-header">
+      <div id="detalheCabecalho">
       </div>
-
-      <div style="text-align: left;">
-        <small style="color: #e67e22; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
-          <i class="fas fa-calendar-alt"></i> Próximas Escalas
-        </small>
-        <div id="modalEscalas" style="margin-bottom: 20px;"></div>
-
-        <small style="color: #9b59b6; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
-          <i class="fas fa-music"></i> Histórico (Voz)
-        </small>
-        <div id="modalHistorico"></div>
-      </div>
-
-      <div id="modalAcoes" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;"></div>
     </div>
+
+    <div style="text-align: left;">
+      <small style="color: #e67e22; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
+        <i class="fas fa-calendar-alt"></i> Próximas Escalas
+      </small>
+      <div id="modalEscalas" style="margin-bottom: 20px;"></div>
+
+      <small style="color: #9b59b6; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
+        <i class="fas fa-music"></i> Histórico (Voz)
+      </small>
+      <div id="modalHistorico" style="margin-bottom: 20px;"></div>
+
+      <div id="modalAvisosGeraisContainer" style="display:none; margin-top:20px;">
+        <small style="color: #e67e22; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
+          <i class="fas fa-bullhorn"></i> Avisos Gerais
+        </small>
+        <div id="modalAvisosGerais"></div>
+      </div>
+    </div>
+
+    <div id="modalAcoes" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;"></div>
   </div>
+</div>
 
 
+</div>
 </body>
 
 </html>

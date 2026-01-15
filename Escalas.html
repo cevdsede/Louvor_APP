@@ -77,17 +77,7 @@
       padding: 0;
     }
 
-    .search-container {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: #fff;
-      padding: 10px 15px;
-      border-bottom: 1px solid #ddd;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+
 
     #searchInput {
       flex-grow: 1;
@@ -98,24 +88,49 @@
       outline: none;
     }
 
-    .nav-btn {
-      background: none;
-      border: none;
-      font-size: 1.3rem;
-      cursor: pointer;
-      color: var(--primary);
-      transition: transform 0.2s;
-      padding: 5px;
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0px;
+      padding: 10px 15px;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      width: 100%;
+      box-sizing: border-box;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
     }
 
-    .nav-btn:active {
-      transform: scale(0.9);
+    .search-container {
+      position: sticky;
+      top: 60px;
+      z-index: 999;
+      background: #fff;
+      padding: 10px 15px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .nav-btn {
+      background: white;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      cursor: pointer;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
     }
 
     .container {
       max-width: 900px;
-      margin: 20px auto;
-      padding: 0 15px;
+      margin: 0 auto;
+      padding: 20px 15px;
     }
 
     .accordion-item {
@@ -379,11 +394,19 @@
 
 <body>
 
-  <div class="search-container">
-    <button class="nav-btn" onclick="window.location.href='MenuEscalas.html'" title="Voltar"><i
-        class="fas fa-arrow-left"></i></button>
-    <input type="text" id="searchInput" placeholder="Pesquisar..." onkeyup="filterEscala()">
-    <button class="nav-btn" onclick="loadAll(true)" title="Atualizar Dados"><i class="fas fa-sync-alt"></i></button>
+  <div class="header-bar">
+    <button class="nav-btn" onclick="window.location.href='MenuEscalas.html'" title="Voltar">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <div class="header-title">Escalas</div>
+    <button class="nav-btn btn-update" onclick="loadAll(true)" title="Atualizar Dados">
+      <i class="fas fa-sync-alt"></i>
+    </button>
+  </div>
+
+  <div class="container" style="padding: 20px 15px;">
+    <input type="text" id="searchInput" placeholder="Pesquisar..." onkeyup="filterEscala()"
+      style="width: 100%; padding: 10px 15px; border: 2px solid #ddd; border-radius: 30px; outline: none; box-sizing: border-box;">
   </div>
 
   <div id="loader" class="loading" style="display:none"><i class="fas fa-sync fa-spin"></i> Carregando Escalas...</div>
@@ -506,10 +529,16 @@
           return matchData && matchNome;
         });
 
-        // Verifica se o usuário logado está escalado neste culto
+        // Verifica se o usuário logado está escoladado neste culto
         const userToken = JSON.parse(localStorage.getItem('user_token') || '{}');
         const meuNomeLogado = (userToken.Nome || "").toLowerCase().trim();
-        const estouEscalado = meuNomeLogado && item.membros.some(m => m.nome.toLowerCase().trim().includes(meuNomeLogado));
+        const isAdmin = userToken.Role === "Admin" || userToken.Role === "SuperAdmin";
+
+        // Helper para normalizar nomes
+        const normalize = str => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        const nomeNormalizado = normalize(meuNomeLogado);
+
+        const estouEscalado = (meuNomeLogado && item.membros.some(m => normalize(m.nome).includes(nomeNormalizado)));
 
         const itemEl = document.createElement('div');
         itemEl.className = 'accordion-item';
@@ -572,7 +601,7 @@
             </div>
             <div>
               <div class="section-title-container">
-                <span class="section-title"><i class="fas fa-music"></i> Repertório</span>
+                <span class="section-title"><i class="fas fa-music"></i> Repertório ${estouEscalado ? `<a href="Cadastro%20de%20Repertorio.html?culto=${encodeURIComponent(item.info.Cultos)}&source=Escalas.html" style="color:var(--accent); margin-left:5px;"><i class="fas fa-plus-circle"></i></a>` : ''}</span>
                 ${musicasDoCulto.length > 0 ? `
                   <button class="btn-add-bulk" onclick="processarBulk(this, event)">
                     <i class="fas fa-plus-circle"></i> Add Histórico
@@ -733,6 +762,8 @@
     window.onload = () => loadAll();
   </script>
 
+  </div>
+  </div>
 </body>
 
 </html>

@@ -36,7 +36,7 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      z-index: 999999;
+      z-index: 1000;
     }
 
 
@@ -316,7 +316,7 @@
       justify-content: center;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
       cursor: pointer;
-      z-index: 999;
+      z-index: 1000;
       color: var(--primary);
       transition: 0.3s;
     }
@@ -692,6 +692,9 @@
 
 
   <div class="floating-controls">
+    <div class="btn-floating admin-only" onclick="abrirModalAvisoGeral()" title="Mandar Aviso Geral">
+      <i class="fas fa-bullhorn"></i>
+    </div>
     <div class="btn-floating" onclick="abrirModalPerfil()" title="Meu Perfil">
       <i class="fas fa-user-gear"></i>
     </div>
@@ -705,7 +708,9 @@
   <div class="container">
     <img src="assets/backgroud.png" alt="Logo" class="logo">
     <h1>Louvor CEVD</h1>
-    <div class="user-welcome">Olá, <span id="userName">...</span></div>
+    <div class="user-welcome">Olá, <span id="userName">...</span> | <a href="#" onclick="logout()"
+        style="color: #e74c3c; text-decoration: none; font-weight: bold;"><i class="fas fa-sign-out-alt"></i> Sair</a>
+    </div>
     <div class="dashboard-main">
       <!-- DASHBOARD KPIs -->
       <div class="kpi-container">
@@ -767,7 +772,6 @@
     <button class="btn-sync" onclick="syncAllData()">
       <i class="fas fa-sync"></i> Atualizar Tudo
     </button>
-    <button class="btn-logout" onclick="logout()">Sair</button>
 
     <div class="last-update">
       <span id="lastUpdateDate">Nunca atualizado</span> | <span id="appVersion"></span>
@@ -1474,6 +1478,59 @@
         banner.style.display = 'none';
       }, 400);
     }
+
+    function abrirModalAvisoGeral() {
+      document.getElementById('textoAvisoGeral').value = "";
+      document.getElementById('avisoGeralModal').style.display = 'flex';
+    }
+
+    function fecharModalAvisoGeral() {
+      document.getElementById('avisoGeralModal').style.display = 'none';
+    }
+
+    async function enviarAvisoGeral() {
+      const text = document.getElementById('textoAvisoGeral').value.trim();
+      const btn = document.getElementById('btnEnviarAvisoGeral');
+
+      if (!text) {
+        alert("Digite o texto do aviso!");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+      const payload = {
+        action: "add",
+        sheet: "Lembretes",
+        id_Lembrete: "AVISO-" + Math.random().toString(36).substr(2, 9).toUpperCase(),
+        Componente: userData.Nome || "Admin",
+        Data: new Date().toLocaleDateString('pt-BR'),
+        Culto: "Aviso Geral",
+        Info: text
+      };
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        const res = await response.json();
+        if (res.status === "success") {
+          alert("Aviso geral enviado com sucesso!");
+          fecharModalAvisoGeral();
+          backgroundSync(); // Atualiza localmente
+        } else {
+          alert("Erro ao enviar: " + res.message);
+        }
+      } catch (e) {
+        alert("Erro de conexão.");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'ENVIAR AVISO';
+      }
+    }
+
     function abrirModalPerfil() {
       const user = JSON.parse(localStorage.getItem('user_token') || '{}');
       document.getElementById('editNome').value = user.Nome || "";
@@ -1539,6 +1596,30 @@
     });
 
   </script>
+
+  <div id="avisoGeralModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="fecharModalAvisoGeral()">&times;</span>
+      <div class="modal-header">
+        <h3 style="margin:0; font-size: 1.1rem;"><i class="fas fa-bullhorn"></i> Mandar Aviso Geral</h3>
+        <small style="color: #7f8c8d;">Visível apenas para Admin e SuperAdmin</small>
+      </div>
+
+      <div style="text-align: left; display: flex; flex-direction: column; gap: 15px;">
+        <div class="input-group">
+          <label style="font-size: 0.8rem; color: #7f8c8d;">Mensagem do Aviso</label>
+          <textarea id="textoAvisoGeral" rows="4"
+            style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; resize: none;"
+            placeholder="Digite o aviso para a equipe..."></textarea>
+        </div>
+
+        <button id="btnEnviarAvisoGeral" onclick="enviarAvisoGeral()"
+          style="background:var(--secondary); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; cursor:pointer;">
+          ENVIAR AVISO
+        </button>
+      </div>
+    </div>
+  </div>
 
   <div id="perfilModal" class="modal">
     <div class="modal-content">
