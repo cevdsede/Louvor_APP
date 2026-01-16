@@ -17,87 +17,79 @@
   <link rel="stylesheet" href="assets/css/main.css">
   <style>
     :root {
-      --primary: #2c3e50;
+      --primary: #1e293b;
       --secondary: #3498db;
       --accent: #e67e22;
-      --bg: #f4f7f6;
+      --bg: #f8fafc;
     }
 
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f4f7f6;
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg);
       margin: 0;
       min-height: 100vh;
       box-sizing: border-box;
       padding-top: 80px;
-      /* Space for fixed header */
     }
 
-    /* HEADER BAR (Unification) */
+    /* PREMIUM HEADER */
     .header-bar {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      height: 70px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 15px;
-      background: #fff;
-      border-bottom: 1px solid #ddd;
-      width: 100%;
-      height: 60px;
-      box-sizing: border-box;
+      padding: 0 20px;
       position: fixed;
       top: 0;
       left: 0;
+      right: 0;
       z-index: 1000;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.3);
     }
 
     .header-title {
-      font-size: 1.2rem;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.15rem;
       font-weight: 700;
-      color: #2c3e50;
+      color: var(--primary);
       margin: 0;
       text-align: center;
       flex-grow: 1;
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 10px;
-      align-items: center;
+      letter-spacing: -0.02em;
     }
 
     .nav-btn {
-      background: white;
-      border: none;
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
       border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-      cursor: pointer;
-      color: #2c3e50;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      background: white;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s;
+      color: var(--primary);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      text-decoration: none;
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      cursor: pointer;
       outline: none;
       position: relative;
     }
 
     .nav-btn:active {
-      transform: scale(0.95);
-    }
-
-    html,
-    body {
-      position: static;
-      overflow-x: hidden;
+      transform: scale(0.92);
+      background: #f1f5f9;
     }
 
     .notif-badge {
       position: absolute;
       top: -2px;
       right: -2px;
-      background: #e74c3c;
+      background: #ef4444;
       color: white;
       font-size: 0.65rem;
       min-width: 16px;
@@ -110,151 +102,22 @@
       border: 2px solid white;
     }
 
-    .container {
-      margin: 0 auto;
-      text-align: center;
-      width: 100%;
-      max-width: 400px;
-      padding: 10px;
-    }
-
-
-    .logo-hero {
-      width: 60px;
-      height: 60px;
-      border-radius: 15px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .menu-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-      opacity: 1;
-      transition: opacity 0.5s;
-      margin-top: -20px;
-
-    }
-
-    .menu-item {
-      background: white;
-      padding: 20px;
-      border-radius: 15px;
-      text-decoration: none;
-      color: #2c3e50;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-      transition: transform 0.2s;
+    .header-actions {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
       gap: 10px;
+      align-items: center;
     }
 
-    .menu-item:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-    }
-
-    .menu-item i {
-      font-size: 2rem;
-      color: #3498db;
-    }
-
-    .menu-item span {
-      font-weight: bold;
-      font-size: 0.9rem;
-    }
-
-    /* Progress Bar */
-    .sync-status {
-      margin-bottom: 20px;
-      width: 100%;
-      display: none;
-    }
-
-    .progress-track {
-      background: #e0e0e0;
-      height: 6px;
-      border-radius: 3px;
-      overflow: hidden;
-      width: 100%;
-      margin-top: 5px;
-    }
-
-    .progress-fill {
-      background: #27ae60;
-      height: 100%;
-      width: 0%;
-      transition: width 0.3s;
-    }
-
-    .status-text {
-      font-size: 0.8rem;
-      color: #7f8c8d;
-      margin-top: 5px;
-      display: block;
-    }
-
-    .btn-sync {
-      background: none;
-      border: 1px solid #3498db;
-      color: #3498db;
-      padding: 8px 20px;
-      border-radius: 20px;
-      margin-top: 15px;
-      cursor: pointer;
-      font-size: 0.8rem;
-      transition: 0.3s;
-      width: 100%;
-      /* Largura total dentro do container */
-      max-width: 300px;
-      display: block;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    .btn-sync:hover {
-      background: #3498db;
-      color: white;
-    }
-
-    .btn-logout {
-      margin-top: 10px;
-      color: #e74c3c;
-      background: none;
-      border: none;
-      font-size: 0.8rem;
-      cursor: pointer;
-      text-decoration: underline;
-    }
-
-    .close-banner {
-      position: absolute;
-      top: 2px;
-      right: 15px;
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: #95a5a6;
-      cursor: pointer;
-      line-height: 1;
-      transition: color 0.2s;
-    }
-
-    .close-banner:hover {
-      color: #2c3e50;
-    }
-
+    /* INSTALL BANNER */
     #installBanner {
       display: none;
       position: fixed;
-      top: 58px;
+      top: 75px;
       left: 20px;
       right: auto;
       max-width: 500px;
       width: fit-content;
-
-      background: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(15px);
       -webkit-backdrop-filter: blur(15px);
       border: 1px solid rgba(255, 255, 255, 0.3);
@@ -264,7 +127,6 @@
       z-index: 10001;
       animation: slideDown 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
-
 
     @keyframes slideDown {
       from {
@@ -276,6 +138,22 @@
         transform: translateY(0);
         opacity: 1;
       }
+    }
+
+    .close-banner {
+      position: absolute;
+      top: 8px;
+      right: 15px;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #94a3b8;
+      cursor: pointer;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+
+    .close-banner:hover {
+      color: #1e293b;
     }
 
     .install-content {
@@ -293,143 +171,86 @@
     }
 
     .btn-instalar {
-      background: #2c3e50;
+      background: var(--primary);
       color: white;
       border: none;
-      padding: 8px 12px;
-      border-radius: 10px;
-      font-weight: bold;
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-weight: 700;
       font-size: 0.75rem;
       cursor: pointer;
-
-      min-width: 55px;
-      /* igual aos flutuantes */
+      min-width: 80px;
       text-align: center;
       white-space: nowrap;
-    }
-
-
-
-    .user-welcome {
-      font-size: 0.9rem;
-      color: #7f8c8d;
-      margin-bottom: 10px;
-      margin-top: -20px;
-
-    }
-
-    .last-update {
-      margin-top: 30px;
-      font-size: 0.75rem;
-      color: #95a5a6;
-    }
-
-    /* NOTIFICATION CENTER */
-    .notif-bell {
-      position: fixed;
-      top: 15px;
-      right: 15px;
-      background: white;
-      width: 45px;
-      height: 45px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      cursor: pointer;
-      z-index: 1000;
-      color: var(--primary);
       transition: 0.3s;
+      box-shadow: 0 4px 6px rgba(30, 41, 59, 0.2);
     }
 
-    .notif-bell:hover {
-      transform: scale(1.1);
+    .btn-instalar:active {
+      transform: scale(0.95);
     }
 
-    .notif-badge {
-      position: absolute;
-      top: 0;
-      right: 0;
-      background: #e74c3c;
-      color: white;
-      font-size: 0.6rem;
-      padding: 3px 6px;
-      border-radius: 10px;
-      font-weight: bold;
-      display: none;
+    .container {
+      margin: 0 auto;
+      text-align: center;
+      width: 100%;
+      max-width: 400px;
+      padding: 10px;
+      animation: fadeIn 0.4s ease-out;
     }
 
-    .notif-item {
-      padding: 12px;
-      border-bottom: 1px solid #eee;
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: -10px;
+    }
+
+    .menu-item {
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      text-decoration: none;
+      color: var(--primary);
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      transition: all 0.3s ease;
       display: flex;
       flex-direction: column;
-      gap: 5px;
-      transition: 0.2s;
-    }
-
-    .notif-item.unread {
-      background: #f0f7ff;
-    }
-
-    .notif-type {
-      font-size: 0.7rem;
-      font-weight: bold;
-      text-transform: uppercase;
-      padding: 2px 6px;
-      border-radius: 4px;
-      align-self: flex-start;
-    }
-
-    .type-escala {
-      background: #e3f2fd;
-      color: #1976d2;
-    }
-
-    .type-aviso {
-      background: #fff3e0;
-      color: #f57c00;
-    }
-
-    .type-musica {
-      background: #e8f5e9;
-      color: #2e7d32;
-    }
-
-    .notif-msg {
-      font-size: 0.85rem;
-      color: #333;
-    }
-
-    .notif-time {
-      font-size: 0.7rem;
-      color: #999;
-    }
-
-    .notif-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 5px;
-    }
-
-    .btn-notif-del {
-      background: none;
-      border: none;
-      color: #e74c3c;
-      font-size: 0.75rem;
-      cursor: pointer;
-      display: flex;
       align-items: center;
-      gap: 3px;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(0, 0, 0, 0.02);
     }
 
-    .hidden-permission {
-      display: none !important;
+    .menu-item:active {
+      transform: scale(0.95);
+      background: #f1f5f9;
     }
 
-    /* DASHBOARD STYLES */
+    .menu-item i {
+      font-size: 2rem;
+      color: var(--primary);
+    }
+
+    .menu-item span {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: #0f172a;
+    }
+
+    /* DASHBOARD MAIN CONTAINER */
     .dashboard-main {
       display: flex;
       flex-direction: column;
@@ -437,24 +258,33 @@
       width: 100%;
     }
 
+    /* KPI CARDS */
     .kpi-container {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
       width: 100%;
+      margin-bottom: 20px;
     }
 
     .kpi-card {
       background: white;
       padding: 15px 5px;
       border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
       text-align: center;
       border-bottom: 4px solid #3498db;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
+      border: 1px solid rgba(0, 0, 0, 0.02);
+      transition: all 0.3s ease;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
     }
 
     .kpi-card i {
@@ -466,30 +296,110 @@
     .kpi-card .value {
       display: block;
       font-size: 1.4rem;
-      font-weight: bold;
-      color: #2c3e50;
+      font-weight: 800;
+      color: #1e293b;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
     .kpi-card .label {
       font-size: 0.65rem;
-      color: #7f8c8d;
+      color: #64748b;
       text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
     }
 
     .dashboard-card {
       background: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      border-radius: 20px;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
       padding: 20px;
       margin-bottom: 25px;
       width: 100%;
       box-sizing: border-box;
+      border: 1px solid rgba(0, 0, 0, 0.02);
     }
 
     .chart-wrapper {
       position: relative;
       height: 300px;
       width: 100%;
+    }
+
+    .btn-sync {
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      padding: 14px 20px;
+      margin-top: 15px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: 0.3s;
+      width: 100%;
+      max-width: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-left: auto;
+      margin-right: auto;
+      box-shadow: 0 10px 15px -3px rgba(30, 41, 59, 0.2);
+    }
+
+    .btn-sync:hover {
+      background: #334155;
+      box-shadow: 0 12px 20px -3px rgba(30, 41, 59, 0.3);
+    }
+
+    .btn-sync:active {
+      transform: scale(0.97);
+      opacity: 0.9;
+    }
+
+    .user-welcome {
+      font-size: 0.95rem;
+      color: #64748b;
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+
+    .last-update {
+      margin-top: 30px;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    /* Progress Bar */
+    .sync-status {
+      margin-top: 15px;
+      width: 100%;
+      display: none;
+    }
+
+    .progress-track {
+      background: #e2e8f0;
+      height: 8px;
+      border-radius: 10px;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    .progress-fill {
+      background: #10b981;
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .status-text {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 8px;
+      display: block;
+      font-weight: 600;
     }
 
     /* MODAL */
@@ -506,16 +416,7 @@
       }
     }
 
-    .close-modal {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      font-size: 1.5rem;
-      cursor: pointer;
-      color: #95a5a6;
-    }
-
-
+    /* MODAL DETALHES */
     .modal {
       display: none;
       position: fixed;
@@ -524,7 +425,8 @@
       top: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(8px);
       align-items: center;
       justify-content: center;
       padding: 15px;
@@ -533,45 +435,57 @@
 
     .modal-content {
       background: white;
-      padding: 20px;
-      border-radius: 15px;
-      width: 100%;
+      padding: 30px;
+      border-radius: 24px;
+      width: 90%;
       max-width: 400px;
       position: relative;
-      animation: slideUp 0.3s ease;
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+      animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
-    @keyframes slideUp {
+    @keyframes modalPop {
       from {
-        transform: translateY(20px);
         opacity: 0;
+        transform: scale(0.95) translateY(10px);
       }
 
       to {
-        transform: translateY(0);
         opacity: 1;
+        transform: scale(1) translateY(0);
       }
     }
 
     .close-modal {
       position: absolute;
-      right: 15px;
-      top: 10px;
+      right: 20px;
+      top: 20px;
       font-size: 1.5rem;
       cursor: pointer;
-      color: #95a5a6;
+      color: #94a3b8;
+      transition: 0.2s;
+    }
+
+    .close-modal:hover {
+      color: #1e293b;
     }
 
     .modal-header {
-      border-bottom: 2px solid #f4f7f6;
-      padding-bottom: 10px;
-      margin-bottom: 15px;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 15px;
+      margin-bottom: 20px;
       text-align: left;
     }
 
+    .modal-header h3 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
     .detail-item {
-      padding: 10px 0;
-      border-bottom: 1px solid #f9f9f9;
+      padding: 12px 0;
+      border-bottom: 1px solid #f1f5f9;
       text-align: left;
     }
 
@@ -579,25 +493,31 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: 4px;
     }
 
     .detail-culto {
-      font-weight: 600;
-      font-size: 0.9rem;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #1e293b;
     }
 
     .detail-date {
       color: #3498db;
       font-size: 0.8rem;
-      font-weight: bold;
+      font-weight: 800;
+      background: #f1faff;
+      padding: 2px 8px;
+      border-radius: 6px;
     }
 
     .detail-funcoes {
-      color: #666;
+      color: #64748b;
       font-size: 0.8rem;
-      font-style: italic;
-      display: block;
-      margin-top: 3px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
 
     @media (max-width: 400px) {
@@ -633,7 +553,7 @@
 
       .dashboard-card {
         flex: 1;
-        margin: 0 20px;
+        margin: 0 20px !important;
         order: 2;
         /* Centro */
         padding: 15px;
@@ -734,9 +654,9 @@
   </div>
 
   <div class="container">
-    <div class="user-welcome" style="margin-top: 10px;">
+    <div class="user-welcome">
       Olá, <span id="userName">...</span> |
-      <a href="#" onclick="logout()" style="color: #e74c3c; text-decoration: none; font-weight: bold;">
+      <a href="#" onclick="logout()" style="color: #ef4444; text-decoration: none; font-weight: 700;">
         <i class="fas fa-sign-out-alt"></i> Sair
       </a>
     </div>
@@ -847,9 +767,9 @@
   <div id="avisoGeralModal" class="modal">
     <div class="modal-content">
       <span class="close-modal" onclick="fecharModalAvisoGeral()">&times;</span>
-      <h3>Mandar Aviso</h3>
-      <textarea id="textoAvisoGeral" class="form-control mb-3" rows="4" placeholder="Sua mensagem..."></textarea>
-      <button id="btnEnviarAvisoGeral" class="btn-premium w-100" onclick="enviarAvisoGeral()">ENVIAR AVISO</button>
+      <h3 class="mb-3">Mandar Aviso</h3>
+      <textarea id="textoAvisoGeral" class="premium-input" rows="4" placeholder="Sua mensagem..."></textarea>
+      <button id="btnEnviarAvisoGeral" class="btn-premium" onclick="enviarAvisoGeral()">ENVIAR AVISO</button>
     </div>
   </div>
 
@@ -857,16 +777,16 @@
   <div id="perfilModal" class="modal">
     <div class="modal-content">
       <span class="close-modal" onclick="fecharModalPerfil()">&times;</span>
-      <h3>Meu Perfil</h3>
-      <div class="mb-3">
-        <label class="form-label small text-muted">Nome</label>
-        <input type="text" id="editNome" class="form-control">
+      <h3 class="mb-3">Meu Perfil</h3>
+      <div class="mb-3 text-start">
+        <label class="form-label small text-muted font-weight-bold">Nome</label>
+        <input type="text" id="editNome" class="premium-input">
       </div>
-      <div class="mb-3">
-        <label class="form-label small text-muted">Senha</label>
-        <input type="password" id="editSenha" class="form-control" placeholder="Deixe em branco para não mudar">
+      <div class="mb-3 text-start">
+        <label class="form-label small text-muted font-weight-bold">Senha</label>
+        <input type="password" id="editSenha" class="premium-input" placeholder="Deixe em branco para não mudar">
       </div>
-      <button id="btnSalvarPerfil" class="btn-premium w-100" onclick="salvarPerfil()">SALVAR</button>
+      <button id="btnSalvarPerfil" class="btn-premium" onclick="salvarPerfil()">SALVAR</button>
     </div>
   </div>
 

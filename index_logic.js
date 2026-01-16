@@ -49,46 +49,58 @@ async function backgroundSync() {
 }
 
 async function performFetches(progressCb) {
-    progressCb(10, "Escalas...");
-    const res1 = await fetch(SCRIPT_URL + "?sheet=Transformar");
-    localStorage.setItem('offline_escala', JSON.stringify((await res1.json()).data));
+    try {
+        progressCb(10, "Escalas...");
+        const res1 = await fetch(SCRIPT_URL + "?sheet=Transformar");
+        const data1 = await res1.json();
+        if (data1 && data1.data) localStorage.setItem('offline_escala', JSON.stringify(data1.data));
 
-    progressCb(30, "Repertório...");
-    const res2 = await fetch(SCRIPT_URL + "?sheet=Repertório");
-    localStorage.setItem('offline_repertorio', JSON.stringify((await res2.json()).data));
+        progressCb(30, "Repertório...");
+        const res2 = await fetch(SCRIPT_URL + "?sheet=Repertório");
+        const data2 = await res2.json();
+        if (data2 && data2.data) localStorage.setItem('offline_repertorio', JSON.stringify(data2.data));
 
-    progressCb(50, "Músicas...");
-    const res3 = await fetch(SCRIPT_URL + "?sheet=Musicas");
-    localStorage.setItem('offline_musicas', JSON.stringify((await res3.json()).data));
+        progressCb(50, "Músicas...");
+        const res3 = await fetch(SCRIPT_URL + "?sheet=Musicas");
+        const data3 = await res3.json();
+        if (data3 && data3.data) localStorage.setItem('offline_musicas', JSON.stringify(data3.data));
 
-    progressCb(65, "Componentes...");
-    const res4 = await fetch(SCRIPT_URL + "?sheet=Componentes");
-    localStorage.setItem('offline_componentes', JSON.stringify((await res4.json()).data));
+        progressCb(65, "Componentes...");
+        const res4 = await fetch(SCRIPT_URL + "?sheet=Componentes");
+        const data4 = await res4.json();
+        if (data4 && data4.data) localStorage.setItem('offline_componentes', JSON.stringify(data4.data));
 
-    progressCb(80, "Temas...");
-    const resTemas = await fetch(SCRIPT_URL + "?sheet=" + encodeURIComponent("Tema Músicas"));
-    localStorage.setItem('offline_temas', JSON.stringify((await resTemas.json()).data));
+        progressCb(80, "Temas...");
+        const resTemas = await fetch(SCRIPT_URL + "?sheet=" + encodeURIComponent("Tema Músicas"));
+        const dataTemas = await resTemas.json();
+        if (dataTemas && dataTemas.data) localStorage.setItem('offline_temas', JSON.stringify(dataTemas.data));
 
-    progressCb(85, "Lembretes...");
-    const resLemb = await fetch(SCRIPT_URL + "?sheet=Lembretes");
-    const lembData = (await resLemb.json()).data;
-    localStorage.setItem('offline_lembretes', JSON.stringify(lembData));
+        progressCb(85, "Lembretes...");
+        const resLemb = await fetch(SCRIPT_URL + "?sheet=Lembretes");
+        const dataLemb = await resLemb.json();
+        if (dataLemb && dataLemb.data) localStorage.setItem('offline_lembretes', JSON.stringify(dataLemb.data));
 
-    progressCb(90, "Histórico...");
-    const res5 = await fetch(SCRIPT_URL + "?sheet=" + encodeURIComponent("Historico de Músicas"));
-    localStorage.setItem('offline_historico', JSON.stringify((await res5.json()).data));
+        progressCb(90, "Histórico...");
+        const res5 = await fetch(SCRIPT_URL + "?sheet=" + encodeURIComponent("Historico de Músicas"));
+        const data5 = await res5.json();
+        if (data5 && data5.data) localStorage.setItem('offline_historico', JSON.stringify(data5.data));
 
-    progressCb(95, "Imagens...");
-    const res6 = await fetch(SCRIPT_URL + "?action=getImages");
-    localStorage.setItem('offline_imagens', JSON.stringify((await res6.json()).data));
+        progressCb(95, "Imagens...");
+        const res6 = await fetch(SCRIPT_URL + "?action=getImages");
+        const data6 = await res6.json();
+        if (data6 && data6.data) localStorage.setItem('offline_imagens', JSON.stringify(data6.data));
 
-    const now = new Date();
-    localStorage.setItem('last_full_sync', now.toISOString());
+        const now = new Date();
+        localStorage.setItem('last_full_sync', now.toISOString());
 
-    // PROCESSA NOTIFICAÇÕES APÓS SYNC
-    processarNotificacoes();
-    initDashboard(); // Garante que o gráfico atualiza após sync pleno
-    updateLastUpdateText();
+        // PROCESSA NOTIFICAÇÕES APÓS SYNC
+        processarNotificacoes();
+        initDashboard(); // Garante que o gráfico atualiza após sync pleno
+        updateLastUpdateText();
+    } catch (err) {
+        console.error("Erro durante o fetch de dados:", err);
+        throw err;
+    }
 }
 
 function logout(force = false) {
@@ -180,7 +192,7 @@ function processarERenderizar(dados) {
 
     const escalasUsuario = dados
         .filter(e => {
-            if (!e.Nome) return false;
+            if (!e.Nome || !meuNome) return false;
             const dataE = new Date(e.Data);
             // Ajusta timezone para evitar problemas de "ontem"
             dataE.setHours(dataE.getHours() + 12);
@@ -301,25 +313,28 @@ window.onload = () => {
     solicitarPermisaoNotificacao();
 
     // Listener para atualizar o gráfico se os dados mudarem em outra aba/página
-    let deferredPrompt;
-
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
 
         const banner = document.getElementById('installBanner');
-        banner.style.display = 'block';
+        if (banner) banner.style.display = 'block';
 
-        document.getElementById('btnInstall').addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                console.log(`Usuário respondeu à instalação: ${outcome}`);
-                deferredPrompt = null;
-                banner.style.animation = 'slideDown 0.5s reverse forwards'; // Animação de saída
-                setTimeout(() => banner.style.display = 'none', 500);
-            }
-        });
+        const btnInstall = document.getElementById('btnInstall');
+        if (btnInstall) {
+            btnInstall.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`Usuário respondeu à instalação: ${outcome}`);
+                    deferredPrompt = null;
+                    if (banner) {
+                        banner.style.animation = 'slideDown 0.5s reverse forwards'; // Animação de saída
+                        setTimeout(() => banner.style.display = 'none', 500);
+                    }
+                }
+            });
+        }
     });
 
 
@@ -811,7 +826,13 @@ async function salvarPerfil() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('appVersion').innerText =
-        `Versão v${APP_CONFIG.VERSION}`;
-});
+const initAppVersion = () => {
+    const el = document.getElementById('appVersion');
+    if (el) el.innerText = `Versão v${APP_CONFIG.VERSION}`;
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAppVersion);
+} else {
+    initAppVersion();
+}

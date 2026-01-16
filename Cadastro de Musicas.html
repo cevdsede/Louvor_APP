@@ -11,58 +11,20 @@
   <script src="sync.js"></script>
   <link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">
   <link rel="stylesheet" href="assets/Font Awesome/css/all.css">
-  <script>
-    const userRoleToken = JSON.parse(localStorage.getItem('user_token') || '{}').Role;
-    if (userRoleToken && !hasPermission(userRoleToken, "Cadastro de Musicas.html", "page")) {
-      window.location.href = 'index.html';
-    }
-  </script>
+  <link rel="stylesheet" href="assets/css/main.css">
   <style>
-    :root {
-      --primary: #2c3e50;
-      --accent: #e67e22;
-      --bg: #f4f7f6;
-      --success: #27ae60;
-      --error: #e74c3c;
-    }
-
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: var(--bg);
-      margin: 0;
-      padding: 0;
-    }
-
-    .container {
-      max-width: 500px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-
-    .card {
-      background: white;
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-      width: 100%;
-      max-width: 500px;
-      border-top: 8px solid var(--accent);
-    }
-
-    h2 {
-      text-align: center;
-      color: var(--primary);
-      margin-bottom: 25px;
+      padding-top: 80px;
     }
 
     .field {
-      margin-bottom: 18px;
+      margin-bottom: 20px;
     }
 
     label {
       display: block;
       margin-bottom: 8px;
-      font-weight: bold;
+      font-weight: 700;
       color: var(--primary);
       font-size: 0.9rem;
     }
@@ -70,251 +32,184 @@
     input,
     select {
       width: 100%;
-      padding: 12px;
-      border: 2px solid #ddd;
-      border-radius: 8px;
+      padding: 14px;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-md);
       box-sizing: border-box;
       font-size: 1rem;
       transition: 0.3s;
+      background: #f8fafc;
+      font-family: inherit;
     }
 
     input:focus,
     select:focus {
-      border-color: var(--accent);
+      background: white;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(30, 41, 59, 0.1);
       outline: none;
     }
-
-    button {
-      width: 100%;
-      padding: 15px;
-      background: var(--accent);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 1.1rem;
-      font-weight: bold;
-      cursor: pointer;
-      transition: 0.3s;
-      margin-top: 10px;
-    }
-
-    button:hover {
-      background: #d35400;
-      transform: translateY(-2px);
-    }
-
-    button:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-
-    .header-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-      padding: 10px 15px;
-      border-bottom: 1px solid #ddd;
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    .header-title {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: var(--primary);
-      margin: 0;
-      flex-grow: 1;
-      text-align: center;
-    }
-
-    .nav-btn {
-      background: white;
-      border: none;
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-      cursor: pointer;
-      color: var(--primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-    }
-
 
     #status {
       margin-top: 20px;
       padding: 15px;
-      border-radius: 8px;
+      border-radius: var(--radius-md);
       text-align: center;
       display: none;
-      font-weight: 500;
+      font-weight: 600;
     }
 
     .msg-success {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #6ee7b7;
     }
 
     .msg-error {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-    }
-
-    @media (max-width: 600px) {
-      .card {
-        padding: 15px;
-      }
-
-      .container {
-        padding: 10px;
-      }
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fca5a5;
     }
   </style>
 </head>
 
-<div class="header-bar">
-  <button class="nav-btn" onclick="handleBack()" title="Voltar">
-    <i class="fas fa-arrow-left"></i>
-  </button>
-  <h2 class="header-title">Cadastrar Música</h2>
-  <div style="width: 40px"></div>
-</div>
-
-<div class="container">
-  <div class="card" style="border-top: none;">
-
-    <form id="musicForm">
-      <input type="hidden" name="sheet" value="Musicas">
-
-      <div class="field">
-        <label>Tema</label>
-        <select name="Tema" id="temaSelect" required>
-          <option value="">Carregando temas...</option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label>Estilo</label>
-        <select name="Estilo" required>
-          <option value="">Selecione o estilo...</option>
-          <option value="Adoração">Adoração</option>
-          <option value="Celebração">Celebração</option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label>Nome da Música</label>
-        <input type="text" name="Musica" placeholder="Ex: A Terra Clama" required>
-      </div>
-
-      <div class="field">
-        <label>Cantor / Banda</label>
-        <input type="text" name="Cantor" placeholder="Ex: Davi Fernandes" required>
-      </div>
-
-      <button type="submit" id="btnSubmit">Salvar Música</button>
-    </form>
-
-    <div id="status"></div>
+<body>
+  <div class="premium-header">
+    <button class="nav-btn" onclick="handleBack()" title="Voltar">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <h2 class="header-title">Cadastrar Música</h2>
+    <div style="width: 42px"></div>
   </div>
 
-  <script>
-    // ATENÇÃO: Verifique se este é o seu link atualizado do Web App
-    const SCRIPT_URL = APP_CONFIG.SCRIPT_URL;
+  <div class="premium-container">
+    <div class="premium-card" style="max-width: 500px; margin: 0 auto;">
 
-    // 1. Carregar os temas da aba "Tema Músicas" ao abrir a página
-    async function loadTemas() {
-      const select = document.getElementById('temaSelect');
-      const cached = localStorage.getItem('offline_temas');
+      <form id="musicForm">
+        <input type="hidden" name="sheet" value="Musicas">
 
-      let data = [];
+        <div class="field">
+          <label>Tema</label>
+          <select name="Tema" id="temaSelect" required>
+            <option value="">Carregando temas...</option>
+          </select>
+        </div>
 
-      if (cached) {
-        data = JSON.parse(cached);
-      } else {
-        try {
-          // Fallback se não tiver cache
-          const response = await fetch(SCRIPT_URL + "?sheet=" + encodeURIComponent("Tema Músicas"));
-          const json = await response.json();
-          data = json.data;
-          // Salva para proxima vez (embora o index.html seja o principal responsável)
-          localStorage.setItem('offline_temas', JSON.stringify(data));
-        } catch (e) {
-          console.error("Erro ao carregar temas:", e);
-          select.innerHTML = '<option value="">Erro ao conectar</option>';
-          return;
+        <div class="field">
+          <label>Estilo</label>
+          <select name="Estilo" required>
+            <option value="">Selecione o estilo...</option>
+            <option value="Adoração">Adoração</option>
+            <option value="Celebração">Celebração</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Nome da Música</label>
+          <input type="text" name="Musica" placeholder="Ex: A Terra Clama" required>
+        </div>
+
+        <div class="field">
+          <label>Cantor / Banda</label>
+          <input type="text" name="Cantor" placeholder="Ex: Davi Fernandes" required>
+        </div>
+
+        <button type="submit" id="btnSubmit" class="btn-premium">Salvar Música</button>
+      </form>
+
+      <div id="status"></div>
+    </div>
+
+    <script>
+      // ATENÇÃO: Verifique se este é o seu link atualizado do Web App
+      const SCRIPT_URL = APP_CONFIG.SCRIPT_URL;
+
+      // 1. Carregar os temas da aba "Tema Músicas" ao abrir a página
+      async function loadTemas() {
+        const select = document.getElementById('temaSelect');
+        const cached = localStorage.getItem('offline_temas');
+
+        let data = [];
+
+        if (cached) {
+          data = JSON.parse(cached);
+        } else {
+          try {
+            // Fallback se não tiver cache
+            const response = await fetch(SCRIPT_URL + "?sheet=" + encodeURIComponent("Tema Músicas"));
+            const json = await response.json();
+            data = json.data;
+            // Salva para proxima vez (embora o index.html seja o principal responsável)
+            localStorage.setItem('offline_temas', JSON.stringify(data));
+          } catch (e) {
+            console.error("Erro ao carregar temas:", e);
+            select.innerHTML = '<option value="">Erro ao conectar</option>';
+            return;
+          }
+        }
+
+        select.innerHTML = '<option value="">Selecione o tema...</option>';
+
+        if (data && data.length > 0) {
+          data.forEach(item => {
+            let nomeTema = Object.values(item)[0];
+            if (nomeTema && nomeTema !== "Tema") {
+              let option = document.createElement('option');
+              option.value = nomeTema;
+              option.text = nomeTema;
+              select.appendChild(option);
+            }
+          });
         }
       }
 
-      select.innerHTML = '<option value="">Selecione o tema...</option>';
+      // 2. Lógica de envio do formulário
+      document.getElementById('musicForm').addEventListener('submit', function (e) {
+        e.preventDefault();
 
-      if (data && data.length > 0) {
-        data.forEach(item => {
-          let nomeTema = Object.values(item)[0];
-          if (nomeTema && nomeTema !== "Tema") {
-            let option = document.createElement('option');
-            option.value = nomeTema;
-            option.text = nomeTema;
-            select.appendChild(option);
-          }
-        });
+        const btn = document.getElementById('btnSubmit');
+        const status = document.getElementById('status');
+        const formData = new FormData(this);
+        const data = {};
+
+        formData.forEach((value, key) => data[key] = value);
+
+        // 1. Atualização Otimista local
+        SyncManager.updateLocalCache("Musicas", "add", data);
+
+        // 2. Adiciona na fila de sincronização
+        SyncManager.addToQueue(data);
+
+        // 3. UI Feedback
+        status.innerText = "✅ Música salva localmente!";
+        status.className = "msg-success";
+        status.style.display = "block";
+        this.reset();
+
+        if (!navigator.onLine) {
+          status.innerText = "☁️ Modo Offline: Salvo localmente. Sincronizará ao voltar conexão.";
+        }
+      });
+
+      // Iniciar carregamento dos temas
+      window.addEventListener('DOMContentLoaded', loadTemas);
+    </script>
+
+    <script>
+      function handleBack() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const source = urlParams.get('source');
+
+        // Se tiver source, confia nele, pois o Cadastro de Repertorio agora já está mandando a URL completinha
+        if (source) {
+          window.location.href = source;
+        } else {
+          // Fallback
+          window.location.href = 'Cadastro%20de%20Repertorio.html';
+        }
       }
-    }
-
-    // 2. Lógica de envio do formulário
-    document.getElementById('musicForm').addEventListener('submit', function (e) {
-      e.preventDefault();
-
-      const btn = document.getElementById('btnSubmit');
-      const status = document.getElementById('status');
-      const formData = new FormData(this);
-      const data = {};
-
-      formData.forEach((value, key) => data[key] = value);
-
-      // 1. Atualização Otimista local
-      SyncManager.updateLocalCache("Musicas", "add", data);
-
-      // 2. Adiciona na fila de sincronização
-      SyncManager.addToQueue(data);
-
-      // 3. UI Feedback
-      status.innerText = "✅ Música salva localmente!";
-      status.className = "msg-success";
-      status.style.display = "block";
-      this.reset();
-
-      if (!navigator.onLine) {
-        status.innerText = "☁️ Modo Offline: Salvo localmente. Sincronizará ao voltar conexão.";
-      }
-    });
-
-    // Iniciar carregamento dos temas
-    window.addEventListener('DOMContentLoaded', loadTemas);
-  </script>
-
-  <script>
-    function handleBack() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const source = urlParams.get('source');
-
-      // Se tiver source, confia nele, pois o Cadastro de Repertorio agora já está mandando a URL completinha
-      if (source) {
-        window.location.href = source;
-      } else {
-        // Fallback
-        window.location.href = 'Cadastro%20de%20Repertorio.html';
-      }
-    }
-  </script>
-
-</div>
-</div>
+    </script>
+  </div>
 </body>
 
 </html>
