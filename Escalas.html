@@ -103,6 +103,15 @@
       z-index: 1000;
     }
 
+    .header-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 0;
+      flex-grow: 1;
+      text-align: center;
+    }
+
     .search-container {
       position: sticky;
       top: 60px;
@@ -398,7 +407,7 @@
     <button class="nav-btn" onclick="window.location.href='MenuEscalas.html'" title="Voltar">
       <i class="fas fa-arrow-left"></i>
     </button>
-    <div class="header-title">Escalas</div>
+    <h2 class="header-title">Escalas</h2>
     <button class="nav-btn btn-update" onclick="loadAll(true)" title="Atualizar Dados">
       <i class="fas fa-sync-alt"></i>
     </button>
@@ -604,14 +613,21 @@
             </div>
             <div>
               <div class="section-title-container">
-                <span class="section-title"><i class="fas fa-music"></i> Repertório ${estouEscalado ? `<a href="Cadastro%20de%20Repertorio.html?culto=${encodeURIComponent(item.info.Cultos)}&source=Escalas.html" style="color:var(--accent); margin-left:5px;"><i class="fas fa-plus-circle"></i></a>` : ''}</span>
-                ${musicasDoCulto.length > 0 ? `
-                  <button class="btn-add-bulk" onclick="processarBulk(this, event)">
-                    <i class="fas fa-plus-circle"></i> Add Histórico
+                <span class="section-title"><i class="fas fa-music"></i> Repertório</span>
+                ${estouEscalado ? `
+                  <button class="btn-add-bulk" onclick="navigateToAddRepertorio('${item.info.Cultos}')">
+                    <i class="fas fa-plus-circle"></i> Repertório
                   </button>
                 ` : ''}
               </div>
               <div class="repertorio-list">
+                ${musicasDoCulto.length > 0 ? `
+                   ${estouEscalado ? `
+                        <button class="btn-add-bulk" style="margin-bottom:10px; width:100%; background:#2ecc71;" onclick="processarBulk(this, event)">
+                            <i class="fas fa-history"></i> Add Histórico
+                        </button>
+                   ` : ''}
+                ` : ''}
                 ${musicasDoCulto.length > 0 ? musicasDoCulto.map(m => {
           const queryBusca = encodeURIComponent(`${m.Músicas}`);
           const querySpotify = encodeURIComponent(`${m.Músicas} ${m.Cantor || ''}`);
@@ -762,7 +778,25 @@
       });
     }
 
-    window.onload = () => loadAll();
+    function navigateToAddRepertorio(culto) {
+      const searchVal = document.getElementById('searchInput').value;
+      let url = `Cadastro de Repertorio.html?culto=${encodeURIComponent(culto)}`;
+      const sourceUrl = `Escalas.html?search=${encodeURIComponent(searchVal)}`;
+      url += `&source=${encodeURIComponent(sourceUrl)}`;
+      window.location.href = url;
+    }
+
+    window.onload = async () => {
+      await loadAll();
+
+      // Auto-restore filter from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const search = urlParams.get('search');
+      if (search) {
+        document.getElementById('searchInput').value = search;
+        filterEscala();
+      }
+    };
   </script>
 
   </div>

@@ -747,14 +747,19 @@
 
           return `
            <div class="culto-detalhe">
-             <div class="culto-header" style="display:flex; justify-content:space-between; align-items:center;">
-               <span><i class="fas fa-church"></i> ${c.info["Nome dos Cultos"]}</span>
-               ${estouEscalado ? `
-                 <button onclick="comunicarAviso('${c.info.Data.split('T')[0]}', '${c.info["Nome dos Cultos"]}', event)" style="background:#e74c3c; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer;">
-                   <i class="fas fa-bell"></i> Aviso
-                 </button>
-               ` : ''}
-             </div>
+              <div class="culto-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <span><i class="fas fa-church"></i> ${c.info["Nome dos Cultos"]}</span>
+                <div style="display:flex; gap:5px;">
+                  ${estouEscalado ? `
+                    <button onclick="navigateToAddRepertorio('${c.info.Cultos}')" style="background:white; color:#e74c3c; border:none; padding:4px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer;" title="Repertório">
+                      <i class="fas fa-music"></i>
+                    </button>
+                    <button onclick="comunicarAviso('${c.info.Data.split('T')[0]}', '${c.info["Nome dos Cultos"]}', event)" style="background:#e74c3c; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer;" title="Aviso">
+                      <i class="fas fa-bell"></i>
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
              <div class="culto-body">
                <div style="font-weight:bold; margin-bottom:5px; color:#aaa; font-size:0.7rem">EQUIPE</div>
 ${c.membros.map(m => {
@@ -800,7 +805,7 @@ ${c.membros.map(m => {
 
                <div style="font-weight:bold; margin-top:10px; margin-bottom:5px; color:#aaa; font-size:0.7rem; display:flex; justify-content:space-between; align-items:center;">
                  <span>REPERTÓRIO</span>
-                 ${estouEscalado ? `<a href="Cadastro%20de%20Repertorio.html?culto=${encodeURIComponent(c.info.Cultos)}&source=Escala%20Calendario.html" style="color:var(--accent); font-size:1rem;"><i class="fas fa-plus-circle"></i></a>` : ''}
+                 
                </div>
                ${musicas.map(m => {
             const queryBusca = encodeURIComponent(`${m.Músicas}`);
@@ -870,9 +875,23 @@ ${c.membros.map(m => {
           if (res.status === "success") { alert("✅ Removido!"); loadData(true); }
         } catch (e) { alert("❌ Erro."); }
       }
+
+      function navigateToAddRepertorio(culto) {
+        // Preserves current calendar state
+        let url = `Cadastro de Repertorio.html?culto=${encodeURIComponent(culto)}`;
+        const sourceUrl = `Escala Calendario.html`;
+        url += `&source=${encodeURIComponent(sourceUrl)}`;
+        window.location.href = url;
+      }
     </script>
   </div>
-  </div>
+  // Preserves current calendar state (though reloading the page resets it, for now we just make sure back button works)
+  let url = `Cadastro de Repertorio.html?culto=${encodeURIComponent(culto)}`;
+  const sourceUrl = `Escala Calendario.html`;
+  url += `&source=${encodeURIComponent(sourceUrl)}`;
+  window.location.href = url;
+  }
+  </script>
 </body>
 
 </html>

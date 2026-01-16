@@ -412,6 +412,41 @@
     .spin {
       animation: spin 1s linear infinite;
     }
+
+    /* LIGHTBOX */
+    .lightbox {
+      display: none;
+      position: fixed;
+      z-index: 20000;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+    }
+
+    .lightbox img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      animation: zoomIn 0.3s ease;
+    }
+
+    @keyframes zoomIn {
+      from {
+        transform: scale(0.8);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
   </style>
 </head>
 
@@ -726,7 +761,7 @@
       return `
       <div class="comp-card" onclick="abrirDetalhes('${nomeLimpo}', '${urlFoto}', '${item.Função}', '${item["Tel sem Espaço"]}', '${item.Whatsapp?.link || '#'}')">
         <div class="avatar-wrapper">
-          <img src="${urlFoto}" class="avatar">
+          <img src="${urlFoto}" class="avatar" onclick="abrirFotoExpandida('${urlFoto}', event)" title="Clique para ampliar">
         </div>
         <div class="comp-name">${nomeLimpo}</div>
         <div class="comp-role">${item.Função}</div>
@@ -855,8 +890,24 @@
     } catch (e) { alert("Erro de conexão."); }
   }
 
+  function abrirFotoExpandida(url, event) {
+    if (event) event.stopPropagation();
+    const lb = document.getElementById('lightbox');
+    const img = document.getElementById('lightboxImg');
+    img.src = url;
+    lb.style.display = 'flex';
+  }
+
+  function fecharLightbox() {
+    document.getElementById('lightbox').style.display = 'none';
+  }
+
   window.onload = () => iniciar();
 </script>
+
+<div id="lightbox" class="lightbox" onclick="fecharLightbox()">
+  <img id="lightboxImg" src="">
+</div>
 
 <div id="modalPerfilComp" class="modal-perfil" onclick="fecharModalDetalhesExterno(event)">
   <div class="modal-content-perfil" onclick="event.stopPropagation()">

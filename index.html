@@ -14,13 +14,75 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
+    :root {
+      --primary: #2c3e50;
+      --secondary: #3498db;
+      --accent: #e67e22;
+      --bg: #f4f7f6;
+    }
+
     body {
       font-family: 'Segoe UI', sans-serif;
       background-color: #f4f7f6;
       margin: 0;
-      padding: 40px 20px;
       min-height: 100vh;
       box-sizing: border-box;
+      padding-top: 80px;
+      /* Space for fixed header */
+    }
+
+    /* HEADER BAR (Unification) */
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 15px;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      width: 100%;
+      height: 60px;
+      box-sizing: border-box;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    .header-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #2c3e50;
+      margin: 0;
+      text-align: center;
+      flex-grow: 1;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .nav-btn {
+      background: white;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      cursor: pointer;
+      color: #2c3e50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      outline: none;
+      position: relative;
+    }
+
+    .nav-btn:active {
+      transform: scale(0.95);
     }
 
     html,
@@ -29,48 +91,15 @@
       overflow-x: hidden;
     }
 
-    .floating-controls {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      z-index: 1000;
-    }
-
-
-
-    .btn-floating {
-      position: relative;
-      width: 55px;
-      height: 55px;
-      border-radius: 50%;
-      background-color: white;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      color: #2c3e50;
-      font-size: 1.3rem;
-      transition: all 0.2s ease;
-      border: none;
-    }
-
-    .btn-floating:active {
-      transform: scale(0.9);
-    }
-
     .notif-badge {
       position: absolute;
       top: -2px;
       right: -2px;
       background: #e74c3c;
       color: white;
-      font-size: 0.75rem;
-      min-width: 18px;
-      height: 18px;
+      font-size: 0.65rem;
+      min-width: 16px;
+      height: 16px;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -88,20 +117,11 @@
     }
 
 
-    .logo {
-      width: 100px;
-      height: 100px;
-      border-radius: 20%;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-      margin-top: -20px;
-
-    }
-
-    h1 {
-      color: #2c3e50;
-      margin-bottom: 20px;
-      margin-top: -20px;
+    .logo-hero {
+      width: 60px;
+      height: 60px;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
 
     .menu-grid {
@@ -691,25 +711,32 @@
   </script>
 
 
-  <div class="floating-controls">
-    <div class="btn-floating admin-only" onclick="abrirModalAvisoGeral()" title="Mandar Aviso Geral">
-      <i class="fas fa-bullhorn"></i>
+  <div class="header-bar">
+    <div style="width: 40px; display:flex; align-items:center; justify-content:center;">
+      <!-- Logo pequena se quiser, ou vazio -->
+      <img src="assets/backgroud.png" style="width:30px; border-radius:8px;">
     </div>
-    <div class="btn-floating" onclick="abrirModalPerfil()" title="Meu Perfil">
-      <i class="fas fa-user-gear"></i>
-    </div>
-
-    <div class="btn-floating" onclick="abrirNotificacoes()" title="Notificações">
-      <i class="fas fa-bell"></i>
-      <span id="notifBadge" class="notif-badge">0</span>
+    <h2 class="header-title">Louvor CEVD</h2>
+    <div class="header-actions">
+      <button class="nav-btn admin-only" onclick="abrirModalAvisoGeral()" title="Mandar Aviso Geral">
+        <i class="fas fa-bullhorn"></i>
+      </button>
+      <button class="nav-btn" onclick="abrirModalPerfil()" title="Meu Perfil">
+        <i class="fas fa-user-gear"></i>
+      </button>
+      <button class="nav-btn" onclick="abrirNotificacoes()" title="Notificações">
+        <i class="fas fa-bell"></i>
+        <span id="notifBadge" class="notif-badge" style="display:none">0</span>
+      </button>
     </div>
   </div>
 
   <div class="container">
-    <img src="assets/backgroud.png" alt="Logo" class="logo">
-    <h1>Louvor CEVD</h1>
-    <div class="user-welcome">Olá, <span id="userName">...</span> | <a href="#" onclick="logout()"
-        style="color: #e74c3c; text-decoration: none; font-weight: bold;"><i class="fas fa-sign-out-alt"></i> Sair</a>
+    <div class="user-welcome" style="margin-top: 10px;">
+      Olá, <span id="userName">...</span> |
+      <a href="#" onclick="logout()" style="color: #e74c3c; text-decoration: none; font-weight: bold;">
+        <i class="fas fa-sign-out-alt"></i> Sair
+      </a>
     </div>
     <div class="dashboard-main">
       <!-- DASHBOARD KPIs -->
@@ -1609,7 +1636,7 @@
         <div class="input-group">
           <label style="font-size: 0.8rem; color: #7f8c8d;">Mensagem do Aviso</label>
           <textarea id="textoAvisoGeral" rows="4"
-            style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; resize: none;"
+            style="width:100%; box-sizing:border-box; padding:10px; border-radius:8px; border:1px solid #ddd; resize: vertical; max-height: 200px; font-family:inherit;"
             placeholder="Digite o aviso para a equipe..."></textarea>
         </div>
 

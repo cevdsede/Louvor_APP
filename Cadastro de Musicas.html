@@ -163,11 +163,21 @@
       color: #721c24;
       border: 1px solid #f5c6cb;
     }
+
+    @media (max-width: 600px) {
+      .card {
+        padding: 15px;
+      }
+
+      .container {
+        padding: 10px;
+      }
+    }
   </style>
 </head>
 
 <div class="header-bar">
-  <button class="nav-btn" onclick="window.location.href='Cadastro%20de%20Repertorio.html'" title="Voltar">
+  <button class="nav-btn" onclick="handleBack()" title="Voltar">
     <i class="fas fa-arrow-left"></i>
   </button>
   <h2 class="header-title">Cadastrar Música</h2>
@@ -285,6 +295,21 @@
 
     // Iniciar carregamento dos temas
     window.addEventListener('DOMContentLoaded', loadTemas);
+  </script>
+
+  <script>
+    function handleBack() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const source = urlParams.get('source');
+
+      // Se tiver source, confia nele, pois o Cadastro de Repertorio agora já está mandando a URL completinha
+      if (source) {
+        window.location.href = source;
+      } else {
+        // Fallback
+        window.location.href = 'Cadastro%20de%20Repertorio.html';
+      }
+    }
   </script>
 
 </div>

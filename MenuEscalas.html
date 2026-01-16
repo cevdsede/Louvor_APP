@@ -17,27 +17,33 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            padding-top: 80px;
+            /* Space for fixed header */
         }
 
         .container {
             width: 100%;
-            max-width: 400px;
+            max-width: 800px;
             text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         .header-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 25px;
             padding: 10px 15px;
             background: #fff;
             border-bottom: 1px solid #ddd;
             width: 100%;
+            height: 60px;
             box-sizing: border-box;
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: 0;
             z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
 
         .header-title {
@@ -67,22 +73,27 @@
 
         .menu-grid {
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            width: 100%;
         }
 
         .menu-item {
             background: white;
-            padding: 30px;
+            padding: 20px;
             border-radius: 15px;
             text-decoration: none;
             color: #2c3e50;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             transition: transform 0.2s;
             display: flex;
-            flex-direction: row;
+            flex-direction: column;
             align-items: center;
-            gap: 20px;
+            justify-content: center;
+            gap: 10px;
+            text-align: center;
+            height: 100%;
+            box-sizing: border-box;
         }
 
         .menu-item:hover {
@@ -91,37 +102,51 @@
         }
 
         .menu-item i {
-            font-size: 2.5rem;
+            font-size: 2rem;
             color: #3498db;
+            margin-bottom: 5px;
         }
 
         .menu-item div {
-            text-align: left;
+            text-align: center;
         }
 
         .menu-item h3 {
             margin: 0;
-            font-size: 1.2rem;
+            font-size: 1rem;
+            font-weight: 600;
         }
 
         .menu-item p {
             margin: 5px 0 0 0;
             color: #7f8c8d;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
+            display: none;
+            /* Hide description for cleaner mobile side-by-side */
+        }
+
+        @media (min-width: 600px) {
+            .menu-item p {
+                display: block;
+            }
         }
     </style>
 </head>
 
+</style>
+</head>
+
 <body>
 
+    <div class="header-bar">
+        <button class="nav-btn" onclick="window.location.href='index.html'" title="Voltar">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2 class="header-title">Escalas</h2>
+        <div style="width: 40px;"></div>
+    </div>
+
     <div class="container">
-        <div class="header-bar">
-            <button class="nav-btn" onclick="window.location.href='index.html'" title="Voltar">
-                <i class="fas fa-arrow-left"></i>
-            </button>
-            <h2 class="header-title">Escalas</h2>
-            <div style="width: 40px;"></div>
-        </div>
 
         <div class="container" style="padding: 20px;">
             <div class="menu-grid">

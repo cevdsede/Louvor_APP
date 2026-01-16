@@ -151,6 +151,17 @@
       justify-content: center;
       transition: all 0.2s;
     }
+
+    @media (max-width: 600px) {
+      .card {
+        padding: 15px;
+      }
+
+      .container {
+        padding: 10px;
+      }
+    }
+    }
   </style>
 </head>
 
@@ -184,7 +195,7 @@
         <label>Música - Cantor</label>
         <select id="musicaSelect" name="MusicaFull" placeholder="Pesquisar música..." required></select>
         <div style="text-align:right; margin-top:5px; font-size:0.85rem">
-          <a href="Cadastro de Musicas.html" style="color:var(--accent); text-decoration:none;"><i
+          <a id="linkAddMusica" href="Cadastro de Musicas.html" style="color:var(--accent); text-decoration:none;"><i
               class="fas fa-plus"></i> Não encontrou? Adicionar Nova Música</a>
         </div>
       </div>
@@ -296,6 +307,21 @@
     function filtrarEscala(cultoNome) {
       tsMinistro.clear();
       tsMinistro.clearOptions();
+
+      // Atualiza link de Adicionar Música para manter o estado
+      const link = document.getElementById('linkAddMusica');
+      if (link) {
+        // Pega query params atuais
+        const urlParams = new URLSearchParams(window.location.search);
+        const source = urlParams.get('source');
+
+        if (source) {
+          const currentUrl = `Cadastro de Repertorio.html?culto=${encodeURIComponent(cultoNome || '')}&source=${encodeURIComponent(source)}`;
+          link.href = `Cadastro de Musicas.html?culto=${encodeURIComponent(cultoNome || '')}&source=${encodeURIComponent(currentUrl)}`;
+        } else {
+          link.href = `Cadastro de Musicas.html?culto=${encodeURIComponent(cultoNome || '')}&source=Cadastro%20de%20Repertorio.html`;
+        }
+      }
 
       if (!cultoNome) return;
 
