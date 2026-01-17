@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>12 KPI Card Styles - Preview</title>
+    <link rel="stylesheet" href="assets/Font Awesome/css/all.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Outfit:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            font-weight: 800;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 50px;
+            font-size: 1.1rem;
+        }
+
+        .style-section {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .style-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .style-description {
+            color: #64748b;
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        /* STYLE 1: GRADIENT */
+        .kpi-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 25px 15px;
+            border-radius: 20px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .kpi-gradient:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+        }
+
+        .kpi-gradient i {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            opacity: 0.9;
+        }
+
+        .kpi-gradient .value {
+            display: block;
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 10px 0;
+        }
+
+        .kpi-gradient .label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.95;
+            font-weight: 600;
+        }
+
+        /* STYLE 2: GLASSMORPHISM */
+        .kpi-glass {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            padding: 25px 15px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .kpi-glass:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: translateY(-5px);
+        }
+
+        .kpi-glass i {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            color: #667eea;
+        }
+
+        .kpi-glass .value {
+            display: block;
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #1e293b;
+            margin: 10px 0;
+        }
+
+        .kpi-glass .label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        /* STYLE 3: NEUMORPHISM */
+        .kpi-neuro {
+            background: #e0e5ec;
+            padding: 25px 15px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 9px 9px 16px rgba(163, 177, 198, 0.6),
+                -9px -9px 16px rgba(255, 255, 255, 0.5);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .kpi-neuro:hover {
+            box-shadow: 6px 6px 12px rgba(163, 177, 198, 0.6),
+                -6px -6px 12px rgba(255, 255, 255, 0.5);
+        }
+
+        .kpi-neuro i {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            color: #64748b;
+        }
+
+        .kpi-neuro .value {
+            display: block;
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #475569;
+            margin: 10px 0;
+        }
+
+        .kpi-neuro .label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        /* STYLE 4: MINIMAL FLAT */
+        .kpi-minimal {
+            background: white;
+            padding: 25px 15px;
+            border-radius: 16px;
+            text-align: center;
+            border-left: 5px solid #3498db;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .kpi-minimal:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        .kpi-minimal i {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            color: #3498db;
+        }
+
+        .kpi-minimal .value {
+            display: block;
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #1e293b;
+            margin: 10px 0;
+        }
+
+        .kpi-minimal .label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        /* STYLE 5: ICON BACKGROUND */
+        .kpi-icon-bg {
+            background: white;
+            padding: 25px 15px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .kpi-icon-bg:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        .kpi-icon-bg::before {
+            content: '\f0c0';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            font-size: 8rem;
+            color: rgba(52, 152, 219, 0.08);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 0;
+        }
+
+        .kpi-icon-bg.escala::before {
+            content: '\f073';
+        }
+
+        .kpi-icon-bg.cultos::before {
+            content: '\f51d';
+        }
+
+        .kpi-icon-bg>* {
+            position: relative;
+            z-index: 1;
+        }
+
+        .kpi-icon-bg i {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+            color: #3498db;
+        }
+
+        .kpi-icon-bg .value {
+            display: block;
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #1e293b;
+            margin: 10px 0;
+        }
+
+        .kpi-icon-bg .label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        /* STYLE 6: NEON GLOW */
+        .kpi-neon {
+            background: #0a0e27;
+            padding: 25px 15px;
+            border-radius: 20px;
+            text-align: center;
+            border: 2px solid #00d4ff;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.5),
+                inset 0 0 20px rgba(0, 212, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-neon::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg,
+                    transparent,
+                    rgba(0, 212, 255, 0.1),
+                    transparent);
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% {
+                transform: translateX(-100%) translateY(-100%) rotate(45deg);
+            }
+
+            100% {
+                transform: translateX(100%) translateY(100%) rotate(45deg);
+            }
+        }
+
+        .kpi-neon:hover {
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.8),
+                inset 0 0 30px rgba(0, 212, 255, 0.2);
+            transform: translateY(-3px);
+        }
+
+        .kpi-neon i {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            color: #00d4ff;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
+            position: relative;
+            z-index: 1;
+        }
+
+        .kpi-neon .value {
+            display: block;
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #00d4ff;
+            margin: 10px 0;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+            position: relative;
+            z-index: 1;
+        }
+
+        .kpi-neon .label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #00d4ff;
+            font-weight: 600;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.6);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* STYLE 7: BORDERED SHADOW */
+        .kpi-bordered {
+            background: white;
+            padding: 25px 15px;
+            border-radius: 20px;
+            text-align: center;
+            border: 3px solid #3498db;
+            box-shadow: 8px 8px 0px #3498db;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .kpi-bordered:hover {
+            transform: translate(4px, 4px);
+            box-shadow: 4px 4px 0px #3498db;
+        }
+
+        .kpi-bordered i {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            color: #3498db;
+        }
+
+        .kpi-bordered .value {
+            display: block;
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #1e293b;
+            margin: 10px 0;
+        }
+
+        .kpi-bordered .label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        /* STYLE 8: CARD WITH TOP BAR */
+        .kpi-topbar {
+            background: white;
+            padding: 0;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .kpi-topbar:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        .kpi-topbar .top-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 8px;
+        }
+
+        .kpi-topbar .content {
+            padding: 25px 15px;
+        }
+
+        .kpi-topbar i {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            color: #667eea;
+        }
+
+        .kpi-topbar .value {
+            display: block;
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #1e293b;
+            margin: 10px 0;
+        }
+
+        .kpi-topbar .label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        /* STYLE 9: CIRCULAR PROGRESS */
+        .kpi-circular {
+            background: white;
+            padding: 25px 15px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .kpi-circular:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        .kpi-circular .circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: conic-gradient(#3498db 0% 75%, #e2e8f0 75% 100%);
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .kpi-circular .circle::before {
+            content: '';
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: white;
+            position: absolute;
+        }
+
+        .kpi-circular .circle i {
+            position: relative;
+            z-index: 1;
+            font-size: 1.5rem;
+            color: #3498db;
+        }
+
+        .kpi-circular .value {
+            display: block;
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #1e293b;
+            margin: 10px 0;
+        }
+
+        .kpi-circular .label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        /* STYLE 10: SPLIT COLOR */
+        .kpi-split {
+            background: linear-gradient(to right, #3498db 50%, white 50%);
+            padding: 25px 15px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(52, 152, 219, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .kpi-split:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(52, 152, 219, 0.4);
+        }
+
+        .kpi-split i {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .kpi-split .value {
+            display: block;
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: white;
+            margin: 10px 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .kpi-split .label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        /* STYLE 11: DOTTED PATTERN */
+        .kpi-dotted {
+            background: white;
+            padding: 25px 15px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .kpi-dotted::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: radial-gradient(circle, #3498db 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.1;
+            z-index: 0;
+        }
+
+        .kpi-dotted:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        .kpi-dotted>* {
+            position: relative;
+            z-index: 1;
+        }
+
+        .kpi-dotted i {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            color: #3498db;
+        }
+
+        .kpi-dotted .value {
+            display: block;
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #1e293b;
+            margin: 10px 0;
+        }
+
+        .kpi-dotted .label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        /* STYLE 12: ANIMATED GRADIENT BORDER */
+        .kpi-animated {
+            background: white;
+            padding: 25px 15px;
+            border-radius: 20px;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .kpi-animated::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 20px;
+            background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #4facfe, #667eea);
+            background-size: 300% 300%;
+            z-index: -1;
+            animation: gradientMove 3s ease infinite;
+        }
+
+        @keyframes gradientMove {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .kpi-animated:hover {
+            transform: translateY(-3px) scale(1.02);
+        }
+
+        .kpi-animated i {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            color: #667eea;
+        }
+
+        .kpi-animated .value {
+            display: block;
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #1e293b;
+            margin: 10px 0;
+        }
+
+        .kpi-animated .label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .style-section {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎨 12 KPI Card Styles</h1>
+        <p class="subtitle">Escolha o estilo perfeito para seu dashboard</p>
+
+        <!-- STYLE 1: GRADIENT -->
+        <div class="style-section">
+            <h2 class="style-title">1️⃣ Gradient Card</h2>
+            <p class="style-description">Gradiente vibrante com sombra flutuante. Visual impactante e moderno.</p>
+            <div class="kpi-grid">
+                <div class="kpi-gradient">
+                    <i class="fas fa-users"></i>
+                    <span class="value">14</span>
+                    <span class="label">Membros</span>
+                </div>
+                <div class="kpi-gradient" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                    <i class="fas fa-calendar-check"></i>
+                    <span class="label" style="font-size: 0.7rem;">Próxima Escala</span>
+                    <span class="value" style="font-size: 1.2rem;">18/01</span>
+                </div>
+                <div class="kpi-gradient" style="background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);">
+                    <i class="fas fa-church"></i>
+                    <span class="value">25</span>
+                    <span class="label">Cultos</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STYLE 2: GLASSMORPHISM -->
+        <div class="style-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <h2 class="style-title" style="color: white;">2️⃣ Glassmorphism <span class="badge">TOP 3</span></h2>
+            <p class="style-description" style="color: rgba(255,255,255,0.9);">Efeito de vidro fosco com blur. Elegante
+                e premium.</p>
+            <div class="kpi-grid">
+                <div class="kpi-glass">
+                    <i class="fas fa-users"></i>
+                    <span class="value">14</span>
+                    <span class="label">Membros</span>
+                </div>
+                <div class="kpi-glass">
+                    <i class="fas fa-calendar-check" style="color: #11998e;"></i>
+                    <span class="label" style="font-size: 0.7rem;">Próxima Escala</span>
+                    <span class="value" style="font-size: 1.2rem;">18/01</span>
+                </div>
+                <div class="kpi-glass">
+                    <i class="fas fa-church" style="color: #ee0979;"></i>
+                    <span class="value">25</span>
+                    <span class="label">Cultos</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STYLE 3: NEUMORPHISM -->
+        <div class="style-section" style="background: #e0e5ec;">
+            <h2 class="style-title">3️⃣ Neumorphism</h2>
+            <p class="style-description">Sombras suaves criando efeito 3D. Minimalista e sofisticado.</p>
+            <div class="kpi-grid">
+                <div class="kpi-neuro">
+                    <i class="fas fa-users"></i>
+                    <span class="value">14</span>
+                    <span class="label">Membros</span>
+                </div>
+                <div class="kpi-neuro">
+                    <i class="fas fa-calendar-check"></i>
+                    <span class="label" style="font-size: 0.7rem;">Próxima Escala</span>
+                    <span class="value" style="font-size: 1.2rem;">18/01</span>
+                </div>
+                <div class="kpi-neuro">
+                    <i class="fas fa-church"></i>
+                    <span class="value">25</span>
+                    <span class="label">Cultos</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STYLE 4: MINIMAL FLAT -->
+        <div class="style-section">
+            <h2 class="style-title">4️⃣ Minimal Flat <span class="badge" style="background: #3498db;">ATUAL</span></h2>
+            <p class="style-description">Card branco limpo com borda colorida. Fácil de ler e profissional.</p>
+            <div class="kpi-grid">
+                <div class="kpi-minimal">
+                    <i class="fas fa-users"></i>
+                    <span class="value">14</span>
+                    <span class="label">Membros</span>
+                </div>
+                <div class="kpi-minimal" style="border-color: #27ae60;">
+                    <i class="fas fa-calendar-check" style="color: #27ae60;"></i>
+                    <span class="label" style="font-size: 0.7rem;">Próxima Escala</span>
+                    <span class="value" style="font-size: 1.2rem;">18/01</span>
+                </div>
+                <div class="kpi-minimal" style="border-color: #e67e22;">
+                    <i class="fas fa-church" style="color: #e67e22;"></i>
+                    <span class="value">25</span>
+                    <span class="label">Cultos</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STYLE 5: ICON BACKGROUND -->
+        <div class="style-section">
+            <h2 class="style-title">5️⃣ Icon Background</h2>
+            <p class="style-description">Ícone grande e desbotado como fundo. Visual criativo e único.</p>
+            <div class="kpi-grid">
+                <div class="kpi-icon-bg">
+                    <i class="fas fa-users"></i>
+                    <span class="value">14</span>
+                    <span class="label">Membros</span>
+                </div>
+                <div class="kpi-icon-bg escala">
+                    <i class="fas fa-calendar-check" style="color: #27ae60;"></i>
+                    <span class="label" style="font-size: 0.7rem;">Próxima Escala</span>
+                    <span class="value" style="font-size: 1.2rem;">18/01</span>
+                </div>
+                <div class="kpi-icon-bg cultos">
+                    <i class="fas fa-church" style="color: #e67e22;"></i>
+                    <span class="value">25</span>
+                    <span class="label">Cultos</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STYLE 6: NEON GLOW -->
+        <div class="style-section" style="background: #0a0e27;">
+            <h2 class="style-title" style="color: #00d4ff;">6️⃣ Neon Glow</h2>
+            <p class="style-description" style="color: rgba(0,212,255,0.8);">Card escuro com brilho neon. Estilo
+                cyberpunk e futurista.</p>
+            <div class="kpi-grid">
+                <div class="kpi-neon">
+                    <i class="fas fa-users"></i>
+                    <span class="value">14</span>
+                    <span class="label">Membros</span>
+                </div>
+                <div class="kpi-neon"
+                    style="border-color: #00ff88; box-shadow: 0 0 20px rgba(0,255,136,0.5), inset 0 0 20px rgba(0,255,136,0.1);">
+                    <i class="fas fa-calendar-check"
+                        style="color: #00ff88; text-shadow: 0 0 10px rgba(0,255,136,0.8);"></i>
+                    <span class="label"
+                        style="font-size: 0.7rem; color: #00ff88; text-shadow: 0 0 10px rgba(0,255,136,0.6);">Próxima
+                        Escala</span>
+                    <span class="value"
+                        style="font-size: 1.2rem; color: #00ff88; text-shadow: 0 0 20px rgba(0,255,136,0.8);">18/01</span>
+                </div>
+                <div class="kpi-neon"
+                    style="border-color: #ff006e; box-shadow: 0 0 20px rgba(255,0,110,0.5), inset 0 0 20px rgba(255,0,110,0.1);">
+                    <i class="fas fa-church" style="color: #ff006e; text-shadow: 0 0 10px rgba(255,0,110,0.8);"></i>
+                    <span class="value" style="color: #ff006e; text-shadow: 0 0 20px rgba(255,0,110,0.8);">25</span>
+                    <span class="label" style="color: #ff006e; text-shadow: 0 0 10px rgba(255,0,110,0.6);">Cultos</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STYLE 7: BORDERED SHADOW -->
+        <div class="style-section">
+            <h2 class="style-title">7️⃣ Bordered Shadow <span class="badge">TOP 3</span></h2>
+            <p class="style-description">Sombra sólida deslocada. Estilo retrô e divertido.</p>
+            <div class="kpi-grid">
+                <div class="kpi-bordered">
+                    <i class="fas fa-users"></i>
+                    <span class="value">14</span>
+                    <span class="label">Membros</span>
+                </div>
+                <div class="kpi-bordered" style="border-color: #27ae60; box-shadow: 8px 8px 0px #27ae60;">
+                    <i class="fas fa-calendar-check" style="color: #27ae60;"></i>
+                    <span class="label" style="font-size: 0.7rem;">Próxima Escala</span>
+                    <span class="value" style="font-size: 1.2rem;">18/01</span>
+                </div>
+                <div class="kpi-bordered" style="border-color: #e67e22; box-shadow: 8px 8px 0px #e67e22;">
+                    <i class="fas fa-church" style="color: #e67e22;"></i>
+                    <span class="value">25</span>
+                    <span class="label">Cultos</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STYLE 8: TOP BAR -->
+        <div class="style-section">
+            <h2 class="style-title">8️⃣ Card with Top Bar</h2>
+            <p class="style-description">Barra colorida no topo. Simples e elegante.</p>
+            <div class="kpi-grid">
+                <div class="kpi-topbar">
+                    <div class="top-bar"></div>
+                    <div class="content">
+                        <i class="fas fa-users"></i>
+                        <span class="value">14</span>
+                        <span class="label">Membros</span>
+                    </div>
+                </div>
+                <div class="kpi-topbar">
+                    <div class="top-bar" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);"></div>
+                    <div class="content">
+                        <i class="fas fa-calendar-check" style="color: #11998e;"></i>
+                        <span class="label" style="font-size: 0.7rem;">Próxima Escala</span>
+                        <span class="value" style="font-size: 1.2rem;">18/01</span>
+                    </div>
+                </div>
+                <div class="kpi-topbar">
+                    <div class="top-bar" style="background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);"></div>
+                    <div class="content">
+                        <i class="fas fa-church" style="color: #ee0979;"></i>
+                        <span class="value">25</span>
+                        <span class="label">Cultos</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STYLE 9: CIRCULAR PROGRESS -->
+        <div class="style-section">
+            <h2 class="style-title">9️⃣ Circular Progress</h2>
+            <p class="style-description">Ícone dentro de círculo com progresso. Visual dinâmico.</p>
+            <div class="kpi-grid">
+                <div class="kpi-circular">
+                    <div class="circle">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <span class="value">14</span>
+                    <span class="label">Membros</span>
+                </div>
+                <div class="kpi-circular">
+                    <div class="circle" style="background: conic-gradient(#27ae60 0% 60%, #e2e8f0 60% 100%);">
+                        <i class="fas fa-calendar-check" style="color: #27ae60;"></i>
+                    </div>
+                    <span class="label" style="font-size: 0.7rem;">Próxima Escala</span>
+                    <span class="value" style="font-size: 1.2rem;">18/01</span>
+                </div>
+                <div class="kpi-circular">
+                    <div class="circle" style="background: conic-gradient(#e67e22 0% 90%, #e2e8f0 90% 100%);">
+                        <i class="fas fa-church" style="color: #e67e22;"></i>
+                    </div>
+                    <span class="value">25</span>
+                    <span class="label">Cultos</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STYLE 10: SPLIT COLOR -->
+        <div class="style-section">
+            <h2 class="style-title">10 Split Color <span class="badge">TOP 3</span></h2>
+            <p class="style-description">Metade colorida, metade branca. Criativo e ousado.</p>
+            <div class="kpi-grid">
+                <div class="kpi-split">
+                    <i class="fas fa-users"></i>
+                    <span class="value">14</span>
+                    <span class="label">Membros</span>
+                </div>
+                <div class="kpi-split" style="background: linear-gradient(to right, #27ae60 50%, white 50%);">
+                    <i class="fas fa-calendar-check"></i>
+                    <span class="label" style="font-size: 0.7rem;">Próxima Escala</span>
+                    <span class="value" style="font-size: 1.2rem;">18/01</span>
+                </div>
+                <div class="kpi-split" style="background: linear-gradient(to right, #e67e22 50%, white 50%);">
+                    <i class="fas fa-church"></i>
+                    <span class="value">25</span>
+                    <span class="label">Cultos</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STYLE 11: DOTTED PATTERN -->
+        <div class="style-section">
+            <h2 class="style-title">11 Dotted Pattern</h2>
+            <p class="style-description">Padrão de pontos no fundo. Sutil e moderno.</p>
+            <div class="kpi-grid">
+                <div class="kpi-dotted">
+                    <i class="fas fa-users"></i>
+                    <span class="value">14</span>
+                    <span class="label">Membros</span>
+                </div>
+                <div class="kpi-dotted">
+                    <i class="fas fa-calendar-check" style="color: #27ae60;"></i>
+                    <span class="label" style="font-size: 0.7rem;">Próxima Escala</span>
+                    <span class="value" style="font-size: 1.2rem;">18/01</span>
+                </div>
+                <div class="kpi-dotted">
+                    <i class="fas fa-church" style="color: #e67e22;"></i>
+                    <span class="value">25</span>
+                    <span class="label">Cultos</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STYLE 12: ANIMATED GRADIENT BORDER -->
+        <div class="style-section">
+            <h2 class="style-title">12 Animated Gradient Border</h2>
+            <p class="style-description">Borda com gradiente animado. Futurista e chamativo.</p>
+            <div class="kpi-grid">
+                <div class="kpi-animated">
+                    <i class="fas fa-users"></i>
+                    <span class="value">14</span>
+                    <span class="label">Membros</span>
+                </div>
+                <div class="kpi-animated">
+                    <i class="fas fa-calendar-check" style="color: #11998e;"></i>
+                    <span class="label" style="font-size: 0.7rem;">Próxima Escala</span>
+                    <span class="value" style="font-size: 1.2rem;">18/01</span>
+                </div>
+                <div class="kpi-animated">
+                    <i class="fas fa-church" style="color: #ee0979;"></i>
+                    <span class="value">25</span>
+                    <span class="label">Cultos</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+
+</html>
