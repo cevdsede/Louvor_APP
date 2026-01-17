@@ -250,7 +250,14 @@ function renderizarGrafico(lista) {
         type: 'bar',
         data: {
             labels: labels,
-            datasets: [{ data: valores, backgroundColor: cores, borderRadius: 5, barThickness: 15 }]
+            datasets: [{
+                data: valores,
+                backgroundColor: cores,
+                borderRadius: 5,
+                // barThickness: 15, <--- APAGUE ESTA LINHA
+                barPercentage: 0.7,    // Faz a barra ocupar 90% da largura da linha
+                categoryPercentage: 1 // Diminui o espaço entre os grupos de linhas
+            }]
         },
         options: {
             indexAxis: 'y',
@@ -454,6 +461,8 @@ function processarNotificacoes() {
         const id = `REP-${r["Culto+Data"]}-${r.Músicas}`;
         if (!hashesConhecidos.has(id)) {
             const matchMeuCulto = scalesMatchForRepertorio(r, escalas, meuNome);
+            console.log(`Verificando: ${id}`);
+            console.log(`Match com meu nome (${meuNome})?`, match);
             if (matchMeuCulto) {
                 notificacoes.unshift({
                     id, type: 'musica', read: false, time: Date.now(),

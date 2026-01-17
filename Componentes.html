@@ -850,7 +850,7 @@
     const container = document.getElementById('modalAvisosGeraisContainer');
     const box = document.getElementById('modalAvisosGerais');
     const userToken = JSON.parse(localStorage.getItem('user_token') || '{}');
-    const isAdmin = userToken.Role === "Admin" || userToken.Role === "SuperAdmin";
+    const isAdmin = userToken.Role === "Admin" || userToken.Role === "Lider";
 
     if (!isAdmin) {
       container.style.display = 'none';
@@ -867,7 +867,7 @@
       const nomeNormalizado = normalize(nome);
 
       const avisos = lembretes.filter(l =>
-        l.Culto === "Aviso Geral" &&
+        l.Culto === "AVISO_LIDER" &&
         (normalize(l.Componente).includes(nomeNormalizado) || nomeNormalizado.includes(normalize(l.Componente)))
       );
 

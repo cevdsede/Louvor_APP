@@ -715,17 +715,23 @@
         const userToken = JSON.parse(localStorage.getItem('user_token') || '{}');
         const meuNome = userToken.Nome || "Membro";
 
-        const info = prompt(`Olá ${meuNome}, qual aviso você deseja comunicar para o culto do dia ${dataCulto} (${nomeCulto}):`);
+        // Aqui está o ajuste: usamos o nome do culto e a data de forma limpa
+        // Se o seu log mostrou "21. Celebração - 18/01", o prompt deve refletir isso
+        const info = prompt(`Olá ${meuNome}, qual aviso você deseja comunicar para o ${nomeCulto} (${dataCulto}):`);
 
         if (!info || info.trim() === "") return;
 
         const id_Lembrete = Math.random().toString(16).slice(2, 10);
+
+        // IMPORTANTE: O campo 'Culto' deve ser EXATAMENTE o que está na coluna 'Cultos' da aba Transformar
+        // O seu código anterior estava gerando uma string diferente.
         const payload = {
           sheet: "Lembretes",
           id_Lembrete,
           Componente: meuNome,
           Data: new Date().toLocaleDateString('pt-BR'),
-          Culto: `${nomeCulto} (${dataCulto})`,
+          // Ajustado para bater com a chave de busca (Nome do Culto + Data)
+          Culto: `${nomeCulto}`,
           Info: info
         };
 
@@ -736,21 +742,18 @@
           });
           const res = await response.json();
           if (res.status === "success") {
-            alert("✅ Aviso enviado com sucesso! Os Componentes serão notificados.");
+            alert("✅ Aviso enviado com sucesso!");
+            loadAll(true); // Recarrega para mostrar o aviso na hora
           } else {
             alert("⚠️ Erro ao enviar: " + res.message);
           }
         } catch (e) {
-          // Fallback para persistência offline via SyncManager se disponível
           if (window.SyncManager) {
             SyncManager.addToQueue(payload);
-            alert("☁️ Você está offline. O aviso será enviado assim que houver conexão.");
-          } else {
-            alert("❌ Erro de conexão. Tente novamente mais tarde.");
+            alert("☁️ Offline. O aviso será enviado depois.");
           }
         }
       }
-
       async function excluirAviso(id_Aviso, event) {
         if (event) event.stopPropagation();
         if (!confirm("Deseja remover este aviso?")) return;

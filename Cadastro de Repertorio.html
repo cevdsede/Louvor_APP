@@ -242,7 +242,17 @@
         const status = document.getElementById('status');
 
         const data = {};
-        new FormData(this).forEach((v, k) => data[k] = v);
+        new FormData(this).forEach((v, k) => {
+          // ESTA LINHA É A CURA:
+          // 1. Converte para string
+          // 2. Troca o espaço invisível (\u00a0) por espaço normal
+          // 3. Troca espaços duplos ou triplos por um único espaço
+          // 4. Limpa as pontas (trim)
+          data[k] = v.toString()
+            .replace(/\u00a0/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+        });
 
         // 1. Atualiza UI/Cache local imediatamente
         SyncManager.updateLocalCache("Repertório", "add", data);
@@ -251,15 +261,12 @@
         SyncManager.addToQueue(data);
 
         // 3. Feedback visual imediato
-        status.innerHTML = "<span class='btn-premium' style='background:var(--accent-green); position:static;'>✅ Salvo localmente! Sincronizando...</span>";
+        status.innerHTML = "<span class='btn-premium' style='background:var(--accent-green); position:static;'>✅ Salvo com Sucesso!</span>";
         status.style.display = "block";
+
+        // Limpa os campos após salvar
         tsMusica.clear();
         tsTom.clear();
-
-        // Opcional: Redirecionar ou avisar que será enviado ao voltar online
-        if (!navigator.onLine) {
-          status.innerHTML = "<span class='btn-premium' style='background:var(--accent-gold); position:static;'>☁️ Salvo offline. Sincronizará depois.</span>";
-        }
       });
 
       window.onload = carregarDados;

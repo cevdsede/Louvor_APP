@@ -23,13 +23,19 @@
       --bg: #f8fafc;
     }
 
+    /* 1. TELA FIXA (SEM ROLAGEM) */
     body {
       font-family: 'Outfit', sans-serif;
       background-color: var(--bg);
       margin: 0;
-      min-height: 100vh;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      /* Trava a rolagem */
+      display: flex;
+      flex-direction: column;
       box-sizing: border-box;
-      padding-top: 80px;
+      padding-top: 70px;
     }
 
     /* PREMIUM HEADER */
@@ -191,12 +197,19 @@
     }
 
     .container {
-      margin: 0 auto;
-      text-align: center;
-      width: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      /* Alinha do topo para baixo */
       max-width: 400px;
-      padding: 10px;
-      animation: fadeIn 0.4s ease-out;
+      margin: 0 auto;
+      padding: 10px 15px;
+      /* Reduzido levemente para ganhar espaço */
+      height: calc(100vh - 70px);
+      box-sizing: border-box;
+      gap: 10px;
+      /* Espaço entre elementos */
     }
 
     @keyframes fadeIn {
@@ -258,29 +271,44 @@
       width: 100%;
     }
 
-    /* KPI CARDS */
+    /* 2. KPIs COM BARRA LATERAL (ESTILO MINIMAL FLAT) */
     .kpi-container {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
-      width: 100%;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
 
     .kpi-card {
       background: white;
       padding: 15px 5px;
       border-radius: 12px;
-      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
       text-align: center;
-      border-bottom: 4px solid #3498db;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      border: 1px solid rgba(0, 0, 0, 0.02);
+
+      /* Mantendo o seu estilo, mas trocando a borda de baixo pela lateral */
+      border: none;
+      border-left: 5px solid var(--secondary);
+      /* A barra colorida do lado */
+
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
       transition: all 0.3s ease;
     }
+
+    /* Ajustando cores específicas das barras laterais */
+    .kpi-card:nth-child(2) {
+      border-left-color: #27ae60;
+    }
+
+    /* Verde para Escala */
+    .kpi-card:nth-child(3) {
+      border-left-color: #e67e22;
+    }
+
+    /* Laranja para Cultos */
 
     .kpi-card:hover {
       transform: translateY(-2px);
@@ -289,7 +317,7 @@
 
     .kpi-card i {
       font-size: 1.2rem;
-      color: #3498db;
+      color: var(--secondary);
       margin-bottom: 8px;
     }
 
@@ -312,18 +340,20 @@
     .dashboard-card {
       background: white;
       border-radius: 20px;
-      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-      padding: 20px;
-      margin-bottom: 25px;
-      width: 100%;
-      box-sizing: border-box;
+      padding: 15px;
+      flex: 1;
+      /* O gráfico vai crescer ou encolher para preencher a tela */
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      /* IMPORTANTE: permite encolher em telas pequenas */
+      margin-bottom: 5px;
       border: 1px solid rgba(0, 0, 0, 0.02);
     }
 
     .chart-wrapper {
-      position: relative;
-      height: 300px;
-      width: 100%;
+      flex: 1;
+      min-height: 0;
     }
 
     .btn-sync {
@@ -361,15 +391,23 @@
     .user-welcome {
       font-size: 0.95rem;
       color: #64748b;
-      margin-bottom: 20px;
+      margin-bottom: 5px;
       font-weight: 500;
+      flex-shrink: 0;
+      text-align: center;
+      /* Centraliza o texto */
+      width: 100%;
+      /* Garante que ocupe a largura total para alinhar */
     }
 
     .last-update {
-      margin-top: 30px;
-      font-size: 0.75rem;
+      margin-top: 5px;
+      /* Reduzido */
+      font-size: 0.7rem;
       color: #94a3b8;
       font-weight: 500;
+      text-align: center;
+      flex-shrink: 0;
     }
 
     /* Progress Bar */
@@ -559,6 +597,7 @@
         padding: 15px;
         display: flex;
         flex-direction: column;
+        min-height: 0;
       }
 
       .dashboard-card h2 {
@@ -592,12 +631,13 @@
       }
 
       .btn-sync {
-        margin-top: 20px;
+        margin-top: 5px;
         max-width: none;
         width: calc(100% - 350px) !important;
         /* 180 menu + 130 kpi + 40 gaps */
         margin-left: calc(180px + 20px) !important;
         margin-right: auto !important;
+        flex-shrink: 0;
       }
     }
   </style>
