@@ -877,7 +877,7 @@
           <div style="background:#fffafa; border-left:3px solid #e67e22; padding:8px; border-radius:5px; margin-top:8px; font-size:0.8rem; position:relative;">
             <div style="font-weight:bold; margin-bottom:3px; display:flex; justify-content:space-between;">
               <span>${a.Componente}</span>
-              <span style="font-size:0.7rem; color:#95a5a6;">${a.Data}</span>
+              <span style="font-size:0.7rem; color:#95a5a6;">${new Date(a.Data).toLocaleDateString('pt-BR')}</span>
             </div>
             <div style="color:#555;">${a.Info}</div>
             <i class="fas fa-trash-alt" onclick="excluirAviso('${a.id_Lembrete}', event)" style="position:absolute; right:8px; bottom:8px; color:#ddd; cursor:pointer; font-size:0.75rem;" title="Remover"></i>
