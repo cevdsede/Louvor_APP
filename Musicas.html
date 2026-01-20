@@ -1,7 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 
 <head>
+  <script src="temas-lista.js"></script>
+  <script src="temas-core.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="manifest.json">
@@ -115,7 +117,7 @@
       background: white;
     }
 
-    /* Acordeão de Estilos */
+    /* AcordeÃ£o de Estilos */
     .estilo-section {
       border-bottom: 1px solid #eee;
     }
@@ -149,7 +151,7 @@
       transition: max-height 0.3s ease-out;
     }
 
-    /* Grid de Músicas */
+    /* Grid de MÃºsicas */
     .music-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -181,7 +183,7 @@
       font-size: 0.8rem;
     }
 
-    /* Botão de Excluir Música da Biblioteca */
+    /* BotÃ£o de Excluir MÃºsica da Biblioteca */
     .btn-del-lib {
       position: absolute;
       right: 10px;
@@ -197,7 +199,7 @@
       color: var(--danger);
     }
 
-    /* Botões de Ação */
+    /* BotÃµes de AÃ§Ã£o */
     .actions {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -363,15 +365,15 @@
         const loader = document.getElementById('loader');
         const cached = localStorage.getItem('offline_musicas');
 
-        // Se tem cache e não for forçado pelo botão, mostra logo e atualiza quieto
+        // Se tem cache e nÃ£o for forÃ§ado pelo botÃ£o, mostra logo e atualiza quieto
         if (!force && cached) {
           renderAccordion(JSON.parse(cached));
-          // Sincronização silenciosa em background após carregar o cache
+          // SincronizaÃ§Ã£o silenciosa em background apÃ³s carregar o cache
           setTimeout(() => silentSync(), 500);
           return;
         }
 
-        // Se for forçado (botão) ou não tiver cache, mostra loader
+        // Se for forÃ§ado (botÃ£o) ou nÃ£o tiver cache, mostra loader
         const btnIcon = document.querySelector('.btn-update i');
         if (btnIcon) btnIcon.classList.add('spin');
 
@@ -399,7 +401,7 @@
           const json = await response.json();
           localStorage.setItem('offline_musicas', JSON.stringify(json.data));
 
-          // Só renderiza se não houver busca ativa E nenhum item aberto
+          // SÃ³ renderiza se nÃ£o houver busca ativa E nenhum item aberto
           const hasOpenItems = document.querySelector('.open') !== null;
           if (document.getElementById('searchInput').value === "" && !hasOpenItems) {
             renderAccordion(json.data);
@@ -449,7 +451,7 @@
             const grid = estiloSection.querySelector('.music-grid');
 
             grouped[tema][estilo].forEach(m => {
-              // GERAÇÃO AUTOMÁTICA DOS LINKS DE BUSCA
+              // GERAÃ‡ÃƒO AUTOMÃTICA DOS LINKS DE BUSCA
               const query = encodeURIComponent(`${m.Músicas} ${m.Cantor}`);
               const linkYT = `https://www.youtube.com/results?search_query=${query}`;
               const linkCF = `https://www.cifraclub.com.br/?q=${query}`;

@@ -1,7 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 
 <head>
+    <script src="temas-lista.js"></script>
+    <script src="temas-core.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chamada Consagração | Premium</title>
@@ -531,7 +533,7 @@
 
         async function init() {
             await fetchData();
-            // Só muda para 'events' se não houver aula aberta (ex: primeiro load)
+            // SÃ³ muda para 'events' se nÃ£o houver aula aberta (ex: primeiro load)
             if (!currentEvent) showView('events');
         }
 
@@ -567,7 +569,7 @@
                     return nome !== "CONVIDADO" && func !== "CONVIDADO";
                 });
 
-                // Cache Presenças
+                // Cache PresenÃ§as
                 fetch(`${APP_CONFIG.SCRIPT_URL}?sheet=Comp_Cons`)
                     .then(res => res.json())
                     .then(json => localStorage.setItem('offline_chamada', JSON.stringify(json.data || [])))

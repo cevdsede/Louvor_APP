@@ -1,7 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 
 <head>
+  <script src="temas-lista.js"></script>
+  <script src="temas-core.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cadastro de Músicas</title>
@@ -121,7 +123,7 @@
     </div>
 
     <script>
-      // ATENÇÃO: Verifique se este é o seu link atualizado do Web App
+      // ATENÃ‡ÃƒO: Verifique se este Ã© o seu link atualizado do Web App
       const SCRIPT_URL = APP_CONFIG.SCRIPT_URL;
 
       // 1. Carregar os temas da aba "Tema Músicas" ao abrir a página
@@ -135,11 +137,11 @@
           data = JSON.parse(cached);
         } else {
           try {
-            // Fallback se não tiver cache
-            const response = await fetch(SCRIPT_URL + "?sheet=" + encodeURIComponent("Tema Músicas"));
+            // Fallback se nÃ£o tiver cache
+            const response = await fetch(SCRIPT_URL + "?sheet=" + encodeURIComponent("Tema MÃºsicas"));
             const json = await response.json();
             data = json.data;
-            // Salva para proxima vez (embora o index.html seja o principal responsável)
+            // Salva para proxima vez (embora o index.html seja o principal responsÃ¡vel)
             localStorage.setItem('offline_temas', JSON.stringify(data));
           } catch (e) {
             console.error("Erro ao carregar temas:", e);
@@ -163,7 +165,7 @@
         }
       }
 
-      // 2. Lógica de envio do formulário
+      // 2. LÃ³gica de envio do formulÃ¡rio
       document.getElementById('musicForm').addEventListener('submit', function (e) {
         e.preventDefault();
 
@@ -174,10 +176,10 @@
 
         formData.forEach((value, key) => data[key] = value);
 
-        // 1. Atualização Otimista local
+        // 1. AtualizaÃ§Ã£o Otimista local
         SyncManager.updateLocalCache("Musicas", "add", data);
 
-        // 2. Adiciona na fila de sincronização
+        // 2. Adiciona na fila de sincronizaÃ§Ã£o
         SyncManager.addToQueue(data);
 
         // 3. UI Feedback
@@ -187,7 +189,7 @@
         this.reset();
 
         if (!navigator.onLine) {
-          status.innerText = "☁️ Modo Offline: Salvo localmente. Sincronizará ao voltar conexão.";
+          status.innerText = "â˜ï¸ Modo Offline: Salvo localmente. SincronizarÃ¡ ao voltar conexÃ£o.";
         }
       });
 
@@ -200,7 +202,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const source = urlParams.get('source');
 
-        // Se tiver source, confia nele, pois o Cadastro de Repertorio agora já está mandando a URL completinha
+        // Se tiver source, confia nele, pois o Cadastro de Repertorio agora jÃ¡ estÃ¡ mandando a URL completinha
         if (source) {
           window.location.href = source;
         } else {

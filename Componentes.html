@@ -1,7 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 
 <head>
+  <script src="temas-lista.js"></script>
+  <script src="temas-core.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Componentes Ativos - Louvor</title>
@@ -95,7 +97,7 @@
       margin-bottom: 20px;
     }
 
-    /* --- GRÁFICOS E KPIs --- */
+    /* --- GRÃFICOS E KPIs --- */
     .bar-bg {
       background: rgba(0, 0, 0, 0.05);
       border-radius: 12px;
@@ -143,7 +145,7 @@
       margin-top: 5px;
     }
 
-    /* --- CORES ÍCONES --- */
+    /* --- CORES ÃCONES --- */
     i.Ministro {
       color: #3498db;
     }
@@ -343,7 +345,7 @@
       background: #f1f5f9;
     }
 
-    /* Botões de Ação no Modal */
+    /* BotÃµes de AÃ§Ã£o no Modal */
     .action-btns {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -516,7 +518,7 @@
   </div>
 
   <div id="kpiFuncoes" class="kpi-grid"></div>
-  <!-- OS FILTROS DE PÍLULA FORAM REMOVIDOS E INTEGRADOS AOS KPIs -->
+  <!-- OS FILTROS DE PÃLULA FORAM REMOVIDOS E INTEGRADOS AOS KPIs -->
   <div id="listaComponentes">
     <div id="loader" style="display:none; text-align:center; padding:50px;">
       <i class="fas fa-circle-notch fa-spin fa-2x" style="color:var(--accent)"></i>
@@ -538,12 +540,14 @@
 
     if (!force && cachedComp && cachedImg) {
       bancoImagens = JSON.parse(cachedImg);
-      const ativos = JSON.parse(cachedComp).filter(c =>
-        c.Ativo &&
-        c.Ativo.toString().toUpperCase().trim() === "SIM" &&
-        !c.Função.toUpperCase().includes("CONVIDADO") &&
-        !c.Nome.toUpperCase().includes("CONVIDADO")
-      );
+      const ativos = JSON.parse(cachedComp).filter(c => {
+        const funcao = (c.Função || c.Função || c["FunÃ§Ã£o"] || "").toUpperCase();
+        const nome = (c.Nome || "").toUpperCase();
+        return c.Ativo &&
+          c.Ativo.toString().toUpperCase().trim() === "SIM" &&
+          !funcao.includes("CONVIDADO") &&
+          !nome.includes("CONVIDADO");
+      });
       dadosMembros = ativos;
       atualizarDashboards(ativos);
       renderizar(ativos);
@@ -566,12 +570,14 @@
       localStorage.setItem('offline_imagens', JSON.stringify(dataImg.data));
 
       // FILTRO GLOBAL DE CONVIDADOS
-      const ativos = dataComp.data.filter(c =>
-        c.Ativo &&
-        c.Ativo.toString().toUpperCase().trim() === "SIM" &&
-        !c.Função.toUpperCase().includes("CONVIDADO") &&
-        !c.Nome.toUpperCase().includes("CONVIDADO")
-      );
+      const ativos = dataComp.data.filter(c => {
+        const funcao = (c["Função"] || c["Função"] || c["FunÃ§Ã£o"] || "").toUpperCase();
+        const nome = (c.Nome || "").toUpperCase();
+        return c.Ativo &&
+          c.Ativo.toString().toUpperCase().trim() === "SIM" &&
+          !funcao.includes("CONVIDADO") &&
+          !nome.includes("CONVIDADO");
+      });
       dadosMembros = ativos;
       localStorage.setItem('offline_componentes', JSON.stringify(ativos));
 
@@ -606,8 +612,8 @@
     Object.keys(iconsMap).forEach(f => counts[f] = 0);
 
     lista.forEach(p => {
-      const funcaoCol = (p.Função || "").toUpperCase();
-      // Convidado já removido globalmente, mas mantemos segurança
+      const funcaoCol = (p["Função"] || p["FunÃ§Ã£o"] || "").toUpperCase();
+      // Convidado jÃ¡ removido globalmente, mas mantemos seguranÃ§a
       if (funcaoCol.includes("CONVIDADO")) return;
       Object.keys(iconsMap).forEach(f => {
         if (funcaoCol.includes(f.toUpperCase())) counts[f]++;
@@ -639,8 +645,8 @@
   function gerarGraficoGenero(lista) {
     let masc = 0, fem = 0;
     lista.forEach(p => {
-      // Tenta várias colunas comuns
-      const g = (p.Genero || p["Gênero"] || p.Sexo || "").toString().toUpperCase().trim();
+      // Tenta vÃ¡rias colunas comuns
+      const g = (p.Genero || p["Gênero"] || p["GÃªnero"] || p.Sexo || "").toString().toUpperCase().trim();
       if (g.includes("HOMEM") || g.includes("MASC") || g === "M") masc++;
       else if (g.includes("MULHER") || g.includes("FEM") || g === "F") fem++;
     });
@@ -754,13 +760,13 @@
       // Filtra pelo cantor
       const hist = data.filter(h => h.Cantor && h.Cantor.toLowerCase().trim() === nome.toLowerCase().trim());
 
-      // Pega os últimos 5
+      // Pega os Ãºltimos 5
       const ultimos = hist.reverse().slice(0, 5);
 
       if (ultimos.length > 0) {
         box.innerHTML = ultimos.map(h => `
             <div class="list-item" style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-weight:600; font-size:0.8rem; color:#333;">${h.Música || h.Músicas}</span>
+                <span style="font-weight:600; font-size:0.8rem; color:#333;">${h.MÃºsica || h.MÃºsicas}</span>
                 <span style="color:#9b59b6; font-weight:bold; font-size:0.75rem;">${h.Tom || h.Tons || ''}</span>
             </div>
             `).join('');
@@ -776,7 +782,7 @@
 
     // Filtra para remover convidados
     const listaFiltrada = lista.filter(item => {
-      const funcao = (item.Função || "").toUpperCase();
+      const funcao = (item["Função"] || item["Função"] || item["FunÃ§Ã£o"] || "").toUpperCase();
       const nome = (item.Nome || "").toUpperCase();
       return !funcao.includes("CONVIDADO") && !nome.includes("CONVIDADO");
     });
@@ -793,7 +799,7 @@
           <img src="${urlFoto}" class="avatar" onclick="abrirFotoExpandida('${urlFoto}', event)" title="Clique para ampliar" style="width: 70px; height: 70px; border-radius: 20px; border: none; box-shadow: var(--shadow-md);">
         </div>
         <div class="comp-name font-heading" style="font-size: 0.95rem; margin-top: 5px;">${nomeLimpo}</div>
-        <div class="comp-role" style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">${item.Função}</div>
+        <div class="comp-role" style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">${item.Função || item["FunÃ§Ã£o"]}</div>
       </div>
     `;
     }).join('');
@@ -810,17 +816,18 @@
       p.style.transform = 'scale(1)';
     });
 
-    // UI: Troca a classe active no elemento clicado (agora é o card)
+    // UI: Troca a classe active no elemento clicado (agora Ã© o card)
     document.querySelectorAll('.kpi-card').forEach(p => p.classList.remove('active-filter'));
     if (elemento) elemento.classList.add('active-filter');
 
-    // Lógica: Filtra a lista original
+    // LÃ³gica: Filtra a lista original
     if (categoria === 'TODOS') {
       renderizar(dadosMembros);
     } else {
-      const filtrados = dadosMembros.filter(m =>
-        m.Função.toUpperCase().includes(categoria)
-      );
+      const filtrados = dadosMembros.filter(m => {
+        const f = (m["Função"] || m["FunÃ§Ã£o"] || "").toUpperCase();
+        return f.includes(categoria);
+      });
       renderizar(filtrados);
     }
   }
@@ -840,7 +847,7 @@
     }
 
     const filtrados = dadosMembros.filter(m => {
-      const g = (m.Genero || m["Gênero"] || "").toString().toUpperCase().trim();
+      const g = (m.Genero || m["GÃªnero"] || "").toString().toUpperCase().trim();
       if (genero === 'MASC') return g.includes("HOMEM") || g.includes("MASC");
       return g.includes("MULHER") || g.includes("FEM");
     });
@@ -874,14 +881,14 @@
       if (avisos.length > 0) {
         container.style.display = 'block';
         box.innerHTML = avisos.map(a => `
-          <div style="background:#fffafa; border-left:3px solid #e67e22; padding:8px; border-radius:5px; margin-top:8px; font-size:0.8rem; position:relative;">
+            <div style="background:#fffafa; border-left:3px solid #e67e22; padding:8px; border-radius:5px; margin-top:8px; font-size:0.8rem; position:relative;">
             <div style="font-weight:bold; margin-bottom:3px; display:flex; justify-content:space-between;">
               <span>${a.Componente}</span>
               <span style="font-size:0.7rem; color:#95a5a6;">${new Date(a.Data).toLocaleDateString('pt-BR')}</span>
             </div>
             <div style="color:#555;">${a.Info}</div>
             <i class="fas fa-trash-alt" onclick="excluirAviso('${a.id_Lembrete}', event)" style="position:absolute; right:8px; bottom:8px; color:#ddd; cursor:pointer; font-size:0.75rem;" title="Remover"></i>
-          </div>
+            </div>
         `).join('');
       } else {
         container.style.display = 'none';
@@ -909,7 +916,7 @@
         // Recarrega se o modal ainda estiver aberto
         const modal = document.getElementById('modalPerfilComp');
         if (modal.style.display === 'flex') {
-          // Aqui precisaria do nome, mas vamos apenas sumir com o item do DOM pra ser mais rápido
+          // Aqui precisaria do nome, mas vamos apenas sumir com o item do DOM pra ser mais rÃ¡pido
           const el = event.target.closest('div');
           if (el) el.remove();
         }

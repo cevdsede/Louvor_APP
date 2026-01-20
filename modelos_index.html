@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modelos de Index - Louvor CEVD</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&family=Poppins:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="assets/Font Awesome/css/all.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            padding: 20px;
+        }
+
+        .selector-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            max-width: 220px;
+            text-align: center;
+        }
+
+        .selector-panel h3 {
+            margin: 0 0 10px 0;
+            font-size: 0.9rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .theme-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .theme-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .theme-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .theme-btn.active {
+            border-color: #3b82f6;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+
+        .apply-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            background: #1e293b;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .apply-btn:hover {
+            background: #334155;
+            transform: translateY(-2px);
+        }
+
+        /* Preview Container */
+        .preview-area {
+            max-width: 450px;
+            margin: 0 auto;
+            background: #fff;
+            min-height: 800px;
+            border-radius: 40px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+            position: relative;
+            transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .model-container {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .model-container.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- THEMES --- */
+
+        .theme-1 {
+            --primary: #2563eb;
+            --bg: #f0f9ff;
+            --card-bg: rgba(255, 255, 255, 0.7);
+            --blur: blur(10px);
+            --header: #ffffff;
+            --text: #1e293b;
+            --radius: 30px;
+            background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+        }
+
+        .theme-2 {
+            --primary: #f59e0b;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --header: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --radius: 12px;
+            background: #0f172a;
+        }
+
+        .theme-3 {
+            --primary: #1e293b;
+            --bg: #ffffff;
+            --card-bg: #f8fafc;
+            --header: #ffffff;
+            --text: #1e293b;
+            --border: 1px solid #e2e8f0;
+            --radius: 0px;
+            background: #ffffff;
+        }
+
+        .theme-4 {
+            --primary: #10b981;
+            --bg: #f0fdf4;
+            --card-bg: #ffffff;
+            --header: #ffffff;
+            --text: #064e3b;
+            --radius: 20px;
+            background: #f0fdf4;
+        }
+
+        .theme-5 {
+            --primary: #f43f5e;
+            --bg: #fff1f2;
+            --card-bg: #ffffff;
+            --header: #ffffff;
+            --text: #4c0519;
+            --radius: 16px;
+            background: linear-gradient(135deg, #fff1f2 0%, #fee2e2 100%);
+        }
+
+        .theme-6 {
+            --primary: #06b6d4;
+            --bg: #000000;
+            --card-bg: #083344;
+            --header: #083344;
+            --text: #ccfbf1;
+            --accent: #d946ef;
+            --radius: 2px;
+            background: #000000;
+        }
+
+        .theme-7 {
+            --primary: #8b5cf6;
+            --bg: #f5f3ff;
+            --card-bg: #ffffff;
+            --header: #ffffff;
+            --text: #2e1065;
+            --radius: 25px;
+            background: #f5f3ff;
+        }
+
+        .theme-8 {
+            --primary: #b91c1c;
+            --bg: #fef2f2;
+            --card-bg: #ffffff;
+            --header: #ffffff;
+            --text: #450a0a;
+            --accent: #fbbf24;
+            --radius: 8px;
+            background: #fef2f2;
+        }
+
+        .theme-9 {
+            --primary: #0d9488;
+            --bg: #f0fdfa;
+            --card-bg: #ffffff;
+            --header: #ffffff;
+            --text: #042f2e;
+            --radius: 12px;
+            background: #f0fdfa;
+        }
+
+        .theme-10 {
+            --primary: #6366f1;
+            --bg: #e0e5ec;
+            --card-bg: #e0e5ec;
+            --header: #e0e5ec;
+            --text: #2d3436;
+            --radius: 40px;
+            --shadow: 9px 9px 16px rgb(163, 177, 198, 0.6), -9px -9px 16px rgba(255, 255, 255, 0.5);
+            background: #e0e5ec;
+        }
+
+        .theme-11 {
+            --primary: #000000;
+            --bg: #f3f3f3;
+            --card-bg: #ffffff;
+            --header: #000000;
+            --text: #000000;
+            --text-on-header: #ffffff;
+            --radius: 0px;
+            background: #f3f3f3;
+        }
+
+        .theme-12 {
+            --primary: #a855f7;
+            --bg: #faf5ff;
+            --card-bg: #ffffff;
+            --header: #ffffff;
+            --text: #3b0764;
+            --radius: 20px;
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+        }
+
+        /* Shared Components */
+        .header {
+            height: 70px;
+            background: var(--header);
+            backdrop-filter: var(--blur);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            color: var(--text);
+            border-bottom: var(--border);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .header h2 {
+            font-size: 1.1rem;
+            margin: 0;
+            font-weight: 700;
+            color: var(--text-on-header, var(--text));
+        }
+
+        .nav-icons {
+            display: flex;
+            gap: 15px;
+            color: var(--text-on-header, var(--text));
+        }
+
+        .content {
+            padding: 20px;
+            flex: 1;
+        }
+
+        .welcome {
+            margin-bottom: 20px;
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .kpi-card {
+            background: var(--card-bg);
+            padding: 15px 10px;
+            border-radius: var(--radius, 16px);
+            text-align: center;
+            box-shadow: var(--shadow, 0 4px 15px rgba(0, 0, 0, 0.05));
+            border: var(--border);
+            transition: 0.3s;
+        }
+
+        .theme-10 .kpi-card {
+            box-shadow: var(--shadow);
+            border: none;
+        }
+
+        .kpi-card i {
+            color: var(--primary);
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+
+        .kpi-card .value {
+            display: block;
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: var(--text);
+        }
+
+        .kpi-grid .label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: var(--text-muted, #64748b);
+            font-weight: 600;
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            border-radius: var(--radius, 24px);
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow, 0 4px 20px rgba(0, 0, 0, 0.05));
+            border: var(--border);
+            height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-muted, #64748b);
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .menu-item {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--radius, 20px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow, 0 4px 15px rgba(0, 0, 0, 0.05));
+            border: var(--border);
+            text-decoration: none;
+            color: var(--text);
+        }
+
+        .menu-item i {
+            font-size: 1.8rem;
+            color: var(--primary);
+        }
+
+        .menu-item span {
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .theme-6 .kpi-card,
+        .theme-6 .chart-card,
+        .theme-6 .menu-item {
+            border: 1px solid var(--primary);
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="selector-panel">
+        <h3>Escolha um Tema</h3>
+        <div class="theme-buttons">
+            <button class="theme-btn active" style="background: #2563eb;" onclick="setTheme(1)"></button>
+            <button class="theme-btn" style="background: #0f172a;" onclick="setTheme(2)"></button>
+            <button class="theme-btn" style="background: #ffffff; border: 1px solid #ddd;"
+                onclick="setTheme(3)"></button>
+            <button class="theme-btn" style="background: #10b981;" onclick="setTheme(4)"></button>
+            <button class="theme-btn" style="background: #f43f5e;" onclick="setTheme(5)"></button>
+            <button class="theme-btn" style="background: #000; border: 1px solid #06b6d4;"
+                onclick="setTheme(6)"></button>
+            <button class="theme-btn" style="background: #8b5cf6;" onclick="setTheme(7)"></button>
+            <button class="theme-btn" style="background: #b91c1c;" onclick="setTheme(8)"></button>
+            <button class="theme-btn" style="background: #0d9488;" onclick="setTheme(9)"></button>
+            <button class="theme-btn" style="background: #e0e5ec;" onclick="setTheme(10)"></button>
+            <button class="theme-btn" style="background: #333;" onclick="setTheme(11)"></button>
+            <button class="theme-btn" style="background: #a855f7;" onclick="setTheme(12)"></button>
+        </div>
+        <button class="apply-btn" onclick="applyChoice()">USAR ESTE TEMA</button>
+        <p style="font-size: 0.7rem; color: #64748b; margin-top: 15px;">Ao clicar no botão, o tema será aplicado ao
+            sistema.</p>
+    </div>
+
+    <div class="preview-area" id="previewArea">
+        <div class="model-container theme-1 active" id="container">
+            <div class="header">
+                <img src="assets/backgroud.png" style="width:30px; border-radius:8px;">
+                <h2>Louvor CEVD</h2>
+                <div class="nav-icons">
+                    <i class="fas fa-bell"></i>
+                    <i class="fas fa-user-circle"></i>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="welcome">Olá, <b>Usuário</b> | <span style="color: #ef4444">Sair</span></div>
+                <div class="kpi-grid">
+                    <div class="kpi-card"><i class="fas fa-users"></i><span class="value">42</span><span
+                            class="label">Membros</span></div>
+                    <div class="kpi-card"><i class="fas fa-calendar-alt"></i><span class="value"
+                            style="font-size:0.8rem">Domingo</span><span class="label">Escala</span></div>
+                    <div class="kpi-card"><i class="fas fa-church"></i><span class="value">12</span><span
+                            class="label">Cultos</span></div>
+                </div>
+                <div class="chart-card"><i class="fas fa-chart-line fa-3x" style="opacity:0.1"></i><span
+                        style="margin-top:10px">Gráfico de Atividade</span></div>
+                <div class="menu-grid">
+                    <div class="menu-item"><i class="fas fa-music"></i><span>Músicas</span></div>
+                    <div class="menu-item"><i class="fas fa-calendar-check"></i><span>Escalas</span></div>
+                    <div class="menu-item"><i class="fas fa-layer-group"></i><span>Repertório</span></div>
+                    <div class="menu-item"><i class="fas fa-tools"></i><span>Utilitários</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentThemeId = 1;
+
+        function setTheme(id) {
+            currentThemeId = id;
+            const container = document.getElementById('container');
+            const btns = document.querySelectorAll('.theme-btn');
+            for (let i = 1; i <= 12; i++) { container.classList.remove('theme-' + i); }
+            container.classList.add('theme-' + id);
+            btns.forEach(btn => btn.classList.remove('active'));
+            btns[id - 1].classList.add('active');
+        }
+
+        function applyChoice() {
+            if (confirm("Confirmar a escolha do Modelo " + currentThemeId + "?")) {
+                alert("TEMA SELECIONADO! Agora me avise aqui no chat qual o número escolhido para eu aplicar no seu index.html.");
+            }
+        }
+    </script>
+</body>
+
+</html>

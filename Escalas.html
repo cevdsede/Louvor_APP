@@ -1,7 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 
 <head>
+  <script src="temas-lista.js"></script>
+  <script src="temas-core.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Escala e Repertório</title>
@@ -26,20 +28,20 @@
       --music-text: #e67e22;
       --danger: #e74c3c;
       --success: #27ae60;
-      /* Cores dos ícones */
+      /* Cores dos Ã­cones */
       --yt: #ff0000;
       --sp: #1db954;
       --cf: #f1c40f;
       --lt: #3498db;
     }
 
-    /* Estilo comum para todos os ícones da lista */
+    /* Estilo comum para todos os Ã­cones da lista */
     .member-item i {
       font-size: 1.2rem;
       filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.2));
     }
 
-    /* Cores específicas baseadas na categoria */
+    /* Cores especÃ­ficas baseadas na categoria */
     .member-item i.Violão {
       color: #e67e22;
     }
@@ -56,7 +58,7 @@
 
     /* Roxo */
 
-    /* Outras cores do gráfico */
+    /* Outras cores do grÃ¡fico */
     .member-item i.Ministro {
       color: #3498db;
     }
@@ -183,7 +185,7 @@
       color: #7f8c8d;
     }
 
-    /* Estilo do botão Add All integrado */
+    /* Estilo do botÃ£o Add All integrado */
     .btn-add-bulk {
       background: var(--success);
       color: white;
@@ -411,6 +413,70 @@
         max-width: 1000px;
       }
     }
+
+    /* MODALS */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 10000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(8px);
+      align-items: center;
+      justify-content: center;
+      padding: 15px;
+      box-sizing: border-box;
+    }
+
+    .modal-content {
+      background: #fff;
+      padding: 30px;
+      border-radius: 24px;
+      width: 95%;
+      max-width: 400px;
+      position: relative;
+    }
+
+    .close-modal {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #64748b;
+    }
+
+    .premium-input {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 20px;
+      background: #f8fafc;
+      transition: all 0.2s;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .btn-premium {
+      width: 100%;
+      padding: 14px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn-premium:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 
@@ -425,6 +491,35 @@
       <i class="fas fa-sync-alt"></i>
     </button>
   </div>
+
+  <!-- MODAL AVISO MEMBRO -->
+  <div id="modalAvisoMembro" class="modal"
+    style="display:none; position:fixed; z-index:10001; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:15px;">
+    <div class="modal-content"
+      style="background:#fff; padding:30px; border-radius:24px; width:100%; max-width:400px; position:relative;">
+      <span class="close-modal" onclick="fecharModalAvisoMembro()"
+        style="position:absolute; right:20px; top:20px; font-size:1.5rem; cursor:pointer;">&times;</span>
+      <h3 style="margin-top:0; font-weight:800; color:var(--primary);">Comunicar Aviso</h3>
+      <p style="font-size:0.85rem; color:#64748b; margin-bottom:15px;">
+        Culto: <b id="displayCultoAviso" style="color:var(--primary);">--</b>
+      </p>
+      <input type="hidden" id="inputCultoAviso">
+      <textarea id="textoAvisoMembro" class="premium-input" placeholder="Ex: Não poderei ir por motivo de saúde..."
+        rows="4"
+        style="width:100%; margin-bottom:15px; border-radius:12px; border:1px solid #e2e8f0; padding:12px; font-family:inherit;"></textarea>
+      <button id="btnEnviarAvisoMembro" class="btn-premium" onclick="enviarAvisoMembro()"
+        style="width:100%; padding:14px; background:var(--primary); color:white; border:none; border-radius:12px; font-weight:700; cursor:pointer;">ENVIAR
+        AVISO</button>
+    </div>
+  </div>
+
+  <style>
+    .premium-input:focus {
+      border-color: var(--accent) !important;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+  </style>
 
   <div class="search-container"
     style="padding: 15px; background: var(--glass); backdrop-filter: blur(8px); border-bottom: 1px solid #f1f5f9; position: fixed; top: 70px; left:0; right:0; z-index: 999;">
@@ -504,7 +599,7 @@
           localStorage.setItem('offline_repertorio', JSON.stringify(repertorioJson.data));
           localStorage.setItem('offline_lembretes', JSON.stringify(lembretesJson.data));
 
-          // Só renderiza se não houver busca ativa E nenhum accordion aberto
+          // SÃ³ renderiza se nÃ£o houver busca ativa E nenhum accordion aberto
           const hasActiveItems = document.querySelector('.accordion-item.active') !== null;
           if (document.getElementById('searchInput').value === "" && !hasActiveItems) {
             renderMaster(escalaJson.data, repertorioJson.data, lembretesJson.data);
@@ -537,27 +632,27 @@
         const escalasFiltradas = Object.values(escalaAgrupada).sort((a, b) => new Date(a.info.Data) - new Date(b.info.Data));
 
         if (escalasFiltradas.length === 0) {
-          container.innerHTML = '<div class="loading">Não há cultos agendados.</div>';
+          container.innerHTML = '<div class="loading">NÃ£o hÃ¡ cultos agendados.</div>';
           return;
         }
 
         escalasFiltradas.forEach(item => {
           const key = item.info.Cultos;
           const dataObj = new Date(item.info.Data);
-          // Remove a vírgula do formato: ex "dom. 18/01"
+          // Remove a vÃ­rgula do formato: ex "dom. 18/01"
           const dataFormatada = dataObj.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace(',', '');
           const dataAvisoCheck = dataObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
           const dataFullFormatada = dataObj.toLocaleDateString('pt-BR');
           const musicasDoCulto = repertorioAgrupado[key] || [];
 
-          // Filtrar lembretes deste culto específico (Aproximado por dd/mm + Nome do Culto)
+          // Filtrar lembretes deste culto especÃ­fico (Aproximado por dd/mm + Nome do Culto)
           const avisosDoCulto = lembretes.filter(l => {
             const matchData = l.Culto && l.Culto.includes(dataAvisoCheck);
             const matchNome = l.Culto && l.Culto.toLowerCase().includes(item.info["Nome dos Cultos"].toLowerCase().trim());
             return matchData && matchNome;
           });
 
-          // Verifica se o usuário logado está escoladado neste culto
+          // Verifica se o usuÃ¡rio logado estÃ¡ escoladado neste culto
           const userToken = JSON.parse(localStorage.getItem('user_token') || '{}');
           const meuNomeLogado = (userToken.Nome || "").toLowerCase().trim();
           const isAdmin = userToken.Role === "Admin" || userToken.Role === "SuperAdmin";
@@ -575,7 +670,7 @@
           itemEl.className = 'accordion-item';
           itemEl.setAttribute('data-search', (item.info["Nome dos Cultos"] + " " + item.membros.map(m => m.nome).join(" ")).toLowerCase());
 
-          // Armazena as músicas para a função Bulk
+          // Armazena as mÃºsicas para a funÃ§Ã£o Bulk
           itemEl.dataset.musicas = JSON.stringify(musicasDoCulto.map(m => ({
             musica: m.Músicas, cantor: m.Cantor, tom: m.Tons
           })));
@@ -681,7 +776,7 @@
 
       // --- FUNÇÕES DE HISTÓRICO BULK ---
       function processarBulk(btn, event) {
-        event.stopPropagation(); // Evita que o accordion feche ao clicar no botão
+        event.stopPropagation(); // Evita que o accordion feche ao clicar no botÃ£o
         const item = btn.closest('.accordion-item');
         const musicas = item.dataset.musicas;
         addBulkHistorico(btn, musicas);
@@ -712,26 +807,38 @@
         }
       }
 
-      async function comunicarAusencia(fullCultoString, event) {
-        event.stopPropagation();
+      function comunicarAusencia(fullCultoString, event) {
+        if (event) event.stopPropagation();
+        document.getElementById('displayCultoAviso').innerText = fullCultoString;
+        document.getElementById('inputCultoAviso').value = fullCultoString;
+        document.getElementById('modalAvisoMembro').style.display = 'flex';
+      }
+
+      async function enviarAvisoMembro() {
+        const info = document.getElementById('textoAvisoMembro').value.trim();
+        const fullCultoString = document.getElementById('inputCultoAviso').value;
+
+        if (!info) return alert("Descreva o motivo do aviso.");
+
         const userToken = JSON.parse(localStorage.getItem('user_token') || '{}');
-        const meuNome = userToken.User || userToken.Nome || "Membro";
+        const meuLogin = userToken.Login || userToken.User || "membro";
+        const id_Lembrete = 'AVISO-' + Math.random().toString(16).substr(2, 8);
 
-        const info = prompt(`Olá, qual aviso você deseja comunicar para: ${fullCultoString}?`);
-
-        if (!info || info.trim() === "") return;
-
-        const id_Lembrete = Math.random().toString(16).substr(2, 8); // Short Hash 85d9f76e
-
-        // IMPORTANTE: O campo 'Culto' deve ser EXATAMENTE o que está na coluna 'Cultos' da aba Transformar
         const payload = {
+          action: "addRow",
           sheet: "Lembretes",
-          id_Lembrete,
-          Componente: meuNome, // User ID de login
-          Data: new Date().toLocaleDateString('pt-BR'),
-          Culto: fullCultoString, // "01. Passos de Fé - 01/01"
-          Info: info
+          data: {
+            id_Lembrete,
+            Componente: meuLogin, // Usar Login como solicitado
+            Data: new Date().toLocaleDateString('pt-BR'),
+            Culto: fullCultoString,
+            Info: info
+          }
         };
+
+        const btn = document.getElementById('btnEnviarAvisoMembro');
+        btn.disabled = true;
+        btn.innerText = "ENVIANDO...";
 
         try {
           const response = await fetch(SCRIPT_URL, {
@@ -740,8 +847,9 @@
           });
           const res = await response.json();
           if (res.status === "success") {
-            alert("✅ Aviso enviado com sucesso!");
-            loadAll(true); // Recarrega para mostrar o aviso na hora
+            alert("✅ Aviso enviado!");
+            fecharModalAvisoMembro();
+            loadAll(true);
           } else {
             alert("⚠️ Erro ao enviar: " + res.message);
           }
@@ -749,8 +857,17 @@
           if (window.SyncManager) {
             SyncManager.addToQueue(payload);
             alert("☁️ Offline. O aviso será enviado depois.");
+            fecharModalAvisoMembro();
           }
+        } finally {
+          btn.disabled = false;
+          btn.innerText = "ENVIAR AVISO";
         }
+      }
+
+      function fecharModalAvisoMembro() {
+        document.getElementById('modalAvisoMembro').style.display = 'none';
+        document.getElementById('textoAvisoMembro').value = '';
       }
       async function excluirAviso(id_Aviso, event) {
         if (event) event.stopPropagation();
@@ -770,10 +887,10 @@
             alert("✅ Aviso removido!");
             loadAll(true);
           } else {
-            alert("⚠️ Erro ao remover: " + res.message);
+            alert("âš ï¸ Erro ao remover: " + res.message);
           }
         } catch (e) {
-          alert("❌ Erro de conexão.");
+          alert("âŒ Erro de conexÃ£o.");
         }
       }
 

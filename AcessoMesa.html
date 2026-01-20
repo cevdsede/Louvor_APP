@@ -1,7 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 
 <head>
+    <script src="temas-lista.js"></script>
+    <script src="temas-core.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acesso a Mesa</title>
@@ -114,15 +116,15 @@
     </div>
 
     <div class="error-msg">
-        <p><i class="fas fa-microchip"></i> Conectando à Mesa de Som...</p>
+        <p><i class="fas fa-microchip"></i> Conectando Ã  Mesa de Som...</p>
         <div
             style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin: 20px auto; max-width: 320px; border: 1px solid rgba(255,255,255,0.2);">
             <p style="font-size:0.9rem; color:#fff; margin-bottom: 15px;">
-                <i class="fas fa-exclamation-triangle" style="color: #f1c40f;"></i> <b>Atenção:</b>
-                Por segurança, o navegador pode bloquear o acesso à mesa de som dentro do app (Mixed Content).
+                <i class="fas fa-exclamation-triangle" style="color: #f1c40f;"></i> <b>AtenÃ§Ã£o:</b>
+                Por seguranÃ§a, o navegador pode bloquear o acesso Ã  mesa de som dentro do app (Mixed Content).
             </p>
             <p style="font-size:0.8rem; color:#ccc; line-height: 1.4;">
-                Se os controles não aparecerem abaixo, utilize o botão azul para abrir em uma janela dedicada.
+                Se os controles nÃ£o aparecerem abaixo, utilize o botÃ£o azul para abrir em uma janela dedicada.
             </p>
             <a href="http://10.10.10.2" target="_blank" class="btn-open-new"
                 style="display: block; margin-top: 15px; font-size: 1.1rem; padding: 12px;">
@@ -132,7 +134,7 @@
         <p style="font-size: 0.75rem; color: #888;">IP da Mesa: 10.10.10.2</p>
     </div>
 
-    <!-- A permissão 'allow-same-origin' e 'allow-scripts' é necessária. 
+    <!-- A permissÃ£o 'allow-same-origin' e 'allow-scripts' Ã© necessÃ¡ria. 
        Mixed Content (HTTP em HTTPS) pode bloquear isso se o PWA estiver seguro. -->
     <iframe src="http://10.10.10.2" style="position:relative; z-index:1" allow="fullscreen"></iframe>
 
@@ -144,12 +146,12 @@
             if ('wakeLock' in navigator) {
                 try {
                     wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Wake Lock ativo: Tela não desligará.');
+                    console.log('Wake Lock ativo: Tela nÃ£o desligarÃ¡.');
                 } catch (err) {
                     console.error(`Erro Wake Lock: ${err.name}, ${err.message}`);
                 }
             } else {
-                console.log("Wake Lock não suportado neste navegador.");
+                console.log("Wake Lock nÃ£o suportado neste navegador.");
             }
         }
 

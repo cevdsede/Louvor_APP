@@ -1,7 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 
 <head>
+  <script src="temas-lista.js"></script>
+  <script src="temas-core.js"></script>
   <meta charset="UTF-8">
   <title>Montar Repertório - Filtro por Escala</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -135,7 +137,7 @@
           const hoje = new Date();
           hoje.setHours(0, 0, 0, 0);
 
-          // Carregar do Cache se disponível
+          // Carregar do Cache se disponÃ­vel
           const cachedEscala = localStorage.getItem('offline_escala');
           const cachedMusicas = localStorage.getItem('offline_musicas');
 
@@ -190,12 +192,12 @@
         } catch (e) { console.error(e); }
       }
 
-      // Função que filtra os Ministros baseada no Culto selecionado
+      // FunÃ§Ã£o que filtra os Ministros baseada no Culto selecionado
       function filtrarEscala(cultoNome) {
         tsMinistro.clear();
         tsMinistro.clearOptions();
 
-        // Atualiza link de Adicionar Música para manter o estado
+        // Atualiza link de Adicionar MÃºsica para manter o estado
         const link = document.getElementById('linkAddMusica');
         if (link) {
           // Pega query params atuais
@@ -219,7 +221,7 @@
           document.getElementById('hiddenNomeCulto').value = infoCulto["Nome dos Cultos"];
         }
 
-        // Filtra pessoas da aba Transformar para este culto com as funções desejadas
+        // Filtra pessoas da aba Transformar para este culto com as funÃ§Ãµes desejadas
         const funcoesPermitidas = ["Ministro", "Back", "Violão"];
 
         const escalados = transformData.filter(item =>
@@ -243,10 +245,10 @@
 
         const data = {};
         new FormData(this).forEach((v, k) => {
-          // ESTA LINHA É A CURA:
+          // ESTA LINHA Ã‰ A CURA:
           // 1. Converte para string
-          // 2. Troca o espaço invisível (\u00a0) por espaço normal
-          // 3. Troca espaços duplos ou triplos por um único espaço
+          // 2. Troca o espaÃ§o invisÃ­vel (\u00a0) por espaÃ§o normal
+          // 3. Troca espaÃ§os duplos ou triplos por um Ãºnico espaÃ§o
           // 4. Limpa as pontas (trim)
           data[k] = v.toString()
             .replace(/\u00a0/g, " ")
@@ -257,14 +259,14 @@
         // 1. Atualiza UI/Cache local imediatamente
         SyncManager.updateLocalCache("Repertório", "add", data);
 
-        // 2. Adiciona à fila de sincronização
+        // 2. Adiciona Ã  fila de sincronizaÃ§Ã£o
         SyncManager.addToQueue(data);
 
         // 3. Feedback visual imediato
         status.innerHTML = "<span class='btn-premium' style='background:var(--accent-green); position:static;'>✅ Salvo com Sucesso!</span>";
         status.style.display = "block";
 
-        // Limpa os campos após salvar
+        // Limpa os campos apÃ³s salvar
         tsMusica.clear();
         tsTom.clear();
       });

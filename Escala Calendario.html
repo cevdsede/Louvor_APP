@@ -1,7 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 
 <head>
+  <script src="temas-lista.js"></script>
+  <script src="temas-core.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Calendário de Escalas</title>
@@ -35,7 +37,7 @@
       }
     }
 
-    /* Cores para os Ícones no Modal do Calendário */
+    /* Cores para os Ãcones no Modal do Calendário */
     .member-item i.Ministro {
       color: #3498db !important;
     }
@@ -347,7 +349,7 @@
       margin-top: 20px;
     }
 
-    /* ESTILOS DO CARTÃO DE EXPORTAÇÃO (ESCONDIDO) */
+    /* ESTILOS DO CARTÃƒO DE EXPORTAÇÃO (ESCONDIDO) */
     #exportTemplate {
       position: absolute;
       left: -9999px;
@@ -478,7 +480,7 @@
 
     <div id="eventModal" class="modal">
       <div class="modal-content">
-        <span class="close-modal" onclick="document.getElementById('eventModal').style.display='none'">×</span>
+        <span class="close-modal" onclick="document.getElementById('eventModal').style.display='none'">&times;</span>
         <h3 id="modalDate" style="color: var(--primary); margin-top: 0;">Data</h3>
         <div id="modalDetails"></div>
       </div>
@@ -678,13 +680,13 @@
         // Ordena por data
         minhasEscalas.sort((a, b) => new Date(a.Data) - new Date(b.Data));
 
-        // Limita às próximas 10 para não ficar gigante
+        // Limita Ã s próximas 10 para não ficar gigante
         minhasEscalas.slice(0, 10).forEach(e => {
-          // Correção de parsing de data: pega apenas a parte YYYY-MM-DD
+          // CorreÃ§Ã£o de parsing de data: pega apenas a parte YYYY-MM-DD
           const dataBase = e.Data.includes('T') ? e.Data.split('T')[0] : e.Data;
           const d = new Date(dataBase + "T12:00:00");
 
-          const dataFormatada = isNaN(d.getTime()) ? "DATA INVÁLIDA" : d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace(',', '');
+          const dataFormatada = isNaN(d.getTime()) ? "DATA INVÃLIDA" : d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace(',', '');
 
           const item = document.createElement('div');
           item.className = 'export-item';
@@ -744,7 +746,7 @@
         details.innerHTML = Object.values(cultos).map(c => {
           const musicas = globalRepertorio[c.info.Cultos] || [];
 
-          // Verifica se o usuário logado está escalado neste culto
+          // Verifica se o usuário logado estÃ¡ escalado neste culto
           const userToken = JSON.parse(localStorage.getItem('user_token') || '{}');
           const meuNomeLogado = (userToken.Nome || "").toLowerCase().trim();
           const isAdmin = userToken.Role === "Admin" || userToken.Role === "Lider";
@@ -776,7 +778,7 @@
              <div class="culto-body">
                <div style="font-weight:bold; margin-bottom:5px; color:#aaa; font-size:0.7rem">EQUIPE</div>
 ${c.membros.map(m => {
-            // Pega a primeira palavra da função para definir a cor (ex: "Violão" de "Violão 1")
+            // Pega a primeira palavra da funÃ§Ã£o para definir a cor (ex: "Violão" de "Violão 1")
             const categoria = m.Função.split(' ')[0].trim();
             // Busca o desenho do ícone no mapa
             const iconeBase = iconsMap[categoria] || 'fa-user';
@@ -872,8 +874,8 @@ ${c.membros.map(m => {
           if (res.status === "success") {
             alert("✅ Aviso enviado!");
             loadData(true);
-          } else alert("⚠️ Erro: " + res.message);
-        } catch (e) { alert("❌ Erro de conexão."); }
+          } else alert("âš ï¸ Erro: " + res.message);
+        } catch (e) { alert("âŒ Erro de conexão."); }
       }
 
       async function excluirAviso(id_Aviso, event) {
@@ -886,7 +888,7 @@ ${c.membros.map(m => {
           });
           const res = await response.json();
           if (res.status === "success") { alert("✅ Removido!"); loadData(true); }
-        } catch (e) { alert("❌ Erro."); }
+        } catch (e) { alert("âŒ Erro."); }
       }
 
       function navigateToAddRepertorio(culto) {

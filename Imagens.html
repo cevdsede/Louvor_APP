@@ -1,7 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 
 <head>
+    <script src="temas-lista.js"></script>
+    <script src="temas-core.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Galeria de Imagens - Drive</title>
@@ -193,12 +195,12 @@
   </div>
 
   <script>
-    const SCRIPT_URL = APP_CONFIG.SCRIPT_URL; // <--- COLOQUE SUA URL DE IMPLANTAÇÃO AQUI
+    const SCRIPT_URL = APP_CONFIG.SCRIPT_URL; // <--- COLOQUE SUA URL DE IMPLANTAÃ‡ÃƒO AQUI
 
     async function carregarGaleria() {
       const gallery = document.getElementById('gallery');
       try {
-        // Mudamos para GET e passamos o parâmetro action na URL
+        // Mudamos para GET e passamos o parÃ¢metro action na URL
         const response = await fetch(SCRIPT_URL + "?action=getImages");
         const res = await response.json();
 

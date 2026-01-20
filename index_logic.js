@@ -236,10 +236,10 @@ function processarERenderizar(dados) {
         const dataStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 
         kpiProxima.innerHTML = `
-      <div style="font-weight:bold; color:var(--primary);">${cultoRef.split(' ')[0]} (${dataStr})</div>
+      <div style="font-weight:bold; color:var(--primary);">${cultoRef} (${dataStr})</div>
       <div style="font-size:0.65rem; color:#7f8c8d; margin-top:2px;">Função: ${funcoesUnicas}</div>
     `;
-        kpiProxima.style.fontSize = '0.9rem'; // Reset to base for the div structure
+        kpiProxima.style.fontSize = '0.9rem';
     } else {
         // Mostra quem ele tentou buscar para facilitar debug
         const nomeDisplay = user.Nome ? user.Nome.split(' ')[0] : 'Usuário';
@@ -250,7 +250,7 @@ function processarERenderizar(dados) {
     renderizarGrafico(listaOrdenada);
 }
 
-let currentChart = null;
+window.currentChart = null;
 function renderizarGrafico(lista) {
     const labels = lista.map(d => d.nome);
     const valores = lista.map(d => d.total);
@@ -265,6 +265,13 @@ function renderizarGrafico(lista) {
     const gradient = ctx.createLinearGradient(0, 0, 0, 400);
     gradient.addColorStop(0, themePrimary);
     gradient.addColorStop(1, themePrimary + '33');
+
+    const canvas = document.getElementById('escalaChart');
+    const wrapper = canvas.parentElement;
+
+    // Set dynamic height: 30px per member, minimum 250px
+    const dynamicHeight = Math.max(250, lista.length * 40);
+    wrapper.style.height = dynamicHeight + 'px';
 
     if (currentChart) {
         // UPDATE EXISTING CHART (Silent)
@@ -875,6 +882,21 @@ async function salvarPerfil() {
         btn.disabled = false;
         btn.innerHTML = 'SALVAR ALTERAÇÕES';
     }
+}
+
+// Global helper for real-time theme updates
+function refreshChartColors(newColor) {
+    if (!currentChart) return;
+    // Use passed color or fallback to CSS variable
+    const themePrimary = newColor || getComputedStyle(document.documentElement).getPropertyValue('--secondary').trim() || '#3498db';
+
+    const ctx = document.getElementById('escalaChart').getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, themePrimary);
+    gradient.addColorStop(1, themePrimary + '33');
+
+    currentChart.data.datasets[0].backgroundColor = gradient;
+    currentChart.update('none');
 }
 
 const initAppVersion = () => {

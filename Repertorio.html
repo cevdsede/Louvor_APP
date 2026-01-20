@@ -1,7 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 
 <head>
+  <script src="temas-lista.js"></script>
+  <script src="temas-core.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestão de Repertório</title>
@@ -111,7 +113,7 @@
       font-size: 0.8rem;
     }
 
-    /* Controles da Direita (Botão + Seta) */
+    /* Controles da Direita (BotÃ£o + Seta) */
     .header-right {
       display: flex;
       align-items: center;
@@ -157,7 +159,7 @@
       transform: rotate(180deg);
     }
 
-    /* Estilo da Música */
+    /* Estilo da MÃºsica */
     .musica-item {
       display: grid;
       grid-template-columns: 2fr 0.8fr 1.5fr 80px;
@@ -236,7 +238,7 @@
         display: none;
       }
 
-      /* Esconde texto no mobile, deixa só ícone */
+      /* Esconde texto no mobile, deixa sÃ³ Ã­cone */
     }
 
     /* LANDSCAPE OPTIMIZATION */
@@ -273,11 +275,6 @@
       <div id="loader" class="loading" style="display:none"><i class="fas fa-spinner fa-spin"></i> Carregando escalas...
       </div>
     </div>
-
-    <div class="last-update"
-      style="text-align:center; padding: 20px 0; color: #aaa; font-size: 0.8rem; border-top: 1px solid #eee; margin-top: 20px;">
-      <span id="lastUpdateDate">Nunca atualizado</span> | <span id="appVersion">Versão v2.3</span>
-    </div>
   </div>
 
   <script src="config.js"></script>
@@ -290,7 +287,7 @@
       const loader = document.getElementById('loader');
       const cached = localStorage.getItem('offline_repertorio');
 
-      // Se tem cache e não é forçado, renderiza e busca em silêncio
+      // Se tem cache e nÃ£o Ã© forÃ§ado, renderiza e busca em silÃªncio
       if (!force && cached) {
         render(JSON.parse(cached));
         setTimeout(() => silentSync(), 500);
@@ -319,7 +316,7 @@
         const json = await response.json();
         localStorage.setItem('offline_repertorio', JSON.stringify(json.data));
 
-        // Só renderiza se não houver busca ativa E nenhum item aberto (para não fechar na cara do usuário)
+        // SÃ³ renderiza se nÃ£o houver busca ativa E nenhum item aberto (para nÃ£o fechar na cara do usuÃ¡rio)
         const hasActiveItems = document.querySelector('.active') !== null;
         if (SyncManager.getQueue().length === 0 && !hasActiveItems) {
           render(json.data);
@@ -327,7 +324,7 @@
       } catch (e) { console.log("Silent sync failed"); }
     }
 
-    // Ouvinte para re-renderizar quando a sincronização terminar
+    // Ouvinte para re-renderizar quando a sincronizaÃ§Ã£o terminar
     window.addEventListener('syncCompleted', () => carregarRepertorio());
 
     function render(data) {
@@ -357,7 +354,7 @@
         const section = document.createElement('div');
         section.className = 'culto-group';
 
-        // Forma segura de armazenar os dados para o botão Add All
+        // Forma segura de armazenar os dados para o botÃ£o Add All
         section.dataset.musicas = JSON.stringify(grupo.musicas.map(m => ({
           musica: m.Músicas, cantor: m.Cantor, tom: m.Tons
         })));
@@ -454,7 +451,7 @@
       SyncManager.updateLocalCache("Repertório", "delete", payload);
       render(JSON.parse(localStorage.getItem('offline_repertorio')));
 
-      // 2. Adiciona à fila de sincronização
+      // 2. Adiciona Ã  fila de sincronizaÃ§Ã£o
       SyncManager.addToQueue(payload);
     }
 

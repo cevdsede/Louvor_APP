@@ -1,7 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 
 <head>
+  <script src="temas-lista.js"></script>
+  <script src="temas-core.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="manifest.json">
@@ -91,7 +93,7 @@
       box-sizing: border-box;
     }
 
-    /* Cabeçalho do Cantor (Acordeão) */
+    /* CabeÃ§alho do Cantor (AcordeÃ£o) */
     .cantor-section {
       margin-bottom: 10px;
       border: 1px solid #ddd;
@@ -126,7 +128,7 @@
       font-size: 0.8rem;
     }
 
-    /* Conteúdo (Lista de Músicas) */
+    /* ConteÃºdo (Lista de MÃºsicas) */
     .cantor-content {
       max-height: 0;
       overflow: hidden;
@@ -173,7 +175,7 @@
       white-space: nowrap;
     }
 
-    /* Estilos de Níveis Aninhados */
+    /* Estilos de NÃ­veis Aninhados */
     .tema-section,
     .estilo-section {
       margin-top: 10px;
@@ -347,7 +349,7 @@
         const json = await response.json();
         localStorage.setItem('offline_historico', JSON.stringify(json.data));
 
-        // Só renderiza se não houver busca ativa E nenhum item aberto (para não fechar na cara do usuário)
+        // SÃ³ renderiza se nÃ£o houver busca ativa E nenhum item aberto (para nÃ£o fechar na cara do usuÃ¡rio)
         const hasOpenItems = document.querySelector('.open') !== null;
         if (document.getElementById('searchInput').value === "" && !hasOpenItems) {
           renderHistory(json.data);
@@ -359,11 +361,13 @@
       const container = document.getElementById('main-content');
       container.innerHTML = '';
 
-      // Mapear informações da biblioteca de músicas
+      // Mapear informaÃ§Ãµes da biblioteca de mÃºsicas
       const catalogRaw = localStorage.getItem('offline_musicas');
       const catalog = catalogRaw ? JSON.parse(catalogRaw) : [];
       const musicMap = catalog.reduce((acc, m) => {
-        const key = `${(m.Músicas || "").trim()} - ${(m.Cantor || "").trim()}`.toLowerCase();
+        const musicName = (m.Músicas || m["Músicas"] || "").trim();
+        const artist = (m.Cantor || "").trim();
+        const key = `${musicName} - ${artist}`.toLowerCase();
         acc[key] = { tema: m.Tema || "Geral", estilo: m.Estilo || "Outros" };
         return acc;
       }, {});
@@ -371,8 +375,8 @@
       // Agrupar: Cantor -> Tema -> Estilo
       const grouped = data.reduce((acc, item) => {
         const cantor = item.Cantor || "Não Informado";
-        const nomeMusica = (item.Músicas || "").trim();
-        const info = musicMap[nomeMusica.toLowerCase()] || { tema: "Geral", estilo: "Outros" };
+        const nomeMusica = (item.Músicas || item["Músicas"] || "").trim();
+        const info = musicMap[`${nomeMusica} - ${cantor}`.toLowerCase()] || { tema: "Geral", estilo: "Outros" };
 
         const tema = info.tema;
         const estilo = info.estilo;
@@ -381,7 +385,7 @@
         if (!acc[cantor][tema]) acc[cantor][tema] = {};
         if (!acc[cantor][tema][estilo]) acc[cantor][tema][estilo] = [];
 
-        acc[cantor][tema][estilo].push(item);
+        acc[cantor][tema][estilo].push({ ...item, musicName: nomeMusica });
         return acc;
       }, {});
 
@@ -408,10 +412,10 @@
                 <div class="estilo-content">
                   <div class="music-list">
                     ${musicas.map(m => {
-              const nomeMusica = m.Músicas || "Sem Nome";
+              const displayMusic = m.musicName || "Sem Nome";
               return `
-                        <div class="music-item" data-search="${cantor.toLowerCase()} ${tema.toLowerCase()} ${estilo.toLowerCase()} ${nomeMusica.toLowerCase()}">
-                          <span class="music-name">${nomeMusica}</span>
+                        <div class="music-item" data-search="${cantor.toLowerCase()} ${tema.toLowerCase()} ${estilo.toLowerCase()} ${displayMusic.toLowerCase()}">
+                          <span class="music-name">${displayMusic}</span>
                           <span class="music-ton">${m.Tons || '--'}</span>
                         </div>
                       `}).join('')}
@@ -466,7 +470,7 @@
         item.classList.toggle('hidden', !text.includes(q));
       });
 
-      // Depois abre os níveis que contêm itens visíveis
+      // Depois abre os nÃ­veis que contÃªm itens visÃ­veis
       levels.forEach(level => {
         const visibleItems = level.querySelectorAll('.music-item:not(.hidden)');
         if (visibleItems.length > 0) {
