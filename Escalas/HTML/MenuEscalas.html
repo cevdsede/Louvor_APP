@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <script src="../../Shared/JS/temas-lista.js"></script>
+    <script src="../../Shared/JS/temas-core.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escalas de Louvor</title>
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="stylesheet" href="../../assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../../assets/Font Awesome/css/all.css">
+    <link rel="stylesheet" href="../../Shared/CSS/main.css">
+    <link rel="stylesheet" href="../CSS/menu-escalas.css">
+</head>
+
+<body>
+
+    <div class="header-bar">
+        <div class="header-left-nav">
+            <i class="fas fa-arrow-left nav-btn" onclick="window.location.href='../../index.html'" title="Voltar"></i>
+            <i class="fas fa-home nav-btn" onclick="window.location.href='../../index.html'" title="Início"></i>
+        </div>
+        <h2 class="header-title">Escalas</h2>
+        <div class="header-right-nav">
+            <i class="fas fa-palette nav-btn" onclick="toggleThemePanel()" title="Trocar Tema"></i>
+            <i class="fas fa-sync-alt nav-btn" onclick="window.location.reload()" title="Sincronizar"></i>
+        </div>
+    </div>
+
+    <div id="themePanel" class="theme-panel">
+        <h3>Escolha um Tema</h3>
+        <div class="theme-buttons" id="themeButtonsGrid"></div>
+        <button class="apply-btn" onclick="confirmarTema()">USAR ESTE TEMA</button>
+    </div>
+
+    <div class="premium-container">
+        <div class="premium-menu-grid">
+            <a href="Escalas.html" class="menu-card">
+                <i class="fas fa-list-ul"></i>
+                <span>Lista</span>
+            </a>
+            <a href="Calendario.html" class="menu-card">
+                <i class="fas fa-calendar-days"></i>
+                <span>Calendário</span>
+            </a>
+            <!-- Limpeza.html is likely in root, so we check relative path -->
+            <a href="Limpeza.html" class="menu-card">
+                <i class="fas fa-broom"></i>
+                <span>Limpeza</span>
+            </a>
+        </div>
+    </div>
+
+    <script src="../JS/menu-escalas.js"></script>
+</body>
+
+</html>

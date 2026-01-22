@@ -106,7 +106,7 @@ async function performFetches(progressCb) {
 function logout(force = false) {
     if (force || confirm("Deseja sair?")) {
         localStorage.removeItem('user_token');
-        window.location.href = 'Login.html';
+        window.location.href = 'Shared/HTML/Login.html';
     }
 }
 
@@ -425,9 +425,21 @@ function processarNotificacoes() {
     const meuNome = (user.Nome || lastUserName || "").toLowerCase().trim();
     if (!meuNome) return;
 
-    const escalas = JSON.parse(localStorage.getItem('offline_escala') || '[]');
-    const lembretes = JSON.parse(localStorage.getItem('offline_lembretes') || '[]');
-    const repertorios = JSON.parse(localStorage.getItem('offline_repertorio') || '[]');
+    // Helper para evitar crash com JSON inválido (ex: "undefined")
+    const safeParse = (key) => {
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw || raw === "undefined" || raw === "null") return [];
+            return JSON.parse(raw);
+        } catch (e) {
+            console.error(`Erro ao parsear ${key}:`, e);
+            return [];
+        }
+    };
+
+    const escalas = safeParse('offline_escala');
+    const lembretes = safeParse('offline_lembretes');
+    const repertorios = safeParse('offline_repertorio');
 
     let notificacoes = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
     let conhecidasMaster = JSON.parse(localStorage.getItem('notificacoes_conhecidas_ids') || '[]');

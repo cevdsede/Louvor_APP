@@ -1,0 +1,81 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <script src="../../Shared/JS/temas-lista.js"></script>
+  <script src="../../Shared/JS/temas-core.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro de Músicas</title>
+  <link rel="manifest" href="../../manifest.json">
+  <script src="../../Shared/JS/config.js"></script>
+  <script src="../../Shared/JS/permissions.js"></script>
+  <script src="../../Shared/JS/sync.js"></script>
+  <link rel="stylesheet" href="../../assets/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../../assets/Font Awesome/css/all.css">
+  <link rel="stylesheet" href="../../Shared/CSS/main.css">
+  <link rel="stylesheet" href="../CSS/cadastro-musicas.css">
+</head>
+
+<body>
+  <div class="header-bar">
+    <div class="header-left-nav">
+      <i class="fas fa-arrow-left nav-btn" onclick="handleBack()" title="Voltar"></i>
+      <i class="fas fa-home nav-btn" onclick="window.location.href='../../index.html'" title="Início"></i>
+    </div>
+    <h2 class="header-title">Cadastrar Música</h2>
+    <div class="header-right-nav">
+      <i class="fas fa-palette nav-btn" onclick="toggleThemePanel()" title="Trocar Tema"></i>
+      <i class="fas fa-sync-alt nav-btn" onclick="loadTemas()" title="Sincronizar"></i>
+    </div>
+  </div>
+
+  <div id="themePanel" class="theme-panel">
+    <h3>Escolha um Tema</h3>
+    <div class="theme-buttons" id="themeButtonsGrid"></div>
+    <button class="apply-btn" onclick="confirmarTema()">USAR ESTE TEMA</button>
+  </div>
+
+  <div class="premium-container">
+    <div class="premium-card" style="max-width: 500px; margin: 0 auto;">
+
+      <form id="musicForm">
+        <input type="hidden" name="sheet" value="Musicas">
+
+        <div class="field">
+          <label>Tema</label>
+          <select name="Tema" id="temaSelect" required>
+            <option value="">Carregando temas...</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Estilo</label>
+          <select name="Estilo" required>
+            <option value="">Selecione o estilo...</option>
+            <option value="Adoração">Adoração</option>
+            <option value="Celebração">Celebração</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Nome da Música</label>
+          <input type="text" name="Musica" placeholder="Ex: A Terra Clama" required>
+        </div>
+
+        <div class="field">
+          <label>Cantor / Banda</label>
+          <input type="text" name="Cantor" placeholder="Ex: Davi Fernandes" required>
+        </div>
+
+        <button type="submit" id="btnSubmit" class="btn-premium">Salvar Música</button>
+      </form>
+
+      <div id="status"></div>
+    </div>
+  </div>
+
+  <script src="../JS/cadastro-musicas.js"></script>
+</body>
+
+</html>

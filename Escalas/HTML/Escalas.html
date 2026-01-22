@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <script src="../../Shared/JS/temas-lista.js"></script>
+    <script src="../../Shared/JS/temas-core.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escala e Repertório</title>
+    <link rel="manifest" href="../../manifest.json">
+    <script src="../../Shared/JS/config.js"></script>
+    <script src="../../Shared/JS/sync.js"></script>
+    <link rel="stylesheet" href="../../assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../../assets/Font Awesome/css/all.css">
+    <link rel="stylesheet" href="../../Shared/CSS/main.css">
+    <link rel="stylesheet" href="../CSS/escalas.css">
+</head>
+
+<body style="padding-top: 80px;">
+
+    <div class="header-bar">
+        <div class="header-left">
+            <i class="fas fa-arrow-left nav-btn" onclick="window.location.href='MenuEscalas.html'" title="Voltar"></i>
+            <i class="fas fa-home nav-btn" onclick="window.location.href='../../index.html'" title="Início"></i>
+        </div>
+        <h2 class="header-title">Escalas</h2>
+        <div class="header-right">
+            <i class="fas fa-palette nav-btn" onclick="toggleThemePanel()" title="Trocar Tema"></i>
+            <i class="fas fa-sync-alt nav-btn" onclick="loadAll(true)" title="Sincronizar"></i>
+        </div>
+    </div>
+
+    <div id="themePanel" class="theme-panel">
+        <h3>Escolha um Tema</h3>
+        <div class="theme-buttons" id="themeButtonsGrid"></div>
+        <button class="apply-btn" onclick="confirmarTema()">USAR ESTE TEMA</button>
+    </div>
+
+    <!-- MODAL AVISO MEMBRO -->
+    <div id="modalAvisoMembro" class="modal"
+        style="display:none; position:fixed; z-index:10001; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:15px;">
+        <div class="modal-content"
+            style="background:#fff; padding:30px; border-radius:24px; width:100%; max-width:400px; position:relative;">
+            <span class="close-modal" onclick="fecharModalAvisoMembro()"
+                style="position:absolute; right:20px; top:20px; font-size:1.5rem; cursor:pointer;">&times;</span>
+            <h3 style="margin-top:0; font-weight:800; color:var(--primary);">Comunicar Aviso</h3>
+            <p style="font-size:0.85rem; color:#64748b; margin-bottom:15px;">
+                Culto: <b id="displayCultoAviso" style="color:var(--primary);">--</b>
+            </p>
+            <input type="hidden" id="inputCultoAviso">
+            <textarea id="textoAvisoMembro" class="premium-input"
+                placeholder="Ex: Não poderei ir por motivo de saúde..." rows="4"
+                style="width:100%; margin-bottom:15px; border-radius:12px; border:1px solid #e2e8f0; padding:12px; font-family:inherit;"></textarea>
+            <button id="btnEnviarAvisoMembro" class="btn-premium" onclick="enviarAvisoMembro()"
+                style="width:100%; padding:14px; background:var(--primary); color:white; border:none; border-radius:12px; font-weight:700; cursor:pointer;">ENVIAR
+                AVISO</button>
+        </div>
+    </div>
+
+    <div class="search-container"
+        style="padding: 15px; background: var(--glass); backdrop-filter: blur(8px); border-bottom: 1px solid #f1f5f9; position: fixed; top: 70px; left:0; right:0; z-index: 999;">
+        <div style="max-width: 500px; margin: 0 auto;">
+            <input type="text" id="searchInput" placeholder="Pesquisar..." onkeyup="filterEscala()"
+                class="premium-input" style="margin-bottom: 0; box-shadow: var(--shadow-sm);">
+        </div>
+    </div>
+
+    <div class="premium-container" style="max-width: 1000px; padding-top: 170px;">
+
+        <div id="loader" class="loading" style="display:none"><i class="fas fa-sync fa-spin"></i> Carregando Escalas...
+        </div>
+        <div id="escala-container" class="container"></div>
+
+        <script src="../JS/escalas.js"></script>
+
+    </div>
+    </div>
+</body>
+
+</html>

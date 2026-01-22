@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utilitários</title>
+    <link rel="manifest" href="../../manifest.json">
+
+    <!-- Shared Assets -->
+    <link rel="stylesheet" href="../../assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../../assets/Font Awesome/css/all.css">
+    <link rel="stylesheet" href="../../Shared/CSS/main.css">
+
+    <!-- Page Specific CSS -->
+    <link rel="stylesheet" href="../CSS/menu-utilitarios.css">
+
+    <!-- Shared Scripts -->
+    <script src="../../Shared/JS/temas-lista.js"></script>
+    <script src="../../Shared/JS/temas-core.js"></script>
+</head>
+
+<body>
+
+    <div class="header-bar">
+        <div class="header-left-nav">
+            <i class="fas fa-arrow-left nav-btn" onclick="history.back()" title="Voltar"></i>
+            <i class="fas fa-home nav-btn" onclick="window.location.href='../../index.html'" title="Início"></i>
+        </div>
+        <h2 class="header-title">Utilitários</h2>
+        <div class="header-right-nav">
+            <i class="fas fa-palette nav-btn" onclick="toggleThemePanel()" title="Trocar Tema"></i>
+            <i class="fas fa-sync-alt nav-btn" onclick="window.location.reload()" title="Sincronizar"></i>
+        </div>
+    </div>
+
+    <div id="themePanel" class="theme-panel">
+        <h3>Escolha um Tema</h3>
+        <div class="theme-buttons" id="themeButtonsGrid"></div>
+        <button class="apply-btn" onclick="confirmarTema()">USAR ESTE TEMA</button>
+    </div>
+
+    <div class="premium-container">
+        <div class="premium-menu-grid">
+            <a href="AcessoMesa.html" class="menu-card">
+                <i class="fas fa-sliders-h"></i>
+                <span>Acesso a Mesa</span>
+            </a>
+            <a href="Chamada.html" class="menu-card" id="btnChamada" style="display: none;">
+                <i class="fas fa-clipboard-check"></i>
+                <span>Chamada Consagração</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../../Shared/JS/permissions.js"></script>
+    <script src="../../Shared/JS/config.js"></script>
+    <script src="../JS/menu-utilitarios.js"></script>
+
+</body>
+
+</html>

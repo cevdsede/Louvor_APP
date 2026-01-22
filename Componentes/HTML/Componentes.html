@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <script src="../../Shared/JS/temas-lista.js"></script>
+    <script src="../../Shared/JS/temas-core.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Componentes Ativos - Louvor</title>
+    <link rel="manifest" href="../../manifest.json">
+    <script src="../../Shared/JS/config.js"></script>
+    <link rel="stylesheet" href="../../assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../../assets/Font Awesome/css/all.css">
+    <link rel="stylesheet" href="../../Shared/CSS/main.css">
+    <link rel="stylesheet" href="../CSS/componentes.css">
+</head>
+
+<body>
+
+    <div class="header-bar">
+        <div class="header-left-nav">
+            <i class="fas fa-arrow-left nav-btn" onclick="history.back()" title="Voltar"></i>
+            <i class="fas fa-home nav-btn" onclick="window.location.href='../../index.html'" title="Início"></i>
+        </div>
+        <h2 class="header-title">Equipe</h2>
+        <div class="header-right-nav">
+            <i class="fas fa-palette nav-btn" onclick="toggleThemePanel()" title="Trocar Tema"></i>
+            <i class="fas fa-sync-alt nav-btn" onclick="iniciar(true)" title="Sincronizar"></i>
+        </div>
+    </div>
+
+    <div id="themePanel" class="theme-panel">
+        <h3>Escolha um Tema</h3>
+        <div class="theme-buttons" id="themeButtonsGrid"></div>
+        <button class="apply-btn" onclick="confirmarTema()">USAR ESTE TEMA</button>
+    </div>
+
+    <div class="premium-container">
+        <div id="graficoGenero" class="premium-card">
+            <!-- MASCULINO -->
+            <div class="gender-bar-container" onclick="filtrarPorGenero('MASC', this)"
+                style="cursor:pointer; margin-bottom:15px; transition:0.2s">
+                <div class="bar-info" style="margin-bottom:5px; font-weight:bold; font-size:0.85rem">
+                    <span id="txtMasc">Masculino - 0% (0)</span>
+                </div>
+                <div class="bar-bg">
+                    <div id="barMasc" class="bar-fill masc"></div>
+                </div>
+            </div>
+
+            <!-- FEMININO -->
+            <div class="gender-bar-container" onclick="filtrarPorGenero('FEM', this)"
+                style="cursor:pointer; transition:0.2s">
+                <div class="bar-info" style="margin-bottom:5px; font-weight:bold; font-size:0.85rem">
+                    <span id="txtFem">Feminino - 0% (0)</span>
+                </div>
+                <div class="bar-bg">
+                    <div id="barFem" class="bar-fill fem"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="kpiFuncoes" class="kpi-grid"></div>
+        <!-- OS FILTROS DE PÃ LULA FORAM REMOVIDOS E INTEGRADOS AOS KPIs -->
+        <div id="listaComponentes">
+            <div id="loader" style="display:none; text-align:center; padding:50px;">
+                <i class="fas fa-circle-notch fa-spin fa-2x" style="color:var(--accent)"></i>
+                <p style="font-size: 0.8rem; color: #7f8c8d; margin-top: 10px;">Sincronizando equipe...</p>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="lightbox" class="lightbox" onclick="fecharLightbox()">
+        <img id="lightboxImg" src="">
+    </div>
+
+    <div id="modalPerfilComp" class="modal-perfil" onclick="fecharModalDetalhesExterno(event)">
+        <div class="modal-content-perfil" onclick="event.stopPropagation()">
+            <span class="close-perfil"
+                onclick="document.getElementById('modalPerfilComp').style.display='none'">&times;</span>
+
+            <div class="modal-header">
+                <div id="detalheCabecalho">
+                </div>
+            </div>
+
+            <div style="text-align: left;">
+                <small style="color: #e67e22; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
+                    <i class="fas fa-calendar-alt"></i> Próximas Escalas
+                </small>
+                <div id="modalEscalas" style="margin-bottom: 20px;"></div>
+
+                <div id="modalHistoricoContainer" style="display:none; margin-bottom: 20px;">
+                    <small style="color: #9b59b6; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
+                        <i class="fas fa-music"></i> Histórico (Voz)
+                    </small>
+                    <div id="modalHistorico"></div>
+                </div>
+
+                <div id="modalAvisosGeraisContainer" style="display:none; margin-top:20px;">
+                    <small style="color: #e67e22; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
+                        <i class="fas fa-bullhorn"></i> Avisos Gerais
+                    </small>
+                    <div id="modalAvisosGerais"></div>
+                </div>
+            </div>
+
+            <div id="modalAcoes" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;"></div>
+        </div>
+    </div>
+
+    <script src="../JS/componentes.js"></script>
+    </div>
+</body>
+
+</html>

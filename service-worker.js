@@ -1,26 +1,26 @@
-importScripts('config.js');
+importScripts('Shared/JS/config.js');
 const CACHE_NAME = APP_CONFIG.CACHE_NAME;
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './config.js',
-  './permissions.js',
-  './sync.js',
-  './Login.html',
-  './MenuEscalas.html',
-  './MenuMusicas.html',
-  './Escalas.html',
-  './Escala Calendario.html',
-  './Musicas.html',
-  './Repertorio.html',
-  './Limpeza.html',
-  './Componentes.html',
-  './Cadastro de Musicas.html',
-  './Cadastro de Repertorio.html',
-  './AcessoMesa.html',
-  './Historico de Musicas.html',
-  './Imagens.html',
-  './Chamada.html',
+  './Shared/JS/config.js',
+  './Shared/JS/permissions.js',
+  './Shared/JS/sync.js',
+  './Shared/HTML/Login.html',
+  './Escalas/HTML/MenuEscalas.html',
+  './Musicas/HTML/MenuMusicas.html',
+  './Escalas/HTML/Escalas.html',
+  './Escalas/HTML/Calendario.html',
+  './Musicas/HTML/Musicas.html',
+  './Musicas/HTML/Repertorio.html',
+  './Escalas/HTML/Limpeza.html',
+  './Componentes/HTML/Componentes.html',
+  './Musicas/HTML/Cadastro de Musicas.html',
+  './Musicas/HTML/Cadastro de Repertorio.html',
+  './Utilitarios/HTML/AcessoMesa.html',
+  './Musicas/HTML/Historico de Musicas.html',
+  './Utilitarios/HTML/Imagens.html',
+  './Utilitarios/HTML/Chamada.html',
   './assets/Leão.png',
   './assets/backgroud.png',
   './manifest.json',
@@ -71,7 +71,7 @@ async function backgroundFetchLogic() {
     const cache = await caches.open(CACHE_NAME);
     const urlsToUpdate = [
       `${APP_CONFIG.SCRIPT_URL}?sheet=Transformar`,
-      `${APP_CONFIG.SCRIPT_URL}?sheet=Repertório`,
+      `${APP_CONFIG.SCRIPT_URL}?sheet=Repertório_PWA`,
       `${APP_CONFIG.SCRIPT_URL}?sheet=Musicas`
     ];
 

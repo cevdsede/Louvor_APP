@@ -1,0 +1,99 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <script src="../../Shared/JS/temas-lista.js"></script>
+    <script src="../../Shared/JS/temas-core.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Músicas - Louvor</title>
+    <link rel="manifest" href="../../manifest.json">
+    <script src="../../Shared/JS/config.js"></script>
+    <script src="../../Shared/JS/permissions.js"></script>
+    <link rel="stylesheet" href="../../assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../../assets/Font Awesome/css/all.css">
+    <link rel="stylesheet" href="../../Shared/CSS/main.css">
+    <link rel="stylesheet" href="../CSS/menu-musicas.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <div class="header-bar">
+        <div class="header-left-nav">
+            <i class="fas fa-arrow-left nav-btn" onclick="window.location.href='../../index.html'" title="Voltar"></i>
+            <i class="fas fa-home nav-btn" onclick="window.location.href='../../index.html'" title="Início"></i>
+        </div>
+        <h2 class="header-title">Músicas (<span id="totalHeader">0</span>)</h2>
+        <div class="header-right-nav">
+            <i class="fas fa-palette nav-btn" onclick="toggleThemePanel()" title="Trocar Tema"></i>
+            <i class="fas fa-sync-alt nav-btn" onclick="loadStats(true)" title="Sincronizar"></i>
+        </div>
+    </div>
+
+    <div id="themePanel" class="theme-panel">
+        <h3>Escolha um Tema</h3>
+        <div class="theme-buttons" id="themeButtonsGrid"></div>
+        <button class="apply-btn" onclick="confirmarTema()">USAR ESTE TEMA</button>
+    </div>
+
+    <div class="premium-container">
+
+        <!-- ANALYTICS SECUNDÃ RIOS -->
+        <div class="row g-3 mb-4">
+            <div class="col-6">
+                <div class="premium-card" style="padding: 15px;">
+                    <div class="stat-lbl"
+                        style="margin-bottom:10px; font-weight:bold; text-align:center; font-size: 0.75rem;">Estilos
+                    </div>
+                    <div class="chart-wrapper" style="height: 150px;">
+                        <canvas id="chartEstilos"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="premium-card" style="padding: 15px;">
+                    <div class="stat-lbl"
+                        style="margin-bottom:10px; font-weight:bold; text-align:center; font-size: 0.75rem;">Temas</div>
+                    <div class="chart-wrapper" style="height: 150px;">
+                        <canvas id="chartTemas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SUBMENUS -->
+        <div class="premium-menu-grid mb-5">
+            <a href="Musicas.html" class="menu-card">
+                <i class="fas fa-list-ul"></i>
+                <span>Lista</span>
+            </a>
+            <a href="Repertorio.html" class="menu-card">
+                <i class="fas fa-book-open"></i>
+                <span>Repertórios</span>
+            </a>
+            <a href="Cadastro de Repertorio.html" class="menu-card" id="menuMontarRepertorio">
+                <i class="fas fa-plus-circle"></i>
+                <span>Montar</span>
+            </a>
+            <a href="Historico de Musicas.html" class="menu-card">
+                <i class="fas fa-history"></i>
+                <span>Histórico</span>
+            </a>
+        </div>
+
+        <!-- GRÃ FICO MAIS TOCADAS -->
+        <div class="premium-card">
+            <h3 style="margin-bottom: 20px; font-size: 1.1rem; text-align: center;">Mais Tocadas</h3>
+            <div id="loader" style="text-align: center;"><i class="fas fa-sync fa-spin"></i></div>
+            <div class="chart-wrapper" id="chartMusicasContainer" style="height: 300px; min-height: 300px;">
+                <canvas id="chartMusicas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="../JS/menu-musicas.js"></script>
+
+</body>
+
+</html>

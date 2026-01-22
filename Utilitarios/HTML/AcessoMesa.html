@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso a Mesa</title>
+    <link rel="manifest" href="../../manifest.json">
+
+    <!-- Shared Assets -->
+    <link rel="stylesheet" href="../../assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../../assets/Font Awesome/css/all.css">
+
+    <!-- Page Specific CSS -->
+    <link rel="stylesheet" href="../CSS/acesso-mesa.css">
+
+    <!-- Shared Scripts -->
+    <script src="../../Shared/JS/temas-lista.js"></script>
+    <script src="../../Shared/JS/temas-core.js"></script>
+    <script src="../../Shared/JS/config.js"></script>
+    <script src="../../Shared/JS/permissions.js"></script>
+</head>
+
+<body>
+
+    <div class="header-bar">
+        <div class="header-left-nav">
+            <i class="fas fa-arrow-left nav-btn" onclick="history.back()" title="Voltar"></i>
+            <i class="fas fa-home nav-btn" onclick="window.location.href='../../index.html'" title="Início"></i>
+        </div>
+        <h2 class="header-title">Mesa de Som</h2>
+        <div class="header-right-nav">
+            <i class="fas fa-palette nav-btn" onclick="toggleThemePanel()" title="Trocar Tema"></i>
+            <i class="fas fa-sync-alt nav-btn" onclick="window.location.reload()" title="Sincronizar"></i>
+        </div>
+    </div>
+
+    <div id="themePanel" class="theme-panel">
+        <h3>Escolha um Tema</h3>
+        <div class="theme-buttons" id="themeButtonsGrid"></div>
+        <button class="apply-btn" onclick="confirmarTema()">USAR ESTE TEMA</button>
+    </div>
+
+
+    <div class="error-msg">
+        <p><i class="fas fa-microchip"></i> Conectando à Mesa de Som...</p>
+        <div
+            style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin: 20px auto; max-width: 320px; border: 1px solid rgba(255,255,255,0.2);">
+            <p style="font-size:0.9rem; color:#fff; margin-bottom: 15px;">
+                <i class="fas fa-exclamation-triangle" style="color: #f1c40f;"></i> <b>Atenção:</b>
+                Por segurança, o navegador pode bloquear o acesso à mesa de som dentro do app (Mixed Content).
+            </p>
+            <p style="font-size:0.8rem; color:#ccc; line-height: 1.4;">
+                Se os controles não aparecerem abaixo, utilize o botão azul para abrir em uma janela dedicada.
+            </p>
+            <a href="http://10.10.10.2" target="_blank" class="btn-open-new"
+                style="display: block; margin-top: 15px; font-size: 1.1rem; padding: 12px;">
+                <i class="fas fa-external-link-alt"></i> ABRIR CONTROLES AGORA
+            </a>
+        </div>
+        <p style="font-size: 0.75rem; color: #888;">IP da Mesa: 10.10.10.2</p>
+    </div>
+
+    <!-- A permissão 'allow-same-origin' e 'allow-scripts' é necessária. 
+       Mixed Content (HTTP em HTTPS) pode bloquear isso se o PWA estiver seguro. -->
+    <iframe src="http://10.10.10.2" style="position:relative; z-index:1" allow="fullscreen"></iframe>
+
+    <script src="../JS/acesso-mesa.js"></script>
+</body>
+
+</html>

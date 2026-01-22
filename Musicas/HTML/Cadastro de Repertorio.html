@@ -1,0 +1,112 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <script src="../../Shared/JS/temas-lista.js"></script>
+  <script src="../../Shared/JS/temas-core.js"></script>
+  <meta charset="UTF-8">
+  <title>Montar Repertório - Filtro por Escala</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+  <link rel="manifest" href="../../manifest.json">
+  <script src="../../Shared/JS/config.js"></script>
+  <script src="../../Shared/JS/permissions.js"></script>
+  <link rel="stylesheet" href="../../assets/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../../assets/Font Awesome/css/all.css">
+  <link rel="stylesheet" href="../../Shared/CSS/main.css">
+  <link rel="stylesheet" href="../CSS/cadastro-repertorio.css">
+  <script>
+    const userTokens = JSON.parse(localStorage.getItem('user_token') || '{}');
+    if (userTokens.Role) {
+      if (!hasPermission(userTokens.Role, "Cadastro de Repertorio.html", "page")) {
+        alert("Acesso restrito.");
+        window.location.href = '../../index.html';
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <div class="header-bar">
+    <div class="header-left-nav">
+      <i class="fas fa-arrow-left nav-btn" onclick="handleBack()" title="Voltar"></i>
+      <i class="fas fa-home nav-btn" onclick="window.location.href='../../index.html'" title="Início"></i>
+    </div>
+    <h2 class="header-title">Montar Repertório</h2>
+    <div class="header-right-nav">
+      <i class="fas fa-palette nav-btn" onclick="toggleThemePanel()" title="Trocar Tema"></i>
+      <i class="fas fa-sync-alt nav-btn" onclick="carregarDados()" title="Sincronizar"></i>
+    </div>
+  </div>
+
+  <div id="themePanel" class="theme-panel">
+    <h3>Escolha um Tema</h3>
+    <div class="theme-buttons" id="themeButtonsGrid"></div>
+    <button class="apply-btn" onclick="confirmarTema()">USAR ESTE TEMA</button>
+  </div>
+
+  <div class="premium-container">
+    <div class="premium-card" style="max-width: 500px; margin: 0 auto; border-top: 8px solid var(--accent-green);">
+
+      <form id="repertorioForm">
+        <input type="hidden" name="sheet" value="Repertório_PWA">
+        <input type="hidden" name="action" value="addRow">
+        <input type="hidden" name="Data" id="hiddenData">
+        <input type="hidden" name="Culto" id="hiddenNomeCulto">
+        <input type="hidden" name="Músicas" id="hiddenMusica">
+        <input type="hidden" name="Cantor" id="hiddenCantor">
+        <!-- Garantir que Tons seja enviado se não selecionado -->
+        <input type="hidden" name="Tons" id="hiddenTons">
+
+        <div class="field">
+          <label>Escolha o Culto</label>
+          <select id="cultoSelect" name="Cultos" placeholder="Pesquisar culto..." required></select>
+        </div>
+
+        <div class="field">
+          <label>Ministro da Música (Escalados)</label>
+          <select id="ministroSelect" name="Ministro" placeholder="Selecione primeiro o culto..." required></select>
+        </div>
+
+        <div class="field">
+          <label>Música - Cantor</label>
+          <select id="musicaSelect" placeholder="Pesquisar música..." required></select>
+          <div style="text-align:right; margin-top:5px; font-size:0.85rem">
+            <a id="linkAddMusica" href="Cadastro de Musicas.html"
+              style="color:var(--accent-green); text-decoration:none; font-weight:600;"><i class="fas fa-plus"></i> Não
+              encontrou? Adicionar Nova Música</a>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Tom / Tonalidade (Opcional)</label>
+          <select id="tomSelect" name="Tons_Select" placeholder="Pesquisar tom...">
+            <option value="">Selecione...</option>
+            <option value="C / Am">C / Am</option>
+            <option value="C# / A#m">C# / A#m</option>
+            <option value="D / Bm">D / Bm</option>
+            <option value="D# / Cm">D# / Cm</option>
+            <option value="E / C#m">E / C#m</option>
+            <option value="F / Dm">F / Dm</option>
+            <option value="F# / D#m">F# / D#m</option>
+            <option value="G / Em">G / Em</option>
+            <option value="G# / Fm">G# / Fm</option>
+            <option value="A / F#m">A / F#m</option>
+            <option value="A# / Gm">A# / Gm</option>
+            <option value="B / G#m">B / G#m</option>
+          </select>
+        </div>
+
+        <button type="submit" id="btnSubmit" class="btn-premium">Salvar no Repertório</button>
+      </form>
+      <div id="status" style="margin-top:20px; text-align:center; display:none;"></div>
+    </div>
+
+    <!-- config.js removed (duplicate) -->
+    <script src="../../Shared/JS/sync.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <script src="../JS/cadastro-repertorio.js"></script>
+</body>
+
+</html>

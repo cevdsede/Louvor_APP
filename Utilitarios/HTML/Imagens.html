@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <script src="../../Shared/JS/temas-lista.js"></script>
+    <script src="../../Shared/JS/temas-core.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galeria de Imagens - Drive</title>
+    <link rel="manifest" href="../../manifest.json">
+    <script src="../../Shared/JS/config.js"></script>
+    <link rel="stylesheet" href="../../assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../../assets/Font Awesome/css/all.css">
+    <link rel="stylesheet" href="../CSS/imagens.css">
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header-bar">
+            <div class="header-left-nav">
+                <i class="fas fa-arrow-left nav-btn" onclick="history.back()" title="Voltar"></i>
+                <i class="fas fa-home nav-btn" onclick="window.location.href='../../index.html'" title="Início"></i>
+            </div>
+            <h2 class="header-title">Galeria</h2>
+            <div class="header-right-nav">
+                <i class="fas fa-palette nav-btn" onclick="toggleThemePanel()" title="Trocar Tema"></i>
+                <i class="fas fa-sync-alt nav-btn" onclick="carregarGaleria()" title="Sincronizar"></i>
+            </div>
+        </div>
+
+        <div id="themePanel" class="theme-panel">
+            <h3>Escolha um Tema</h3>
+            <div class="theme-buttons" id="themeButtonsGrid"></div>
+            <button class="apply-btn" onclick="confirmarTema()">USAR ESTE TEMA</button>
+        </div>
+
+
+        <div id="gallery" class="gallery-grid">
+            <div class="loading"><i class="fas fa-spinner fa-spin"></i> Acessando Drive...</div>
+        </div>
+    </div>
+
+    <div id="modalImg" class="modal-img" onclick="this.style.display='none'">
+        <span class="close-modal">&times;</span>
+        <img id="imgFull" src="">
+    </div>
+
+    <script src="../JS/imagens.js"></script>
+</body>
+
+</html>

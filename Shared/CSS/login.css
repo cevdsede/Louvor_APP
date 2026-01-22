@@ -1,0 +1,95 @@
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    padding: 20px;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 360px;
+    padding: 40px 30px;
+    text-align: center;
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(0, 0, 0, 0.02);
+    animation: modalPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.logo {
+    width: 90px;
+    height: 90px;
+    border-radius: 22px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-md);
+    object-fit: cover;
+}
+
+.login-title {
+    font-size: 1.6rem;
+    color: var(--primary);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+}
+
+.login-subtitle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 32px;
+    font-weight: 500;
+}
+
+.input-group-custom {
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.input-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.error-msg {
+    color: var(--accent-red);
+    font-size: 0.85rem;
+    margin-top: 15px;
+    font-weight: 600;
+    display: none;
+}
+
+.loader-box {
+    display: none;
+    margin-top: 15px;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.theme-toggle-login {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 44px;
+    height: 44px;
+    background: white;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    color: var(--primary);
+    font-size: 1.2rem;
+    transition: all 0.2s;
+}
+
+.theme-toggle-login:hover {
+    transform: scale(1.05);
+}

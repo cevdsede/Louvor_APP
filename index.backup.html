@@ -10,18 +10,18 @@
   <link rel="apple-touch-icon" href="assets/backgroud.png">
 
   <!-- Configs and Scripts -->
-  <script src="Shared/JS/config.js?v=2.9"></script>
-  <script src="Shared/JS/permissions.js?v=2.9"></script>
-  <script src="Shared/JS/sync.js?v=2.9"></script>
+  <script src="config.js?v=2.9"></script>
+  <script src="permissions.js?v=2.9"></script>
+  <script src="sync.js?v=2.9"></script>
 
   <!-- Theme System -->
-  <script src="Shared/JS/temas-lista.js?v=2.9"></script>
-  <script src="Shared/JS/temas-core.js?v=2.9"></script>
+  <script src="temas-lista.js?v=2.9"></script>
+  <script src="temas-core.js?v=2.9"></script>
 
   <!-- UI Resources -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="assets/Font Awesome/css/all.css">
-  <link rel="stylesheet" href="Shared/CSS/main.css?v=2.9">
+  <link rel="stylesheet" href="assets/css/main.css?v=2.9">
 
   <style>
     /* Estilos seguindo modelos_index.html */
@@ -793,7 +793,7 @@
 <body>
 
   <script>
-    if (!localStorage.getItem('user_token')) { window.location.replace('Shared/HTML/Login.html'); }
+    if (!localStorage.getItem('user_token')) { window.location.replace('Login.html'); }
     const userData = JSON.parse(localStorage.getItem('user_token') || '{}');
   </script>
 
@@ -861,19 +861,19 @@
       </div>
 
       <nav class="tab-bar">
-        <a href="Escalas/HTML/MenuEscalas.html" class="tab-item">
+        <a href="MenuEscalas.html" class="tab-item">
           <i class="fas fa-calendar-check"></i>
           <span>Escalas</span>
         </a>
-        <a href="Musicas/HTML/MenuMusicas.html" class="tab-item">
+        <a href="MenuMusicas.html" class="tab-item">
           <i class="fas fa-music"></i>
           <span>Músicas</span>
         </a>
-        <a href="Componentes/HTML/Componentes.html" class="tab-item">
+        <a href="Componentes.html" class="tab-item">
           <i class="fas fa-users-gear"></i>
           <span>Equipe</span>
         </a>
-        <a href="Utilitarios/HTML/MenuUtilitarios.html" class="tab-item">
+        <a href="MenuUtilitarios.html" class="tab-item">
           <i class="fas fa-tools"></i>
           <span>Utilitários</span>
         </a>

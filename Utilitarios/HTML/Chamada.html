@@ -1,0 +1,147 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chamada | Premium</title>
+    <link rel="manifest" href="../../manifest.json">
+
+    <!-- Shared Assets -->
+    <link rel="stylesheet" href="../../assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../../assets/Font Awesome/css/all.css">
+    <link rel="stylesheet" href="../../Shared/CSS/main.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Page Specific CSS -->
+    <link rel="stylesheet" href="../CSS/chamada.css">
+
+    <!-- Shared Scripts -->
+    <script src="../../Shared/JS/temas-lista.js"></script>
+    <script src="../../Shared/JS/temas-core.js"></script>
+</head>
+
+<body style="padding-top: 80px;">
+
+    <div class="header-bar">
+        <div class="header-left-nav">
+            <i class="fas fa-arrow-left nav-btn" id="btnBack" title="Voltar"></i>
+            <i class="fas fa-home nav-btn" onclick="window.location.href='../../index.html'" title="Início"></i>
+        </div>
+        <h2 class="header-title" id="pageTitle">Chamada</h2>
+        <div class="header-right-nav">
+            <i class="fas fa-palette nav-btn" onclick="toggleThemePanel()" title="Trocar Tema"></i>
+            <i class="fas fa-sync-alt nav-btn" onclick="fetchEvents()" title="Sincronizar"></i>
+        </div>
+    </div>
+
+    <div id="themePanel" class="theme-panel">
+        <h3>Escolha um Tema</h3>
+        <div class="theme-buttons" id="themeButtonsGrid"></div>
+        <button class="apply-btn" onclick="confirmarTema()">USAR ESTE TEMA</button>
+    </div>
+
+    <div class="container">
+        <!-- View: Event List -->
+        <div id="viewEvents">
+            <button class="btn-add-main" onclick="openCreateModal()">
+                <i class="fas fa-plus"></i> Novo Evento
+            </button>
+            <div id="eventsList">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Attendance View -->
+        <div id="viewAttendance" style="display: none;">
+            <div class="view-header">
+                <h4 id="displayTheme">Tema</h4>
+                <p id="displayDate">00/00/0000</p>
+            </div>
+
+            <div class="summary-container">
+                <div class="pill pill-green"><i class="fas fa-check"></i> <span id="countPresent">0</span></div>
+                <div class="pill pill-red"><i class="fas fa-times"></i> <span id="countAbsent">0</span></div>
+                <div class="pill pill-gold"><i class="fas fa-file-alt"></i> <span id="countJustified">0</span></div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-4 px-1">
+                <span
+                    style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase;">Membros
+                    Consagrados</span>
+                <button class="btn btn-sm btn-white border-0" onclick="openAddInactiveModal()"
+                    style="font-weight: 700; color: var(--primary); font-size: 0.75rem;">
+                    <i class="fas fa-plus-circle me-1"></i> ADD MEMBRO
+                </button>
+            </div>
+
+            <div class="attendance-list" id="compList"></div>
+
+            <button class="btn-add-main mt-5" id="btnSaveAttendance">
+                <i class="fas fa-cloud-upload-alt"></i> Finalizar Chamada
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD EVENT -->
+    <div id="modalEvent" class="modal">
+        <div class="modal-content">
+            <div style="width: 40px; height: 5px; background: #e2e8f0; border-radius: 10px; margin: 0 auto 20px;"></div>
+            <h5 class="header-title mb-4 text-center" style="font-size: 1.3rem;">Cadastrar Nova Aula</h5>
+            <label class="modal-label">TEMA DA AULA</label>
+            <input type="text" id="eventTheme" class="premium-input" placeholder="Ex: 1ª Aula - Santificação">
+            <label class="modal-label">DATA DE REALIZAÇÃO</label>
+            <input type="date" id="eventDate" class="premium-input">
+            <div class="d-flex gap-3">
+                <button class="btn-modal-action" style="background: #f1f5f9; color: var(--text-muted);"
+                    onclick="closeModal('modalEvent')">Cancelar</button>
+                <button class="btn-modal-action" style="background: var(--primary); color: white;"
+                    onclick="saveNewEvent()">Criar Aula</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: JUSTIFY -->
+    <div id="modalJustify" class="modal">
+        <div class="modal-content">
+            <h5 class="header-title mb-1">Justificativa</h5>
+            <p id="justifyWorkerName"
+                style="color: var(--text-muted); font-weight: 600; font-size: 0.9rem; margin-bottom: 20px;"></p>
+            <textarea id="justifyText" class="premium-input" rows="4"
+                placeholder="Descreva brevemente o motivo da ausência..."></textarea>
+            <div class="d-flex gap-3">
+                <button class="btn-modal-action" style="background: #f1f5f9; color: var(--text-muted);"
+                    onclick="closeModal('modalJustify')">Voltar</button>
+                <button class="btn-modal-action" style="background: var(--accent-gold); color: white;"
+                    onclick="confirmJustify()">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD MEMBER (RESTORED) -->
+    <div id="modalAddInactive" class="modal">
+        <div class="modal-content">
+            <h5 class="header-title mb-3">Adicionar Membro</h5>
+            <label class="modal-label">SELECIONE O MEMBRO</label>
+            <select id="selectInactive" class="premium-input"></select>
+            <div class="d-flex gap-3">
+                <button class="btn-modal-action" style="background: #f1f5f9; color: var(--text-muted);"
+                    onclick="closeModal('modalAddInactive')">Fechar</button>
+                <button class="btn-modal-action" style="background: var(--primary); color: white;"
+                    onclick="addInactiveToAttendance()">Adicionar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../../Shared/JS/config.js"></script>
+    <script src="../../Shared/JS/sync.js"></script>
+    <script src="../JS/chamada.js"></script>
+
+</body>
+
+</html>
