@@ -157,59 +157,58 @@ function filtrarEscala(cultoNome) {
 document.getElementById('repertorioForm').addEventListener('submit', function (e) {
     e.preventDefault();
 
-    // Split Music - Singer
     const musicaFull = tsMusica.getValue();
+    const status = document.getElementById('status');
+
     if (musicaFull) {
+        // Usa lastIndexOf para pegar o ÚLTIMO " - " caso o nome da música tenha hífen
         const separatorIndex = musicaFull.lastIndexOf(" - ");
+
         if (separatorIndex !== -1) {
+            // Define Músicas e Cantor separadamente
             document.getElementById('hiddenMusica').value = musicaFull.substring(0, separatorIndex).trim();
             document.getElementById('hiddenCantor').value = musicaFull.substring(separatorIndex + 3).trim();
         } else {
-            document.getElementById('hiddenMusica').value = musicaFull;
+            document.getElementById('hiddenMusica').value = musicaFull.trim();
             document.getElementById('hiddenCantor').value = "";
         }
     }
 
-    // Handle Tons
-    const tonsVal = tsTom.getValue();
-    document.getElementById('hiddenTons').value = tonsVal;
+    // Sincroniza o Tom selecionado com o input hidden
+    document.getElementById('hiddenTons').value = tsTom.getValue();
 
-    const btn = document.getElementById('btnSubmit');
-    const status = document.getElementById('status');
-
+    // Captura os dados do formulário
     const formData = {};
-    new FormData(this).forEach((v, k) => {
-        // ESTA LINHA Ã‰ A CURA:
-        // 1. Converte para string
-        // 2. Troca o espaÃ§o invisÃ­vel (\u00a0) por espaÃ§o normal
-        // 3. Troca espaÃ§os duplos ou triplos por um Ãºnico espaÃ§o
-        // 4. Limpa as pontas (trim)
-        formData[k] = v.toString()
-            .replace(/\u00a0/g, " ")
-            .replace(/\s+/g, " ")
-            .trim();
+    const rawData = new FormData(this);
+
+    rawData.forEach((v, k) => {
+        // Limpeza de espaços e caracteres especiais (non-breaking spaces)
+        formData[k] = v.toString().replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
     });
 
-    // Construir o payload correto para o servidor (Aninhado)
+    // IMPORTANTE: Como removemos o name do select do Culto para não duplicar, 
+    // garantimos que o Culto e Data formatados estão no objeto
+    // (Eles já são preenchidos na função filtrarEscala)
+
     const payload = {
-        action: formData.action || "addRow",
-        sheet: formData.sheet || "Repertório_PWA",
+        action: "addRow",
+        sheet: "Repertório_PWA",
         data: formData
     };
 
-    // 1. Atualiza UI/Cache local imediatamente (Usa objeto plano)
+    // Sincronização e Feedback
     SyncManager.updateLocalCache("Repertório_PWA", "add", formData);
-
-    // 2. Adiciona Ã  fila de sincronizaÃ§Ã£o (Usa payload aninhado)
     SyncManager.addToQueue(payload);
 
-    // 3. Feedback visual imediato
-    status.innerHTML = "<span class='btn-premium' style='background:var(--accent-green); position:static;'>✅ Salvo com Sucesso!</span>";
+    status.innerHTML = "<span class='btn-premium' style='background:var(--accent-green); display:inline-block; padding:10px 20px; border-radius:8px;'>✅ Música Salva!</span>";
     status.style.display = "block";
 
-    // Limpa os campos apÃ³s salvar
+    // Reseta apenas os campos de música para permitir adicionar a próxima rápido
     tsMusica.clear();
     tsTom.clear();
+
+    // Rola para o topo do status para confirmação
+    status.scrollIntoView({ behavior: 'smooth' });
 });
 
 window.onload = carregarDados;

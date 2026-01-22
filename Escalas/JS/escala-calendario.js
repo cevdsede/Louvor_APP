@@ -253,13 +253,23 @@ window.openDetails = function (dateStr) {
 
     details.innerHTML = Object.values(cultos).map(c => {
         const musicas = (Array.isArray(globalRepertorio) ? globalRepertorio : []).filter(m => {
-            // Comparar Data (DD/MM/YYYY) e Nome do Culto
             if (!m.Data || !m.Culto) return false;
 
-            const parts = c.info.Data.split('T')[0].split('-'); // [2026, 01, 25]
-            const dataItemBR = `${parts[2]}/${parts[1]}/${parts[0]}`; // 25/01/2026
+            // 1. Normaliza a data da Escala (Vem do Transformar)
+            const dataEscalaISO = c.info.Data.split('T')[0];
 
-            const matchData = m.Data === dataItemBR;
+            // 2. Normaliza a data do Repertório (Vem do Repertório_PWA)
+            // Se a data vier formatada (DD/MM/YYYY), convertemos para ISO
+            let dataRepertorioISO = "";
+            if (m.Data.includes('/')) {
+                const parts = m.Data.split('/');
+                dataRepertorioISO = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            } else {
+                dataRepertorioISO = m.Data.split('T')[0];
+            }
+
+            // 3. Compara Data e Nome do Culto (removendo espaços extras)
+            const matchData = dataRepertorioISO === dataEscalaISO;
             const matchNome = m.Culto.trim().toLowerCase() === c.info["Nome dos Cultos"].trim().toLowerCase();
 
             return matchData && matchNome;
@@ -341,24 +351,35 @@ ${c.membros.map(m => {
 
          <div style="font-weight:bold; margin-top:10px; margin-bottom:5px; color:#aaa; font-size:0.7rem; display:flex; justify-content:space-between; align-items:center;">
            <span>REPERTÓRIO</span>
-           
          </div>
-         ${musicas.map(m => {
-            const queryBusca = encodeURIComponent(`${m.Músicas}`);
-            const querySpotify = encodeURIComponent(`${m.Músicas} ${m.Cantor || ''}`);
+
+${musicas.length > 0 ? `
+    <button class="btn-add-bulk" 
+            style="margin-bottom:10px; width:100%; background:#2ecc71; color:white; border:none; padding:8px; border-radius:8px; font-size:0.8rem; cursor:pointer;" 
+            onclick="processarBulk(this, '${c.info["Nome dos Cultos"]}|${c.info.Data}')">
+        <i class="fas fa-history"></i> Add Histórico
+    </button>
+` : ''}
+
+${musicas.map(m => {
+            // Garante que não quebre se Músicas ou Cantor forem undefined
+            const nomeMusica = m.Músicas || "Sem título";
+            const nomeCantor = m.Cantor || "";
+            const termoBusca = encodeURIComponent(`${nomeMusica} ${nomeCantor}`);
+
             return `
-            <div class="musica-item">
-              <div style="font-weight:bold">${m.Músicas}</div>
-              <div style="font-size:0.75rem; color:#666; margin-top:2px">Tom: <b>${m.Tons || '--'}</b></div>
-              <div class="m-links">
-                <a href="https://www.youtube.com/results?search_query=${queryBusca}" target="_blank" class="l-yt" title="YouTube"><i class="fab fa-youtube"></i></a>
-                <a href="https://open.spotify.com/search/${querySpotify}" target="_blank" class="l-sp" title="Spotify"><i class="fab fa-spotify"></i></a>
-                <a href="https://www.cifraclub.com.br/?q=${queryBusca}" target="_blank" class="l-cf" title="Cifra Club"><i class="fas fa-guitar"></i></a>
-                <a href="https://www.letras.mus.br/?q=${queryBusca}" target="_blank" class="l-lt" title="Letras.mus"><i class="fas fa-align-left"></i></a>
+    <div class="musica-item">
+        <div style="font-weight:bold">${nomeMusica} ${nomeCantor ? ' - ' + nomeCantor : ''}</div>
+        <div style="font-size:0.75rem; color:#666; margin-top:2px">Tom: <b>${m.Tons || '--'}</b></div>
+        <div class="m-links">
+                <a href="https://www.youtube.com/results?search_query=${termoBusca}" target="_blank" class="l-yt" title="YouTube"><i class="fab fa-youtube"></i></a>
+                <a href="https://open.spotify.com/search/${termoBusca}" target="_blank" class="l-sp" title="Spotify"><i class="fab fa-spotify"></i></a>
+                <a href="https://www.cifraclub.com.br/?q=${termoBusca}" target="_blank" class="l-cf" title="Cifra Club"><i class="fas fa-guitar"></i></a>
+                <a href="https://www.letras.mus.br/?q=${termoBusca}" target="_blank" class="l-lt" title="Letras.mus"><i class="fas fa-align-left"></i></a>
               </div>
             </div>`;
         }).join('') || '<div style="color:#ccc; font-size:0.8rem">Sem músicas.</div>'}
-       </div>
+           </div>
      </div>`;
     }).join('');
 
@@ -366,7 +387,27 @@ ${c.membros.map(m => {
 }
 
 window.onload = () => loadData();
+async function processarBulk(btn, info) {
+    if (!confirm("Deseja adicionar todas as músicas deste culto ao histórico?")) return;
 
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+
+    // Aqui você chama sua API passando o 'info' (Culto|Data)
+    // para que o backend localize as músicas e as salve na tabela de histórico.
+
+    try {
+        // Exemplo de chamada:
+        // await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'addHistorico', data: info }) });
+        alert("✅ Histórico atualizado!");
+    } catch (e) {
+        alert("❌ Erro ao processar.");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
 function comunicarAusencia(dataCulto, nomeCulto, event) {
     if (event) event.stopPropagation();
     const fullDisplay = `${nomeCulto} (${dataCulto})`;

@@ -134,17 +134,13 @@ function renderMaster(escalas, musicas = [], lembretes = []) {
         const nomeCulto = item.info["Nome dos Cultos"].toLowerCase().trim();
 
         const musicasDoCulto = musicas.filter(m => {
-            // Comparar Data (DD/MM/YYYY) e Nome do Culto
             if (!m.Data || !m.Culto) return false;
 
-            // m.Data vem como DD/MM/YYYY (ex: 25/01/2026)
-            // dataFormatada vem como "dom. 25/01" -> Não serve
-            // item.info.Data vem como YYYY-MM-DDTHH... (ex: 2026-01-25T...)
+            // Extrai apenas YYYY-MM-DD de ambos os lados para garantir igualdade
+            const dataEscalaISO = item.info.Data.split('T')[0];
+            const dataRepertorioISO = m.Data.split('T')[0];
 
-            const parts = item.info.Data.split('T')[0].split('-'); // [2026, 01, 25]
-            const dataItemBR = `${parts[2]}/${parts[1]}/${parts[0]}`; // 25/01/2026
-
-            const matchData = m.Data === dataItemBR;
+            const matchData = dataEscalaISO === dataRepertorioISO;
             const matchNome = m.Culto.trim().toLowerCase() === item.info["Nome dos Cultos"].trim().toLowerCase();
 
             return matchData && matchNome;
@@ -244,38 +240,47 @@ function renderMaster(escalas, musicas = [], lembretes = []) {
             </button>
           ` : ''}
         </div>
-        <div class="repertorio-list">
-          ${musicasDoCulto.length > 0 ? `
-             ${estouEscalado ? `
-                  <button class="btn-add-bulk" style="margin-bottom:10px; width:100%; background:#2ecc71;" onclick="processarBulk(this, event)">
-                      <i class="fas fa-history"></i> Add Histórico
-                  </button>
-             ` : ''}
-          ` : ''}
-          ${musicasDoCulto.length > 0 ? musicasDoCulto.map(m => {
-            const queryBusca = encodeURIComponent(`${m.Músicas}`);
-            const querySpotify = encodeURIComponent(`${m.Músicas} ${m.Cantor || ''}`);
+<div class="repertorio-list">
+    ${musicasDoCulto.length > 0 ? `
+        ${estouEscalado ? `
+            <button class="btn-add-bulk" 
+                    style="margin-bottom:10px; width:100%; background:#2ecc71; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; font-weight:bold;" 
+                    onclick="processarBulk(this, '${item.info["Nome dos Cultos"]}|${item.info.Data}')">
+                <i class="fas fa-history"></i> Add Histórico
+            </button>
+        ` : ''}
+        
+        ${musicasDoCulto.map(m => {
+            const nomeMusica = m.Músicas || "Música sem nome";
+            const cantor = m.Cantor || "Artista Desconhecido";
+            const ministro = m.Ministro || "Líder não definido";
+            const queryBusca = encodeURIComponent(nomeMusica);
+            const querySpotify = encodeURIComponent(`${nomeMusica} ${cantor}`);
+
             return `
             <div class="musica-item">
-              <span class="m-nome-musica">${m.Músicas}</span>
-              <span class="m-cantor">
-                <i class="fas fa-user-voice" style="font-size: 10px;"></i> ${m.Cantor || 'Líder não definido'}
-              </span>
-              <div class="m-footer">
-                ${m.Tons ? `<span class="m-tom">${m.Tons}</span>` : '<span class="m-tom">--</span>'}
-                <div class="m-links">
-                  <a href="https://www.youtube.com/results?search_query=${queryBusca}" target="_blank" class="l-yt" title="YouTube"><i class="fab fa-youtube"></i></a>
-                  <a href="https://open.spotify.com/search/${querySpotify}" target="_blank" class="l-sp" title="Spotify"><i class="fab fa-spotify"></i></a>
-                  <a href="https://www.cifraclub.com.br/?q=${queryBusca}" target="_blank" class="l-cf" title="Cifra Club"><i class="fas fa-guitar"></i></a>
-                  <a href="https://www.letras.mus.br/?q=${queryBusca}" target="_blank" class="l-lt" title="Letras.mus"><i class="fas fa-align-left"></i></a>
+                <span class="m-nome-musica">${nomeMusica} - ${cantor}</span>
+                <span class="m-cantor">
+                    <i class="fas fa-user-voice" style="font-size: 10px;"></i> ${ministro}
+                </span>
+                <div class="m-footer">
+                    <span class="m-tom">${m.Tons || '--'}</span>
+                    <div class="m-links">
+                        <a href="https://www.youtube.com/results?search_query=${queryBusca}" target="_blank" class="l-yt" title="YouTube"><i class="fab fa-youtube"></i></a>
+                        <a href="https://open.spotify.com/search/${querySpotify}" target="_blank" class="l-sp" title="Spotify"><i class="fab fa-spotify"></i></a>
+                        <a href="https://www.cifraclub.com.br/?q=${queryBusca}" target="_blank" class="l-cf" title="Cifra Club"><i class="fas fa-guitar"></i></a>
+                        <a href="https://www.letras.mus.br/?q=${queryBusca}" target="_blank" class="l-lt" title="Letras.mus"><i class="fas fa-align-left"></i></a>
+                    </div>
                 </div>
-              </div>
-              <button class="btn-del-musica" onclick="excluirMusica('${m.Músicas.replace(/'/g, "\\'")}', '${m.Culto.replace(/'/g, "\\'")}|${m.Data}', '${m.Cantor.replace(/'/g, "\\'")}')" title="Excluir">
-                <i class="fas fa-trash-alt"></i>
-              </button>
+                ${estouEscalado ? `
+                <button class="btn-del-musica" 
+                    onclick="excluirMusica('${nomeMusica.replace(/'/g, "\\'")}', '${(m.Culto || "").replace(/'/g, "\\'")}|${m.Data}', '${cantor.replace(/'/g, "\\'")}')" title="Excluir">
+                    <i class="fas fa-trash-alt"></i>
+                </button>` : ''}
             </div>`;
-        }).join('') : '<span style="color:#ccc; font-size:0.85rem">Aguardando repertório...</span>'}
-        </div>
+        }).join('')}
+    ` : '<span style="color:#ccc; font-size:0.85rem">Aguardando repertório...</span>'}
+</div>
       </div>
     </div>
   </div>
@@ -379,28 +384,36 @@ function fecharModalAvisoMembro() {
     document.getElementById('modalAvisoMembro').style.display = 'none';
     document.getElementById('textoAvisoMembro').value = '';
 }
-async function excluirAviso(id_Aviso, event) {
-    if (event) event.stopPropagation();
-    if (!confirm("Deseja remover este aviso?")) return;
+async function excluirMusica(musica, cultoData, ministro) {
+    if (!confirm(`Deseja remover "${musica}"?`)) return;
+
+    // cultoData chega como "Nome do Culto|2026-02-01T08:00:00.000Z"
+    const [nomeCulto, dataCompleta] = cultoData.split('|');
 
     try {
+        const payload = {
+            action: "delete",
+            sheet: "Repertório_PWA",
+            Músicas: musica,
+            Culto: nomeCulto,
+            Data: dataCompleta // Envia a data exatamente como está no JSON
+        };
+
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
-            body: JSON.stringify({
-                action: "delete",
-                sheet: "Lembretes",
-                id_Lembrete: id_Aviso
-            })
+            body: JSON.stringify(payload)
         });
+
         const res = await response.json();
         if (res.status === "success") {
-            alert("✅ Aviso removido!");
+            alert("✅ Removido com sucesso!");
             loadAll(true);
         } else {
-            alert("âš ï¸  Erro ao remover: " + res.message);
+            alert("⚠️ Erro ao excluir: " + res.message);
         }
     } catch (e) {
-        alert("â Œ Erro de conexÃ£o.");
+        console.error("Erro na exclusão:", e);
+        alert("❌ Erro de conexão ao tentar excluir.");
     }
 }
 
