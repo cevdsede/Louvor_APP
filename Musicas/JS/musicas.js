@@ -25,7 +25,10 @@ async function loadData(force = false) {
         renderAccordion(json.data);
         if (loader) loader.style.display = 'none';
     } catch (e) {
-        if (loader) loader.innerText = "Erro ao conectar.";
+        if (loader) {
+            loader.innerText = "Erro ao conectar.";
+            showToast("Erro ao carregar músicas.", 'error');
+        }
         if (cached) renderAccordion(JSON.parse(cached));
     } finally {
         if (btnIcon) btnIcon.classList.remove('fa-spin');

@@ -187,7 +187,7 @@ function renderMaster(escalas, musicas = [], lembretes = []) {
         <div class="section-title-container">
           <span class="section-title"><i class="fas fa-users"></i> Equipe</span>
           ${estouEscalado ? `
-            <button class="btn-ausencia" onclick="comunicarAusencia('${item.info["Nome dos Cultos"]} (${dataFormatada})', event)" title="Comunicar Aviso">
+            <button class="btn-ausencia" onclick="comunicarAusencia('${item.info["Nome dos Cultos"]} (${dataAvisoCheck})', event)" title="Comunicar Aviso">
               <i class="fas fa-bell"></i> Avisos
             </button>
           ` : ''}
@@ -369,18 +369,16 @@ async function enviarAvisoMembro() {
 
     const userToken = JSON.parse(localStorage.getItem('user_token') || '{}');
     const meuLogin = userToken.Login || userToken.User || "membro";
-    const id_Lembrete = 'AVISO-' + Math.random().toString(16).substr(2, 8);
+    const id_Lembrete = Math.random().toString(16).substr(2, 8);
 
     const payload = {
-        action: "addRow",
+        action: "add",
         sheet: "Lembretes",
-        data: {
-            id_Lembrete,
-            Componente: meuLogin, // Usar Login como solicitado
-            Data: new Date().toLocaleDateString('pt-BR'),
-            Culto: fullCultoString,
-            Info: info
-        }
+        id_Lembrete,
+        Componente: meuLogin,
+        Data: new Date().toLocaleDateString('pt-BR'),
+        Culto: fullCultoString,
+        Info: info
     };
 
     const btn = document.getElementById('btnEnviarAvisoMembro');
@@ -394,11 +392,11 @@ async function enviarAvisoMembro() {
         });
         const res = await response.json();
         if (res.status === "success") {
-            alert("✅ Aviso enviado!");
+            showToast("✅ Aviso enviado!");
             fecharModalAvisoMembro();
             loadAll(true);
         } else {
-            alert("⚠️ Erro ao enviar: " + res.message);
+            showToast("⚠️ Erro ao enviar: " + res.message, 'error');
         }
     } catch (e) {
         if (window.SyncManager) {
@@ -443,14 +441,13 @@ async function excluirMusica(musica, cultoData, ministro) {
 
         const res = await response.json();
         if (res.status === "success") {
-            alert("✅ Removido com sucesso!");
+            showToast("✅ Removido com sucesso!");
             loadAll(true);
         } else {
-            alert("⚠️ Erro ao excluir: " + res.message);
+            showToast("⚠️ Erro ao excluir: " + res.message, 'error');
         }
     } catch (e) {
-        console.error("Erro na exclusão:", e);
-        alert("❌ Erro de conexão ao tentar excluir.");
+        showToast("❌ Erro de conexão.", 'error');
     }
 }
 
@@ -476,7 +473,7 @@ async function excluirMusica(musica, cultoData, cantor) {
             body: JSON.stringify(payload)
         });
         const res = await response.json();
-        if (res.status === "success") { alert("Removido!"); loadAll(true); }
+        if (res.status === "success") { showToast("✅ Removido!"); loadAll(true); }
     } catch (e) { setTimeout(() => loadAll(true), 1500); }
 }
 
@@ -485,6 +482,24 @@ function filterEscala() {
     document.querySelectorAll('.accordion-item').forEach(item => {
         item.classList.toggle('hidden', !item.getAttribute('data-search').includes(q));
     });
+}
+
+async function excluirAviso(id_Aviso, event) {
+    if (event) event.stopPropagation();
+    const confirmed = await showConfirmModal(
+        "Deseja remover este aviso?",
+        "Remover",
+        "Cancelar"
+    );
+    if (!confirmed) return;
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "delete", sheet: "Lembretes", id_Lembrete: id_Aviso })
+        });
+        const res = await response.json();
+        if (res.status === "success") { showToast("✅ Removido!"); loadAll(true); }
+    } catch (e) { showToast("❌ Erro.", 'error'); }
 }
 
 function confirmarTema() {

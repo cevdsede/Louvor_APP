@@ -6,6 +6,75 @@
 let tsCultoNative, tsMusicaNative, tsTomNative, tsMinistroNative;
 let tsTemaNative, tsEstiloNative;
 
+// Toast Notification System
+function showToast(message, type = 'success', duration = 3000) {
+    // Remove existing toast if any
+    const existingToast = document.getElementById('globalToast');
+    if (existingToast) existingToast.remove();
+
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.id = 'globalToast';
+    
+    // Define icon and color based on type
+    const configs = {
+        success: { icon: 'fa-check-circle', color: '#10b981', bgColor: '#d1fae5' },
+        error: { icon: 'fa-exclamation-circle', color: '#ef4444', bgColor: '#fee2e2' },
+        warning: { icon: 'fa-exclamation-triangle', color: '#f59e0b', bgColor: '#fef3c7' },
+        info: { icon: 'fa-info-circle', color: '#3b82f6', bgColor: '#dbeafe' }
+    };
+    
+    const config = configs[type] || configs.success;
+    
+    // Apply styles
+    Object.assign(toast.style, {
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        background: config.bgColor,
+        color: config.color,
+        padding: '16px 20px',
+        borderRadius: '12px',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+        zIndex: '99999',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        minWidth: '300px',
+        maxWidth: '400px',
+        fontSize: '14px',
+        fontWeight: '500',
+        border: `1px solid ${config.color}20`,
+        backdropFilter: 'blur(10px)',
+        transform: 'translateX(100%)',
+        transition: 'all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+        fontFamily: 'system-ui, -apple-system, sans-serif'
+    });
+    
+    // Create content
+    toast.innerHTML = `
+        <i class="fas ${config.icon}" style="font-size: 18px; flex-shrink: 0;"></i>
+        <span style="flex: 1;">${message}</span>
+        <i class="fas fa-times" style="cursor: pointer; opacity: 0.6; font-size: 12px; flex-shrink: 0;" onclick="this.parentElement.remove()"></i>
+    `;
+    
+    // Add to page
+    document.body.appendChild(toast);
+    
+    // Animate in
+    setTimeout(() => {
+        toast.style.transform = 'translateX(0)';
+    }, 10);
+    
+    // Auto remove
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, duration);
+}
+
 function initNativeForms() {
     // 1. REPERTÓRIO FORM
     if (tsCultoNative) tsCultoNative.destroy();

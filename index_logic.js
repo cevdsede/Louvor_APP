@@ -657,9 +657,9 @@ async function excluirNotificacao(id, event) {
                             id_Lembrete: target.rawId
                         })
                     });
-                    alert("Aviso removido do servidor!");
+                    showToast("Aviso removido do servidor!");
                 } catch (e) {
-                    alert("Erro ao apagar do servidor. Apagando apenas localmente.");
+                    showToast("Erro ao apagar do servidor. Apagando apenas localmente.", 'warning');
                 }
             }
         }
@@ -840,16 +840,14 @@ async function enviarAvisoGeral() {
         });
         const res = await response.json();
         if (res.status === "success") {
-            // alert("Aviso enviado com sucesso!"); // Silent or Toast? User asked for silent chart but this is manual sending.
-            // Keeping alert for confirmation of manual action but maybe improved.
-            alert("Aviso enviado com sucesso!");
+            showToast("Aviso enviado com sucesso!");
             fecharModalAvisoGeral();
             backgroundSync(); // Atualiza localmente
         } else {
-            alert("Erro ao enviar: " + res.message);
+            showToast("Erro ao enviar: " + res.message, 'error');
         }
     } catch (e) {
-        alert("Erro de conexão.");
+        showToast("Erro de conexão.", 'error');
     } finally {
         btn.disabled = false;
         btn.innerHTML = 'ENVIAR AVISO';

@@ -2,6 +2,23 @@ const SCRIPT_URL = APP_CONFIG.SCRIPT_URL;
 let tsCulto, tsMusica, tsTom, tsMinistro;
 let transformData = [];
 
+let userInteracted = false;
+let suppressInteractionDepth = 0;
+
+function withSuppressedInteraction(fn) {
+    suppressInteractionDepth++;
+    try {
+        return fn();
+    } finally {
+        suppressInteractionDepth--;
+    }
+}
+
+function markUserInteracted() {
+    if (suppressInteractionDepth > 0) return;
+    userInteracted = true;
+}
+
 function initSelects() {
     if (tsCulto) tsCulto.destroy();
     if (tsMinistro) tsMinistro.destroy();
@@ -9,24 +26,152 @@ function initSelects() {
     if (tsTom) tsTom.destroy();
 
     tsCulto = new TomSelect("#cultoSelect", {
-        onChange: (val) => filtrarEscala(val)
+        onChange: (val) => {
+            markUserInteracted();
+            filtrarEscala(val);
+        }
     });
-    tsMinistro = new TomSelect("#ministroSelect");
-    tsMusica = new TomSelect("#musicaSelect");
-    tsTom = new TomSelect("#tomSelect");
+    tsMinistro = new TomSelect("#ministroSelect", {
+        onChange: () => markUserInteracted()
+    });
+    tsMusica = new TomSelect("#musicaSelect", {
+        onChange: () => markUserInteracted()
+    });
+    tsTom = new TomSelect("#tomSelect", {
+        onChange: () => markUserInteracted()
+    });
+}
+
+function ensureSelects() {
+    if (!tsCulto || !tsMinistro || !tsMusica || !tsTom) initSelects();
+}
+
+function applyCultosFromTransformData(data, preserveValue = true) {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    const previousValue = preserveValue && tsCulto ? tsCulto.getValue() : '';
+
+    // Gerar lista única baseada em "Nome dos Cultos" + "Data"
+    // Formato da chave para o Select: "Nome|DataOriginal"
+    const cultosMap = new Map();
+
+    data.forEach(item => {
+        // Validação para evitar undefined
+        if (!item["Nome dos Cultos"] || !item.Data) return;
+
+        // Chave única composta
+        const uniqueKey = item["Nome dos Cultos"] + "|" + item.Data;
+
+        if (!cultosMap.has(uniqueKey) && new Date(item.Data) >= hoje) {
+            // Formatar para exibição: "Nome (DD/MM)"
+            const d = new Date(item.Data);
+            const dataDisplay = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+            const textDisplay = `${item["Nome dos Cultos"]} (${dataDisplay})`;
+
+            cultosMap.set(uniqueKey, { value: uniqueKey, text: textDisplay });
+        }
+    });
+
+    withSuppressedInteraction(() => {
+        // Evita seleção "órfã" após limpar opções
+        tsCulto.clear(true);
+        tsCulto.clearOptions();
+        cultosMap.forEach(opt => {
+            tsCulto.addOption(opt);
+        });
+        tsCulto.refreshOptions(false);
+    });
+
+    if (previousValue) {
+        withSuppressedInteraction(() => {
+            tsCulto.setValue(previousValue, true);
+        });
+    }
+}
+
+function applyMusicasOptions(musicasData, preserveValue = true) {
+    const previousValue = preserveValue && tsMusica ? tsMusica.getValue() : '';
+
+    withSuppressedInteraction(() => {
+        tsMusica.clear(true);
+        tsMusica.clearOptions();
+        musicasData.forEach(m => {
+            if (m.MusicaCorigida) {
+                const txt = m.MusicaCorigida + " - " + m["Cantor Corrigido"];
+                tsMusica.addOption({ value: txt, text: txt });
+            }
+        });
+        tsMusica.refreshOptions(false);
+    });
+
+    if (previousValue) {
+        withSuppressedInteraction(() => {
+            tsMusica.setValue(previousValue, true);
+        });
+    }
+}
+
+function maybeAutoSelectCultoFromUrl() {
+    // Se o usuário já tem seleção, não sobrescreve
+    if (tsCulto && tsCulto.getValue()) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const autoCulto = urlParams.get('culto');
+    if (!autoCulto) return;
+
+    // Não marcar como interação do usuário (é programático)
+    withSuppressedInteraction(() => {
+        tsCulto.setValue(autoCulto, true);
+    });
+}
+
+async function silentSyncDados() {
+    try {
+        ensureSelects();
+        const [resT, resM] = await Promise.all([
+            fetch(SCRIPT_URL + "?sheet=Transformar"),
+            fetch(SCRIPT_URL + "?sheet=Musicas")
+        ]);
+        const [jsonT, jsonM] = await Promise.all([resT.json(), resM.json()]);
+
+        const transformDataTemp = jsonT.data;
+        const musicasDataTemp = jsonM.data;
+
+        localStorage.setItem('offline_escala', JSON.stringify(transformDataTemp));
+        localStorage.setItem('offline_musicas', JSON.stringify(musicasDataTemp));
+
+        // Só atualiza a UI automaticamente se o usuário ainda não mexeu
+        if (!userInteracted) {
+            transformData = transformDataTemp;
+
+            applyCultosFromTransformData(transformDataTemp, true);
+            applyMusicasOptions(musicasDataTemp, true);
+
+            // Se tiver culto selecionado, re-aplica filtro/escala
+            const cultoAtual = tsCulto.getValue();
+            if (cultoAtual) {
+                withSuppressedInteraction(() => filtrarEscala(cultoAtual));
+            } else {
+                // Se não tem seleção, tenta auto-select por URL (se houver)
+                maybeAutoSelectCultoFromUrl();
+            }
+        }
+    } catch (e) {
+        console.log("Silent sync failed");
+    }
 }
 
 async function carregarDados(force = false) {
     const btnIcon = document.querySelector('.nav-btn.fa-sync-alt, .header-right-nav i.fa-sync-alt, .header-right i.fa-sync-alt');
-    if (btnIcon) btnIcon.classList.add('fa-spin');
-    try {
-        initSelects();
-        const hoje = new Date();
-        hoje.setHours(0, 0, 0, 0);
+    const cachedEscala = localStorage.getItem('offline_escala');
+    const cachedMusicas = localStorage.getItem('offline_musicas');
 
-        // Carregar do Cache se disponÃ­vel
-        const cachedEscala = localStorage.getItem('offline_escala');
-        const cachedMusicas = localStorage.getItem('offline_musicas');
+    // Spinner só quando forçado ou quando não há cache suficiente
+    const shouldSpin = !!force || !cachedEscala || !cachedMusicas;
+    if (btnIcon && shouldSpin) btnIcon.classList.add('fa-spin');
+    try {
+        ensureSelects();
 
         let transformDataTemp = [];
         let musicasDataTemp = [];
@@ -43,33 +188,6 @@ async function carregarDados(force = false) {
         }
         transformData = transformDataTemp; // Global var usage
 
-        // Add Cultos
-        // Gerar lista única baseada em "Nome dos Cultos" + "Data"
-        // Formato da chave para o Select: "Nome|DataOriginal"
-        const cultosMap = new Map();
-
-        transformData.forEach(item => {
-            // Validação para evitar undefined
-            if (!item["Nome dos Cultos"] || !item.Data) return;
-
-            // Chave única composta
-            const uniqueKey = item["Nome dos Cultos"] + "|" + item.Data;
-
-            if (!cultosMap.has(uniqueKey) && new Date(item.Data) >= hoje) {
-                // Formatar para exibição: "Nome (DD/MM)"
-                const d = new Date(item.Data);
-                const dataDisplay = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-                const textDisplay = `${item["Nome dos Cultos"]} (${dataDisplay})`;
-
-                cultosMap.set(uniqueKey, { value: uniqueKey, text: textDisplay });
-            }
-        });
-
-        tsCulto.clearOptions();
-        cultosMap.forEach(opt => {
-            tsCulto.addOption(opt);
-        });
-
         // LOAD MUSICAS
         if (!force && cachedMusicas) {
             musicasDataTemp = JSON.parse(cachedMusicas);
@@ -79,25 +197,21 @@ async function carregarDados(force = false) {
             musicasDataTemp = jsonM.data;
             localStorage.setItem('offline_musicas', JSON.stringify(musicasDataTemp));
         }
-
-        musicasDataTemp.forEach(m => {
-            if (m.MusicaCorigida) {
-                let txt = m.MusicaCorigida + " - " + m["Cantor Corrigido"];
-                tsMusica.addOption({ value: txt, text: txt });
-            }
-        });
+        applyCultosFromTransformData(transformDataTemp, true);
+        applyMusicasOptions(musicasDataTemp, true);
 
         // AUTO-SELECT CULTO FROM URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const autoCulto = urlParams.get('culto');
-        if (autoCulto) {
-            tsCulto.setValue(autoCulto);
+        maybeAutoSelectCultoFromUrl();
+
+        // Se carregou via cache (não forçado), sincroniza silenciosamente em background
+        if (!force && cachedEscala && cachedMusicas) {
+            setTimeout(() => silentSyncDados(), 500);
         }
 
     } catch (e) {
         console.error(e);
     } finally {
-        if (btnIcon) btnIcon.classList.remove('fa-spin');
+        if (btnIcon && shouldSpin) btnIcon.classList.remove('fa-spin');
     }
 }
 
@@ -221,7 +335,7 @@ document.getElementById('repertorioForm').addEventListener('submit', function (e
     status.scrollIntoView({ behavior: 'smooth' });
 });
 
-window.onload = carregarDados;
+window.addEventListener('load', () => carregarDados(false));
 
 // No local theme scripts needed, uses temas-core.js
 

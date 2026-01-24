@@ -2,6 +2,16 @@ body {
     padding-top: 80px;
 }
 
+/* Field Styling - same as attendance-list */
+.field {
+    background: var(--card-bg) !important;
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 15px;
+    border: 1px solid var(--card-border);
+    box-shadow: var(--shadow-sm);
+}
+
 :root {
     --primary: #2c3e50;
     --accent: #3498db;
@@ -360,7 +370,7 @@ body {
 
 .culto-body {
     padding: 10px;
-    background: #fff;
+    background: white;
 }
 
 .member-item {

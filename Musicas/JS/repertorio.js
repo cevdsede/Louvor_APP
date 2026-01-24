@@ -21,7 +21,10 @@ async function carregarRepertorio(force = false) {
         if (loader) loader.style.display = 'none';
     } catch (e) {
         if (cached) render(JSON.parse(cached));
-        else container.innerHTML = '<div class="loading">Erro ao carregar dados.</div>';
+        else {
+            container.innerHTML = '<div class="loading">Erro ao carregar dados.</div>';
+            showToast("Erro ao carregar repertório.", 'error');
+        }
     } finally {
         if (btnIcon) btnIcon.classList.remove('fa-spin');
         if (loader) loader.style.display = 'none';
@@ -141,7 +144,7 @@ async function addHistorico(btn, musica, cantor, tom, ministro) {
             btn.innerHTML = '<i class="fas fa-check"></i>';
             btn.classList.add('saved');
         } else {
-            alert(dados.message);
+            showToast(dados.message, 'error');
             btn.innerHTML = '<i class="fas fa-bookmark"></i>';
         }
     } catch (e) { btn.innerHTML = '<i class="fas fa-bookmark"></i>'; }
@@ -166,8 +169,8 @@ async function addBulkHistorico(btn, jsonStr) {
             body: JSON.stringify({ action: "addHistory", data: lista })
         });
         const dados = await res.json();
-        alert(dados.message);
-    } catch (e) { alert("Erro na conexão."); }
+        showToast(dados.message || "Músicas adicionadas ao histórico!");
+    } catch (e) { showToast("Erro na conexão.", 'error'); }
 
     btn.innerHTML = original;
     btn.disabled = false;

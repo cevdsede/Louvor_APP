@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 
 <head>
@@ -43,7 +43,7 @@
 
 
     <div class="error-msg">
-        <p><i class="fas fa-microchip"></i> Conectando à Mesa de Som...</p>
+        <p id="mesaStatusTitle"><i class="fas fa-microchip"></i> Conectando à Mesa de Som...</p>
         <div
             style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin: 20px auto; max-width: 320px; border: 1px solid rgba(255,255,255,0.2);">
             <p style="font-size:0.9rem; color:#fff; margin-bottom: 15px;">
@@ -53,9 +53,13 @@
             <p style="font-size:0.8rem; color:#ccc; line-height: 1.4;">
                 Se os controles não aparecerem abaixo, utilize o botão azul para abrir em uma janela dedicada.
             </p>
-            <a href="http://10.10.10.2" target="_blank" class="btn-open-new"
+            <a id="openMesaBtn" href="http://10.10.10.2" class="btn-open-new"
                 style="display: block; margin-top: 15px; font-size: 1.1rem; padding: 12px;">
                 <i class="fas fa-external-link-alt"></i> ABRIR CONTROLES AGORA
+            </a>
+            <a id="openMesaNewTabBtn" href="http://10.10.10.2" target="_blank" rel="noopener" class="btn-open-new btn-open-new-secondary"
+                style="display: block; margin-top: 10px; font-size: 0.95rem; padding: 10px;">
+                <i class="fas fa-up-right-from-square"></i> ABRIR EM NOVA ABA
             </a>
         </div>
         <p style="font-size: 0.75rem; color: #888;">IP da Mesa: 10.10.10.2</p>
@@ -63,7 +67,9 @@
 
     <!-- A permissão 'allow-same-origin' e 'allow-scripts' é necessária. 
        Mixed Content (HTTP em HTTPS) pode bloquear isso se o PWA estiver seguro. -->
-    <iframe src="http://10.10.10.2" style="position:relative; z-index:1" allow="fullscreen"></iframe>
+    <div id="mesaIframeContainer">
+        <iframe id="mesaIframe" src="http://10.10.10.2" allow="fullscreen"></iframe>
+    </div>
 
     <script src="../JS/acesso-mesa.js"></script>
 </body>

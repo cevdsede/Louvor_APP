@@ -8,9 +8,17 @@ html {
     background-color: #000;
 }
 
+#mesaIframeContainer {
+    position: absolute;
+    top: 70px; /* altura do header */
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
 iframe {
     width: 100%;
-    height: 100vh;
+    height: 100%;
     border: none;
     display: block;
 }
@@ -167,4 +175,26 @@ iframe {
     border-radius: 5px;
     text-decoration: none;
     font-weight: bold;
+}
+
+/* Quando o iframe está oculto (HTTPS / github.io), manter layout navegável */
+html.no-iframe,
+html.no-iframe body {
+    height: auto;
+    overflow: auto;
+}
+
+html.no-iframe .error-msg {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    z-index: 1;
+    padding: 110px 16px 24px; /* espaço para o header fixo */
+    max-width: 560px;
+    margin: 0 auto;
+}
+
+html.no-iframe #mesaIframeContainer {
+    display: none;
 }

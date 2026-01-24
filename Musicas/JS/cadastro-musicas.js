@@ -81,7 +81,7 @@ document.getElementById('musicForm').addEventListener('submit', function (e) {
     );
 
     if (jaExiste) {
-        alert("⚠️ Esta música já está cadastrada para este cantor!");
+        showToast("⚠️ Esta música já está cadastrada para este cantor!", 'warning');
         return;
     }
 

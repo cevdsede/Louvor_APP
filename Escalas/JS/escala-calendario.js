@@ -188,6 +188,7 @@ window.openDetails = function (dateStr) {
     const nomeNormalizado = normalize(meuNomeLogado);
 
     details.innerHTML = Object.values(cultos).map(c => {
+        const dataAvisoCheck = new Date(c.info.Data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
         const musicas = (Array.isArray(globalRepertorio) ? globalRepertorio : []).filter(m => {
             if (!m.Data || !m.Culto) return false;
             const normalizeDate = (d) => {
@@ -216,7 +217,7 @@ window.openDetails = function (dateStr) {
               <button onclick="openNativeRepertorio('${c.info["Nome dos Cultos"]}|${c.info.Data}')" style="background:white; color:#e74c3c; border:none; padding:4px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer;" title="Repertório">
                 <i class="fas fa-music"></i>
               </button>
-              <button onclick="comunicarAusencia('${c.info.Data.split('T')[0]}', '${c.info["Nome dos Cultos"]}', event)" style="background:#e74c3c; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer;" title="Aviso">
+              <button onclick="comunicarAusencia('${dataAvisoCheck}', '${c.info["Nome dos Cultos"]}', event)" style="background:#e74c3c; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer;" title="Aviso">
                 <i class="fas fa-bell"></i>
               </button>
             ` : ''}
@@ -362,12 +363,12 @@ async function processarBulk(btn, encodedData) {
             body: JSON.stringify({ action: "addHistory", data: lista })
         });
         const dados = await res.json();
-        alert(dados.message || "Conclído!");
+        alert(dados.message || "Concluído!");
         btn.innerHTML = '<i class="fas fa-check"></i> Concluído';
         btn.style.background = "#2c3e50";
     } catch (e) {
         console.error(e);
-        alert("Erro na conexão ou no servidor.");
+        showToast("Erro na conexão ou no servidor.", 'error');
         btn.innerHTML = originalContent;
         btn.disabled = false;
     }
@@ -377,8 +378,7 @@ function comunicarAusencia(dataCulto, nomeCulto, event) {
     if (event) event.stopPropagation();
     const fullDisplay = `${nomeCulto} (${dataCulto})`;
     document.getElementById('displayCultoAviso').innerText = fullDisplay;
-    document.getElementById('inputCultoData').value = dataCulto;
-    document.getElementById('inputCultoNome').value = nomeCulto;
+    document.getElementById('inputCultoAviso').value = fullDisplay;
     document.getElementById('modalAvisoMembro').style.display = 'flex';
 }
 
@@ -389,26 +389,22 @@ function fecharModalAvisoMembro() {
 
 async function enviarAvisoMembro() {
     const info = document.getElementById('textoAvisoMembro').value.trim();
-    const dataCulto = document.getElementById('inputCultoData').value;
-    const nomeCulto = document.getElementById('inputCultoNome').value;
+    const fullCultoString = document.getElementById('inputCultoAviso').value;
 
     if (!info) return alert("Descreva o motivo do aviso.");
 
     const userToken = JSON.parse(localStorage.getItem('user_token') || '{}');
     const meuLogin = userToken.Login || userToken.User || "membro";
-    const id_Lembrete = 'AVISO-' + Math.random().toString(16).substr(2, 8);
-    const cultoFormatted = `${nomeCulto} (${dataCulto})`;
+    const id_Lembrete = Math.random().toString(16).substr(2, 8);
 
     const payload = {
-        action: "addRow",
+        action: "add",
         sheet: "Lembretes",
-        data: {
-            id_Lembrete,
-            Componente: meuLogin,
-            Data: new Date().toLocaleDateString('pt-BR'),
-            Culto: cultoFormatted,
-            Info: info
-        }
+        id_Lembrete,
+        Componente: meuLogin,
+        Data: new Date().toLocaleDateString('pt-BR'),
+        Culto: fullCultoString,
+        Info: info
     };
 
     const btn = document.getElementById('btnEnviarAvisoMembro');
@@ -423,14 +419,14 @@ async function enviarAvisoMembro() {
         });
         const res = await response.json();
         if (res.status === "success") {
-            alert("✅ Aviso enviado!");
+            showToast("✅ Aviso enviado!");
             fecharModalAvisoMembro();
             loadData(true);
         } else {
-            alert("⚠️ Erro ao enviar: " + res.message);
+            showToast("⚠️ Erro ao enviar: " + res.message, 'error');
         }
     } catch (e) {
-        alert("Erro de conexão.");
+        showToast("Erro de conexão.", 'error');
     } finally {
         btn.disabled = false;
         btn.innerText = originalText;
@@ -451,8 +447,8 @@ async function excluirAviso(id_Aviso, event) {
             body: JSON.stringify({ action: "delete", sheet: "Lembretes", id_Lembrete: id_Aviso })
         });
         const res = await response.json();
-        if (res.status === "success") { alert("✅ Removido!"); loadData(true); }
-    } catch (e) { alert("❌ Erro."); }
+        if (res.status === "success") { showToast("✅ Removido!"); loadData(true); }
+    } catch (e) { showToast("❌ Erro.", 'error'); }
 }
 
 async function excluirMusica(musica, cultoData, cantor) {
@@ -481,15 +477,15 @@ async function excluirMusica(musica, cultoData, cantor) {
 
         const res = await response.json();
         if (res.status === "success") {
-            alert("✅ Removido!");
+            showToast("✅ Removido!");
             loadData(true);
             document.getElementById('eventModal').style.display = 'none'; // Fecha para recarregar visual
         } else {
-            alert("⚠️ Erro: " + res.message);
+            showToast("⚠️ Erro: " + res.message, 'error');
         }
     } catch (e) {
         console.error("Erro na exclusão:", e);
-        alert("❌ Erro de conexão.");
+        showToast("❌ Erro de conexão.", 'error');
     }
 }
 

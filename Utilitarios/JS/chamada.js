@@ -223,7 +223,7 @@ function openJustifyModal(name) {
 
 function confirmJustify() {
     const val = document.getElementById('justifyText').value.trim();
-    if (!val) return alert("Insira o motivo.");
+    if (!val) return showToast("Insira o motivo.", 'warning');
     attendanceData[currentCompJustifying] = { status: 'JUSTIFICADO', text: val };
     closeModal('modalJustify');
     renderComponents();
@@ -234,7 +234,7 @@ function openAddInactiveModal() {
     const currentNames = Object.keys(attendanceData);
     const candidates = allComponents.filter(c => !currentNames.includes(c.Nome)).sort((a, b) => a.Nome.localeCompare(b.Nome));
 
-    if (candidates.length === 0) return alert("Todos os membros já estão na lista.");
+    if (candidates.length === 0) return showToast("Todos os membros já estão na lista.", 'info');
 
     select.innerHTML = candidates.map(c => `<option value="${c.Nome}">${c.Nome} (${c.Função})</option>`).join('');
     openModal('modalAddInactive');
@@ -252,7 +252,7 @@ function addInactiveToAttendance() {
 async function saveNewEvent() {
     const date = document.getElementById('eventDate').value;
     const theme = document.getElementById('eventTheme').value.trim();
-    if (!date || !theme) return alert("Preencha todos os campos.");
+    if (!date || !theme) return showToast("Preencha todos os campos.", 'warning');
     const id = Math.random().toString(16).substring(2, 10);
     const ev = { DATA: date, TEMA: theme, ID_AULA: id, STATUS: "FECHADO" };
     SyncManager.addToQueue({ action: "addRow", sheet: "Consagração", data: ev });
@@ -264,7 +264,7 @@ async function saveNewEvent() {
 
 document.getElementById('btnSaveAttendance').addEventListener('click', () => {
     const names = Object.keys(attendanceData);
-    if (names.length === 0) return alert("Lista vazia.");
+    if (names.length === 0) return showToast("Lista vazia.", 'warning');
     const batch = names.map(n => ({
         "COMPONENTES": attendanceData[n].text || "",
         "NOME": n,
@@ -275,7 +275,7 @@ document.getElementById('btnSaveAttendance').addEventListener('click', () => {
     const cache = JSON.parse(localStorage.getItem('offline_chamada') || '[]');
     const cleaned = cache.filter(c => c.ID_AULA !== (currentEvent.ID_AULA || currentEvent.ID));
     localStorage.setItem('offline_chamada', JSON.stringify([...cleaned, ...batch]));
-    alert("Sincronizando chamada...");
+    showToast("Chamada sincronizada com sucesso!");
     showView('events');
 });
 
