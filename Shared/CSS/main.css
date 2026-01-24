@@ -67,7 +67,8 @@ h4,
 }
 
 /* Premium Header */
-.premium-header {
+.premium-header,
+.header-bar {
     background: var(--glass);
     backdrop-filter: var(--backdrop-blur, blur(12px));
     height: 70px;
@@ -98,14 +99,15 @@ h4,
     height: 42px;
     border-radius: 12px;
     border: 1px solid rgba(0, 0, 0, 0.05);
-    background: white;
+    background: var(--card-bg);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--primary);
+    color: var(--header-text);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     text-decoration: none;
     box-shadow: var(--shadow-sm);
+    cursor: pointer;
 }
 
 .nav-btn:active {

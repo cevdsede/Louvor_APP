@@ -2,21 +2,12 @@ body {
     padding-top: 80px;
 }
 
-:root {
-    --primary: #2c3e50;
-    --accent: #27ae60;
-    --bg: #f4f7f6;
-    /* Ajustado para o fundo do seu index */
-    --glass: rgba(255, 255, 255, 0.85);
-    --shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
-}
+/* Hardcoded colors removed to allow theme system to control variables */
 
 body {
     font-family: 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg);
     margin: 0;
     padding: 0;
-    color: var(--primary);
 }
 
 .container {
@@ -24,22 +15,7 @@ body {
     margin: 0 auto;
 }
 
-.header-bar {
-    background: var(--glass);
-    backdrop-filter: blur(12px);
-    height: 70px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 15px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-}
+/* Redundant header-bar removed, now using main.css */
 
 .header-left-nav,
 .header-right-nav {
@@ -60,24 +36,9 @@ body {
     text-overflow: ellipsis;
 }
 
-.nav-btn {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    cursor: pointer;
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.2s;
-    font-size: 1.2rem;
-    padding: 10px;
-    text-decoration: none;
-}
+/* Unified header-bar now managed by main.css and themes */
 
-.nav-btn:active {
-    transform: scale(0.9);
-}
+/* Unified nav-btn now managed by main.css and themes */
 
 /* THEME PANEL */
 .theme-panel {
@@ -285,11 +246,12 @@ i.Bateria {
 .avatar {
     width: 75px;
     height: 75px;
-    border-radius: 50%;
+    border-radius: 50% !important;
     object-fit: cover;
     margin-bottom: 10px;
-    border: 3px solid #fff;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    border: 2px solid var(--primary);
+    box-shadow: var(--card-shadow);
+    background: var(--card-bg);
 }
 
 .comp-name {
@@ -336,7 +298,8 @@ i.Bateria {
 }
 
 .modal-content-perfil {
-    background: white;
+    background: var(--card-bg);
+    color: var(--text-primary);
     padding: 30px;
     border-radius: 24px;
     width: 100%;
@@ -372,11 +335,11 @@ i.Bateria {
 }
 
 .close-perfil:hover {
-    color: #1e293b;
+    color: var(--primary);
 }
 
 .modal-header {
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     padding-bottom: 15px;
     margin-bottom: 20px;
     text-align: left;
@@ -385,7 +348,7 @@ i.Bateria {
 .modal-section-title {
     font-size: 0.75rem;
     font-weight: 700;
-    color: #64748b;
+    color: var(--text-muted);
     margin: 15px 0 8px;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -394,7 +357,7 @@ i.Bateria {
 
 /* Listas dentro do modal */
 .list-item {
-    background: #f8fafc;
+    background: rgba(0, 0, 0, 0.03);
     padding: 12px;
     border-radius: 12px;
     margin-bottom: 8px;
@@ -453,22 +416,22 @@ i.Bateria {
     }
 
     .filter-pill {
-        background: white;
+        background: var(--card-bg);
         padding: 8px 16px;
         border-radius: 20px;
         font-size: 0.8rem;
         font-weight: 600;
-        color: #7f8c8d;
+        color: var(--text-muted);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         cursor: pointer;
-        border: 1px solid transparent;
+        border: 1px solid var(--card-border);
         transition: all 0.3s;
     }
 
     .filter-pill.active {
         background: var(--primary);
         color: white;
-        box-shadow: 0 4px 12px rgba(44, 62, 80, 0.2);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     /* Efeito Shimmer (Skeleton) */
@@ -488,14 +451,15 @@ i.Bateria {
 
     /* Melhoria no Modal para parecer mais limpo (Premium Style) */
     .detail-item {
-        background: #fdf2e9;
-        /* Light orange tint common in music themes */
+        background: var(--card-bg);
+        color: var(--text-primary);
         padding: 15px;
         border-radius: 18px;
         margin-bottom: 12px;
-        border-left: 5px solid #e67e22;
-        /* Primary accent */
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+        border-left: 5px solid var(--secondary);
+        border: var(--card-border);
+        border-left: 5px solid var(--secondary);
+        box-shadow: var(--card-shadow);
         display: flex;
         flex-direction: column;
         gap: 8px;
@@ -504,7 +468,9 @@ i.Bateria {
 
     .detail-item:hover {
         transform: translateX(5px);
-        background: #fff;
+        background: var(--card-bg);
+        border: var(--card-border);
+        border-left: 8px solid var(--secondary);
     }
 
     .detail-top {
@@ -512,21 +478,27 @@ i.Bateria {
         justify-content: space-between;
         align-items: center;
         width: 100%;
+        gap: 15px;
     }
 
     .detail-culto {
         font-weight: 800;
-        color: #1e293b;
+        color: var(--text-primary);
         font-size: 0.95rem;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .detail-date {
         font-size: 0.75rem;
-        background: rgba(230, 126, 34, 0.1);
-        color: #e67e22;
+        background: var(--secondary);
+        color: #fff;
         padding: 4px 10px;
         border-radius: 10px;
         font-weight: 700;
+        white-space: nowrap;
+        opacity: 0.9;
     }
 
     .detail-funcoes {
@@ -539,7 +511,7 @@ i.Bateria {
     }
 
     .detail-funcoes i {
-        color: #e67e22;
+        color: var(--secondary);
     }
 }
 

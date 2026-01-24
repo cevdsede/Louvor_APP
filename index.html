@@ -596,12 +596,13 @@
 
     /* Premium styling for detail items - Theme Aware */
     .detail-item {
-      background: var(--card-bg, #fdf2e9);
+      background: var(--card-bg);
       padding: 15px;
       border-radius: var(--border-radius, 18px);
       margin-bottom: 12px;
-      border-left: 5px solid var(--primary, #e67e22);
-      box-shadow: var(--card-shadow, 0 4px 10px rgba(0, 0, 0, 0.03));
+      border: var(--card-border);
+      border-left: 5px solid var(--secondary);
+      box-shadow: var(--card-shadow);
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -617,18 +618,20 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 10px;
+      gap: 15px;
     }
 
     .detail-culto {
       font-weight: 700;
       font-size: 0.9rem;
-      color: var(--text-primary, #2c3e50);
+      color: var(--text-primary);
       flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .detail-date {
-      background: var(--primary, #e67e22);
+      background: var(--secondary);
       color: white;
       padding: 4px 10px;
       border-radius: 8px;
@@ -640,14 +643,14 @@
 
     .detail-funcoes {
       font-size: 0.8rem;
-      color: var(--text-muted, #7f8c8d);
+      color: var(--text-muted);
       display: flex;
       align-items: center;
       gap: 6px;
     }
 
     .detail-funcoes i {
-      color: var(--primary, #e67e22);
+      color: var(--secondary);
       font-size: 0.7rem;
     }
 

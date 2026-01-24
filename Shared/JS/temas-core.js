@@ -5,32 +5,52 @@
 
 var tempThemeId = localStorage.getItem('tema_escolhido_id') || 1;
 
-function aplicarTemaAtual() {
+// Helper para cores translúcidas
+function hexToRgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : null;
+}
+
+function aplicarTemaAtual(previewId = null) {
     if (typeof TEMAS_DISPONIVEIS === 'undefined') return;
 
-    const temaId = localStorage.getItem('tema_escolhido_id') || 1;
+    let temaId = previewId || localStorage.getItem('tema_escolhido_id') || 1;
+    // Garante que o ID seja um número se possível
+    if (temaId && !isNaN(temaId)) temaId = parseInt(temaId);
+
     const tema = TEMAS_DISPONIVEIS[temaId];
     if (!tema) return;
 
     const root = document.documentElement;
 
     // 1. Configurar Variáveis CSS no :root
+    let headerText = tema.headerText || tema.text || '#1e293b';
+    let headerBg = tema.headerBg || '#ffffff';
+
+    // Safeguard: Se headerBg e headerText forem iguais ou muito parecidos (ex: ambos brancos), força contraste
+    if (headerBg.toLowerCase().trim() === "#ffffff" && headerText.toLowerCase().trim() === "#ffffff") {
+        headerText = "#1e293b";
+    } else if (headerBg.toLowerCase().trim() === "#000000" && headerText.toLowerCase().trim() === "#000000") {
+        headerText = "#ffffff";
+    }
+
     const vars = {
         '--primary': tema.primary,
         '--secondary': tema.secondary || tema.primary,
+        '--secondary-rgb': hexToRgb(tema.secondary || tema.primary) || '230, 126, 34',
         '--accent': tema.primary,
         '--bg': tema.bg,
         '--bg-override': tema.gradient || tema.bg,
         '--card-bg': tema.cardBg || '#ffffff',
-        '--header-bg': tema.headerBg || '#ffffff',
+        '--header-bg': headerBg,
         '--text-primary': tema.text || '#1e293b',
         '--text-muted': tema.textMuted || '#64748b',
         '--border-radius': tema.radius || '16px',
         '--card-shadow': tema.shadow || '0 4px 15px rgba(0,0,0,0.05)',
         '--card-border': tema.border || 'none',
         '--backdrop-blur': tema.blur || 'none',
-        '--header-text': tema.headerText || tema.text || '#1e293b',
-        '--input-bg': (tema.nome.includes("Dark") || tema.nome.includes("Cyber")) ? 'rgba(255,255,255,0.05)' : '#f8fafc',
+        '--header-text': headerText,
+        '--input-bg': (tema.nome.includes("Dark") || tema.nome.includes("Cyber") || tema.nome.includes("Black")) ? 'rgba(255,255,255,0.05)' : '#f8fafc',
         '--input-border': tema.border || '1px solid rgba(0,0,0,0.08)'
     };
 
@@ -48,23 +68,29 @@ function aplicarTemaAtual() {
     }
 
     styleTag.innerHTML = `
-        body { 
+        html, body { 
             background: var(--bg-override) !important; 
+            background-color: var(--bg) !important;
             background-attachment: fixed !important;
             color: var(--text-primary) !important;
-            transition: background 0.3s ease !important;
+            transition: background 0.3s ease, background-color 0.3s ease !important;
+            min-height: 100vh;
         }
         
         .header-bar, .premium-header { 
             background: var(--glass, var(--header-bg)) !important; 
-            backdrop-filter: blur(12px) !important;
-            border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+            backdrop-filter: blur(20px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+            border-bottom: 1px solid ${(tema.nome.includes("Dark") || tema.nome.includes("Cyber") || tema.headerText === "#ffffff") ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'} !important;
         }
 
         .header-title { color: var(--header-text) !important; }
 
         .nav-btn, .nav-icons i, .header-actions i, .header-left-nav i, .header-right-nav i {
             color: var(--header-text) !important;
+            background: var(--card-bg) !important;
+            border: 1px solid rgba(255,255,255,0.05) !important;
+            opacity: 0.9;
         }
 
         .menu-item, .menu-card, .premium-card, .kpi-card, .glass-card, .comp-card, .dashboard-card, .chart-card {
@@ -90,7 +116,9 @@ function aplicarTemaAtual() {
         }
     `;
 
-    localStorage.setItem('tema_atual_nome', tema.nome);
+    if (!previewId) {
+        localStorage.setItem('tema_atual_nome', tema.nome);
+    }
 }
 
 /**
@@ -124,8 +152,10 @@ function renderThemeButtons() {
 
 function aplicarPreview(id) {
     const tema = TEMAS_DISPONIVEIS[id];
-    const root = document.documentElement;
-    root.style.setProperty('--primary', tema.primary);
+    if (!tema) return;
+
+    // Atualiza o CSS do navegador imediatamente para o preview
+    aplicarTemaAtual(id);
 
     // Live update chart if on index.html
     const chartCanvas = document.getElementById('escalaChart');
@@ -138,25 +168,19 @@ function aplicarPreview(id) {
         window.currentChart.data.datasets[0].backgroundColor = gradient;
         window.currentChart.update('none');
     }
-
-    // Salva temporariamente para o aplicarTemaAtual usar o ID correto no preview
-    const originalThemeId = localStorage.getItem('tema_escolhido_id');
-    localStorage.setItem('tema_escolhido_id', id);
-    aplicarTemaAtual();
-    // Restaura o ID original (o confirmarTema salvará permanentemente)
-    localStorage.setItem('tema_escolhido_id', originalThemeId);
 }
 
 function confirmarTema() {
     localStorage.setItem('tema_escolhido_id', tempThemeId);
     aplicarTemaAtual();
-    toggleThemePanel();
-    // Se estiver no index, pode disparar refresh de componentes se necessário
+    setTimeout(() => {
+        toggleThemePanel();
+    }, 100);
 }
 
 // Inicialização segura
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', aplicarTemaAtual);
+    document.addEventListener('DOMContentLoaded', () => aplicarTemaAtual());
 } else {
     aplicarTemaAtual();
 }

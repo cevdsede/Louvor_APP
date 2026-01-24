@@ -19,7 +19,7 @@
 
     <div class="header-bar">
         <div class="header-left-nav">
-            <i class="fas fa-arrow-left nav-btn" onclick="history.back()" title="Voltar"></i>
+            <i class="fas fa-arrow-left nav-btn" onclick="window.location.href='../../index.html'" title="Voltar"></i>
             <i class="fas fa-home nav-btn" onclick="window.location.href='../../index.html'" title="Início"></i>
         </div>
         <h2 class="header-title">Equipe</h2>
@@ -62,12 +62,11 @@
 
         <div id="kpiFuncoes" class="kpi-grid"></div>
         <!-- OS FILTROS DE PÃ LULA FORAM REMOVIDOS E INTEGRADOS AOS KPIs -->
-        <div id="listaComponentes">
-            <div id="loader" style="display:none; text-align:center; padding:50px;">
-                <i class="fas fa-circle-notch fa-spin fa-2x" style="color:var(--accent)"></i>
-                <p style="font-size: 0.8rem; color: #7f8c8d; margin-top: 10px;">Sincronizando equipe...</p>
-            </div>
+        <div id="loader" style="display:none; text-align:center; padding:50px;">
+            <i class="fas fa-circle-notch fa-spin fa-2x" style="color:var(--accent)"></i>
+            <p style="font-size: 0.8rem; color: #7f8c8d; margin-top: 10px;">Sincronizando equipe...</p>
         </div>
+        <div id="listaComponentes"></div>
     </div>
 
 
@@ -86,27 +85,28 @@
             </div>
 
             <div style="text-align: left;">
-                <small style="color: #e67e22; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
+                <small class="modal-section-title">
                     <i class="fas fa-calendar-alt"></i> Próximas Escalas
                 </small>
                 <div id="modalEscalas" style="margin-bottom: 20px;"></div>
 
                 <div id="modalHistoricoContainer" style="display:none; margin-bottom: 20px;">
-                    <small style="color: #9b59b6; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
+                    <small class="modal-section-title" style="color:var(--secondary)">
                         <i class="fas fa-music"></i> Histórico (Voz)
                     </small>
                     <div id="modalHistorico"></div>
                 </div>
 
                 <div id="modalAvisosGeraisContainer" style="display:none; margin-top:20px;">
-                    <small style="color: #e67e22; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
+                    <small class="modal-section-title">
                         <i class="fas fa-bullhorn"></i> Avisos Gerais
                     </small>
                     <div id="modalAvisosGerais"></div>
                 </div>
             </div>
 
-            <div id="modalAcoes" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;"></div>
+            <div id="modalAcoes" style="margin-top: 20px; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 15px;">
+            </div>
         </div>
     </div>
 

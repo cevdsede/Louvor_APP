@@ -1,20 +1,4 @@
-/* CSS for Chamada.html */
-:root {
-    --primary: #1e293b;
-    --primary-light: #334155;
-    --accent-green: #10b981;
-    --accent-red: #ef4444;
-    --accent-gold: #f59e0b;
-    --bg-page: #f8fafc;
-    --surface: #ffffff;
-    --text-main: #0f172a;
-    --text-muted: #64748b;
-    --glass: rgba(255, 255, 255, 0.9);
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --radius-main: 16px;
-}
+/* Hardcoded colors removed to allow theme system to control variables */
 
 body {
     font-family: 'Outfit', sans-serif;
@@ -27,22 +11,7 @@ body {
 }
 
 /* Premium Header */
-.header-bar {
-    background: var(--glass);
-    backdrop-filter: blur(12px);
-    height: 70px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 15px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-}
+/* Unified header managed by themes */
 
 .header-left-nav,
 .header-right-nav {
@@ -65,26 +34,7 @@ body {
     text-overflow: ellipsis;
 }
 
-.nav-btn {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    cursor: pointer;
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.2s;
-    text-decoration: none;
-    font-size: 1.2rem;
-}
-
-.nav-btn:active {
-    transform: scale(0.9);
-}
+/* Unified nav-btn managed by themes */
 
 /* THEME PANEL */
 .theme-panel {
@@ -333,10 +283,10 @@ body {
 .member-avatar {
     width: 46px;
     height: 46px;
-    border-radius: 14px;
+    border-radius: 50% !important;
     object-fit: cover;
-    border: 2px solid white;
-    box-shadow: var(--shadow-sm);
+    border: 2px solid var(--primary);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .member-name {

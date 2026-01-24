@@ -139,14 +139,46 @@ function renderComponents() {
 
     container.innerHTML = names.map(name => {
         const comp = allComponents.find(c => c.Nome === name) || { Nome: name };
-        const fotoPath = dbImg.find(img => img.nome === (comp.Foto || "").split('/').pop());
-        const imgUrl = fotoPath ? fotoPath.url : "https://ui-avatars.com/api/?name=" + name + "&background=random";
+
+        // Extrai o nome do arquivo da URL de forma mais robusta
+        let nomeArquivo = "";
+        if (comp.Foto) {
+            const urlParts = comp.Foto.split('/');
+            nomeArquivo = urlParts.pop() || urlParts.pop();
+            if (nomeArquivo.includes('id=')) {
+                nomeArquivo = nomeArquivo.split('id=').pop().split('&')[0];
+            }
+        }
+
+        const urlLocal = `../../assets/equipe/${name}.png`;
+
+        // SMART SEARCH: Tenta encontrar a foto de forma inteligente
+        const fotoObj = dbImg.find(img => {
+            // 1. Match exato por ID (da planilha) ou Nome do Arquivo (puro)
+            if (nomeArquivo && (img.id === nomeArquivo || img.nome === nomeArquivo)) return true;
+
+            // 2. Match por link direto
+            if (comp.Foto && img.id && comp.Foto.includes(img.id)) return true;
+
+            // 3. Match Inteligente por Nome (Ignora .Foto.123, .png, etc)
+            const nomeMembroNorm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+            const nomeFotoNorm = (img.nome || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .split('.foto.')[0].split('.')[0].replace(/[-_]/g, ' ').trim();
+
+            if (!nomeFotoNorm || !nomeMembroNorm) return false;
+
+            // Match exato após normalização (Evita "Gabriel" match "Anne Gabrielly")
+            return nomeFotoNorm === nomeMembroNorm;
+        });
+
+        const urlDrive = fotoObj ? fotoObj.url : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&size=128`;
+
         const status = attendanceData[name].status;
         if (status === 'PRESENTE') p++; else if (status === 'JUSTIFICADO') j++; else a++;
 
         return `
             <div class="member-card state-${status[0]}">
-                <img src="${imgUrl}" class="member-avatar">
+                <img src="${urlLocal}" onerror="this.onerror=null; this.src='${urlDrive}';" class="member-avatar">
                 <span class="member-name">${name}</span>
                 <div class="action-group">
                     <button class="btn-status p ${status === 'PRESENTE' ? 'active' : ''}" onclick="setStatus('${name}', 'PRESENTE')"><i class="fas fa-check"></i></button>
