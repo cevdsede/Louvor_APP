@@ -1,5 +1,5 @@
 // Configuração centralizada do App
-var VERSION = '2.4';
+var VERSION = '2.5';
 var APP_CONFIG = {
     VERSION,
     CACHE_NAME: `louvor-app-v${VERSION}`,

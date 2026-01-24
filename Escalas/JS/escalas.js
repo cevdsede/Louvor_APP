@@ -22,19 +22,18 @@ function safeParse(jsonString, fallback = []) {
     }
 }
 
-async function loadAll(forceUpdate = false) {
+async function loadAll(force = false) {
     const loader = document.getElementById('loader');
-    const cachedEscala = localStorage.getItem('offline_escala');
-    const cachedRepertorio = localStorage.getItem('offline_repertorio');
-    const cachedLembretes = localStorage.getItem('offline_lembretes');
+    const cachedE = localStorage.getItem('offline_escala');
+    const cachedR = localStorage.getItem('offline_repertorio');
+    const cachedL = localStorage.getItem('offline_lembretes');
 
-    const escalaData = safeParse(cachedEscala);
-    const repertorioData = safeParse(cachedRepertorio);
-    const lembretesData = safeParse(cachedLembretes);
-
-    if (!forceUpdate && escalaData.length > 0) {
-        renderMaster(escalaData, repertorioData, lembretesData);
-        setTimeout(() => silentSync(), 500);
+    if (!force && cachedE) {
+        const eData = JSON.parse(cachedE);
+        const rData = JSON.parse(cachedR || '[]');
+        const lData = JSON.parse(cachedL || '[]');
+        renderMaster(eData, rData, lData);
+        setTimeout(() => silentSync(), 1000);
         return;
     }
 
@@ -42,24 +41,16 @@ async function loadAll(forceUpdate = false) {
     loader.innerHTML = '<i class="fas fa-sync fa-spin"></i> Atualizando dados...';
 
     try {
-        const [resEscala, resRepertorio, resLembretes] = await Promise.all([
-            fetch(urlEscala), fetch(urlRepertorio), fetch(urlLembretes)
-        ]);
-        const escalaJson = await resEscala.json();
-        const repertorioJson = await resRepertorio.json();
-        const lembretesJson = await resLembretes.json();
-
-        localStorage.setItem('offline_escala', JSON.stringify(escalaJson.data));
-        localStorage.setItem('offline_repertorio', JSON.stringify(repertorioJson.data));
-        localStorage.setItem('offline_lembretes', JSON.stringify(lembretesJson.data));
-
+        await silentSync();
+        const eData = JSON.parse(localStorage.getItem('offline_escala'));
+        const rData = JSON.parse(localStorage.getItem('offline_repertorio'));
+        const lData = JSON.parse(localStorage.getItem('offline_lembretes'));
+        renderMaster(eData, rData, lData);
         loader.style.display = 'none';
-        renderMaster(escalaJson.data, repertorioJson.data, lembretesJson.data);
-        if (forceUpdate) alert("Escalas atualizadas!");
+        if (force) alert("Escalas atualizadas!");
     } catch (e) {
         console.error(e);
-        if (escalaData.length > 0) renderMaster(escalaData, repertorioData, lembretesData);
-        else loader.innerText = "Erro ao carregar dados.";
+        loader.innerText = "Erro ao carregar dados.";
     }
 }
 
@@ -136,11 +127,15 @@ function renderMaster(escalas, musicas = [], lembretes = []) {
         const musicasDoCulto = musicas.filter(m => {
             if (!m.Data || !m.Culto) return false;
 
-            // Extrai apenas YYYY-MM-DD de ambos os lados para garantir igualdade
-            const dataEscalaISO = item.info.Data.split('T')[0];
-            const dataRepertorioISO = m.Data.split('T')[0];
+            const normalizeDate = (d) => {
+                if (d.includes('/')) {
+                    const p = d.split('/');
+                    return `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+                }
+                return d.split('T')[0];
+            };
 
-            const matchData = dataEscalaISO === dataRepertorioISO;
+            const matchData = normalizeDate(item.info.Data) === normalizeDate(m.Data);
             const matchNome = m.Culto.trim().toLowerCase() === item.info["Nome dos Cultos"].trim().toLowerCase();
 
             return matchData && matchNome;
@@ -171,9 +166,11 @@ function renderMaster(escalas, musicas = [], lembretes = []) {
         itemEl.className = 'accordion-item';
         itemEl.setAttribute('data-search', (item.info["Nome dos Cultos"] + " " + item.membros.map(m => m.nome).join(" ")).toLowerCase());
 
-        // Armazena as mÃºsicas para a funÃ§Ã£o Bulk
+        // Armazena as músicas para a função Bulk (Formato: Ministro | Musica-Cantor | Tom)
         itemEl.dataset.musicas = JSON.stringify(musicasDoCulto.map(m => ({
-            musica: m.Músicas, cantor: m.Cantor, tom: m.Tons
+            ministro: m.Ministro || 'Líder não definido',
+            musicaCantor: (m.Músicas && m.Cantor) ? `${m.Músicas} - ${m.Cantor}` : (m.Músicas || 'Sem Título'),
+            tom: m.Tons || '--'
         })));
 
         itemEl.innerHTML = `
@@ -235,8 +232,8 @@ function renderMaster(escalas, musicas = [], lembretes = []) {
         <div class="section-title-container">
           <span class="section-title"><i class="fas fa-music"></i> Repertório</span>
           ${estouEscalado ? `
-            <button class="btn-add-bulk" onclick="navigateToAddRepertorio('${item.info.Cultos}')">
-              <i class="fas fa-plus-circle"></i> Repertório
+            <button class="btn-add-bulk" onclick="openNativeRepertorio('${item.idComposto}')">
+              <i class="fas fa-plus-circle"></i>
             </button>
           ` : ''}
         </div>
@@ -245,7 +242,7 @@ function renderMaster(escalas, musicas = [], lembretes = []) {
         ${estouEscalado ? `
             <button class="btn-add-bulk" 
                     style="margin-bottom:10px; width:100%; background:#2ecc71; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; font-weight:bold;" 
-                    onclick="processarBulk(this, '${item.info["Nome dos Cultos"]}|${item.info.Data}')">
+                    onclick="processarBulk(this, event)">
                 <i class="fas fa-history"></i> Add Histórico
             </button>
         ` : ''}
@@ -259,24 +256,26 @@ function renderMaster(escalas, musicas = [], lembretes = []) {
 
             return `
             <div class="musica-item">
-                <span class="m-nome-musica">${nomeMusica} - ${cantor}</span>
-                <span class="m-cantor">
-                    <i class="fas fa-user-voice" style="font-size: 10px;"></i> ${ministro}
-                </span>
-                <div class="m-footer">
-                    <span class="m-tom">${m.Tons || '--'}</span>
-                    <div class="m-links">
+                <div class="m-nome-musica" style="font-weight: bold; font-size: 0.9rem;">${nomeMusica} - ${cantor}</div>
+                <div class="m-mid-row" style="display: flex; justify-content: space-between; align-items: center; margin: 4px 0; font-size: 0.75rem;">
+                    <span class="m-ministro"><i class="fas fa-user-voice" style="font-size: 9px; opacity: 0.7;"></i> ${ministro}</span>
+                    <span class="m-tom" style="font-weight: bold; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 4px;">${m.Tons || '--'}</span>
+                </div>
+                <div class="m-footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
+                    <div class="m-links" style="margin: 0; display: flex; gap: 8px;">
                         <a href="https://www.youtube.com/results?search_query=${queryBusca}" target="_blank" class="l-yt" title="YouTube"><i class="fab fa-youtube"></i></a>
                         <a href="https://open.spotify.com/search/${querySpotify}" target="_blank" class="l-sp" title="Spotify"><i class="fab fa-spotify"></i></a>
                         <a href="https://www.cifraclub.com.br/?q=${queryBusca}" target="_blank" class="l-cf" title="Cifra Club"><i class="fas fa-guitar"></i></a>
                         <a href="https://www.letras.mus.br/?q=${queryBusca}" target="_blank" class="l-lt" title="Letras.mus"><i class="fas fa-align-left"></i></a>
                     </div>
-                </div>
                 ${estouEscalado ? `
                 <button class="btn-del-musica" 
-                    onclick="excluirMusica('${nomeMusica.replace(/'/g, "\\'")}', '${(m.Culto || "").replace(/'/g, "\\'")}|${m.Data}', '${cantor.replace(/'/g, "\\'")}')" title="Excluir">
+                    onclick="excluirMusica('${nomeMusica.replace(/'/g, "\\'")}', '${(m.Culto || "").replace(/'/g, "\\'")}|${m.Data}', '${cantor.replace(/'/g, "\\'")}')" 
+                    style="position: static; margin: 0; padding: 5px;"
+                    title="Excluir">
                     <i class="fas fa-trash-alt"></i>
                 </button>` : ''}
+                </div>
             </div>`;
         }).join('')}
     ` : '<span style="color:#ccc; font-size:0.85rem">Aguardando repertório...</span>'}
@@ -290,11 +289,17 @@ function renderMaster(escalas, musicas = [], lembretes = []) {
 }
 
 // --- FUNÇÕES DE HISTÓRICO BULK ---
-function processarBulk(btn, event) {
-    event.stopPropagation(); // Evita que o accordion feche ao clicar no botÃ£o
-    const item = btn.closest('.accordion-item');
-    const musicas = item.dataset.musicas;
-    addBulkHistorico(btn, musicas);
+function processarBulk(btn, eventOrInfo) {
+    // Se vier do botão da lista, eventOrInfo é o Evento
+    if (eventOrInfo && eventOrInfo.stopPropagation) {
+        eventOrInfo.stopPropagation();
+        const item = btn.closest('.accordion-item');
+        const musicas = item.dataset.musicas;
+        addBulkHistorico(btn, musicas);
+    } else {
+        // Fallback se for chamado diretamente (como no calendário antigo)
+        addBulkHistorico(btn, eventOrInfo);
+    }
 }
 
 async function addBulkHistorico(btn, jsonStr) {
@@ -445,13 +450,10 @@ function filterEscala() {
     });
 }
 
-function navigateToAddRepertorio(culto) {
-    const searchVal = document.getElementById('searchInput').value;
-    // Adjusted path for Musicas folder
-    let url = `../../Musicas/HTML/Cadastro de Repertorio.html?culto=${encodeURIComponent(culto)}`;
-    const sourceUrl = `../../Escalas/HTML/Escalas.html?search=${encodeURIComponent(searchVal)}`;
-    url += `&source=${encodeURIComponent(sourceUrl)}`;
-    window.location.href = url;
+function confirmarTema() {
+    localStorage.setItem('tema_escolhido_id', tempThemeId);
+    toggleThemePanel();
+    if (window.aplicarTemaAtual) aplicarTemaAtual();
 }
 
 function confirmarTema() {

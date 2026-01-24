@@ -40,6 +40,31 @@
     </div>
   </div>
 
+  <style>
+    body.is-modal {
+      padding-top: 20px !important;
+      background: white !important;
+    }
+
+    body.is-modal .header-bar {
+      display: none !important;
+    }
+
+    body.is-modal .premium-container {
+      padding: 0 !important;
+    }
+
+    body.is-modal .premium-card {
+      box-shadow: none !important;
+      border: none !important;
+    }
+  </style>
+  <script>
+    if (new URLSearchParams(window.location.search).get('modal') === 'true') {
+      document.body.classList.add('is-modal');
+    }
+  </script>
+
   <div id="themePanel" class="theme-panel">
     <h3>Escolha um Tema</h3>
     <div class="theme-buttons" id="themeButtonsGrid"></div>

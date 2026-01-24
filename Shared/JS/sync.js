@@ -24,52 +24,50 @@ const SyncManager = {
     },
 
     async processQueue() {
-        if (!navigator.onLine) return;
+        if (!navigator.onLine || this.isProcessing) return;
+
         let queue = this.getQueue();
         if (queue.length === 0) return;
 
-        console.log(`🔄 Sincronizando ${queue.length} itens...`);
-        const item = queue[0];
+        this.isProcessing = true;
 
-        // CORREÇÃO DE EMERGÊNCIA: Injetar 'action' se estiver faltando (para itens antigos na fila)
-        if (item.data.sheet === 'Repertório_PWA' && !item.data.action) {
-            console.warn("🔧 Reparando item sem ação na fila...");
-            item.data.action = 'addRow';
-        }
-
-        console.log("📡 Enviando payload para o servidor:", item.data);
         try {
-            const response = await fetch(APP_CONFIG.SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify(item.data)
-            });
-            const res = await response.json();
+            while (queue.length > 0) {
+                const item = queue[0];
+                console.log(`🔄 Sincronizando item ${item.id}... Restantes: ${queue.length}`);
 
-            // Aceitar "success" ou remover item se der erro fatal para não travar a fila
-            if (res.status === "success" || res.status === "error") {
-                if (res.status === "error") console.error("Erro no servidor:", res.message);
-
-                queue.shift();
-                localStorage.setItem(this.QUEUE_KEY, JSON.stringify(queue));
-                if (queue.length > 0) {
-                    this.processQueue();
-                } else {
-                    console.log("Sincronização concluída!");
-                    window.dispatchEvent(new CustomEvent('syncCompleted'));
+                // CORREÇÃO DE EMERGÊNCIA: Injetar 'action' se estiver faltando
+                if (item.data.sheet === 'Repertório_PWA' && !item.data.action) {
+                    item.data.action = 'addRow';
                 }
-            } else {
-                // Resposta desconhecida, remove para destravar fila
-                console.warn("Resposta desconhecida, removendo item da fila:", res);
-                queue.shift();
-                localStorage.setItem(this.QUEUE_KEY, JSON.stringify(queue));
+
+                try {
+                    const response = await fetch(APP_CONFIG.SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify(item.data)
+                    });
+                    const res = await response.json();
+
+                    if (res.status === "success" || res.status === "error") {
+                        if (res.status === "error") console.error("Erro no servidor:", res.message);
+
+                        // Remove item processado
+                        queue.shift();
+                        localStorage.setItem(this.QUEUE_KEY, JSON.stringify(queue));
+                        console.log("✅ Item processado com sucesso.");
+                    } else {
+                        throw new Error("Resposta inválida");
+                    }
+                } catch (e) {
+                    console.error("❌ Falha no item, removendo para não travar fila:", e);
+                    queue.shift();
+                    localStorage.setItem(this.QUEUE_KEY, JSON.stringify(queue));
+                }
             }
-        } catch (e) {
-            console.log("❌ Falha na sincronização:", e);
-            // Se for erro de sintaxe (JSON invalido do servidor) ou erro de script, remove item
-            if (e.name === "SyntaxError" || (e.message && e.message.includes("Unexpected token"))) {
-                queue.shift();
-                localStorage.setItem(this.QUEUE_KEY, JSON.stringify(queue));
-            }
+            console.log("🏁 Sincronização da fila concluída.");
+            window.dispatchEvent(new CustomEvent('syncCompleted'));
+        } finally {
+            this.isProcessing = false;
         }
     },
 

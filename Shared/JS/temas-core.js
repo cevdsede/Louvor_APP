@@ -29,7 +29,9 @@ function aplicarTemaAtual() {
         '--card-shadow': tema.shadow || '0 4px 15px rgba(0,0,0,0.05)',
         '--card-border': tema.border || 'none',
         '--backdrop-blur': tema.blur || 'none',
-        '--header-text': tema.headerText || tema.text || '#1e293b'
+        '--header-text': tema.headerText || tema.text || '#1e293b',
+        '--input-bg': (tema.nome.includes("Dark") || tema.nome.includes("Cyber")) ? 'rgba(255,255,255,0.05)' : '#f8fafc',
+        '--input-border': tema.border || '1px solid rgba(0,0,0,0.08)'
     };
 
     Object.entries(vars).forEach(([key, value]) => root.style.setProperty(key, value));
@@ -78,6 +80,13 @@ function aplicarTemaAtual() {
             background: var(--primary) !important;
             border-radius: var(--border-radius) !important;
             color: #ffffff !important;
+        }
+
+        .premium-input, .ts-control {
+            background: var(--input-bg) !important;
+            border: var(--input-border) !important;
+            color: var(--text-primary) !important;
+            border-radius: 12px !important;
         }
     `;
 

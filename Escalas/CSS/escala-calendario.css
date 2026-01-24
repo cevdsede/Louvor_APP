@@ -225,7 +225,7 @@ body {
     border-color: var(--accent);
 }
 
-.search-box i {
+.search-box .fa-search {
     position: absolute;
     left: 18px;
     top: 14px;
@@ -454,39 +454,49 @@ body {
     opacity: 0.8;
 }
 
+#exportItems {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+}
+
 .export-item {
     background: rgba(255, 255, 255, 0.1);
-    margin-bottom: 10px;
+    margin-bottom: 0;
     padding: 12px;
-    border-radius: 8px;
+    border-radius: 12px;
     border-left: 4px solid var(--accent);
+    flex: 1 1 180px;
+    /* Alinha em colunas se houver espaço */
+    max-width: 250px;
+    text-align: left;
 }
 
-.export-date {
-    font-weight: bold;
-    font-size: 0.85rem;
-    color: var(--accent);
+.export-culto-data {
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: white;
+    display: block;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 4px;
     margin-bottom: 4px;
-    display: block;
-}
-
-.export-culto {
-    font-size: 1rem;
-    display: block;
 }
 
 .export-funcao {
     font-size: 0.8rem;
-    opacity: 0.7;
-    margin-top: 3px;
+    opacity: 0.9;
+    color: var(--accent);
+    font-weight: 600;
     display: block;
 }
 
 .export-footer {
     text-align: center;
-    margin-top: 20px;
-    font-size: 0.7rem;
-    opacity: 0.5;
+    margin-top: 30px;
+    font-size: 0.75rem;
+    opacity: 0.6;
+    width: 100%;
 }
 
 .btn-export {

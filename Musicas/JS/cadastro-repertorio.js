@@ -102,16 +102,14 @@ function filtrarEscala(cultoNome) {
     // Atualiza link de Adicionar MÃºsica para manter o estado
     const link = document.getElementById('linkAddMusica');
     if (link) {
-        // Pega query params atuais
-        const urlParams = new URLSearchParams(window.location.search);
-        const source = urlParams.get('source');
-
-        if (source) {
-            const currentUrl = `Cadastro de Repertorio.html?culto=${encodeURIComponent(cultoNome || '')}&source=${encodeURIComponent(source)}`;
-            link.href = `Cadastro de Musicas.html?culto=${encodeURIComponent(cultoNome || '')}&source=${encodeURIComponent(currentUrl)}`;
-        } else {
-            link.href = `Cadastro de Musicas.html?culto=${encodeURIComponent(cultoNome || '')}&source=Cadastro%20de%20Repertorio.html`;
-        }
+        // Agora o link abre no mesmo iframe ou informa o pai
+        link.onclick = (e) => {
+            e.preventDefault();
+            const isModal = document.body.classList.contains('is-modal') || new URLSearchParams(window.location.search).get('modal') === 'true';
+            let nextUrl = `Cadastro de Musicas.html?culto=${encodeURIComponent(cultoNome || '')}&source=Cadastro%20de%20Repertorio.html`;
+            if (isModal) nextUrl += '&modal=true';
+            window.location.href = nextUrl;
+        };
     }
 
     if (!cultoNome) return;
@@ -199,6 +197,11 @@ document.getElementById('repertorioForm').addEventListener('submit', function (e
     // Sincronização e Feedback
     SyncManager.updateLocalCache("Repertório_PWA", "add", formData);
     SyncManager.addToQueue(payload);
+
+    // Notifica a página pai para atualizar os dados em background
+    if (window.parent) {
+        window.parent.postMessage({ action: 'saved' }, '*');
+    }
 
     status.innerHTML = "<span class='btn-premium' style='background:var(--accent-green); display:inline-block; padding:10px 20px; border-radius:8px;'>✅ Música Salva!</span>";
     status.style.display = "block";

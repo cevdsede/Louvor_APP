@@ -56,7 +56,7 @@ async function performFetches(progressCb) {
         if (data1 && data1.data) localStorage.setItem('offline_escala', JSON.stringify(data1.data));
 
         progressCb(30, "Repertório...");
-        const res2 = await fetch(SCRIPT_URL + "?sheet=Repertório");
+        const res2 = await fetch(SCRIPT_URL + "?sheet=Repertório_PWA");
         const data2 = await res2.json();
         if (data2 && data2.data) localStorage.setItem('offline_repertorio', JSON.stringify(data2.data));
 

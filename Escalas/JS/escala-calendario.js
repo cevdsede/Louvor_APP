@@ -1,240 +1,169 @@
 const SCRIPT_URL = APP_CONFIG.SCRIPT_URL;
 
 let globalEscalas = [];
-let globalRepertorio = {};
+let globalRepertorio = [];
 let globalLembretes = [];
-const iconsMap = {
-    "Ministro": "fa-microphone-lines",
-    "Back": "fa-microphone",
-    "Violão": "fa-guitar",
-    "Guitarra": "fa-guitar",
-    "Teclado": "fa-keyboard",
-    "Bateria": "fa-drum",
-    "Baixo": "fa-guitar"
-};
 
-function safeParse(jsonString, fallback = []) {
-    try {
-        if (!jsonString || jsonString === "undefined" || jsonString === "null") return fallback;
-        return JSON.parse(jsonString);
-    } catch (e) {
-        console.warn("JSON Parse Error:", e);
-        return fallback;
-    }
-}
+// Mapeamento de ícones por categoria
+const iconsMap = {
+    'Violão': 'fa-guitar',
+    'Guitarra': 'fa-guitar',
+    'Baixo': 'fa-drum-steelpan',
+    'Bateria': 'fa-drum',
+    'Teclado': 'fa-keyboard',
+    'Vocal': 'fa-microphone',
+    'Ministro': 'fa-crown',
+    'Líder': 'fa-crown',
+    'Som': 'fa-sliders',
+    'Mesa': 'fa-sliders',
+    'Data Show': 'fa-desktop',
+    'Transmissão': 'fa-video',
+    'Mídia': 'fa-camera'
+};
 
 async function loadData(force = false) {
     const loader = document.getElementById('loader');
+    const container = document.getElementById('calendarsContainer');
+    const btnExport = document.getElementById('btnExport');
+
+    // 1. Prioridade: Local Storage (Carregamento Imediato)
     const cachedE = localStorage.getItem('offline_escala');
     const cachedR = localStorage.getItem('offline_repertorio');
     const cachedL = localStorage.getItem('offline_lembretes');
 
-    const escalaData = safeParse(cachedE);
-    const repertorioData = safeParse(cachedR); // Returns [] object/array, but processRepertorio might expect object?
-    const lembretesData = safeParse(cachedL);
-
-    if (!force && escalaData.length > 0) {
-        globalEscalas = escalaData;
-        globalLembretes = lembretesData;
-        processRepertorio(repertorioData);
-        document.getElementById('calendarsContainer').style.display = 'flex';
+    if (!force && cachedE) {
+        globalEscalas = JSON.parse(cachedE);
+        globalRepertorio = JSON.parse(cachedR || '[]');
+        globalLembretes = JSON.parse(cachedL || '[]');
         renderCalendars();
-        setTimeout(() => silentSync(), 500);
+        container.style.display = 'flex';
+        btnExport.style.display = 'flex';
+        // Faz um sync silencioso em segundo plano para atualizar
+        setTimeout(() => silentSync(), 1000);
         return;
     }
 
     loader.style.display = 'block';
+    container.style.display = 'none';
+
     try {
-        const [resE, resR, resL] = await Promise.all([
-            fetch(SCRIPT_URL + "?sheet=Transformar"),
-            fetch(SCRIPT_URL + "?sheet=Repertório_PWA"),
-            fetch(SCRIPT_URL + "?sheet=Lembretes")
-        ]);
-        const jsonE = await resE.json();
-        const jsonR = await resR.json();
-        const jsonL = await resL.json();
-
-        globalEscalas = jsonE.data;
-        globalLembretes = jsonL.data;
-        processRepertorio(jsonR.data);
-
-        localStorage.setItem('offline_escala', JSON.stringify(jsonE.data));
-        localStorage.setItem('offline_repertorio', JSON.stringify(jsonR.data));
-        localStorage.setItem('offline_lembretes', JSON.stringify(jsonL.data));
-
-        loader.style.display = 'none';
-        document.getElementById('calendarsContainer').style.display = 'flex';
+        await silentSync(); // Reusa a lógica de fetch
         renderCalendars();
-        if (force) alert("Dados atualizados!");
+        container.style.display = 'flex';
+        btnExport.style.display = 'flex';
     } catch (e) {
-        loader.innerText = "Erro ao carregar dados.";
+        console.error("Erro ao carregar dados:", e);
+        if (!cachedE) alert("Erro ao conectar com o servidor.");
+    } finally {
+        loader.style.display = 'none';
     }
 }
 
 async function silentSync() {
     try {
-        const [resE, resR, resL] = await Promise.all([
+        const [respE, respR, respL] = await Promise.all([
             fetch(SCRIPT_URL + "?sheet=Transformar"),
-            fetch(SCRIPT_URL + "?sheet=Repertório"),
+            fetch(SCRIPT_URL + "?sheet=Repertório_PWA"),
             fetch(SCRIPT_URL + "?sheet=Lembretes")
         ]);
-        const jsonE = await resE.json();
-        const jsonR = await resR.json();
-        const jsonL = await resL.json();
+
+        const [jsonE, jsonR, jsonL] = await Promise.all([respE.json(), respR.json(), respL.json()]);
 
         globalEscalas = jsonE.data;
+        globalRepertorio = jsonR.data;
         globalLembretes = jsonL.data;
 
-        localStorage.setItem('offline_escala', JSON.stringify(jsonE.data));
-        localStorage.setItem('offline_repertorio', JSON.stringify(jsonR.data));
-        localStorage.setItem('offline_lembretes', JSON.stringify(jsonL.data));
+        localStorage.setItem('offline_escala', JSON.stringify(globalEscalas));
+        localStorage.setItem('offline_repertorio', JSON.stringify(globalRepertorio));
+        localStorage.setItem('offline_lembretes', JSON.stringify(globalLembretes));
 
-        const modalOpen = document.getElementById('eventModal').style.display === 'block';
-        if (document.getElementById('personSearch').value === "" && !modalOpen) {
-            processRepertorio(jsonR.data);
+        // Se não houver busca ativa, re-renderiza com dados novos
+        if (!document.getElementById('personSearch').value) {
             renderCalendars();
         }
-    } catch (e) { console.log("Silent sync failed"); }
-}
-
-function processRepertorio(data) {
-    // Armazena raw para filtragem dinâmica
-    globalRepertorio = data || [];
+    } catch (e) {
+        console.warn("Silent sync failed", e);
+    }
 }
 
 function renderCalendars() {
     const now = new Date();
-    // Render Current Month
-    renderMonth(now, 'month1');
+    const months = [];
 
-    // Render Next Month
-    const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    renderMonth(next, 'month2');
+    for (let i = 0; i < 2; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+        months.push({
+            month: d.getMonth(),
+            year: d.getFullYear(),
+            containerId: `month${i + 1}`
+        });
+    }
+
+    months.forEach(m => {
+        const el = document.getElementById(m.containerId);
+        el.innerHTML = generateCalendarHTML(m.year, m.month);
+    });
 }
 
-function renderMonth(date, containerId) {
-    const container = document.getElementById(containerId);
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const searchTerm = document.getElementById('personSearch').value.toLowerCase().trim();
-
-    let html = `
-  <div class="cal-header"><h2>${new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(date)}</h2></div>
-  <div class="calendar-grid">
-`;
-
-    ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].forEach(d => html += `<div class="day-name">${d}</div>`);
-
+function generateCalendarHTML(year, month) {
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const monthName = new Date(year, month).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
-    for (let i = 0; i < firstDay; i++) html += `<div></div>`;
+    const search = document.getElementById('personSearch').value.toLowerCase().trim();
 
-    for (let d = 1; d <= daysInMonth; d++) {
-        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        const dayEscalas = globalEscalas.filter(e => e.Data.split('T')[0] === dateStr);
-        const nomesNoDia = [...new Set(dayEscalas.map(e => e.Nome))];
-        const isMatch = searchTerm !== "" && nomesNoDia.some(n => n.toLowerCase().includes(searchTerm));
+    let html = `<h3>${monthName.toUpperCase()}</h3>`;
+    html += `<div class="calendar-grid">
+        <div class="day-name">Dom</div><div class="day-name">Seg</div><div class="day-name">Ter</div>
+        <div class="day-name">Qua</div><div class="day-name">Qui</div><div class="day-name">Sex</div>
+        <div class="day-name">Sáb</div>`;
 
-        let classes = `day ${dayEscalas.length > 0 ? 'has-event' : ''} ${isMatch ? 'match-person' : ''}`;
+    for (let i = 0; i < firstDay; i++) {
+        html += `<div class="day empty"></div>`;
+    }
 
-        // Convert to string for onclick (careful with quotes)
-        // Storing data in a global map might be cleaner, but simple approach:
-        const onclick = dayEscalas.length ? `openDetails('${dateStr}')` : '';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const escalasDoDia = globalEscalas.filter(e => e.Data.split('T')[0] === dateStr);
+        const hasEscala = escalasDoDia.length > 0;
+
+        let matchesSearch = false;
+        let namesToDisplay = [];
+
+        if (search) {
+            const filtered = escalasDoDia.filter(e =>
+                (e.Nome && e.Nome.toLowerCase().includes(search)) ||
+                (e.Função && e.Função.toLowerCase().includes(search))
+            );
+            matchesSearch = filtered.length > 0;
+            namesToDisplay = [...new Set(filtered.map(e => e.Nome))];
+        } else {
+            namesToDisplay = [...new Set(escalasDoDia.map(e => e.Nome))];
+        }
+
+        const isToday = today.getTime() === new Date(dateStr + "T12:00:00").getTime();
+
+        let classList = "day";
+        if (hasEscala) classList += " has-event";
+        if (isToday) classList += " today";
+        if (search && matchesSearch) classList += " match-person";
+        if (search && !matchesSearch && hasEscala) classList += " dimmed";
 
         html += `
-    <div class="${classes}" onclick="${onclick}">
-      <span class="day-number">${d}</span>
-      <div class="event-preview">
-        ${nomesNoDia.slice(0, 3).map(n => `<span class="event-name">${n.split(' ')[0]}</span>`).join('')}
-      </div>
-    </div>
-  `;
+        <div class="${classList}" onclick="openDetails('${dateStr}')">
+            <span class="day-number">${day}</span>
+            <div class="event-preview">
+                ${namesToDisplay.slice(0, 2).map(n => `<span class="event-name">${n.split(' ')[0]}</span>`).join('')}
+                ${namesToDisplay.length > 2 ? `<span class="event-name">...</span>` : ''}
+            </div>
+        </div>`;
     }
 
     html += `</div>`;
-    container.innerHTML = html;
-
-    // Mostrar/Esconder botão de exportar
-    const btnExport = document.getElementById('btnExport');
-    if (searchTerm.length > 2) {
-        btnExport.style.display = 'flex';
-    } else {
-        btnExport.style.display = 'none';
-    }
-}
-
-async function exportarEscala() {
-    const searchTerm = document.getElementById('personSearch').value.trim();
-    if (!searchTerm) return;
-
-    const template = document.getElementById('exportTemplate');
-    const itemsContainer = document.getElementById('exportItems');
-    const userName = document.getElementById('exportUserName');
-
-    userName.innerText = searchTerm.toUpperCase();
-    itemsContainer.innerHTML = '';
-
-    // Filtra todas as escalas do usuário
-    const minhasEscalas = globalEscalas.filter(e => e.Nome.toLowerCase().includes(searchTerm.toLowerCase()));
-
-    if (minhasEscalas.length === 0) {
-        alert("Nenhuma escala encontrada para este nome.");
-        return;
-    }
-
-    // Ordena por data
-    minhasEscalas.sort((a, b) => new Date(a.Data) - new Date(b.Data));
-
-    // Limita Ã s próximas 10 para não ficar gigante
-    minhasEscalas.slice(0, 10).forEach(e => {
-        // CorreÃ§Ã£o de parsing de data: pega apenas a parte YYYY-MM-DD
-        const dataBase = e.Data.includes('T') ? e.Data.split('T')[0] : e.Data;
-        const d = new Date(dataBase + "T12:00:00");
-
-        const dataFormatada = isNaN(d.getTime()) ? "DATA INVÃ LIDA" : d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace(',', '');
-
-        const item = document.createElement('div');
-        item.className = 'export-item';
-        item.innerHTML = `
-    <span class="export-date">${dataFormatada.toUpperCase()}</span>
-    <span class="export-culto">${e["Nome dos Cultos"]}</span>
-    <span class="export-funcao">${e.Função}</span>
-  `;
-        itemsContainer.appendChild(item);
-    });
-
-    // Gera a imagem
-    const btn = document.getElementById('btnExport');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-sync fa-spin"></i>';
-    btn.disabled = true;
-
-    try {
-        // Pequeno delay para garantir que o DOM renderizou o template
-        await new Promise(r => setTimeout(r, 100));
-
-        const canvas = await html2canvas(template, {
-            backgroundColor: '#2c3e50',
-            scale: 2, // Melhor qualidade
-            useCORS: true
-        });
-
-        // Converte para link e baixa/compartilha
-        const image = canvas.toDataURL("image/png");
-        const link = document.createElement('a');
-        link.download = `Escala_${searchTerm}.png`;
-        link.href = image;
-        link.click();
-
-        alert("Imagem gerada com sucesso!");
-    } catch (err) {
-        console.error(err);
-        alert("Erro ao gerar imagem.");
-    } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    }
+    return html;
 }
 
 window.openDetails = function (dateStr) {
@@ -244,48 +173,35 @@ window.openDetails = function (dateStr) {
     document.getElementById('modalDate').innerText = d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
 
     const cultos = dayEscalas.reduce((acc, item) => {
-        // Agrupar por "Nome dos Cultos" (já que estamos dentro de um dia específico)
         const key = item["Nome dos Cultos"];
         if (!acc[key]) acc[key] = { info: item, membros: [] };
         acc[key].membros.push(item);
         return acc;
     }, {});
 
+    const userToken = JSON.parse(localStorage.getItem('user_token') || '{}');
+    const meuNomeLogado = (userToken.Nome || "").toLowerCase().trim();
+    const isAdmin = userToken.Role === "Admin" || userToken.Role === "Lider";
+    const normalize = str => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const nomeNormalizado = normalize(meuNomeLogado);
+
     details.innerHTML = Object.values(cultos).map(c => {
         const musicas = (Array.isArray(globalRepertorio) ? globalRepertorio : []).filter(m => {
             if (!m.Data || !m.Culto) return false;
-
-            // 1. Normaliza a data da Escala (Vem do Transformar)
-            const dataEscalaISO = c.info.Data.split('T')[0];
-
-            // 2. Normaliza a data do Repertório (Vem do Repertório_PWA)
-            // Se a data vier formatada (DD/MM/YYYY), convertemos para ISO
-            let dataRepertorioISO = "";
-            if (m.Data.includes('/')) {
-                const parts = m.Data.split('/');
-                dataRepertorioISO = `${parts[2]}-${parts[1]}-${parts[0]}`;
-            } else {
-                dataRepertorioISO = m.Data.split('T')[0];
-            }
-
-            // 3. Compara Data e Nome do Culto (removendo espaços extras)
-            const matchData = dataRepertorioISO === dataEscalaISO;
+            const normalizeDate = (d) => {
+                if (d.includes('/')) {
+                    const p = d.split('/');
+                    return `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+                }
+                return d.split('T')[0];
+            };
+            const matchData = normalizeDate(c.info.Data) === normalizeDate(m.Data);
             const matchNome = m.Culto.trim().toLowerCase() === c.info["Nome dos Cultos"].trim().toLowerCase();
-
             return matchData && matchNome;
         });
 
-        // Verifica se o usuário logado estÃ¡ escalado neste culto
-        const userToken = JSON.parse(localStorage.getItem('user_token') || '{}');
-        const meuNomeLogado = (userToken.Nome || "").toLowerCase().trim();
-        const isAdmin = userToken.Role === "Admin" || userToken.Role === "Lider";
-
-        // Helper para normalizar nomes
-        const normalize = str => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-        const nomeNormalizado = normalize(meuNomeLogado);
-
-        const estouEscalado = (nomeNormalizado && c.membros.some(m => {
-            const mNome = normalize(m.Nome);
+        const estouEscalado = !!(nomeNormalizado && c.membros.some(m => {
+            const mNome = normalize(m.Nome || "");
             return mNome.includes(nomeNormalizado) || nomeNormalizado.includes(mNome);
         }));
 
@@ -295,7 +211,7 @@ window.openDetails = function (dateStr) {
           <span><i class="fas fa-church"></i> ${c.info["Nome dos Cultos"]}</span>
           <div style="display:flex; gap:5px;">
             ${estouEscalado ? `
-              <button onclick="navigateToAddRepertorio('${c.info["Nome dos Cultos"]}|${c.info.Data}')" style="background:white; color:#e74c3c; border:none; padding:4px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer;" title="Repertório">
+              <button onclick="openNativeRepertorio('${c.info["Nome dos Cultos"]}|${c.info.Data}')" style="background:white; color:#e74c3c; border:none; padding:4px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer;" title="Repertório">
                 <i class="fas fa-music"></i>
               </button>
               <button onclick="comunicarAusencia('${c.info.Data.split('T')[0]}', '${c.info["Nome dos Cultos"]}', event)" style="background:#e74c3c; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer;" title="Aviso">
@@ -307,11 +223,8 @@ window.openDetails = function (dateStr) {
        <div class="culto-body">
          <div style="font-weight:bold; margin-bottom:5px; color:#aaa; font-size:0.7rem">EQUIPE</div>
 ${c.membros.map(m => {
-            // Pega a primeira palavra da funÃ§Ã£o para definir a cor (ex: "Violão" de "Violão 1")
-            const categoria = m.Função.split(' ')[0].trim();
-            // Busca o desenho do ícone no mapa
+            const categoria = (m.Função || "").split(' ')[0].trim();
             const iconeBase = iconsMap[categoria] || 'fa-user';
-
             return `
 <div class="member-item">
   <span>
@@ -349,37 +262,54 @@ ${c.membros.map(m => {
            </div>
           ` : ''}
 
-         <div style="font-weight:bold; margin-top:10px; margin-bottom:5px; color:#aaa; font-size:0.7rem; display:flex; justify-content:space-between; align-items:center;">
-           <span>REPERTÓRIO</span>
+         <div style="font-weight:bold; margin-top:10px; margin-bottom:5px; color:#aaa; font-size:0.7rem;">
+            REPERTÓRIO
          </div>
 
-${musicas.length > 0 ? `
-    <button class="btn-add-bulk" 
-            style="margin-bottom:10px; width:100%; background:#2ecc71; color:white; border:none; padding:8px; border-radius:8px; font-size:0.8rem; cursor:pointer;" 
-            onclick="processarBulk(this, '${c.info["Nome dos Cultos"]}|${c.info.Data}')">
-        <i class="fas fa-history"></i> Add Histórico
-    </button>
-` : ''}
+         ${(musicas.length > 0 && estouEscalado) ? `
+            <button class="btn-add-bulk" 
+                    style="margin-bottom:10px; width:100%; background:#2ecc71; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:0.75rem;" 
+                    onclick="processarBulk(this, '${encodeURIComponent(JSON.stringify(musicas.map(m => ({
+            ministro: m.Ministro || 'Líder não definido',
+            musicaCantor: (m.Músicas && m.Cantor) ? `${m.Músicas} - ${m.Cantor}` : (m.Músicas || 'Sem Título'),
+            tom: m.Tons || '--'
+        }))))}')">
+                <i class="fas fa-history"></i> Add Histórico
+            </button>
+         ` : ''}
 
-${musicas.map(m => {
-            // Garante que não quebre se Músicas ou Cantor forem undefined
+         ${musicas.map(m => {
             const nomeMusica = m.Músicas || "Sem título";
-            const nomeCantor = m.Cantor || "";
-            const termoBusca = encodeURIComponent(`${nomeMusica} ${nomeCantor}`);
+            const nomeCantor = m.Cantor || "Artista Desconhecido";
+            const ministro = m.Ministro || "Líder não definido";
+            const queryBusca = encodeURIComponent(nomeMusica);
+            const querySpotify = encodeURIComponent(`${nomeMusica} ${nomeCantor}`);
 
             return `
-    <div class="musica-item">
-        <div style="font-weight:bold">${nomeMusica} ${nomeCantor ? ' - ' + nomeCantor : ''}</div>
-        <div style="font-size:0.75rem; color:#666; margin-top:2px">Tom: <b>${m.Tons || '--'}</b></div>
-        <div class="m-links">
-                <a href="https://www.youtube.com/results?search_query=${termoBusca}" target="_blank" class="l-yt" title="YouTube"><i class="fab fa-youtube"></i></a>
-                <a href="https://open.spotify.com/search/${termoBusca}" target="_blank" class="l-sp" title="Spotify"><i class="fab fa-spotify"></i></a>
-                <a href="https://www.cifraclub.com.br/?q=${termoBusca}" target="_blank" class="l-cf" title="Cifra Club"><i class="fas fa-guitar"></i></a>
-                <a href="https://www.letras.mus.br/?q=${termoBusca}" target="_blank" class="l-lt" title="Letras.mus"><i class="fas fa-align-left"></i></a>
+            <div class="musica-item">
+              <div class="m-nome-musica" style="font-weight: bold; font-size: 0.9rem;">${nomeMusica} - ${nomeCantor}</div>
+              <div class="m-mid-row" style="display: flex; justify-content: space-between; align-items: center; margin: 4px 0; font-size: 0.75rem;">
+                <span class="m-ministro"><i class="fas fa-user-voice" style="font-size: 9px; opacity: 0.7;"></i> ${ministro}</span>
+                <span class="m-tom" style="font-weight: bold; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 4px;">${m.Tons || '--'}</span>
+              </div>
+              <div class="m-footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
+                <div class="m-links" style="margin: 0; display: flex; gap: 8px;">
+                  <a href="https://www.youtube.com/results?search_query=${queryBusca}" target="_blank" class="l-yt" title="YouTube"><i class="fab fa-youtube"></i></a>
+                  <a href="https://open.spotify.com/search/${querySpotify}" target="_blank" class="l-sp" title="Spotify"><i class="fab fa-spotify"></i></a>
+                  <a href="https://www.cifraclub.com.br/?q=${queryBusca}" target="_blank" class="l-cf" title="Cifra Club"><i class="fas fa-guitar"></i></a>
+                  <a href="https://www.letras.mus.br/?q=${queryBusca}" target="_blank" class="l-lt" title="Letras.mus"><i class="fas fa-align-left"></i></a>
+                </div>
+                ${estouEscalado ? `
+                <button class="btn-del-musica" 
+                    onclick="excluirMusica('${nomeMusica.replace(/'/g, "\\'")}', '${(m.Culto || "").replace(/'/g, "\\'")}|${m.Data}', '${nomeCantor.replace(/'/g, "\\'")}')" 
+                    style="position: static; margin: 0; padding: 5px; background:transparent; border:none; color:#e74c3c; cursor:pointer;"
+                    title="Excluir">
+                    <i class="fas fa-trash-alt"></i>
+                </button>` : ''}
               </div>
             </div>`;
         }).join('') || '<div style="color:#ccc; font-size:0.8rem">Sem músicas.</div>'}
-           </div>
+       </div>
      </div>`;
     }).join('');
 
@@ -387,32 +317,37 @@ ${musicas.map(m => {
 }
 
 window.onload = () => loadData();
-async function processarBulk(btn, info) {
-    if (!confirm("Deseja adicionar todas as músicas deste culto ao histórico?")) return;
 
-    const originalText = btn.innerHTML;
+async function processarBulk(btn, encodedData) {
+    if (!confirm("Adicionar todas as músicas deste culto ao histórico? (Duplicatas serão ignoradas)")) return;
+
+    const lista = JSON.parse(decodeURIComponent(encodedData));
+    const originalContent = btn.innerHTML;
+
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
-
-    // Aqui você chama sua API passando o 'info' (Culto|Data)
-    // para que o backend localize as músicas e as salve na tabela de histórico.
 
     try {
-        // Exemplo de chamada:
-        // await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'addHistorico', data: info }) });
-        alert("✅ Histórico atualizado!");
+        const res = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "addHistory", data: lista })
+        });
+        const dados = await res.json();
+        alert(dados.message || "Conclído!");
+        btn.innerHTML = '<i class="fas fa-check"></i> Concluído';
+        btn.style.background = "#2c3e50";
     } catch (e) {
-        alert("❌ Erro ao processar.");
-    } finally {
+        console.error(e);
+        alert("Erro na conexão ou no servidor.");
+        btn.innerHTML = originalContent;
         btn.disabled = false;
-        btn.innerHTML = originalText;
     }
 }
+
 function comunicarAusencia(dataCulto, nomeCulto, event) {
     if (event) event.stopPropagation();
     const fullDisplay = `${nomeCulto} (${dataCulto})`;
     document.getElementById('displayCultoAviso').innerText = fullDisplay;
-    // Armazena separados para facilitar reconstrução se precisar
     document.getElementById('inputCultoData').value = dataCulto;
     document.getElementById('inputCultoNome').value = nomeCulto;
     document.getElementById('modalAvisoMembro').style.display = 'flex';
@@ -433,9 +368,6 @@ async function enviarAvisoMembro() {
     const userToken = JSON.parse(localStorage.getItem('user_token') || '{}');
     const meuLogin = userToken.Login || userToken.User || "membro";
     const id_Lembrete = 'AVISO-' + Math.random().toString(16).substr(2, 8);
-
-    // Formato para salvar IDÊNTICO ao Escalas.html?
-    // Lá salva: Culto: "Nome (Data)"
     const cultoFormatted = `${nomeCulto} (${dataCulto})`;
 
     const payload = {
@@ -451,6 +383,7 @@ async function enviarAvisoMembro() {
     };
 
     const btn = document.getElementById('btnEnviarAvisoMembro');
+    const originalText = btn.innerText;
     btn.disabled = true;
     btn.innerText = "ENVIANDO...";
 
@@ -471,7 +404,7 @@ async function enviarAvisoMembro() {
         alert("Erro de conexão.");
     } finally {
         btn.disabled = false;
-        btn.innerText = "ENVIAR AVISO";
+        btn.innerText = originalText;
     }
 }
 
@@ -485,19 +418,116 @@ async function excluirAviso(id_Aviso, event) {
         });
         const res = await response.json();
         if (res.status === "success") { alert("✅ Removido!"); loadData(true); }
-    } catch (e) { alert("â Œ Erro."); }
+    } catch (e) { alert("❌ Erro."); }
 }
 
-function navigateToAddRepertorio(culto) {
-    // Preserves current calendar state
-    let url = `../../Musicas/HTML/Cadastro de Repertorio.html?culto=${encodeURIComponent(culto)}`;
-    const sourceUrl = `../../Escalas/HTML/Calendario.html`; // Fixed path
-    url += `&source=${encodeURIComponent(sourceUrl)}`;
-    window.location.href = url;
+async function excluirMusica(musica, cultoData, cantor) {
+    if (!confirm(`Deseja remover "${musica}" do repertório?`)) return;
+
+    const [nomeCulto, dataCompleta] = cultoData.split('|');
+
+    try {
+        const payload = {
+            action: "delete",
+            sheet: "Repertório_PWA",
+            Músicas: musica,
+            Culto: nomeCulto,
+            Data: dataCompleta
+        };
+
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+
+        const res = await response.json();
+        if (res.status === "success") {
+            alert("✅ Removido!");
+            loadData(true);
+            document.getElementById('eventModal').style.display = 'none'; // Fecha para recarregar visual
+        } else {
+            alert("⚠️ Erro: " + res.message);
+        }
+    } catch (e) {
+        console.error("Erro na exclusão:", e);
+        alert("❌ Erro de conexão.");
+    }
 }
 
 function confirmarTema() {
     localStorage.setItem('tema_escolhido_id', tempThemeId);
     toggleThemePanel();
     if (window.aplicarTemaAtual) aplicarTemaAtual();
+}
+
+async function exportarEscala() {
+    const search = document.getElementById('personSearch').value.trim();
+    if (!search) {
+        alert("Digite um nome na busca para exportar as escalas específicas.");
+        return;
+    }
+
+    const template = document.getElementById('exportTemplate');
+    const exportItems = document.getElementById('exportItems');
+    document.getElementById('exportUserName').innerText = search.toUpperCase();
+
+    // Filtrar escalas e agrupar por dia/culto para evitar duplicatas se a pessoa tiver 2 funções no mesmo culto
+    const filtered = globalEscalas.filter(e => e.Nome && e.Nome.toLowerCase().includes(search.toLowerCase()));
+
+    if (filtered.length === 0) {
+        alert("Nenhuma escala encontrada para este nome.");
+        return;
+    }
+
+    // Agrupar funções pelo mesmo Culto + Data
+    const agrupado = filtered.reduce((acc, current) => {
+        const key = `${current["Nome dos Cultos"]}|${current.Data}`;
+        if (!acc[key]) {
+            acc[key] = { ...current, Funcoes: [current["Função"]] };
+        } else {
+            if (!acc[key].Funcoes.includes(current["Função"])) acc[key].Funcoes.push(current["Função"]);
+        }
+        return acc;
+    }, {});
+
+    const sortedEntries = Object.values(agrupado).sort((a, b) => new Date(a.Data) - new Date(b.Data));
+
+    exportItems.innerHTML = sortedEntries.map(e => {
+        // Robust Date Parsing for Export
+        let d;
+        if (e.Data.includes('T')) d = new Date(e.Data);
+        else if (e.Data.includes('/')) {
+            const p = e.Data.split('/');
+            d = new Date(`${p[2]}-${p[1]}-${p[0]}T12:00:00`);
+        } else d = new Date(e.Data + "T12:00:00");
+
+        const dataStr = isNaN(d.getTime()) ? "Data Indisponível" : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+
+        return `
+            <div class="export-item">
+                <span class="export-culto-data">${e["Nome dos Cultos"]} - ${dataStr}</span>
+                <span class="export-funcao">${e.Funcoes.join(' / ')}</span>
+            </div>
+        `;
+    }).join('');
+
+    // Ajusta largura se houver muitos itens (para forçar colunas no canvas)
+    template.style.width = sortedEntries.length > 6 ? "700px" : "400px";
+
+    try {
+        const canvas = await html2canvas(template, {
+            useCORS: true,
+            backgroundColor: "#2c3e50",
+            scale: 2
+        });
+        const link = document.createElement('a');
+        link.download = `Escala_${search.replace(/ /g, '_')}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    } catch (e) {
+        console.error(e);
+        alert("Erro ao gerar imagem.");
+    } finally {
+        template.style.width = "400px"; // Restaura original
+    }
 }

@@ -38,12 +38,14 @@
 
         <div class="input-group-custom">
             <label class="input-label">Usuário</label>
-            <input type="text" id="usuario" class="form-control-custom" placeholder="Seu usuário de acesso">
+            <input type="text" id="usuario" class="form-control-custom" placeholder="Seu usuário"
+                onkeypress="if(event.key === 'Enter') fazerLogin()">
         </div>
 
         <div class="input-group-custom">
             <label class="input-label">Senha</label>
-            <input type="password" id="senha" class="form-control-custom" placeholder="Sua senha">
+            <input type="password" id="senha" class="form-control-custom" placeholder="Sua senha"
+                onkeypress="if(event.key === 'Enter') fazerLogin()">
         </div>
 
         <div id="errorMsg" class="error-msg"></div>

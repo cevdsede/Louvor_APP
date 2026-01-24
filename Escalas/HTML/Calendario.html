@@ -68,8 +68,8 @@
                     class="premium-input" style="padding-left: 45px;">
             </div>
             <button class="btn-export" onclick="exportarEscala()" id="btnExport"
-                style="display: none; margin: 0; background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 25px; font-size: 0.85rem; cursor: pointer; align-items: center; gap: 8px;">
-                <i class="fas fa-camera"></i> Foto
+                style="display: none; margin: 0; background: var(--primary); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: transform 0.2s;">
+                <i class="fas fa-camera"></i>
             </button>
         </div>
 
@@ -106,7 +106,152 @@
             </div>
         </div>
 
+        <!-- SCRIPTS DE DEPENDÊNCIA -->
+        <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+        <script src="../../Shared/JS/sync.js"></script>
+        <script src="../../Shared/JS/shared-forms.js"></script>
         <script src="../JS/escala-calendario.js"></script>
+
+        <!-- MODAL NATIVO ÚNICO -->
+        <div id="modalNativeContainer" class="modal"
+            style="display:none; position:fixed; z-index:10002; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:15px; transition: all 0.3s ease;">
+
+            <div class="modal-content premium-card"
+                style="border-radius:28px; width:100%; max-width:500px; padding:35px; position:relative; border-top: 10px solid var(--primary); animation: modalReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+
+                <style>
+                    @keyframes modalReveal {
+                        from {
+                            opacity: 0;
+                            transform: translateY(20px) scale(0.95);
+                        }
+
+                        to {
+                            opacity: 1;
+                            transform: translateY(0) scale(1);
+                        }
+                    }
+
+                    #modalNativeContainer .field label {
+                        font-size: 0.8rem;
+                        letter-spacing: 0.05rem;
+                        text-transform: uppercase;
+                        color: var(--text-muted);
+                        margin-bottom: 8px;
+                        font-weight: 800;
+                    }
+                </style>
+
+                <span onclick="closeNativeModal()"
+                    style="position:absolute; right:20px; top:20px; width: 36px; height: 36px; border-radius: 50%; background: var(--bg-page); display: flex; align-items: center; justify-content: center; font-size:1.2rem; cursor:pointer; color:var(--text-muted); transition: all 0.2s; border: 1px solid rgba(0,0,0,0.05);">&times;</span>
+
+                <h3 id="modalFormTitleNative"
+                    style="margin-top:0; font-weight:900; color:var(--primary); font-size:1.4rem; margin-bottom:30px; text-align: center; letter-spacing: -0.02rem;">
+                    Montar Repertório</h3>
+
+                <!-- PAINEL REPERTÓRIO -->
+                <div id="panelRepertorioNative">
+                    <form id="repertorioFormNative">
+                        <input type="hidden" name="sheet" value="Repertório_PWA">
+                        <input type="hidden" name="action" value="addRow">
+                        <input type="hidden" name="Data" id="hiddenDataNative">
+                        <input type="hidden" name="Culto" id="hiddenNomeCultoNative">
+                        <input type="hidden" name="Músicas" id="hiddenMusicaNative">
+                        <input type="hidden" name="Cantor" id="hiddenCantorNative">
+                        <input type="hidden" name="Tons" id="hiddenTonsNative">
+
+                        <div class="field" style="margin-bottom:15px;">
+                            <label
+                                style="display:block; font-size:0.85rem; font-weight:700; color:#64748b; margin-bottom:5px;">Culto
+                                Selecionado</label>
+                            <select id="cultoSelectNative" required></select>
+                        </div>
+                        <div class="field" style="margin-bottom:15px;">
+                            <label
+                                style="display:block; font-size:0.85rem; font-weight:700; color:#64748b; margin-bottom:5px;">Ministro
+                                (Escalados)</label>
+                            <select id="ministroSelectNative" name="Ministro" required></select>
+                        </div>
+                        <div class="field" style="margin-bottom:15px;">
+                            <label
+                                style="display:block; font-size:0.85rem; font-weight:700; color:#64748b; margin-bottom:5px;">Música
+                                - Cantor</label>
+                            <select id="musicaSelectNative" required></select>
+                            <div style="text-align:right; margin-top:5px; font-size:0.75rem">
+                                <a href="javascript:void(0)" onclick="showNativeForm('musica')"
+                                    style="color:var(--primary); text-decoration:none; font-weight:700;">Não
+                                    encontrou? + Adicionar Nova Música</a>
+                            </div>
+                        </div>
+                        <div class="field" style="margin-bottom:20px;">
+                            <label>Tom (Opcional)</label>
+                            <select id="tomSelectNative">
+                                <option value="">Selecione...</option>
+                                <option value="C / Am">C / Am</option>
+                                <option value="C# / A#m">C# / A#m</option>
+                                <option value="D / Bm">D / Bm</option>
+                                <option value="D# / Cm">D# / Cm</option>
+                                <option value="E / C#m">E / C#m</option>
+                                <option value="F / Dm">F / Dm</option>
+                                <option value="F# / D#m">F# / D#m</option>
+                                <option value="G / Em">G / Em</option>
+                                <option value="G# / Fm">G# / Fm</option>
+                                <option value="A / F#m">A / F#m</option>
+                                <option value="A# / Gm">A# / Gm</option>
+                                <option value="B / G#m">B / G#m</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-premium" style="width:100%;">SALVAR NO REPERTÓRIO</button>
+                    </form>
+                    <div id="statusRepNative"
+                        style="margin-top:15px; text-align:center; font-weight:700; color:var(--primary); display:none;">
+                    </div>
+                </div>
+
+                <!-- PAINEL CADASTRO DE MÚSICA -->
+                <div id="panelMusicaNative" style="display:none;">
+                    <form id="musicFormNative">
+                        <div class="field" style="margin-bottom:12px;">
+                            <label
+                                style="display:block; font-size:0.85rem; font-weight:700; color:#64748b; margin-bottom:5px;">Tema</label>
+                            <select name="Tema" id="temaSelectNative" required></select>
+                        </div>
+                        <div class="field" style="margin-bottom:12px;">
+                            <label
+                                style="display:block; font-size:0.85rem; font-weight:700; color:#64748b; margin-bottom:5px;">Estilo</label>
+                            <select name="Estilo" id="estiloSelectNative" required>
+                                <option value="Adoração">Adoração</option>
+                                <option value="Celebração">Celebração</option>
+                            </select>
+                        </div>
+                        <div class="field" style="margin-bottom:12px;">
+                            <label
+                                style="display:block; font-size:0.85rem; font-weight:700; color:#64748b; margin-bottom:5px;">Nome
+                                da Música</label>
+                            <input type="text" name="Musica" class="premium-input" placeholder="Ex: A Terra Clama"
+                                required>
+                        </div>
+                        <div class="field" style="margin-bottom:20px;">
+                            <label
+                                style="display:block; font-size:0.85rem; font-weight:700; color:#64748b; margin-bottom:5px;">Cantor
+                                / Banda</label>
+                            <input type="text" name="Cantor" class="premium-input" placeholder="Ex: Davi Fernandes"
+                                required>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button type="button" onclick="showNativeForm('repertorio')" class="btn-premium"
+                                style="flex:1; background:#94a3b8 !important;">VOLTAR</button>
+                            <button type="submit" class="btn-premium" style="flex:2;">SALVAR
+                                MÚSICA</button>
+                        </div>
+                    </form>
+                    <div id="statusMusNative"
+                        style="margin-top:15px; text-align:center; font-weight:700; color:var(--primary); display:none;">
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </body>
 

@@ -11,6 +11,7 @@
   <script src="../../Shared/JS/config.js"></script>
   <script src="../../Shared/JS/permissions.js"></script>
   <script src="../../Shared/JS/sync.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
   <link rel="stylesheet" href="../../assets/bootstrap/css/bootstrap.min.css">
   <link rel="stylesheet" href="../../assets/Font Awesome/css/all.css">
   <link rel="stylesheet" href="../../Shared/CSS/main.css">
@@ -18,17 +19,30 @@
 </head>
 
 <body>
-  <div class="header-bar">
-    <div class="header-left-nav">
-      <i class="fas fa-arrow-left nav-btn" onclick="handleBack()" title="Voltar"></i>
-      <i class="fas fa-home nav-btn" onclick="window.location.href='../../index.html'" title="Início"></i>
-    </div>
-    <h2 class="header-title">Cadastrar Música</h2>
-    <div class="header-right-nav">
-      <i class="fas fa-palette nav-btn" onclick="toggleThemePanel()" title="Trocar Tema"></i>
-      <i class="fas fa-sync-alt nav-btn" onclick="loadTemas()" title="Sincronizar"></i>
-    </div>
-  </div>
+  <style>
+    body.is-modal {
+      padding-top: 10px !important;
+      background: white !important;
+    }
+
+    body.is-modal .header-bar {
+      display: none !important;
+    }
+
+    body.is-modal .premium-container {
+      padding: 5px !important;
+    }
+
+    body.is-modal .premium-card {
+      box-shadow: none !important;
+      border: none !important;
+    }
+  </style>
+  <script>
+    if (new URLSearchParams(window.location.search).get('modal') === 'true') {
+      document.body.classList.add('is-modal');
+    }
+  </script>
 
   <div id="themePanel" class="theme-panel">
     <h3>Escolha um Tema</h3>
@@ -51,7 +65,7 @@
 
         <div class="field">
           <label>Estilo</label>
-          <select name="Estilo" required>
+          <select name="Estilo" id="estiloSelect" required>
             <option value="">Selecione o estilo...</option>
             <option value="Adoração">Adoração</option>
             <option value="Celebração">Celebração</option>
@@ -75,6 +89,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
   <script src="../JS/cadastro-musicas.js"></script>
 </body>
 
