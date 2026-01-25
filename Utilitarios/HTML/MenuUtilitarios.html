@@ -16,8 +16,23 @@
     <link rel="stylesheet" href="../CSS/menu-utilitarios.css">
 
     <!-- Shared Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Fallback caso o CDN falhe
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js CDN falhou, carregando versão local...');
+            // Criar Chart mock para evitar erros
+            window.Chart = function() {
+                console.warn('Chart.js não disponível - gráficos desabilitados');
+            };
+        }
+    </script>
     <script src="../../Shared/JS/temas-lista.js"></script>
     <script src="../../Shared/JS/temas-core.js"></script>
+    <script src="../../Shared/JS/config.js"></script>
+    <script src="../../Shared/JS/indexeddb-manager.js"></script>
+    <script src="../../Shared/JS/advanced-dashboard.js"></script>
+    <script src="../../Shared/JS/admin-metrics.js"></script>
 </head>
 
 <body>
@@ -50,6 +65,16 @@
                 <i class="fas fa-clipboard-check"></i>
                 <span>Chamada Consagração</span>
             </a>
+            
+            <!-- Botões Admin Only -->
+            <div class="menu-card admin-only" id="btnDashboard" style="display: none;" onclick="abrirDashboard()">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard Avançado</span>
+            </div>
+            <div class="menu-card admin-only" id="btnMetrics" style="display: none;" onclick="abrirMetrics()">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Painel de Métricas</span>
+            </div>
         </div>
     </div>
 

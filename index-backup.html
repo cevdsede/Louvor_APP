@@ -13,24 +13,10 @@
   <script src="Shared/JS/config.js?v=2.9"></script>
   <script src="Shared/JS/permissions.js?v=2.9"></script>
   <script src="Shared/JS/sync.js?v=2.9"></script>
-  
-  <!-- Offline Indicator -->
-  <script src="Shared/JS/offline-indicator.js?v=2.9"></script>
 
   <!-- Theme System -->
   <script src="Shared/JS/temas-lista.js?v=2.9"></script>
   <script src="Shared/JS/temas-core.js?v=2.9"></script>
-
-  <!-- Performance & UX -->
-  <script src="Shared/JS/performance-core.js?v=2.9"></script>
-  <script src="Shared/JS/skeleton-loading.js?v=2.9"></script>
-  <script src="Shared/JS/pull-to-refresh.js?v=2.9"></script>
-
-  <!-- Storage & Cache -->
-  <script src="Shared/JS/indexeddb-manager.js?v=2.9"></script>
-
-  <!-- Dashboard & Analytics -->
-  <script src="Shared/JS/advanced-dashboard.js?v=2.9"></script>
 
   <!-- UI Resources -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -156,12 +142,6 @@
         gap: 4px;
       }
 
-      .chart-card,
-      .kpi-grid {
-        height: 100%;
-        min-height: 0;
-      }
-
       .header-bar {
         padding: 0 8px;
       }
@@ -179,12 +159,6 @@
       width: 100%;
       height: 320px;
       position: relative;
-    }
-
-    @media (min-width: 901px) {
-      .chart-wrapper {
-        height: 420px;
-      }
     }
 
     @media (max-width: 400px) {
@@ -290,19 +264,6 @@
       width: 100%;
       box-sizing: border-box;
       flex: 1;
-      padding-bottom: 90px;
-    }
-
-    @media (min-width: 901px) {
-      .content {
-        max-width: 1100px;
-      }
-    }
-
-    @media (min-width: 1200px) {
-      .content {
-        max-width: 1400px;
-      }
     }
 
     .welcome {
@@ -359,17 +320,12 @@
       position: fixed;
       background: var(--header-bg, rgba(255, 255, 255, 0.85));
       backdrop-filter: blur(20px);
-      bottom: 0;
-      left: 0;
-      right: 0;
-      top: auto;
-      height: 80px;
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      padding: 10px 0;
-      box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.08);
+      -webkit-backdrop-filter: blur(20px);
       z-index: 1000;
+      display: flex;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     /* MODO RETRATO: EM BAIXO */
@@ -390,22 +346,19 @@
       }
     }
 
-    /* MODO PAISAGEM: ESTRUTURA PREMIUM DE 3 COLUNAS (somente celular/tablet) */
-    @media (orientation: landscape) and (max-width: 900px) and (hover: none) and (pointer: coarse) {
+    /* MODO PAISAGEM: ESTRUTURA PREMIUM DE 3 COLUNAS */
+    @media (orientation: landscape) {
       body {
         overflow: hidden;
         /* Evita scroll na dashboard em paisagem */
         height: 100vh;
-        padding-top: 0 !important;
       }
 
       .tab-bar {
         left: 0;
         top: 70px;
         bottom: 0;
-        right: auto;
         width: 80px;
-        height: auto;
         flex-direction: column;
         justify-content: center;
         border-top-right-radius: 20px;
@@ -414,19 +367,17 @@
 
       .content {
         margin-left: 80px;
-        margin-top: 70px;
+        margin-top: 0;
         max-width: none;
         height: calc(100vh - 70px);
         /* 70px header */
         display: grid;
         grid-template-columns: 2fr 1fr;
-        grid-template-rows: auto minmax(0, 1fr) auto;
+        grid-template-rows: auto 1fr;
         gap: 8px;
         padding: 5px 10px;
         padding-top: 5px;
-        padding-bottom: 8px;
         overflow: hidden;
-        /* Critical: allow shrinking in grid */
       }
 
       .welcome {
@@ -436,8 +387,6 @@
         font-size: 0.7rem;
         position: relative;
         z-index: 10;
-        display: flex;
-        align-items: center;
         justify-content: space-between;
         text-align: left;
       }
@@ -451,20 +400,18 @@
       .chart-card {
         grid-column: 1;
         grid-row: 2;
-        height: 100%;
-        max-height: none;
+        min-height: 100vh;
+        max-height: 100%;
+        /* Prevent overflow */
         min-height: 0;
         /* Critical: allow shrinking in grid */
         margin-bottom: 0;
         display: flex;
         flex-direction: column;
-        padding: 4px;
-        padding-bottom: 4px;
+        padding: 8px;
+        padding-bottom: 10px;
         overflow: hidden;
         /* Critical: prevents infinite growth */
-        position: relative;
-        z-index: auto;
-        border-radius: 12px;
       }
 
       .chart-wrapper {
@@ -480,20 +427,6 @@
         /* Corta crescimento excessivo */
       }
 
-      /* Celular deitado: reduzir um pouco o gráfico para sobrar espaço */
-      .chart-wrapper {
-        height: 100%;
-      }
-
-      #escalaChart {
-        width: 100% !important;
-        height: 100% !important;
-      }
-
-      #escalaChart {
-        max-height: 100% !important;
-      }
-
       .kpi-grid {
         grid-column: 2;
         grid-row: 2;
@@ -504,35 +437,21 @@
         gap: 0;
         /* No gap, use space-between */
         margin-bottom: 0;
-        height: 100%;
-        max-height: none;
+        min-height: 100vh;
+        max-height: 100%;
         min-height: 0;
-        overflow: hidden;
-        padding-bottom: 0;
-      }
-
-      #footerInfo {
-        grid-column: 1 / span 2;
-        grid-row: 3;
-        margin-top: 0;
-        margin-bottom: 0 !important;
-        padding: 0 0 8px;
-        font-size: 0.6rem;
-        position: relative;
-        z-index: 5;
-      }
-
-      #offlineDataBar {
-        margin-bottom: 0 !important;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-bottom: 10px;
       }
 
       .kpi-card {
         flex: 1;
         /* Equal distribution */
-        min-height: 0;
+        min-height: 60px;
         max-height: none;
         /* Allow growth */
-        padding: 4px;
+        padding: 8px;
       }
 
       /* Esconder botão separado de sync no modo paisagem */
@@ -543,6 +462,12 @@
       }
 
       /* Grid com espaçamento proporcional */
+      .content {
+        grid-template-columns: 2fr 1fr;
+        /* Gráfico 2x maior */
+        grid-template-rows: auto 1fr;
+      }
+
       .kpi-grid {
         width: 100%;
       }
@@ -891,134 +816,14 @@
       font-weight: 700;
       cursor: pointer;
     }
-
-    /* Sync Status */
-    .sync-status {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px;
-      background: var(--card-bg);
-      border-radius: var(--border-radius);
-      margin-bottom: 15px;
-    }
-
-    .progress-track {
-      flex: 1;
-      height: 4px;
-      background: #e2e8f0;
-      border-radius: 2px;
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: var(--secondary);
-      width: 0%;
-      transition: width 0.3s ease;
-    }
-
-    .status-text {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-
-    /* Landscape Sync Button */
-    .landscape-sync-btn {
-      position: fixed;
-      top: 75px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 20px;
-      padding: 8px 20px;
-      font-size: 0.8rem;
-      cursor: pointer;
-      z-index: 1001;
-      display: none;
-    }
   </style>
 </head>
 
 <body>
+
   <script>
     if (!localStorage.getItem('user_token')) { window.location.replace('Shared/HTML/Login.html'); }
     const userData = JSON.parse(localStorage.getItem('user_token') || '{}');
-    
-    // Limpar referências do tutorial
-    localStorage.removeItem('tutorial_completed');
-    localStorage.removeItem('louvor_tutorial_completed');
-    
-    // Bloquear OnboardingTutorial antes de qualquer script
-    Object.defineProperty(window, 'OnboardingTutorial', {
-      get: () => null,
-      set: () => {},
-      configurable: false,
-      writable: false
-    });
-    
-    // Bloquear qualquer tentativa de redefinir o OnboardingTutorial
-    const originalDefineProperty = Object.defineProperty;
-    Object.defineProperty = function(obj, prop, descriptor) {
-      if (obj === window && prop === 'OnboardingTutorial') {
-        console.warn('Tentativa de redefinir OnboardingTutorial bloqueada');
-        return;
-      }
-      return originalDefineProperty.call(this, obj, prop, descriptor);
-    };
-    
-    // BLOQUEIO SIMPLIFICADO - Remover apenas elementos de tutorial específicos
-    function removeTutorialElements() {
-      // Remover apenas elementos específicos do tutorial
-      const tutorialElements = document.querySelectorAll('.onboarding-tooltip, .onboarding-overlay, .onboarding-highlight');
-      tutorialElements.forEach(el => el.remove());
-      
-      // Remover botões de tutorial
-      const tutorialButtons = document.querySelectorAll('button[title*="Tutorial"], button[title*="Reiniciar"]');
-      tutorialButtons.forEach(btn => {
-        if (btn.textContent.includes('?') || btn.title.includes('Tutorial')) {
-          btn.remove();
-        }
-      });
-      
-      // Remover por texto específico
-      const allElements = document.querySelectorAll('*');
-      allElements.forEach(el => {
-        if (el.textContent && el.textContent.includes('Bem-vindo ao Louvor CEVD')) {
-          const parent = el.closest('.onboarding-tooltip');
-          if (parent) parent.remove();
-        }
-      });
-    }
-    
-    // Executar imediatamente e a cada segundo
-    removeTutorialElements();
-    setInterval(removeTutorialElements, 1000);
-    
-    // Observer apenas para elementos de tutorial
-    const tutorialObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === 1 && (
-            node.classList.contains('onboarding-tooltip') ||
-            node.classList.contains('onboarding-overlay') ||
-            node.classList.contains('onboarding-highlight')
-          )) {
-            node.remove();
-          }
-        });
-      });
-    });
-    
-    // Observar apenas quando body estiver disponível
-    if (document.body) {
-      tutorialObserver.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
-    }
   </script>
 
   <div class="app-container">
@@ -1052,7 +857,7 @@
       <p style="font-size: 0.65rem; color: #94a3b8; margin-top: 15px;">Aplicações em tempo real.</p>
     </div>
 
-    <div class="content" data-ptr-refresh="syncAllData">
+    <div class="content">
       <div class="welcome">
         <span class="welcome-text">
           Olá, <span id="userName" style="font-weight:700">Músico</span> |
@@ -1063,6 +868,7 @@
           <i class="fas fa-sync-alt"></i>
         </button>
       </div>
+
 
       <div class="kpi-grid">
         <div class="kpi-card">
@@ -1119,8 +925,7 @@
         <i class="fas fa-sync-alt"></i> ATUALIZAR DADOS
       </button>
 
-      <div id="footerInfo" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 20px;">
-        <div id="offlineDataBar" style="margin-bottom: 8px;"></div>
+      <div style="text-align: center; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 20px;">
         <span id="lastUpdateDate">Última atualização: ---</span>
       </div>
     </div>
@@ -1167,35 +972,6 @@
   <script src="index_logic.js?v=2.9"></script>
 
   <script>
-    // Inicializar sistemas de performance e UX
-    document.addEventListener('DOMContentLoaded', function() {
-      // Inicializar sistema de performance
-      if (window.PerformanceManager) {
-        console.log('Performance Manager carregado');
-      }
-      
-      // Inicializar skeleton loading
-      if (window.SkeletonLoader) {
-        console.log('Skeleton Loader carregado');
-      }
-      
-      // Inicializar pull-to-refresh (já inicializa automaticamente)
-      if (window.PullToRefresh) {
-        // PullToRefresh já inicializa automaticamente ao carregar
-        console.log('Pull-to-refresh carregado');
-      }
-      
-      // Inicializar IndexedDB (já inicializa automaticamente)
-      if (window.IDBManager) {
-        console.log('IndexedDB Manager carregado');
-      }
-      
-      // Inicializar dashboard avançado
-      if (window.AdvancedDashboard) {
-        console.log('Advanced Dashboard carregado');
-      }
-    });
-
     // No local theme scripts needed, uses temas-core.js
 
     // Handle click on landscape sync button (body::before pseudo-element)
