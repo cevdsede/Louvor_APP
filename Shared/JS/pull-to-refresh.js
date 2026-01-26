@@ -180,33 +180,9 @@ class PullToRefresh {
     }
     
     createIndicator() {
-        // Criar indicador visual
-        this.indicator = document.createElement('div');
-        this.indicator.className = 'ptr-indicator';
-        this.indicator.innerHTML = `
-            <svg viewBox="0 0 24 24">
-                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
-            </svg>
-        `;
-        
-        // Criar mensagem
-        this.message = document.createElement('div');
-        this.message.className = 'ptr-message';
-        this.message.textContent = 'Solte para atualizar';
-        
-        // Encontrar o content wrapper
-        const contentWrapper = this.container.querySelector('.content') || 
-                              this.container.querySelector('main') || 
-                              this.container.children[0];
-        
-        if (contentWrapper) {
-            contentWrapper.classList.add('ptr-content');
-            contentWrapper.parentNode.insertBefore(this.indicator, contentWrapper);
-            contentWrapper.parentNode.insertBefore(this.message, contentWrapper);
-        } else {
-            this.container.appendChild(this.indicator);
-            this.container.appendChild(this.message);
-        }
+        // Não criar indicador visual nem mensagem - apenas executar o callback
+        this.indicator = null;
+        this.message = null;
     }
     
     addEventListeners() {
@@ -300,22 +276,8 @@ class PullToRefresh {
     }
     
     updatePullState() {
-        if (!this.indicator) return;
-        
-        // Atualizar posição do indicador
-        const indicatorPosition = -60 + this.pullDistance;
-        this.indicator.style.transform = `translateX(-50%) translateY(${indicatorPosition}px)`;
-        
-        // Atualizar mensagem
-        if (this.pullDistance >= this.options.threshold) {
-            this.indicator.classList.add('pulled');
-            this.showMessage('Solte para atualizar');
-        } else {
-            this.indicator.classList.remove('pulled');
-            this.showMessage('Puxe para atualizar');
-        }
-        
-        // Aplicar transform ao conteúdo
+        // Não atualizar indicador visual pois foi desativado
+        // Apenas aplicar transform ao conteúdo para feedback tátil
         const content = this.container.querySelector('.ptr-content');
         if (content) {
             content.style.transform = `translateY(${Math.max(0, this.pullDistance - 20)}px)`;
@@ -326,12 +288,6 @@ class PullToRefresh {
         if (this.isRefreshing) return;
         
         this.isRefreshing = true;
-        this.indicator.classList.remove('pulled');
-        this.indicator.classList.add('refreshing');
-        this.showMessage('Atualizando...');
-        
-        // Manter indicador visível
-        this.indicator.style.transform = 'translateX(-50%) translateY(20px)';
         
         // Reset do conteúdo
         const content = this.container.querySelector('.ptr-content');
@@ -368,8 +324,6 @@ class PullToRefresh {
     completeRefresh(success) {
         if (!this.isRefreshing) return;
         
-        this.showMessage(success ? 'Atualizado!' : 'Erro ao atualizar');
-        
         setTimeout(() => {
             this.resetPull();
             this.isRefreshing = false;
@@ -379,13 +333,6 @@ class PullToRefresh {
     resetPull() {
         this.isPulling = false;
         this.pullDistance = 0;
-        
-        if (this.indicator) {
-            this.indicator.classList.remove('pulled', 'refreshing');
-            this.indicator.style.transform = 'translateX(-50%) translateY(-60px)';
-        }
-        
-        this.hideMessage();
         
         // Reset do conteúdo
         const content = this.container.querySelector('.ptr-content');
@@ -409,16 +356,6 @@ class PullToRefresh {
     
     destroy() {
         this.resetPull();
-        
-        if (this.indicator) {
-            this.indicator.remove();
-            this.indicator = null;
-        }
-        
-        if (this.message) {
-            this.message.remove();
-            this.message = null;
-        }
         
         if (this.container) {
             this.container.classList.remove('ptr-container');

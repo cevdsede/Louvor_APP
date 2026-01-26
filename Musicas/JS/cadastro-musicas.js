@@ -94,7 +94,6 @@ document.getElementById('musicForm').addEventListener('submit', function (e) {
     }
 
     // Adiciona campos obrigatórios para o SyncManager se não estiverem no form
-    if (!data.action) data.action = "addRow";
     if (!data.sheet) data.sheet = "Musicas";
 
     // 1. Atualização Otimista local

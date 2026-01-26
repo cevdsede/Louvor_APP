@@ -75,6 +75,10 @@ function showToast(message, type = 'success', duration = 3000) {
     }, duration);
 }
 
+// Exportar para window para garantir disponibilidade global
+window.showToast = showToast;
+console.log("✅ showToast exportado para window");
+
 function initNativeForms() {
     // 1. REPERTÓRIO FORM
     if (tsCultoNative) tsCultoNative.destroy();
@@ -215,13 +219,12 @@ function toTitleCase(str) {
 
 // EVENT LISTENERS
 document.addEventListener('DOMContentLoaded', () => {
-    // REPERTÓRIO SUBMIT
+    // REPERTÓRIO SUBMIT (formulários nativos em modais)
     const formRep = document.getElementById('repertorioFormNative');
     if (formRep) {
         formRep.addEventListener('submit', function (e) {
             e.preventDefault();
             const musicaFull = tsMusicaNative.getValue();
-            const status = document.getElementById('statusRepNative');
 
             const separatorIndex = musicaFull.lastIndexOf(" - ");
             document.getElementById('hiddenMusicaNative').value = (separatorIndex !== -1) ? musicaFull.substring(0, separatorIndex).trim() : musicaFull.trim();
@@ -235,14 +238,31 @@ document.addEventListener('DOMContentLoaded', () => {
             SyncManager.updateLocalCache("Repertório_PWA", "add", formData);
             SyncManager.addToQueue(payload);
 
-            status.innerHTML = "✅ Música Salva!";
-            status.style.display = "block";
+            // Usar toast notification em vez de status fixo
+            console.log("🍞 Tentando mostrar toast...");
+            if (typeof showToast === 'function') {
+                console.log("✅ showToast disponível, mostrando toast");
+                showToast("✅ Música adicionada à fila de sincronização!", 'success', 3000);
+            } else {
+                console.log("❌ showToast não disponível");
+            }
+
             tsMusicaNative.clear();
             tsTomNative.clear();
 
             // Atualiza a visualização no fundo
             if (typeof loadAll === 'function') loadAll(true);
             if (typeof loadData === 'function') loadData(true);
+        });
+    }
+
+    // REPERTÓRIO SUBMIT (formulário principal do cadastro de repertório)
+    const formRepMain = document.getElementById('repertorioForm');
+    if (formRepMain) {
+        console.log("📝 Formulário repertorioForm encontrado, adicionando listener");
+        formRepMain.addEventListener('submit', function (e) {
+            console.log("🚀 Formulário repertorioForm submetido");
+            // Não previne o default para deixar o cadastro-repertorio.js tratar
         });
     }
 

@@ -272,18 +272,3 @@ body {
 .hidden-permission {
     display: none !important;
 }
-
-/* LANDSCAPE OPTIMIZATION */
-@media (min-width: 700px) {
-    .menu-grid {
-        grid-template-columns: repeat(4, 1fr);
-    }
-
-    .container {
-        max-width: 900px;
-    }
-
-    .chart-card {
-        min-height: 400px;
-    }
-}

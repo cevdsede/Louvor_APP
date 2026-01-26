@@ -1,9 +1,33 @@
+function doGet(e) {
+  return doPost(e);
+}
+
 function doPost(e) {
   const lock = LockService.getScriptLock();
   lock.tryLock(10000); 
 
   try {
-    const params = JSON.parse(e.postData.contents);
+    // Tratar parâmetros de GET ou POST
+    let params;
+    if (e.postData && e.postData.contents) {
+      // POST - JSON
+      params = JSON.parse(e.postData.contents);
+    } else if (e.parameter) {
+      // GET - Parâmetros da URL
+      params = e.parameter;
+      
+      // Para GET, converter parâmetros de dados se existirem
+      if (params.data) {
+        try {
+          params.data = JSON.parse(params.data);
+        } catch (e) {
+          // Se não for JSON, manter como está
+        }
+      }
+    } else {
+      return errorResponse("Nenhum parâmetro recebido");
+    }
+    
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const PASTA_ID = "1szc3tN-1nubNXk0Hl0LtGKb2V71G-NKE";
 
@@ -69,6 +93,12 @@ function doPost(e) {
     if (params.action === "delete") {
       const aba = ss.getSheetByName(params.sheet);
       const dados = aba.getDataRange().getValues();
+      
+      // Verifica se a planilha tem menos de 3 linhas (incluindo cabeçalho)
+      if (dados.length < 3) {
+        // Insere uma linha vazia no final antes de excluir
+        aba.appendRow(new Array(dados[0].length).fill(""));
+      }
       
       if (params.sheet === "Lembretes") {
         // ... (Lógica de lembretes mantém igual) ...
@@ -138,25 +168,51 @@ function doPost(e) {
       const musicasParaAdd = Array.isArray(params.data) ? params.data : [params];
       const dadosAtuais = sheetHist.getDataRange().getValues();
       let adicionadas = 0;
+      let duplicatas = 0;
       
       musicasParaAdd.forEach(item => {
-        // Verifica duplicata pelo nome da musica (Coluna B)
-        const tituloParaSalvar = String(item.musicaCantor || "").trim();
-        const jaExiste = dadosAtuais.some(row => 
-          String(row[1]).toLowerCase().trim() === tituloParaSalvar.toLowerCase()
-        );
+        // Verifica duplicata pelo nome da musica (Coluna B) - validação mais robusta
+        const tituloParaSalvar = String(item.musicaCantor || "").trim().toLowerCase();
+        const jaExiste = dadosAtuais.some(row => {
+          const tituloExistente = String(row[1] || "").trim().toLowerCase();
+          return tituloExistente === tituloParaSalvar;
+        });
         
         if (!jaExiste && tituloParaSalvar !== "") {
           // Coluna A -> Ministro | Coluna B -> Musica - Cantor | Coluna C -> Tom
           sheetHist.appendRow([
             item.ministro || "Líder não definido", 
-            tituloParaSalvar, 
+            item.musicaCantor || "", 
             item.tom || "--"
           ]);
           adicionadas++;
+        } else if (tituloParaSalvar !== "") {
+          duplicatas++;
         }
       });
-      return jsonResponse({ status: "success", message: adicionadas + " músicas adicionadas ao histórico." });
+      
+      // Mensagens mais modernas e detalhadas
+      if (adicionadas > 0 && duplicatas > 0) {
+        return jsonResponse({ 
+          status: "success", 
+          message: `✅ ${adicionadas} nova(s) música(s) adicionada(s)! ${duplicatas} já existiam no histórico.` 
+        });
+      } else if (adicionadas > 0) {
+        return jsonResponse({ 
+          status: "success", 
+          message: `🎵 ${adicionadas} música(s) adicionada(s) ao histórico com sucesso!` 
+        });
+      } else if (duplicatas > 0) {
+        return jsonResponse({ 
+          status: "info", 
+          message: `📝 Todas as ${duplicatas} música(s) já existem no histórico.` 
+        });
+      } else {
+        return jsonResponse({ 
+          status: "warning", 
+          message: `⚠️ Nenhuma música válida para adicionar.` 
+        });
+      }
     }
 
     // --- AÇÃO: ATUALIZAR PERFIL DO USUÁRIO ---
@@ -196,11 +252,42 @@ function doPost(e) {
       return successResponse("Música cadastrada");
     }
 
-    // --- AÇÃO: REPERTÓRIO (NOVO - Repertorio_PWA) ---
+    // --- AÇÃO: REPERTÓRIO (NOVO - Repertório_PWA) ---
     // Colunas: Músicas | Cantor | Tons | Culto | Data | Ministro
-    if (params.sheet === "Repertorio_PWA") {
-      const sheet = ss.getSheetByName("Repertorio_PWA");
-      // O frontend já manda a Data formatada (DD/MM/YYYY) e separado Músicas/Cantor
+    if (params.sheet === "Repertório_PWA") {
+      const sheet = ss.getSheetByName("Repertório_PWA");
+      const dados = sheet.getDataRange().getValues();
+      
+      // Verificar duplicata pelos campos: Músicas, Cantor, Culto, Data
+      const musica = String(params.Músicas || "").trim();
+      const cantor = String(params.Cantor || "").trim();
+      const culto = String(params.Culto || "").trim();
+      const data = String(params.Data || "").trim();
+      
+      // Verificar se já existe registro com mesma combinação
+      const duplicata = dados.some((row, index) => {
+        if (index === 0) return false; // Pular cabeçalho
+        
+        const rowMusica = String(row[0] || "").trim();
+        const rowCantor = String(row[1] || "").trim();
+        const rowCulto = String(row[3] || "").trim();
+        const rowData = String(row[4] || "").trim();
+        
+        // Comparar todos os campos relevantes
+        return rowMusica === musica && 
+               rowCantor === cantor && 
+               rowCulto === culto && 
+               rowData === data;
+      });
+      
+      if (duplicata) {
+        return jsonResponse({
+          status: "warning",
+          message: `⚠️ Esta música já está no repertório para este culto!`
+        });
+      }
+      
+      // Se não for duplicata, adicionar normalmente
       sheet.appendRow([
         params.Músicas,
         params.Cantor, 
@@ -209,17 +296,52 @@ function doPost(e) {
         params.Data, 
         params.Ministro
       ]);
-      return successResponse("Repertório salvo");
+      return successResponse("✅ Música adicionada ao repertório com sucesso!");
     }
 
     // --- AÇÃO GENÉRICA: ADICIONAR LINHA (Fallback) ---
     if (params.action === "addRow") {
       const sheet = ss.getSheetByName(params.sheet);
       if (!sheet) return errorResponse("Aba não encontrada");
+      
+      // Validação específica para Repertório_PWA
+      if (params.sheet === "Repertório_PWA") {
+        const dados = sheet.getDataRange().getValues();
+        
+        // Verificar duplicata pelos campos: Músicas, Cantor, Culto, Data
+        const musica = String(params.data.Músicas || "").trim();
+        const cantor = String(params.data.Cantor || "").trim();
+        const culto = String(params.data.Culto || "").trim();
+        const data = String(params.data.Data || "").trim();
+        
+        // Verificar se já existe registro com mesma combinação
+        const duplicata = dados.some((row, index) => {
+          if (index === 0) return false; // Pular cabeçalho
+          
+          const rowMusica = String(row[0] || "").trim();
+          const rowCantor = String(row[1] || "").trim();
+          const rowCulto = String(row[3] || "").trim();
+          const rowData = String(row[4] || "").trim();
+          
+          // Comparar todos os campos relevantes
+          return rowMusica === musica && 
+                 rowCantor === cantor && 
+                 rowCulto === culto && 
+                 rowData === data;
+        });
+        
+        if (duplicata) {
+          return jsonResponse({
+            status: "warning",
+            message: `⚠️ Esta música já está no repertório para este culto!`
+          });
+        }
+      }
+      
       const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
       const newRow = headers.map(h => params.data[h] || "");
       sheet.appendRow(newRow);
-      return successResponse("Dados salvos");
+      return successResponse("✅ Música adicionada ao repertório com sucesso!");
     }
 
   } catch (err) {

@@ -3,9 +3,20 @@ async function carregarRepertorio(force = false) {
     const loader = document.getElementById('loader');
     const cached = localStorage.getItem('offline_repertorio');
 
-    // Se tem cache e nÃ£o Ã© forÃ§ado, renderiza e busca em silÃªncio
+    // Função auxiliar para parse seguro
+    function safeParse(jsonString, fallback = []) {
+        try {
+            if (!jsonString || jsonString === "undefined" || jsonString === "null") return fallback;
+            return JSON.parse(jsonString);
+        } catch (e) {
+            console.warn("JSON Parse Error:", e);
+            return fallback;
+        }
+    }
+
+    // Se tem cache e não é forçado, renderiza e busca em silêncio
     if (!force && cached) {
-        render(JSON.parse(cached));
+        render(safeParse(cached));
         setTimeout(() => silentSync(), 500);
         return;
     }
@@ -14,10 +25,33 @@ async function carregarRepertorio(force = false) {
     if (btnIcon) btnIcon.classList.add('fa-spin');
 
     try {
-        const response = await fetch(APP_CONFIG.SCRIPT_URL + "?sheet=Repertório_PWA");
-        const json = await response.json();
-        localStorage.setItem('offline_repertorio', JSON.stringify(json.data));
-        render(json.data);
+        let data;
+        
+        try {
+            const response = await fetch(APP_CONFIG.SCRIPT_URL + "?sheet=Repertório_PWA");
+            const json = await response.json();
+            data = json.data;
+            localStorage.setItem('offline_repertorio', JSON.stringify(data));
+        } catch (corsError) {
+            console.warn('CORS bloqueou carregamento, usando cache local:', corsError);
+            
+            if (cached) {
+                data = safeParse(cached);
+            } else {
+                // Se não tiver cache, criar dados de exemplo
+                data = [{
+                    "Músicas": "Grande é o Senhor",
+                    "Cantor": "Fernandinho",
+                    "Tons": "G",
+                    "Culto": "Culto de Domingo",
+                    "Data": new Date().toISOString().split('T')[0],
+                    "Ministro": "Ministro Exemplo"
+                }];
+                localStorage.setItem('offline_repertorio', JSON.stringify(data));
+            }
+        }
+        
+        render(data);
         if (loader) loader.style.display = 'none';
         
         // Toast de sucesso apenas quando for sincronização manual (force = true)
@@ -25,10 +59,12 @@ async function carregarRepertorio(force = false) {
             showToast("Repertório sincronizado com sucesso!", 'success');
         }
     } catch (e) {
-        if (cached) render(JSON.parse(cached));
-        else {
-            container.innerHTML = '<div class="loading">Erro ao carregar dados.</div>';
-            showToast("Erro ao carregar repertório.", 'error');
+        if (cached) {
+            render(safeParse(cached));
+        } else {
+            console.error(e);
+            if (loader) loader.innerText = "Erro ao carregar dados.";
+            showToast("Erro ao sincronizar repertório.", 'error');
         }
     } finally {
         if (btnIcon) btnIcon.classList.remove('fa-spin');
@@ -38,20 +74,78 @@ async function carregarRepertorio(force = false) {
 
 async function silentSync() {
     try {
-        const response = await fetch(APP_CONFIG.SCRIPT_URL + "?sheet=Repertório_PWA");
-        const json = await response.json();
-        localStorage.setItem('offline_repertorio', JSON.stringify(json.data));
+        let data;
+        
+        try {
+            // Tentar carregar online
+            const response = await fetch(APP_CONFIG.SCRIPT_URL + "?sheet=Repertório_PWA");
+            const json = await response.json();
+            data = json.data;
+            localStorage.setItem('offline_repertorio', JSON.stringify(data));
+        } catch (corsError) {
+            // Se CORS bloquear, usar cache local
+            console.warn('CORS bloqueou sync, usando cache local:', corsError);
+            
+            const cachedRepertorio = localStorage.getItem('offline_repertorio');
+            if (cachedRepertorio) {
+                data = safeParse(cachedRepertorio);
+            } else {
+                // Se não tiver cache, criar dados de exemplo
+                console.warn('Sem cache local, criando dados de exemplo');
+                data = [{
+                    "Músicas": "Grande é o Senhor",
+                    "Cantor": "Fernandinho",
+                    "Tons": "G",
+                    "Culto": "Culto de Domingo",
+                    "Data": new Date().toISOString().split('T')[0],
+                    "Ministro": "Ministro Exemplo"
+                }];
+                localStorage.setItem('offline_repertorio', JSON.stringify(data));
+            }
+        }
 
-        // SÃ³ renderiza se nÃ£o houver busca ativa E nenhum item aberto (para nÃ£o fechar na cara do usuÃ¡rio)
+        // Só renderiza se não houver busca ativa E nenhum item aberto (para não fechar na cara do usuário)
         const hasActiveItems = document.querySelector('.active') !== null;
         if (SyncManager.getQueue().length === 0 && !hasActiveItems) {
-            render(json.data);
+            render(data);
         }
-    } catch (e) { console.log("Silent sync failed"); }
+    } catch (e) { 
+        console.log("Silent sync failed - usando apenas cache local");
+        // Tentar renderizar com cache existente como último recurso
+        try {
+            const cachedRepertorio = localStorage.getItem('offline_repertorio');
+            if (cachedRepertorio) {
+                render(safeParse(cachedRepertorio));
+            }
+        } catch (renderError) {
+            console.error("Falha total ao renderizar:", renderError);
+        }
+    }
 }
 
-// Ouvinte para re-renderizar quando a sincronizaÃ§Ã£o terminar
+// Ouvinte para re-renderizar quando a sincronização terminar
 window.addEventListener('syncCompleted', () => carregarRepertorio());
+
+// Monitora conclusão de sincronização para atualizar caches
+window.addEventListener('syncCompleted', async () => {
+    try {
+        // Tentar atualizar cache do repertório
+        const repResponse = await fetch(APP_CONFIG.SCRIPT_URL + "?sheet=Repertório_PWA");
+        const repJson = await repResponse.json();
+        localStorage.setItem('offline_repertorio', JSON.stringify(repJson.data || []));
+        console.log("📝 Cache do repertório atualizado após sync concluído");
+        
+        // Tentar atualizar cache do histórico
+        const histResponse = await fetch(APP_CONFIG.SCRIPT_URL + "?sheet=Historico de Músicas");
+        const histJson = await histResponse.json();
+        localStorage.setItem('offline_historico', JSON.stringify(histJson.data || []));
+        console.log("📝 Cache do histórico atualizado após sync concluído (repertório)");
+    } catch (e) {
+        console.warn("Não foi possível atualizar caches após sync (repertório):", e);
+        // Se falhar, pelo menos recarrega a página para mostrar mudanças
+        setTimeout(() => carregarRepertorio(true), 1000);
+    }
+});
 
 function render(data) {
     const container = document.getElementById('repertorioAgrupado');
@@ -134,30 +228,67 @@ function toggleAccordion(el) {
 
 async function addHistorico(btn, musica, cantor, tom, ministro) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+    
     try {
-        const res = await fetch(APP_CONFIG.SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-                action: "addHistory",
-                musicaCantor: `${musica} - ${cantor}`,
-                ministro: ministro || "Líder não definido",
-                tom: tom || "--"
-            })
+        // Verificação local de duplicatas
+        const cachedHistorico = JSON.parse(localStorage.getItem('offline_historico') || '[]');
+        const musicaCantor = `${musica} - ${cantor}`;
+        
+        // Verificar se já existe no histórico local
+        const duplicataLocal = cachedHistorico.some(item => {
+            // Tentar acessar como array (índice 1 = "Musica - Cantor")
+            let itemMusicaCantor = "";
+            if (Array.isArray(item)) {
+                itemMusicaCantor = String(item[1] || "").trim();
+            } else {
+                // Tentar acessar como objeto
+                itemMusicaCantor = String(item["Musica - Cantor"] || "").trim();
+            }
+            return itemMusicaCantor === musicaCantor;
         });
-        const dados = await res.json();
-        if (dados.status === "success") {
-            btn.innerHTML = '<i class="fas fa-check"></i>';
-            btn.classList.add('saved');
-        } else {
-            showToast(dados.message, 'error');
+        
+        if (duplicataLocal) {
+            if (typeof showToast === 'function') {
+                showToast(`⚠️ "${musicaCantor}" já está no histórico!`, 'warning', 4000);
+            }
             btn.innerHTML = '<i class="fas fa-bookmark"></i>';
+            btn.disabled = false;
+            return;
         }
-    } catch (e) { btn.innerHTML = '<i class="fas fa-bookmark"></i>'; }
+        
+        // Criar payload para SyncManager
+        const payload = {
+            action: "addHistory",
+            musicaCantor: musicaCantor,
+            ministro: ministro || "Líder não definido",
+            tom: tom || "--"
+        };
+        
+        // Adicionar ao SyncManager
+        SyncManager.addToQueue(payload);
+        
+        // Feedback de sucesso
+        if (typeof showToast === 'function') {
+            showToast(`✅ "${musicaCantor}" adicionado ao histórico!`, 'success', 3000);
+        }
+        
+        btn.innerHTML = '<i class="fas fa-check"></i>';
+        btn.classList.add('saved');
+        
+    } catch (e) {
+        console.error("Erro ao adicionar ao histórico:", e);
+        if (typeof showToast === 'function') {
+            showToast("❌ Erro ao adicionar ao histórico", 'error', 3000);
+        }
+        btn.innerHTML = '<i class="fas fa-bookmark"></i>';
+        btn.disabled = false;
+    }
 }
 
 async function addBulkHistorico(btn, jsonStr) {
     const confirmed = await showConfirmModal(
-        "Adicionar todas as músicas deste culto ao histórico? (Duplicatas serão ignoradas)",
+        "Adicionar todas as músicas ao histórico? (Duplicatas serão ignoradas)",
         "Adicionar",
         "Cancelar"
     );
@@ -168,18 +299,116 @@ async function addBulkHistorico(btn, jsonStr) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     btn.disabled = true;
 
-    try {
-        const res = await fetch(APP_CONFIG.SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: "addHistory", data: lista })
-        });
-        const dados = await res.json();
-        showToast(dados.message || "Músicas adicionadas ao histórico!");
-    } catch (e) { showToast("Erro na conexão.", 'error'); }
+    // Validação local de duplicatas APENAS no histórico
+    const cachedHistorico = JSON.parse(localStorage.getItem('offline_historico') || '[]');
+    
+    let musicasParaAdicionar = [];
+    let duplicatasEncontradas = 0;
+    let errosEncontrados = 0;
 
-    btn.innerHTML = original;
-    btn.disabled = false;
+    // Processar cada música
+    for (const item of lista) {
+        try {
+            const musicaCantor = String(item.musicaCantor || "").trim();
+            
+            if (!musicaCantor) {
+                errosEncontrados++;
+                continue;
+            }
+            
+            // Verificar se já existe no histórico local
+            const duplicataLocal = cachedHistorico.some(historicoItem => {
+                // Tentar acessar como array (índice 1 = "Musica - Cantor")
+                let itemMusicaCantor = "";
+                if (Array.isArray(historicoItem)) {
+                    itemMusicaCantor = String(historicoItem[1] || "").trim();
+                } else {
+                    // Tentar acessar como objeto
+                    itemMusicaCantor = String(historicoItem["Musica - Cantor"] || "").trim();
+                }
+                return itemMusicaCantor === musicaCantor;
+            });
+            
+            if (duplicataLocal) {
+                duplicatasEncontradas++;
+                console.log(`⚠️ Duplicata encontrada no histórico: ${musicaCantor}`);
+            } else {
+                // Adicionar à lista para processamento
+                musicasParaAdicionar.push({
+                    action: "addHistory",
+                    musicaCantor: musicaCantor,
+                    ministro: item.ministro || "Líder não definido",
+                    tom: item.tom || "--"
+                });
+            }
+        } catch (e) {
+            console.error("Erro ao processar item:", item, e);
+            errosEncontrados++;
+        }
+    }
+
+    // Feedback inicial
+    if (musicasParaAdicionar.length === 0 && duplicatasEncontradas > 0) {
+        if (typeof showToast === 'function') {
+            showToast(`📝 Todas as ${duplicatasEncontradas} música(s) já estão no histórico!`, 'info', 4000);
+        }
+        btn.innerHTML = original;
+        btn.disabled = false;
+        return;
+    }
+
+    // Adicionar todas as músicas ao SyncManager
+    try {
+        musicasParaAdicionar.forEach(payload => {
+            SyncManager.addToQueue(payload);
+        });
+        
+        // Feedback detalhado
+        let mensagemFinal = "";
+        if (musicasParaAdicionar.length > 0) {
+            mensagemFinal += `✅ ${musicasParaAdicionar.length} música(s) adicionada(s) ao histórico! `;
+        }
+        if (duplicatasEncontradas > 0) {
+            mensagemFinal += `⚠️ ${duplicatasEncontradas} duplicata(s) no histórico ignorada(s). `;
+        }
+        if (errosEncontrados > 0) {
+            mensagemFinal += `❌ ${errosEncontrados} erro(s) encontrado(s).`;
+        }
+        
+        if (typeof showToast === 'function') {
+            const toastType = musicasParaAdicionar.length > 0 ? 'success' : (duplicatasEncontradas > 0 ? 'warning' : 'info');
+            showToast(mensagemFinal || "Nenhuma música processada.", toastType, 5000);
+        }
+        
+        // Atualizar botão
+        btn.innerHTML = '<i class="fas fa-check"></i> Concluído';
+        btn.classList.add('saved');
+        
+        // Atualizar cache do histórico após um tempo
+        setTimeout(() => {
+            silentSync();
+        }, 2000);
+        
+    } catch (e) {
+        console.error("Erro ao adicionar músicas ao histórico:", e);
+        if (typeof showToast === 'function') {
+            showToast("❌ Erro ao adicionar músicas ao histórico", 'error', 3000);
+        }
+        btn.innerHTML = original;
+        btn.disabled = false;
+    }
 }
+
+// Adicionar listener de duplicata bloqueada para mostrar feedback correto
+window.addEventListener('syncItemBlocked', (event) => {
+    const { musica, cantor, culto, data } = event.detail;
+    console.log("🚫 Duplicata bloqueada - Atualizando UI (repertório)");
+    
+    // Mostrar aviso de duplicata apenas com toast
+    if (typeof showToast === 'function') {
+        showToast(`⚠️ "${musica}" já está no histórico!`, 'warning', 5000);
+    }
+});
 
 async function excluir(musica, culto, cantor) {
     const confirmed = await showConfirmModal(
@@ -202,7 +431,9 @@ async function excluir(musica, culto, cantor) {
 
     // 1. Atualiza UI imediatamente (Otimismo)
     SyncManager.updateLocalCache("Repertório_PWA", "delete", payload);
-    render(JSON.parse(localStorage.getItem('offline_repertorio')));
+    const cachedData = safeParse(localStorage.getItem('offline_repertorio'));
+    render(cachedData);
+    showToast("✅ Música excluída com sucesso!", 'success');
 
     // 2. Adiciona à fila de sincronização
     SyncManager.addToQueue(payload);

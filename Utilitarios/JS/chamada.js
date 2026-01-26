@@ -263,7 +263,7 @@ async function saveNewEvent() {
     if (!date || !theme) return showToast("Preencha todos os campos.", 'warning');
     const id = Math.random().toString(16).substring(2, 10);
     const ev = { DATA: date, TEMA: theme, ID_AULA: id, STATUS: "FECHADO" };
-    SyncManager.addToQueue({ action: "addRow", sheet: "Consagração", data: ev });
+    SyncManager.addToQueue({ sheet: "Consagração", data: ev });
     allEvents.unshift(ev);
     localStorage.setItem('offline_consagracao', JSON.stringify(allEvents));
     renderEvents();

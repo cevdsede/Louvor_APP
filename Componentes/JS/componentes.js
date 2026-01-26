@@ -170,11 +170,11 @@ function abrirDetalhes(nome, foto, funcao, tel, wpp, fallback) {
 
     // Inicia buscas nos boxes do modal
     buscarEscalasNoModal(nome);
-    buscarHistoricoNoModal(nome, funcao);
+    // buscarHistoricoNoModal(nome, funcao); // REMOVIDO - conflita com buscarHistoricoMusicasNoModal
     buscarAvisosGeraisNoModal(nome);
 }
 
-// Busca Escalas focada no Modal (CORRIGIDA)
+// Busca Escalas focada no Modal (CORRIGIDA - Agrupando por culto)
 async function buscarEscalasNoModal(nome) {
     const box = document.getElementById('modalEscalas');
     box.innerHTML = '<div style="text-align:center; padding:10px; color:var(--text-muted);">Carregando...</div>';
@@ -189,28 +189,262 @@ async function buscarEscalasNoModal(nome) {
         const data = JSON.parse(cached);
         const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
 
+        // Filtrar escalas futuras do componente
         const filtrado = data
             .filter(e => {
                 const d = new Date(e.Data);
                 return e.Nome && e.Nome.toLowerCase().trim() === nome.toLowerCase().trim() && d >= hoje;
             })
-            .sort((a, b) => new Date(a.Data) - new Date(b.Data))
-            .slice(0, 3);
+            .sort((a, b) => new Date(a.Data) - new Date(b.Data));
 
-        if (filtrado.length > 0) {
-            box.innerHTML = filtrado.map(e => `
-        <div class="detail-item">
-          <div class="detail-top">
-            <span class="detail-culto">${e["Nome dos Cultos"]}</span>
-            <span class="detail-date">${new Date(e.Data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
-          </div>
-          <span class="detail-funcoes"><i class="fas fa-tag"></i> ${e.Função}</span>
-        </div>
-      `).join('');
+        // Agrupar por culto
+        const cultosAgrupados = {};
+        filtrado.forEach(e => {
+            const chaveCulto = `${e["Nome dos Cultos"]}_${e.Data}`;
+            if (!cultosAgrupados[chaveCulto]) {
+                cultosAgrupados[chaveCulto] = {
+                    culto: e["Nome dos Cultos"],
+                    data: e.Data,
+                    funcoes: []
+                };
+            }
+            cultosAgrupados[chaveCulto].funcoes.push(e.Função);
+        });
+
+        // Renderizar cultos agrupados
+        if (Object.keys(cultosAgrupados).length > 0) {
+            box.innerHTML = Object.values(cultosAgrupados).map(culto => `
+                <div style="
+                    padding: 12px 16px; 
+                    margin: 8px 0; 
+                    background: linear-gradient(135deg, var(--card-bg) 0%, rgba(var(--secondary-rgb, 168, 85, 247), 0.05) 100%);
+                    border-radius: 12px; 
+                    border-left: 4px solid var(--secondary);
+                    border: 1px solid var(--border-color);
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    position: relative;
+                    overflow: hidden;
+                " onmouseover="this.style.transform='translateX(4px) scale(1.02)'" onmouseout="this.style.transform='translateX(0) scale(1)'">
+                    <div style="
+                        display: flex; 
+                        align-items: center; 
+                        gap: 12px;
+                        position: relative;
+                        z-index: 1;
+                    ">
+                        <div style="
+                            width: 32px; 
+                            height: 32px; 
+                            border-radius: 50%; 
+                            background: linear-gradient(135deg, var(--secondary), var(--primary));
+                            display: flex; 
+                            align-items: center; 
+                            justify-content: center;
+                            flex-shrink: 0;
+                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                        ">
+                            <i class="fas fa-calendar-alt" style="color: white; font-size: 14px;"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="
+                                display: flex; 
+                                justify-content: space-between; 
+                                align-items: center; 
+                                margin-bottom: 4px;
+                            ">
+                                <div style="
+                                    font-size: 0.9rem; 
+                                    color: var(--text-primary); 
+                                    font-weight: 600;
+                                    line-height: 1.4;
+                                ">${culto.culto}</div>
+                                <div style="
+                                    font-size: 0.75rem; 
+                                    background: rgba(var(--secondary-rgb, 168, 85, 247), 0.1);
+                                    color: var(--secondary);
+                                    padding: 4px 10px;
+                                    border-radius: 12px;
+                                    font-weight: 600;
+                                    white-space: nowrap;
+                                ">${new Date(culto.data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</div>
+                            </div>
+                            <div style="
+                                font-size: 0.8rem; 
+                                color: var(--text-muted); 
+                                font-weight: 500;
+                                background: rgba(var(--secondary-rgb, 168, 85, 247), 0.08);
+                                color: var(--secondary);
+                                padding: 4px 10px;
+                                border-radius: 8px;
+                                display: inline-block;
+                            "><i class="fas fa-tag" style="margin-right: 6px;"></i>${culto.funcoes.join(', ')}</div>
+                        </div>
+                    </div>
+                    <div style="
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        height: 2px;
+                        background: linear-gradient(90deg, var(--secondary), var(--primary));
+                        opacity: 0.6;
+                    "></div>
+                </div>
+            `).join('');
         } else {
             box.innerHTML = '<div style="padding:10px; text-align:center; color:var(--text-muted); font-size:0.8rem;">Nenhuma escala futura.</div>';
         }
-    } catch (e) { box.innerHTML = "Erro ao carregar."; console.log(e); }
+    } catch (e) { 
+        box.innerHTML = "Erro ao carregar."; 
+        console.log(e); 
+    }
+
+    // Buscar histórico de músicas do componente
+    buscarHistoricoMusicasNoModal(nome);
+}
+
+// Busca Histórico de Músicas do componente
+async function buscarHistoricoMusicasNoModal(nome) {
+    const box = document.getElementById('modalHistorico');
+    const container = document.getElementById('modalHistoricoContainer');
+    
+    // Sempre mostrar o container
+    container.style.display = 'block';
+    box.innerHTML = '<div style="text-align:center; padding:10px; color:var(--text-muted);">Carregando...</div>';
+
+    try {
+        const cached = localStorage.getItem('offline_historico');
+        console.log("🔍 DEBUG - Cache do histórico:", cached ? "EXISTS" : "NULL");
+        
+        if (!cached) {
+            console.log("❌ DEBUG - Cache do histórico está vazio");
+            box.innerHTML = '<div style="padding:10px; text-align:center; color:var(--text-muted); font-size:0.8rem;">Nenhum histórico encontrado.</div>';
+            return;
+        }
+
+        const data = JSON.parse(cached);
+        console.log("📊 DEBUG - Total de itens no histórico:", data.length);
+        console.log("🔍 DEBUG - Buscando por ministro:", nome);
+        console.log("📋 DEBUG - Primeiros 3 itens do histórico:", data.slice(0, 3));
+        
+        // Filtrar músicas onde o componente é ministro
+        const musicasDoComponente = data
+            .filter(item => {
+                // Tentar acessar como array (índice 0 = Ministro, 1 = Musica, 2 = Tons)
+                let ministro = "";
+                if (Array.isArray(item)) {
+                    ministro = String(item[0] || "").trim();
+                } else {
+                    ministro = String(item.Ministro || "").trim();
+                }
+                
+                const match = ministro.toLowerCase().includes(nome.toLowerCase());
+                if (match) {
+                    console.log("✅ DEBUG - Item encontrado:", { ministro, item });
+                }
+                return match;
+            })
+            .slice(0, 5) // Limitar às 5 mais recentes
+            .reverse(); // Mais recentes primeiro
+
+        console.log("🎵 DEBUG - Músicas do componente encontradas:", musicasDoComponente.length);
+
+        if (musicasDoComponente.length > 0) {
+            console.log("🎨 DEBUG - Renderizando itens encontrados:");
+            box.innerHTML = musicasDoComponente.map((item, index) => {
+                // Tentar acessar como array ou objeto
+                let musica = "";
+                let tom = "";
+                
+                if (Array.isArray(item)) {
+                    musica = String(item[1] || "").trim(); // Índice 1 = Músicas
+                    tom = String(item[2] || "").trim(); // Índice 2 = Tons
+                    console.log(`📝 DEBUG - Item ${index} (Array):`, { ministro: item[0], musica: item[1], tom: item[2] });
+                } else {
+                    musica = String(item["Músicas"] || "").trim(); // Chave correta
+                    tom = String(item["Tons"] || "").trim(); // Chave correta
+                    console.log(`📝 DEBUG - Item ${index} (Objeto):`, { ministro: item.Ministro, musica: item["Músicas"], tom: item["Tons"] });
+                }
+                
+                const displayText = tom ? `${musica} (${tom})` : musica;
+                
+                return `
+                    <div style="
+                        padding: 12px 16px; 
+                        margin: 8px 0; 
+                        background: linear-gradient(135deg, var(--card-bg) 0%, rgba(var(--primary-rgb, 59, 130, 246), 0.05) 100%);
+                        border-radius: 12px; 
+                        border-left: 4px solid var(--primary);
+                        border: 1px solid var(--border-color);
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        position: relative;
+                        overflow: hidden;
+                    " onmouseover="this.style.transform='translateX(4px) scale(1.02)'" onmouseout="this.style.transform='translateX(0) scale(1)'">
+                        <div style="
+                            display: flex; 
+                            align-items: center; 
+                            gap: 12px;
+                            position: relative;
+                            z-index: 1;
+                        ">
+                            <div style="
+                                width: 32px; 
+                                height: 32px; 
+                                border-radius: 50%; 
+                                background: linear-gradient(135deg, var(--primary), var(--secondary));
+                                display: flex; 
+                                align-items: center; 
+                                justify-content: center;
+                                flex-shrink: 0;
+                                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                            ">
+                                <i class="fas fa-music" style="color: white; font-size: 14px;"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="
+                                    font-size: 0.9rem; 
+                                    color: var(--text-primary); 
+                                    font-weight: 600;
+                                    line-height: 1.4;
+                                    margin-bottom: 2px;
+                                ">${musica}</div>
+                                ${tom ? `
+                                    <div style="
+                                        font-size: 0.75rem; 
+                                        color: var(--text-muted); 
+                                        font-weight: 500;
+                                        background: rgba(var(--primary-rgb, 59, 130, 246), 0.1);
+                                        color: var(--primary);
+                                        padding: 2px 8px;
+                                        border-radius: 12px;
+                                        display: inline-block;
+                                    ">${tom}</div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <div style="
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            right: 0;
+                            height: 2px;
+                            background: linear-gradient(90deg, var(--primary), var(--secondary));
+                            opacity: 0.6;
+                        "></div>
+                    </div>
+                `;
+            }).join('');
+            console.log("✅ DEBUG - HTML gerado com sucesso");
+        } else {
+            console.log("❌ DEBUG - Nenhuma música encontrada para renderizar");
+            box.innerHTML = '<div style="padding:10px; text-align:center; color:var(--text-muted); font-size:0.8rem;">Nenhuma música recente.</div>';
+        }
+    } catch (e) { 
+        box.innerHTML = '<div style="padding:10px; text-align:center; color:var(--text-muted); font-size:0.8rem;">Erro ao carregar histórico.</div>';
+        console.log(e); 
+    }
 }
 
 // Busca Histórico focado no Modal (CORRIGIDA)

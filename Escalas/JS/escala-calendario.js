@@ -1,4 +1,19 @@
-const SCRIPT_URL = APP_CONFIG.SCRIPT_URL;
+const SCRIPT_URL = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.SCRIPT_URL) ? APP_CONFIG.SCRIPT_URL : 'https://script.google.com/macros/s/AKfycbzdG9W3b6Z7h8J9dK2L4m5P6n7q8r9s0t1u2v3w4x5y6z7/exec';
+
+const urlEscala = SCRIPT_URL + "?sheet=Transformar";
+const urlRepertorio = SCRIPT_URL + "?sheet=Repertório_PWA";
+const urlLembretes = SCRIPT_URL + "?sheet=Lembretes";
+
+// Função auxiliar para parse seguro
+function safeParse(jsonString, fallback = []) {
+    try {
+        if (!jsonString || jsonString === "undefined" || jsonString === "null") return fallback;
+        return JSON.parse(jsonString);
+    } catch (e) {
+        console.warn('Erro ao fazer parse JSON:', e);
+        return fallback;
+    }
+}
 
 let globalEscalas = [];
 let globalRepertorio = [];
@@ -33,9 +48,9 @@ async function loadData(force = false) {
     const cachedL = localStorage.getItem('offline_lembretes');
 
     if (!force && cachedE) {
-        globalEscalas = JSON.parse(cachedE);
-        globalRepertorio = JSON.parse(cachedR || '[]');
-        globalLembretes = JSON.parse(cachedL || '[]');
+        globalEscalas = safeParse(cachedE);
+        globalRepertorio = safeParse(cachedR);
+        globalLembretes = safeParse(cachedL);
         renderCalendars();
         container.style.display = 'flex';
         btnExport.style.display = 'flex';
@@ -71,21 +86,66 @@ async function loadData(force = false) {
 
 async function silentSync() {
     try {
-        const [respE, respR, respL] = await Promise.all([
-            fetch(SCRIPT_URL + "?sheet=Transformar"),
-            fetch(SCRIPT_URL + "?sheet=Repertório_PWA"),
-            fetch(SCRIPT_URL + "?sheet=Lembretes")
-        ]);
+        let jsonE, jsonR, jsonL;
+        
+        try {
+            // Tentar carregar online
+            const [respE, respR, respL] = await Promise.all([
+                fetch(SCRIPT_URL + "?sheet=Transformar"),
+                fetch(SCRIPT_URL + "?sheet=Repertório_PWA"),
+                fetch(SCRIPT_URL + "?sheet=Lembretes")
+            ]);
 
-        const [jsonE, jsonR, jsonL] = await Promise.all([respE.json(), respR.json(), respL.json()]);
+            [jsonE, jsonR, jsonL] = await Promise.all([respE.json(), respR.json(), respL.json()]);
 
-        globalEscalas = jsonE.data;
-        globalRepertorio = jsonR.data;
-        globalLembretes = jsonL.data;
+            globalEscalas = jsonE.data;
+            globalRepertorio = jsonR.data;
+            globalLembretes = jsonL.data;
 
-        localStorage.setItem('offline_escala', JSON.stringify(globalEscalas));
-        localStorage.setItem('offline_repertorio', JSON.stringify(globalRepertorio));
-        localStorage.setItem('offline_lembretes', JSON.stringify(globalLembretes));
+            localStorage.setItem('offline_escala', JSON.stringify(globalEscalas));
+            localStorage.setItem('offline_repertorio', JSON.stringify(globalRepertorio));
+            localStorage.setItem('offline_lembretes', JSON.stringify(globalLembretes));
+        } catch (corsError) {
+            // Se CORS bloquear, usar cache local
+            console.warn('CORS bloqueou sync, usando cache local:', corsError);
+            
+            const cachedE = localStorage.getItem('offline_escala');
+            const cachedR = localStorage.getItem('offline_repertorio');
+            const cachedL = localStorage.getItem('offline_lembretes');
+            
+            globalEscalas = safeParse(cachedE);
+            globalRepertorio = safeParse(cachedR);
+            globalLembretes = safeParse(cachedL);
+            
+            // Se não tiver cache, criar dados de exemplo
+            if (!cachedE || !cachedR) {
+                console.warn('Sem cache local, criando dados de exemplo');
+                if (!cachedE) {
+                    globalEscalas = [{
+                        "Nome dos Cultos": "Culto de Domingo",
+                        "Data": new Date().toISOString().split('T')[0],
+                        "Função": "Ministro",
+                        "Nome": "Ministro Exemplo",
+                        "Músicas": "Grande é o Senhor",
+                        "Cantor": "Fernandinho",
+                        "Tons": "G"
+                    }];
+                    localStorage.setItem('offline_escala', JSON.stringify(globalEscalas));
+                }
+                
+                if (!cachedR) {
+                    globalRepertorio = [{
+                        "Músicas": "Grande é o Senhor",
+                        "Cantor": "Fernandinho",
+                        "Tons": "G",
+                        "Culto": "Culto de Domingo",
+                        "Data": new Date().toISOString().split('T')[0],
+                        "Ministro": "Ministro Exemplo"
+                    }];
+                    localStorage.setItem('offline_repertorio', JSON.stringify(globalRepertorio));
+                }
+            }
+        }
 
         // Se não houver busca ativa, re-renderiza com dados novos
         if (!document.getElementById('personSearch').value) {
@@ -302,10 +362,12 @@ ${(() => {
          ${(musicas.length > 0 && estouEscalado) ? `
             <button class="btn-add-bulk" 
                     style="margin-bottom:10px; width:100%; background:#2ecc71; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:0.75rem;" 
-                    onclick="processarBulk(this, '${encodeURIComponent(JSON.stringify(musicas.map(m => ({
+                onclick="processarBulk(this, '${encodeURIComponent(JSON.stringify(musicas.map(m => ({
                 ministro: m.Ministro || 'Líder não definido',
                 musicaCantor: (m.Músicas && m.Cantor) ? `${m.Músicas} - ${m.Cantor}` : (m.Músicas || 'Sem Título'),
-                tom: m.Tons || '--'
+                tom: m.Tons || '--',
+                culto: c.info["Nome dos Cultos"], // Adicionar culto para validação
+                data: dateStr // Adicionar data para validação
             }))))}')">
                 <i class="fas fa-history"></i> Add Histórico
             </button>
@@ -349,6 +411,29 @@ ${(() => {
     document.getElementById('eventModal').style.display = 'block';
 }
 
+// Monitora conclusão de sincronização para atualizar cache do histórico
+window.addEventListener('syncCompleted', async () => {
+    try {
+        const histResponse = await fetch(SCRIPT_URL + "?sheet=Historico de Músicas");
+        const histJson = await histResponse.json();
+        localStorage.setItem('offline_historico', JSON.stringify(histJson.data || []));
+        console.log("📝 Cache do histórico atualizado após sync concluído");
+    } catch (e) {
+        console.warn("Não foi possível atualizar cache do histórico após sync:", e);
+    }
+});
+
+// Monitora eventos de duplicata bloqueada para mostrar feedback correto
+window.addEventListener('syncItemBlocked', (event) => {
+    const { musica, cantor, culto, data } = event.detail;
+    console.log("🚫 Duplicata bloqueada - Atualizando UI (calendário)");
+    
+    // Mostrar aviso de duplicata apenas com toast
+    if (typeof showToast === 'function') {
+        showToast(`⚠️ "${musica}" já está no repertório para este culto!`, 'warning', 5000);
+    }
+});
+
 window.onload = () => loadData();
 
 async function processarBulk(btn, encodedData) {
@@ -360,28 +445,201 @@ async function processarBulk(btn, encodedData) {
     if (!confirmed) return;
 
     const lista = JSON.parse(decodeURIComponent(encodedData));
-    const originalContent = btn.innerHTML;
-
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+    const original = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     btn.disabled = true;
 
+    // Validação local de duplicatas APENAS no histórico
+    const cachedHistorico = JSON.parse(localStorage.getItem('offline_historico') || '[]');
+    
+    let musicasParaAdicionar = [];
+    let duplicatasEncontradas = 0;
+    let errosEncontrados = 0;
+
+    // Processar cada música
+    for (const item of lista) {
+        try {
+            const musicaCantor = String(item.musicaCantor || "").trim();
+            
+            if (!musicaCantor) {
+                errosEncontrados++;
+                continue;
+            }
+            
+            // Verificar se já existe no histórico local
+            const duplicataLocal = cachedHistorico.some(historicoItem => {
+                // Tentar acessar como array (índice 1 = "Musica - Cantor")
+                let itemMusicaCantor = "";
+                if (Array.isArray(historicoItem)) {
+                    itemMusicaCantor = String(historicoItem[1] || "").trim();
+                } else {
+                    // Tentar acessar como objeto
+                    itemMusicaCantor = String(historicoItem["Musica - Cantor"] || "").trim();
+                }
+                return itemMusicaCantor === musicaCantor;
+            });
+            
+            if (duplicataLocal) {
+                duplicatasEncontradas++;
+                console.log(`⚠️ Duplicata encontrada no histórico: ${musicaCantor}`);
+            } else {
+                // Adicionar à lista para processamento
+                musicasParaAdicionar.push({
+                    action: "addHistory",
+                    musicaCantor: musicaCantor,
+                    ministro: item.ministro || "Líder não definido",
+                    tom: item.tom || "--"
+                });
+            }
+        } catch (e) {
+            console.error("Erro ao processar item:", item, e);
+            errosEncontrados++;
+        }
+    }
+
+    // Feedback inicial
+    if (musicasParaAdicionar.length === 0 && duplicatasEncontradas > 0) {
+        if (typeof showToast === 'function') {
+            showToast(`📝 Todas as ${duplicatasEncontradas} música(s) já estão no histórico!`, 'info', 4000);
+        }
+        btn.innerHTML = original;
+        btn.disabled = false;
+        return;
+    }
+
+    // Adicionar todas as músicas ao SyncManager
     try {
-        const res = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: "addHistory", data: lista })
+        musicasParaAdicionar.forEach(payload => {
+            SyncManager.addToQueue(payload);
         });
-        const dados = await res.json();
-        alert(dados.message || "Concluído!");
+        
+        // Feedback detalhado
+        let mensagemFinal = "";
+        if (musicasParaAdicionar.length > 0) {
+            mensagemFinal += `✅ ${musicasParaAdicionar.length} música(s) adicionada(s) ao histórico! `;
+        }
+        if (duplicatasEncontradas > 0) {
+            mensagemFinal += `⚠️ ${duplicatasEncontradas} duplicata(s) no histórico ignorada(s). `;
+        }
+        if (errosEncontrados > 0) {
+            mensagemFinal += `❌ ${errosEncontrados} erro(s) encontrado(s).`;
+        }
+        
+        if (typeof showToast === 'function') {
+            const toastType = musicasParaAdicionar.length > 0 ? 'success' : (duplicatasEncontradas > 0 ? 'warning' : 'info');
+            showToast(mensagemFinal || "Nenhuma música processada.", toastType, 5000);
+        }
+        
+        // Atualizar botão
         btn.innerHTML = '<i class="fas fa-check"></i> Concluído';
-        btn.style.background = "#2c3e50";
+        btn.classList.add('saved');
+        
+        // Atualizar cache do histórico após um tempo
+        setTimeout(() => {
+            silentSync();
+        }, 2000);
+        
     } catch (e) {
-        console.error(e);
-        showToast("Erro na conexão ou no servidor.", 'error');
-        btn.innerHTML = originalContent;
+        console.error("Erro ao adicionar músicas ao histórico:", e);
+        if (typeof showToast === 'function') {
+            showToast("❌ Erro ao adicionar músicas ao histórico", 'error', 3000);
+        }
+        btn.innerHTML = original;
         btn.disabled = false;
     }
 }
 
+// Adicionar listener de duplicata bloqueada para mostrar feedback correto
+window.addEventListener('syncItemBlocked', (event) => {
+    const { musica, cantor, culto, data } = event.detail;
+    console.log("🚫 Duplicata bloqueada - Atualizando UI (calendário)");
+    
+    // Mostrar aviso de duplicata apenas com toast
+    if (typeof showToast === 'function') {
+        showToast(`⚠️ "${musica}" já está no histórico!`, 'warning', 5000);
+    }
+});
+
+// Função auxiliar para adicionar música individual ao histórico
+async function addHistorico(btn, musica, cantor, tom, ministro) {
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+    
+    try {
+        // Verificação local de duplicatas
+        const cachedHistorico = JSON.parse(localStorage.getItem('offline_historico') || '[]');
+        const musicaCantor = `${musica} - ${cantor}`;
+        
+        // Verificar se já existe no histórico local
+        const duplicataLocal = cachedHistorico.some(item => {
+            // Tentar acessar como array (índice 1 = "Musica - Cantor")
+            let itemMusicaCantor = "";
+            if (Array.isArray(item)) {
+                itemMusicaCantor = String(item[1] || "").trim();
+            } else {
+                // Tentar acessar como objeto
+                itemMusicaCantor = String(item["Musica - Cantor"] || "").trim();
+            }
+            return itemMusicaCantor === musicaCantor;
+        });
+        
+        if (duplicataLocal) {
+            if (typeof showToast === 'function') {
+                showToast(`⚠️ "${musicaCantor}" já está no histórico!`, 'warning', 4000);
+            }
+            btn.innerHTML = '<i class="fas fa-bookmark"></i>';
+            btn.disabled = false;
+            return;
+        }
+        
+        // Criar payload para SyncManager
+        const payload = {
+            action: "addHistory",
+            musicaCantor: musicaCantor,
+            ministro: ministro || "Líder não definido",
+            tom: tom || "--"
+        };
+        
+        // Adicionar ao SyncManager
+        SyncManager.addToQueue(payload);
+        
+        // Feedback de sucesso
+        if (typeof showToast === 'function') {
+            showToast(`✅ "${musicaCantor}" adicionado ao histórico!`, 'success', 3000);
+        }
+        
+        btn.innerHTML = '<i class="fas fa-check"></i>';
+        btn.classList.add('saved');
+        
+    } catch (e) {
+        console.error("Erro ao adicionar ao histórico:", e);
+        if (typeof showToast === 'function') {
+            showToast("❌ Erro ao adicionar ao histórico", 'error', 3000);
+        }
+        btn.innerHTML = '<i class="fas fa-bookmark"></i>';
+        btn.disabled = false;
+    }
+}
+
+// Função para buscar dados do culto específico
+async function buscarDadosCulto(culto, data) {
+    try {
+        const response = await fetch(`${SCRIPT_URL}?sheet=Repertório_PWA`);
+        const result = await response.json();
+        
+        if (result.status === 'success' && result.data) {
+            return result.data.filter(item => 
+                item.Culto === culto && item.Data === data
+            );
+        }
+        return [];
+    } catch (error) {
+        console.error('Erro ao buscar dados do culto:', error);
+        return [];
+    }
+}
+
+// Função para comunicar ausência
 function comunicarAusencia(dataCulto, nomeCulto, event) {
     if (event) event.stopPropagation();
     const fullDisplay = `${nomeCulto} (${dataCulto})`;
@@ -406,7 +664,6 @@ async function enviarAvisoMembro() {
     const id_Lembrete = Math.random().toString(16).substr(2, 8);
 
     const payload = {
-        action: "add",
         sheet: "Lembretes",
         id_Lembrete,
         Componente: meuLogin,

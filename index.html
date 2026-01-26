@@ -390,164 +390,7 @@
       }
     }
 
-    /* MODO PAISAGEM: ESTRUTURA PREMIUM DE 3 COLUNAS (somente celular/tablet) */
-    @media (orientation: landscape) and (max-width: 900px) and (hover: none) and (pointer: coarse) {
-      body {
-        overflow: hidden;
-        /* Evita scroll na dashboard em paisagem */
-        height: 100vh;
-        padding-top: 0 !important;
-      }
-
-      .tab-bar {
-        left: 0;
-        top: 70px;
-        bottom: 0;
-        right: auto;
-        width: 80px;
-        height: auto;
-        flex-direction: column;
-        justify-content: center;
-        border-top-right-radius: 20px;
-        border-bottom-right-radius: 20px;
-      }
-
-      .content {
-        margin-left: 80px;
-        margin-top: 70px;
-        max-width: none;
-        height: calc(100vh - 70px);
-        /* 70px header */
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        grid-template-rows: auto minmax(0, 1fr) auto;
-        gap: 8px;
-        padding: 5px 10px;
-        padding-top: 5px;
-        padding-bottom: 8px;
-        overflow: hidden;
-        /* Critical: allow shrinking in grid */
-      }
-
-      .welcome {
-        grid-column: 1 / span 2;
-        margin-bottom: 2px;
-        margin-top: 0;
-        font-size: 0.7rem;
-        position: relative;
-        z-index: 10;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        text-align: left;
-      }
-
-      /* Mostrar botão da welcome div no modo paisagem, alinhado à direita */
-      .welcome .btn-sync {
-        display: inline-block !important;
-        margin-left: auto;
-      }
-
-      .chart-card {
-        grid-column: 1;
-        grid-row: 2;
-        height: 100%;
-        max-height: none;
-        min-height: 0;
-        /* Critical: allow shrinking in grid */
-        margin-bottom: 0;
-        display: flex;
-        flex-direction: column;
-        padding: 4px;
-        padding-bottom: 4px;
-        overflow: hidden;
-        /* Critical: prevents infinite growth */
-        position: relative;
-        z-index: auto;
-        border-radius: 12px;
-      }
-
-      .chart-wrapper {
-        flex: 1 1 0;
-        /* Grow, shrink, base 0 */
-        width: 100%;
-        min-height: 0;
-        /* Critical: allows shrinking in flexbox */
-        max-height: 100%;
-        /* Prevent overflow */
-        position: relative;
-        overflow: hidden;
-        /* Corta crescimento excessivo */
-      }
-
-      /* Celular deitado: reduzir um pouco o gráfico para sobrar espaço */
-      .chart-wrapper {
-        height: 100%;
-      }
-
-      #escalaChart {
-        width: 100% !important;
-        height: 100% !important;
-      }
-
-      #escalaChart {
-        max-height: 100% !important;
-      }
-
-      .kpi-grid {
-        grid-column: 2;
-        grid-row: 2;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: space-between;
-        /* Distribute evenly */
-        gap: 0;
-        /* No gap, use space-between */
-        margin-bottom: 0;
-        height: 100%;
-        max-height: none;
-        min-height: 0;
-        overflow: hidden;
-        padding-bottom: 0;
-      }
-
-      #footerInfo {
-        grid-column: 1 / span 2;
-        grid-row: 3;
-        margin-top: 0;
-        margin-bottom: 0 !important;
-        padding: 0 0 8px;
-        font-size: 0.6rem;
-        position: relative;
-        z-index: 5;
-      }
-
-      #offlineDataBar {
-        margin-bottom: 0 !important;
-      }
-
-      .kpi-card {
-        flex: 1;
-        /* Equal distribution */
-        min-height: 0;
-        max-height: none;
-        /* Allow growth */
-        padding: 4px;
-      }
-
-      /* Esconder botão separado de sync no modo paisagem */
-      #landscapeSyncBtn,
-      .sync-status,
-      #lastUpdateDate {
-        display: none !important;
-      }
-
-      /* Grid com espaçamento proporcional */
-      .kpi-grid {
-        width: 100%;
-      }
-    }
-
+    
     .tab-item {
       flex: 1;
       display: flex;
@@ -923,23 +766,7 @@
       color: var(--text-muted);
     }
 
-    /* Landscape Sync Button */
-    .landscape-sync-btn {
-      position: fixed;
-      top: 75px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 20px;
-      padding: 8px 20px;
-      font-size: 0.8rem;
-      cursor: pointer;
-      z-index: 1001;
-      display: none;
-    }
-  </style>
+      </style>
 </head>
 
 <body>
@@ -955,8 +782,7 @@
     Object.defineProperty(window, 'OnboardingTutorial', {
       get: () => null,
       set: () => {},
-      configurable: false,
-      writable: false
+      configurable: false
     });
     
     // Bloquear qualquer tentativa de redefinir o OnboardingTutorial
@@ -1040,11 +866,7 @@
       </div>
     </div>
 
-    <!-- Botão de sync para modo paisagem -->
-    <button id="landscapeSyncBtn" class="landscape-sync-btn" onclick="syncAllData()" style="display:none;">
-      <i class="fas fa-sync-alt"></i>
-    </button>
-
+    
     <div id="themePanel" class="theme-panel">
       <h3 style="color: #000000 !important;">Escolha um Tema</h3>
       <div class="theme-buttons" id="themeButtonsGrid"></div>

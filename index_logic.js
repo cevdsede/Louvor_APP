@@ -633,38 +633,8 @@ function abrirNotificacoes() {
 async function excluirNotificacao(id, event) {
     if (event) event.stopPropagation();
     let notifs = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
-    const target = notifs.find(n => n.id === id);
 
-    // DELETAR DO SERVIDOR? (Apenas Aviso Lider)
-    if (target && target.type === 'aviso_lider') {
-        const user = JSON.parse(localStorage.getItem('user_token') || '{}');
-        const isLiderOrAdmin = user.Role === 'Lider' || user.Role === 'Admin' || user.Role === 'SuperAdmin';
-        const isAuthor = target.isAuthor;
-
-        if (isLiderOrAdmin || isAuthor) {
-            if (confirm("Deseja apagar este aviso para TODOS (do servidor)?")) {
-                try {
-                    // Feedback visual
-                    if (event && event.target) {
-                        event.target.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                    }
-
-                    await fetch(SCRIPT_URL, {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            action: "delete",
-                            sheet: "Lembretes",
-                            id_Lembrete: target.rawId
-                        })
-                    });
-                    showToast("Aviso removido do servidor!");
-                } catch (e) {
-                    showToast("Erro ao apagar do servidor. Apagando apenas localmente.", 'warning');
-                }
-            }
-        }
-    }
-
+    // Remove apenas localmente - não exclui da planilha
     notifs = notifs.filter(n => n.id !== id);
     localStorage.setItem('user_notificacoes', JSON.stringify(notifs));
     abrirNotificacoes(); // Re-renderiza o modal

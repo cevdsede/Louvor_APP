@@ -315,17 +315,3 @@ body {
 
     /* Esconde texto no mobile, deixa sÃ³ Ã­cone */
 }
-
-/* LANDSCAPE OPTIMIZATION */
-@media (min-width: 900px) {
-    #repertorioAgrupado {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 20px;
-        align-items: flex-start;
-    }
-
-    .container {
-        max-width: 1200px;
-    }
-}

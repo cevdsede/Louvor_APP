@@ -330,20 +330,6 @@ body {
     display: none !important;
 }
 
-/* LANDSCAPE OPTIMIZATION */
-@media (min-width: 800px) {
-    #main-content {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 20px;
-        align-items: flex-start;
-    }
-
-    .container {
-        max-width: 1100px;
-    }
-}
-
 /* ANALYTICS */
 .analytics-container {
     display: grid;
