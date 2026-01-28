@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+
+<html lang="pt-br">
+
+
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>EscalasHub Premium</title>
+
+
+
+    <!-- Tailwind CSS -->
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+
+        rel="stylesheet">
+
+
+
+    <!-- Legacy Styles for compatibility (variables, basic resets not covered by Tailwind) -->
+
+    <link rel="stylesheet" href="../../Shared/CSS/variables.css">
+
+    <link rel="stylesheet" href="../CSS/escala-calendario.css">
+
+
+
+    <style>
+
+        body {
+
+            font-family: 'Inter', sans-serif;
+
+            background-color: #f8fafc;
+
+        }
+
+
+
+        .custom-scrollbar::-webkit-scrollbar {
+
+            width: 4px;
+
+            height: 4px;
+
+        }
+
+
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+
+            background: transparent;
+
+        }
+
+
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+
+            background: #cbd5e1;
+
+            border-radius: 10px;
+
+        }
+
+
+
+        /* DASHBOARD LAYOUT */
+
+        .dashboard-layout {
+
+            display: flex;
+
+            min-height: 100vh;
+
+            width: 100%;
+
+        }
+
+
+
+        .sidebar-overlay {
+
+            display: none;
+
+            position: fixed;
+
+            top: 0;
+
+            left: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            background: rgba(15, 23, 42, 0.5);
+
+            backdrop-filter: blur(4px);
+
+            z-index: 2000;
+
+            transition: all 0.3s ease;
+
+        }
+
+
+
+        .sidebar-overlay.active {
+
+            display: block;
+
+        }
+
+
+
+        /* SIDE NAVBAR REFINEMENT */
+
+        .side-navbar {
+
+            width: 280px;
+
+            background: var(--card-bg);
+
+            border-right: 1px solid rgba(0, 0, 0, 0.04);
+
+            display: flex;
+
+            flex-direction: column;
+
+            padding: 25px 20px;
+
+            position: sticky;
+
+            top: 0;
+
+            height: 100vh;
+
+            box-sizing: border-box;
+
+            z-index: 1001;
+
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+            box-shadow: 4px 0 15px rgba(0, 0, 0, 0.01);
+
+        }
+
+
+
+        .sidebar-logo {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+
+            margin-bottom: 35px;
+
+            padding: 0 10px;
+
+        }
+
+
+
+        .sidebar-logo img {
+
+            width: 32px;
+
+            border-radius: 8px;
+
+        }
+
+
+
+        .sidebar-logo span {
+
+            font-family: 'Plus Jakarta Sans', sans-serif;
+
+            font-weight: 800;
+
+            font-size: 1.15rem;
+
+            color: var(--primary);
+
+        }
+
+
+
+        .sidebar-menu {
+
+            flex: 1;
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 5px;
+
+            overflow-y: auto;
+
+            padding-right: 5px;
+
+        }
+
+
+
+        .sidebar-menu::-webkit-scrollbar {
+
+            width: 4px;
+
+        }
+
+
+
+        .sidebar-menu::-webkit-scrollbar-thumb {
+
+            background: rgba(0, 0, 0, 0.05);
+
+            border-radius: 10px;
+
+        }
+
+
+
+        .side-item {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 14px;
+
+            padding: 14px 18px;
+
+            border-radius: 18px;
+
+            color: #64748b;
+
+            text-decoration: none;
+
+            font-weight: 700;
+
+            font-size: 0.95rem;
+
+            transition: all 0.25s ease;
+
+        }
+
+
+
+        .side-item i {
+
+            width: 20px;
+
+            text-align: center;
+
+            font-size: 1.1rem;
+
+        }
+
+
+
+        .side-item:hover {
+
+            background: rgba(var(--primary-rgb, 30, 41, 59), 0.04);
+
+            color: var(--primary);
+
+        }
+
+
+
+        .side-item.active {
+
+            background: var(--primary);
+
+            color: white;
+
+            box-shadow: 0 10px 20px rgba(var(--primary-rgb), 0.2);
+
+        }
+
+
+
+        .sidebar-footer {
+
+            margin-top: auto;
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 12px;
+
+            padding-top: 20px;
+
+        }
+
+
+
+        .quick-themes {
+
+            display: none;
+
+            flex-wrap: wrap;
+
+            gap: 8px;
+
+            background: rgba(30, 41, 59, 0.05);
+
+            padding: 12px;
+
+            border-radius: 20px;
+
+            border: 1px solid rgba(0, 0, 0, 0.03);
+
+            justify-content: flex-start;
+
+            margin-bottom: 15px;
+
+            animation: slideDown 0.3s ease-out;
+
+        }
+
+
+
+        .theme-dot {
+
+            width: 32px;
+
+            height: 32px;
+
+            border-radius: 10px;
+
+            cursor: pointer;
+
+            transition: all 0.2s;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            color: white;
+
+            font-size: 0.6rem;
+
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+            border: 2px solid transparent;
+
+        }
+
+
+
+        .sidebar-themes-btn {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            padding: 14px 20px;
+
+            background: #f1f5f9;
+
+            border-radius: 20px;
+
+            color: #64748b;
+
+            font-weight: 800;
+
+            font-size: 0.75rem;
+
+            text-transform: uppercase;
+
+            letter-spacing: 0.05em;
+
+            cursor: pointer;
+
+            transition: all 0.2s;
+
+        }
+
+
+
+        .user-card-premium {
+
+            background: #f8fafc;
+
+            border-radius: 25px;
+
+            padding: 15px;
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+
+            border: 1px solid rgba(0, 0, 0, 0.02);
+
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+
+        }
+
+
+
+        .user-avatar-premium {
+
+            width: 45px;
+
+            height: 45px;
+
+            background: #1e293b;
+
+            color: white;
+
+            border-radius: 50%;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            font-weight: 800;
+
+            font-size: 1rem;
+
+        }
+
+
+
+        .user-meta {
+
+            display: flex;
+
+            flex-direction: column;
+
+            line-height: 1.2;
+
+        }
+
+
+
+        .user-meta .name {
+
+            font-weight: 800;
+
+            font-size: 0.9rem;
+
+            color: #1e293b;
+
+        }
+
+
+
+        .user-meta .role {
+
+            font-size: 0.7rem;
+
+            font-weight: 800;
+
+            color: #1e293b;
+
+            text-transform: uppercase;
+
+            opacity: 0.7;
+
+        }
+
+
+
+        .sidebar-actions-row {
+
+            display: flex;
+
+            gap: 10px;
+
+        }
+
+
+
+        .action-btn {
+
+            height: 50px;
+
+            border-radius: 18px;
+
+            border: 1px solid rgba(0, 0, 0, 0.05);
+
+            background: white;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            cursor: pointer;
+
+            transition: all 0.2s;
+
+            font-weight: 800;
+
+            font-size: 0.85rem;
+
+            color: #64748b;
+
+        }
+
+
+
+        .dark-toggle {
+
+            width: 55px;
+
+            font-size: 1.2rem;
+
+        }
+
+
+
+        .sair-btn {
+
+            flex: 1;
+
+            gap: 10px;
+
+            color: #ef4444;
+
+            border-color: rgba(239, 68, 68, 0.1);
+
+        }
+
+
+
+        .main-wrapper {
+
+            flex: 1;
+
+            background: #f8fafc;
+
+            min-width: 0;
+
+        }
+
+
+
+        @media (max-width: 1024px) {
+
+            .side-navbar {
+
+                width: 85px;
+
+                padding: 20px 10px;
+
+            }
+
+
+
+            .sidebar-logo span,
+
+            .side-item span,
+
+            .user-meta,
+
+            .themes-label span,
+
+            .sidebar-themes-btn .themes-indicator,
+
+            .sair-btn span {
+
+                display: none;
+
+            }
+
+
+
+            .sidebar-logo {
+
+                justify-content: center;
+
+                padding: 0;
+
+            }
+
+
+
+            .side-item {
+
+                justify-content: center;
+
+                padding: 15px;
+
+            }
+
+
+
+            .sidebar-themes-btn {
+
+                padding: 15px;
+
+                justify-content: center;
+
+            }
+
+
+
+            .user-card-premium {
+
+                padding: 10px;
+
+                justify-content: center;
+
+            }
+
+
+
+            .sidebar-actions-row {
+
+                flex-direction: column;
+
+            }
+
+
+
+            .dark-toggle {
+
+                width: 100%;
+
+            }
+
+        }
+
+
+
+        @media (max-width: 768px) {
+
+            .side-navbar {
+
+                position: fixed;
+
+                left: -300px;
+
+                width: 280px;
+
+                height: 100vh;
+
+                z-index: 2001;
+
+            }
+
+
+
+            .side-navbar.open {
+
+                left: 0;
+
+            }
+
+
+
+            .sidebar-logo span,
+
+            .side-item span,
+
+            .user-meta,
+
+            .themes-label span,
+
+            .sidebar-themes-btn .themes-indicator,
+
+            .sair-btn span {
+
+                display: inline-block;
+
+            }
+
+
+
+            .sidebar-logo {
+
+                justify-content: flex-start;
+
+                padding: 0 10px;
+
+            }
+
+
+
+            .side-item {
+
+                justify-content: flex-start;
+
+                padding: 14px 18px;
+
+            }
+
+
+
+            .sidebar-actions-row {
+
+                flex-direction: row;
+
+            }
+
+
+
+            .dark-toggle {
+
+                width: 55px;
+
+            }
+
+        }
+
+
+
+        .menu-toggle {
+
+            display: none;
+
+        }
+
+
+
+        @media (max-width: 768px) {
+
+            .menu-toggle {
+
+                display: block;
+
+            }
+
+        }
+
+
+
+        @keyframes slideDown {
+
+            from {
+
+                opacity: 0;
+
+                transform: translateY(-10px);
+
+            }
+
+
+
+            to {
+
+                opacity: 1;
+
+                transform: translateY(0);
+
+            }
+
+        }
+
+
+
+        /* Animation utilities */
+
+        @keyframes fadeIn {
+
+            from {
+
+                opacity: 0;
+
+                transform: translateY(10px);
+
+            }
+
+
+
+            to {
+
+                opacity: 1;
+
+                transform: translateY(0);
+
+            }
+
+        }
+
+
+
+        .animate-fade-in {
+
+            animation: fadeIn 0.3s ease-out forwards;
+
+        }
+
+
+
+        /* View toggling logic */
+
+        .view-section {
+
+            display: none;
+
+        }
+
+
+
+        .view-section.active {
+
+            display: block;
+
+            animation: fadeIn 0.3s ease-out forwards;
+
+        }
+
+
+
+        /* Active state for segmented controls (simulating the 'bg-white text-blue-600 shadow-sm' vs 'text-slate-500' logic via JS classes) */
+
+        .btn-view-active {
+
+            background-color: white;
+
+            color: #2563eb;
+
+            /* blue-600 */
+
+            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+
+        }
+
+
+
+        .btn-view-inactive {
+
+            background-color: transparent;
+
+            color: #64748b;
+
+            /* slate-500 */
+
+        }
+
+
+
+        .btn-view-inactive:hover {
+
+            color: #334155;
+
+            /* slate-700 */
+
+        }
+
+    </style>
+
+</head>
+
+
+
+<body class="bg-slate-50 text-slate-900">
+
+    <div id="root">
+
+        <div class="sidebar-overlay" onclick="toggleMobileSidebar()" id="sidebarOverlay"></div>
+
+
+
+        <div class="dashboard-layout bg-slate-50">
+
+
+
+            <!-- NAVIGATION -->
+
+            <nav class="side-navbar" id="sideNavbar">
+
+                <div class="sidebar-logo">
+
+                    <img src="../../assets/backgroud.png" alt="Logo">
+
+                    <span>Louvor CEVD</span>
+
+                </div>
+
+
+
+                <div class="sidebar-menu">
+
+                    <a href="../../index.html" class="side-item">
+
+                        <i class="fas fa-th-large"></i>
+
+                        <span>Dashboard</span>
+
+                    </a>
+
+                    <a href="#" class="side-item active">
+
+                        <i class="fas fa-calendar-check"></i>
+
+                        <span>Escalas</span>
+
+                    </a>
+
+                    <a href="../../Musicas/HTML/MenuMusicas.html" class="side-item">
+
+                        <i class="fas fa-music"></i>
+
+                        <span>Músicas</span>
+
+                    </a>
+
+                    <a href="../../Componentes/HTML/Componentes.html" class="side-item">
+
+                        <i class="fas fa-users-gear"></i>
+
+                        <span>Equipe</span>
+
+                    </a>
+
+                    <a href="../../Utilitarios/HTML/MenuUtilitarios.html" class="side-item">
+
+                        <i class="fas fa-tools"></i>
+
+                        <span>Utilitários</span>
+
+                    </a>
+
+                </div>
+
+
+
+                <div class="sidebar-footer">
+
+                    <div class="quick-themes" id="quickThemesGrid" style="display: none;">
+
+                        <!-- Populated by JS -->
+
+                    </div>
+
+
+
+                    <div class="sidebar-themes-btn" onclick="toggleQuickThemes()">
+
+                        <div class="themes-label">
+
+                            <i class="fas fa-palette"></i>
+
+                            <span>Temas</span>
+
+                        </div>
+
+                        <div class="themes-indicator"></div>
+
+                    </div>
+
+
+
+                    <div class="user-card-premium" onclick="abrirModalPerfil()" style="cursor:pointer">
+
+                        <div class="user-avatar-premium" id="userAvatar">U</div>
+
+                        <div class="user-meta">
+
+                            <span class="name" id="userNameSide">Músico</span>
+
+                            <span class="role">Administrador</span>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <div class="sidebar-actions-row">
+
+                        <button class="action-btn dark-toggle" onclick="toggleDarkLiteMode()"
+
+                            title="Alternar Modo Escuro">
+
+                            <i class="fas fa-moon"></i>
+
+                        </button>
+
+                        <button onclick="logout()" class="action-btn sair-btn">
+
+                            <i class="fas fa-sign-out-alt"></i>
+
+                            <span>SAIR</span>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </nav>
+
+
+
+            <!-- MAIN LAYOUT -->
+
+            <div class="main-wrapper flex flex-col min-h-screen">
+
+
+
+                <!-- HEADER -->
+
+                <header
+
+                    class="sticky top-0 z-40 h-16 bg-white/80 backdrop-blur-lg border-b border-slate-200 px-4 md:px-8 flex items-center justify-between">
+
+                    <div class="flex items-center gap-4">
+
+                        <button
+
+                            class="menu-toggle w-10 h-10 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
+
+                            onclick="document.getElementById('sideNavbar').classList.toggle('open')">
+
+                            <i class="fas fa-bars"></i>
+
+                        </button>
+
+                        <button
+
+                            class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+
+                            onclick="window.history.back()">
+
+                            <i class="fas fa-arrow-left"></i>
+
+                        </button>
+
+                    </div>
+
+
+
+                    <h1 class="text-lg font-black tracking-tighter uppercase text-slate-900 hidden sm:block">
+
+                        Escalas <span class="text-blue-600">Hub</span>
+
+                    </h1>
+
+
+
+                    <div class="flex items-center gap-2">
+
+                        <button
+
+                            class="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-all"
+
+                            title="Trocar Tema" onclick="toggleThemePanel()">
+
+                            <i class="fas fa-palette"></i>
+
+                        </button>
+
+                        <button id="masterSyncBtn"
+
+                            class="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-all"
+
+                            title="Sincronizar" onclick="syncAllViews()">
+
+                            <i class="fas fa-sync-alt"></i>
+
+                        </button>
+
+                    </div>
+
+                </header>
+
+
+
+                <!-- CONTENT AREA -->
+
+                <main class="flex-grow pt-20 pb-10 px-4 md:px-8 max-w-7xl mx-auto w-full">
+
+
+
+                    <!-- TITLE SECTION with Filters -->
+
+                    <div class="flex flex-col gap-6 pt-4 animate-fade-in">
+
+                        <div
+
+                            class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+
+                            <div>
+
+                                <h2 class="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">
+
+                                    ESCALAS</h2>
+
+                                <p class="text-slate-500 font-medium text-sm mt-2">Cronograma e disponibilidade do
+
+                                    ministério.</p>
+
+                            </div>
+
+
+
+                            <div class="flex items-center">
+
+                                <div
+
+                                    class="bg-slate-200/50 p-1 rounded-2xl flex items-center shadow-inner overflow-x-auto segmented-control">
+
+                                    <button id="btn-list-view"
+
+                                        class="px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap btn-view-active"
+
+                                        onclick="switchView('list')">Lista</button>
+
+                                    <button id="btn-calendar-view"
+
+                                        class="px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap btn-view-inactive"
+
+                                        onclick="switchView('calendar')">Calendário</button>
+
+                                    <button id="btn-cleaning-view"
+
+                                        class="px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap btn-view-inactive"
+
+                                        onclick="switchView('cleaning')">Limpeza</button>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- SEARCH BAR -->
+
+                    <div id="searchContainer" class="mt-6">
+
+                        <div class="relative group">
+
+                            <i
+
+                                class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+
+                            <input type="text" id="globalSearchInput"
+
+                                class="w-full pl-12 pr-4 py-3 rounded-2xl bg-white border border-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-semibold text-sm text-slate-700 shadow-sm"
+
+                                placeholder="Pesquisar voluntário ou culto..." onkeyup="handleGlobalSearch()">
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- VIEWS -->
+
+                    <div class="mt-8">
+
+
+
+                        <!-- LIST VIEW -->
+
+                        <div id="list-view" class="view-section active">
+
+                            <div id="escala-container" class="space-y-4 max-w-5xl mx-auto">
+
+                                <!-- Cards injected by JS -->
+
+                                <div class="text-center py-10 text-slate-400">Carregando escalas...</div>
+
+                            </div>
+
+                        </div>
+
+
+
+                        <!-- CALENDAR VIEW -->
+
+                        <div id="calendar-view" class="view-section">
+
+                            <div class="flex justify-end mb-4">
+
+                                <button
+
+                                    class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 shadow-md transition-all"
+
+                                    onclick="exportarEscala()" id="btnExport" title="Exportar Imagem">
+
+                                    <i class="fas fa-camera"></i>
+
+                                </button>
+
+                            </div>
+
+                            <div id="calendarsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-8"></div>
+
+                        </div>
+
+
+
+                        <!-- CLEANING VIEW -->
+
+                        <div id="cleaning-view" class="view-section">
+
+                            <div
+
+                                class="max-w-3xl mx-auto bg-white rounded-[1.5rem] shadow-sm border border-slate-100 p-2">
+
+                                <div id="limpeza-container" class="rounded-xl overflow-hidden">
+
+                                    <img id="imgLimpeza" src="" alt="Escala de Limpeza"
+
+                                        class="w-full h-auto object-cover cursor-zoom-in"
+
+                                        onclick="openLightbox(this.src)">
+
+                                </div>
+
+                                <p
+
+                                    class="text-center text-slate-400 text-xs font-medium py-3 uppercase tracking-widest">
+
+                                    Toque na imagem para ampliar</p>
+
+                            </div>
+
+                        </div>
+
+
+
+                    </div>
+
+
+
+                </main>
+
+
+
+                <footer class="py-6 text-center text-slate-400 text-sm border-t border-slate-100">
+
+                    © 2024 ESCALASHUB • Developed with Excellence
+
+                </footer>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- Hidden Elements needed by JS logic -->
+
+    <div id="themePanel" class="hidden"></div> <!-- Dummy or implement if needed -->
+
+
+
+    <!-- MODAL AVISO MEMBRO -->
+
+    <div id="modalAvisoMembro"
+
+        class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+
+        <div class="bg-white rounded-[1.5rem] p-6 w-full max-w-md shadow-2xl relative animate-fade-in">
+
+            <button
+
+                class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 transition-colors"
+
+                onclick="fecharModalAvisoMembro()">
+
+                <i class="fas fa-times"></i>
+
+            </button>
+
+
+
+            <h3 class="text-lg font-black text-slate-800 uppercase tracking-tight mb-1">Aviso de Ausência</h3>
+
+            <p id="displayCultoAviso" class="text-xs font-bold text-blue-500 uppercase tracking-wide mb-4">Culto...
+
+            </p>
+
+            <input type="hidden" id="inputCultoAviso">
+
+
+
+            <textarea id="textoAvisoMembro"
+
+                class="w-full h-32 p-4 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-700 resize-none mb-4"
+
+                placeholder="Descreva o motivo (ex: viagem, trabalho, doença...)"></textarea>
+
+
+
+            <button id="btnEnviarAvisoMembro" onclick="enviarAvisoMembro()"
+
+                class="w-full py-3 bg-slate-900 text-white rounded-xl font-bold uppercase tracking-wide hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20">
+
+                Enviar Aviso
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- LOADING OVERLAY -->
+
+    <div id="loader"
+
+        class="fixed inset-0 z-[1000] hidden items-center justify-center flex-col bg-slate-900/80 backdrop-blur-sm">
+
+        <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+
+        <p id="loaderText" class="mt-4 text-white font-bold tracking-wider text-sm">Carregando...</p>
+
+    </div>
+
+
+
+    <!-- MODAL DETAILS FOR CALENDAR (Legacy support) -->
+
+    <div id="modalDetails" style="display:none;"></div>
+
+    <div id="eventModal" style="display:none;"></div>
+
+    <div id="exportTemplate" style="position: absolute; top: -9999px;">
+
+        <div class="bg-slate-900 p-8 text-white w-[400px]" style="font-family: 'Inter', sans-serif;">
+
+            <div class="text-center mb-6">
+
+                <h2 class="text-2xl font-black uppercase text-blue-500">Escala</h2>
+
+                <h3 class="text-xl font-bold text-white uppercase" id="exportUserName">Nome do Usuário</h3>
+
+            </div>
+
+            <div id="exportItems" class="space-y-3"></div>
+
+            <div class="mt-8 text-center text-slate-500 text-xs border-t border-slate-800 pt-4">
+
+                Gerado por EscalasHub
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- Lightbox for Limpeza -->
+
+    <div id="lightbox"
+
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:10000; background:rgba(0,0,0,0.9); align-items:center; justify-content:center;"
+
+        class="hidden" onclick="closeLightbox()">
+
+        <img id="lightboxImg" src=""
+
+            style="max-width:90%; max-height:90%; border-radius:10px; transition:transform 0.2s; transform:scale(0.9);">
+
+    </div>
+
+
+
+    <!-- Scripts -->
+
+    <script src="../../Shared/JS/config.js"></script>
+
+    <script src="../../Shared/JS/supabase-helper.js"></script>
+
+    <script src="../../Shared/JS/temas-lista.js"></script>
+
+    <script src="../../Shared/JS/temas-core.js"></script>
+
+    <script src="../../Shared/JS/permissions.js"></script>
+
+    <script src="../../Shared/JS/sync.js"></script>
+
+    <script src="../JS/escalas.js"></script>
+
+    <script src="../JS/escala-calendario.js"></script>
+
+    <script src="../JS/limpeza.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+
+
+    <script>
+
+        // Placeholder functions to avoid errors if modules are loading async
+
+        function logout() {
+
+            if (confirm('Deseja realmente sair?')) {
+
+                localStorage.removeItem('user_token');
+
+                window.location.href = '../../Login.html';
+
+            }
+
+        }
+
+        function abrirModalPerfil() {
+
+            alert('Perfil do Usuário: ' + (document.getElementById('userNameSide')?.innerText || 'Usuário'));
+
+        }
+
+
+
+        function toggleMobileSidebar() {
+
+            const sidebar = document.getElementById('sideNavbar');
+
+            const overlay = document.getElementById('sidebarOverlay');
+
+            if (sidebar && overlay) {
+
+                sidebar.classList.toggle('open');
+
+                overlay.classList.toggle('active');
+
+            }
+
+        }
+
+
+
+    </script>
+
+</body>
+
+
+
+</html>

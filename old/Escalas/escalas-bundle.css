@@ -1,0 +1,639 @@
+/* ESCALAS BUNDLE CSS - Estilos unificados para SPA */
+
+/* =================================================================
+   1. ESTILOS BASE E VARIÁVEIS
+   ================================================================= */
+
+:root {
+    --primary-color: #3b82f6;
+    --primary-dark: #2563eb;
+    --secondary-color: #10b981;
+    --background-color: #f8fafc;
+    --surface-color: #ffffff;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --border-color: #e2e8f0;
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
+}
+
+/* =================================================================
+   2. LAYOUT PRINCIPAL
+   ================================================================= */
+
+.dashboard-layout {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+.main-wrapper {
+    flex: 1;
+    background: var(--background-color);
+    min-width: 0;
+}
+
+/* Sidebar Overlay */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 2000;
+    transition: all 0.3s ease;
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
+/* =================================================================
+   3. CALENDÁRIO
+   ================================================================= */
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background: var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.day-name {
+    padding: 0.75rem 0;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--surface-color);
+}
+
+.day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--surface-color);
+}
+
+.day:hover {
+    background: #f1f5f9;
+}
+
+.day.empty {
+    background: transparent;
+    cursor: default;
+}
+
+.day-number {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.day.has-event {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+}
+
+.day.has-event .day-number {
+    color: white;
+}
+
+.day.today {
+    border: 2px solid var(--primary-color);
+    font-weight: 700;
+}
+
+.event-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    justify-content: center;
+    width: 100%;
+}
+
+.event-name {
+    font-size: 0.625rem;
+    font-weight: 600;
+    padding: 1px 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    line-height: 1;
+}
+
+.day.dimmed .event-name {
+    opacity: 0.5;
+}
+
+.day.match-person .event-name {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
+/* =================================================================
+   4. MODAIS E DETALHES
+   ================================================================= */
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--surface-color);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 0.25rem;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: #f3f4f6;
+    color: var(--text-primary);
+}
+
+.modal-body {
+    margin-bottom: 1rem;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Culto Detalhe */
+.culto-detalhe {
+    background: var(--surface-color);
+    border-radius: var(--radius-lg);
+    margin-bottom: 1rem;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.culto-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.culto-body {
+    padding: 1rem;
+}
+
+.member-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.member-item:last-child {
+    border-bottom: none;
+}
+
+.member-item i {
+    width: 1.25rem;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+/* =================================================================
+   5. CONTROLES E INTERFACE
+   =================================================================
+
+/* Segmented Controls */
+.segmented-control {
+    background: #f1f5f9;
+    padding: 0.25rem;
+    border-radius: var(--radius-xl);
+    display: inline-flex;
+    gap: 0.25rem;
+}
+
+.btn-view {
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-lg);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+}
+
+.btn-view-active {
+    background: var(--surface-color);
+    color: var(--primary-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-view-inactive:hover {
+    color: var(--text-primary);
+}
+
+/* Search Bar */
+.search-container {
+    margin-bottom: 1.5rem;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 3rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    background: var(--surface-color);
+    transition: all 0.2s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    transition: color 0.2s ease;
+}
+
+.search-input:focus + .search-icon {
+    color: var(--primary-color);
+}
+
+/* View Sections */
+.view-section {
+    display: none;
+}
+
+.view-section.active {
+    display: block;
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* =================================================================
+   6. CARDS E COMPONENTES
+   ================================================================= */
+
+.premium-card {
+    background: var(--surface-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.premium-menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.menu-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem;
+    background: var(--surface-color);
+    border-radius: var(--radius-lg);
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+}
+
+.menu-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-color);
+}
+
+.menu-card i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+    transition: color 0.2s ease;
+}
+
+.menu-card:hover i {
+    color: var(--primary-dark);
+}
+
+.menu-card span {
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-align: center;
+}
+
+/* Chart Wrapper */
+.chart-wrapper {
+    position: relative;
+    height: 200px;
+    width: 100%;
+}
+
+/* Loader */
+#loader {
+    text-align: center;
+    padding: 2rem;
+}
+
+#loader i {
+    font-size: 2rem;
+    color: var(--primary-color);
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* =================================================================
+   7. LIMPEZA VIEW
+   ================================================================= */
+
+.limpeza-container {
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+
+.limpeza-container img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    cursor: zoom-in;
+    transition: transform 0.2s ease;
+}
+
+.limpeza-container img:hover {
+    transform: scale(1.02);
+}
+
+/* Lightbox */
+#lightbox {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0.9);
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#lightbox.active {
+    display: flex;
+    opacity: 1;
+}
+
+#lightbox img {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: var(--radius-lg);
+    transition: transform 0.2s ease;
+}
+
+/* =================================================================
+   8. ANIMAÇÕES E TRANSIÇÕES
+   ================================================================= */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Slide down animation */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.slide-down {
+    animation: slideDown 0.3s ease-out forwards;
+}
+
+/* =================================================================
+   9. RESPONSIVIDADE
+   ================================================================= */
+
+@media (max-width: 768px) {
+    .calendar-grid {
+        gap: 0.5px;
+    }
+    
+    .day-name {
+        font-size: 0.625rem;
+        padding: 0.5rem 0;
+    }
+    
+    .day-number {
+        font-size: 0.75rem;
+    }
+    
+    .event-preview {
+        gap: 1px;
+    }
+    
+    .event-name {
+        font-size: 0.5rem;
+        padding: 0.5px 2px;
+    }
+    
+    .premium-menu-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 0.75rem;
+    }
+    
+    .menu-card {
+        padding: 1rem;
+    }
+    
+    .menu-card i {
+        font-size: 1.5rem;
+    }
+    
+    .menu-card span {
+        font-size: 0.75rem;
+    }
+    
+    .modal-content {
+        margin: 1rem;
+        max-height: 90vh;
+    }
+    
+    .btn-view {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.625rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .premium-menu-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .calendar-grid {
+        gap: 0.25px;
+    }
+    
+    .event-name {
+        font-size: 0.4rem;
+        padding: 0.25px 1px;
+    }
+}
+
+/* =================================================================
+   10. UTILITÁRIOS
+   ================================================================= */
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+/* Text truncation */
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Focus visible */
+.focus-visible:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+    .sidebar-overlay,
+    .btn-view,
+    .search-container {
+        display: none !important;
+    }
+    
+    .main-wrapper {
+        background: white !important;
+    }
+    
+    .calendar-grid {
+        border: 1px solid #000 !important;
+    }
+    
+    .day {
+        border: 1px solid #ddd !important;
+    }
+}

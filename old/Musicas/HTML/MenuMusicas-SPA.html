@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Músicas Hub - Louvor CEVD</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <!-- Legacy Styles for compatibility -->
+    <link rel="stylesheet" href="../../Shared/CSS/main.css">
+    <link rel="stylesheet" href="../CSS/menu-musicas.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        /* DASHBOARD LAYOUT */
+        .dashboard-layout {
+            display: flex;
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        /* SIDE NAVBAR REFINEMENT */
+        .side-navbar {
+            width: 280px;
+            background: var(--card-bg);
+            border-right: 1px solid rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            padding: 25px 20px;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            box-sizing: border-box;
+            z-index: 1001;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 4px 0 15px rgba(0, 0, 0, 0.01);
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 35px;
+            padding: 0 10px;
+        }
+
+        .sidebar-logo img {
+            width: 32px;
+            border-radius: 8px;
+        }
+
+        .sidebar-logo span {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 800;
+            font-size: 1.15rem;
+            color: var(--primary);
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .sidebar-menu::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar-menu::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+        }
+
+        .side-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
+            border-radius: 18px;
+            color: #64748b;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.95rem;
+            transition: all 0.25s ease;
+        }
+
+        .side-item i {
+            width: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .side-item:hover {
+            background: rgba(var(--primary-rgb, 30, 41, 59), 0.04);
+            color: var(--primary);
+        }
+
+        .side-item.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 10px 20px rgba(var(--primary-rgb), 0.2);
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-top: 20px;
+        }
+
+        .quick-themes {
+            display: none;
+            flex-wrap: wrap;
+            gap: 8px;
+            background: rgba(30, 41, 59, 0.05);
+            padding: 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            justify-content: flex-start;
+            margin-bottom: 15px;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .theme-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.6rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border: 2px solid transparent;
+        }
+
+        .sidebar-themes-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            background: #f1f5f9;
+            border-radius: 20px;
+            color: #64748b;
+            font-weight: 800;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .user-card-premium {
+            background: #f8fafc;
+            border-radius: 25px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.02);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+        }
+
+        .user-avatar-premium {
+            width: 45px;
+            height: 45px;
+            background: #1e293b;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1rem;
+        }
+
+        .user-meta {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .user-meta .name {
+            font-weight: 800;
+            font-size: 0.9rem;
+            color: #1e293b;
+        }
+
+        .user-meta .role {
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: #1e293b;
+            text-transform: uppercase;
+            opacity: 0.7;
+        }
+
+        .sidebar-actions-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            height: 50px;
+            border-radius: 18px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 800;
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+
+        .dark-toggle {
+            width: 55px;
+            font-size: 1.2rem;
+        }
+
+        .sair-btn {
+            flex: 1;
+            gap: 10px;
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.1);
+        }
+
+        .main-wrapper {
+            flex: 1;
+            background: #f8fafc;
+            min-width: 0;
+        }
+
+        @media (max-width: 1024px) {
+            .side-navbar {
+                width: 85px;
+                padding: 20px 10px;
+            }
+
+            .sidebar-logo span,
+            .side-item span,
+            .user-meta,
+            .themes-label span,
+            .sidebar-themes-btn .themes-indicator,
+            .sair-btn span {
+                display: none;
+            }
+
+            .sidebar-logo {
+                justify-content: center;
+                padding: 0;
+            }
+
+            .side-item {
+                justify-content: center;
+                padding: 15px;
+            }
+
+            .sidebar-themes-btn {
+                padding: 15px;
+                justify-content: center;
+            }
+
+            .user-card-premium {
+                padding: 10px;
+                justify-content: center;
+            }
+
+            .sidebar-actions-row {
+                flex-direction: column;
+            }
+
+            .dark-toggle {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .side-navbar {
+                position: fixed;
+                left: -300px;
+                width: 280px;
+                height: 100vh;
+                z-index: 2001;
+            }
+
+            .side-navbar.open {
+                left: 0;
+            }
+
+            .sidebar-logo span,
+            .side-item span,
+            .user-meta,
+            .themes-label span,
+            .sidebar-themes-btn .themes-indicator,
+            .sair-btn span {
+                display: inline-block;
+            }
+
+            .sidebar-logo {
+                justify-content: flex-start;
+                padding: 0 10px;
+            }
+
+            .side-item {
+                justify-content: flex-start;
+                padding: 14px 18px;
+            }
+
+            .sidebar-actions-row {
+                flex-direction: row;
+            }
+
+            .dark-toggle {
+                width: 55px;
+            }
+        }
+
+        .menu-toggle {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Animation utilities */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900">
+    <div id="root">
+        <div class="sidebar-overlay" onclick="toggleMobileSidebar()" id="sidebarOverlay"></div>
+
+        <div class="dashboard-layout bg-slate-50">
+
+            <!-- NAVIGATION -->
+            <nav class="side-navbar" id="sideNavbar">
+                <div class="sidebar-logo">
+                    <img src="/assets/backgroud.png" alt="Logo">
+                    <span>Louvor CEVD</span>
+                </div>
+
+                <div class="sidebar-menu">
+                    <a href="../../index.html" class="side-item" data-page="dashboard">
+                        <i class="fas fa-th-large"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="../../Escalas/HTML/Escalas.html" class="side-item" data-page="escalas">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Escalas</span>
+                    </a>
+                    <a href="#" class="side-item active" data-page="musicas">
+                        <i class="fas fa-music"></i>
+                        <span>Músicas</span>
+                    </a>
+                    <a href="../../Componentes/HTML/Componentes.html" class="side-item" data-page="componentes">
+                        <i class="fas fa-users-gear"></i>
+                        <span>Equipe</span>
+                    </a>
+                    <a href="../../Utilitarios/HTML/MenuUtilitarios.html" class="side-item" data-page="utilitarios">
+                        <i class="fas fa-tools"></i>
+                        <span>Utilitários</span>
+                    </a>
+                </div>
+
+                <div class="sidebar-footer">
+                    <div class="quick-themes" id="quickThemesGrid" style="display: none;">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <div class="sidebar-themes-btn" onclick="toggleQuickThemes()">
+                        <div class="themes-label">
+                            <i class="fas fa-palette"></i>
+                            <span>Temas</span>
+                        </div>
+                        <div class="themes-indicator"></div>
+                    </div>
+
+                    <div class="user-card-premium" onclick="abrirModalPerfil()" style="cursor:pointer">
+                        <div class="user-avatar-premium" id="userAvatar">U</div>
+                        <div class="user-meta">
+                            <span class="name" id="userNameSide">Músico</span>
+                            <span class="role">Administrador</span>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-actions-row">
+                        <button class="action-btn dark-toggle" onclick="toggleDarkLiteMode()"
+                            title="Alternar Modo Escuro">
+                            <i class="fas fa-moon"></i>
+                        </button>
+                        <button onclick="logout()" class="action-btn sair-btn">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>SAIR</span>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- MAIN LAYOUT -->
+            <div class="main-wrapper flex flex-col min-h-screen">
+
+                <!-- HEADER -->
+                <header
+                    class="sticky top-0 z-40 h-16 bg-white/80 backdrop-blur-lg border-b border-slate-200 px-4 md:px-8 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <button
+                            class="menu-toggle w-10 h-10 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
+                            onclick="toggleMobileSidebar()">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <button
+                            class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+                            onclick="window.history.back()">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="text-lg font-black tracking-tighter uppercase text-slate-900 hidden sm:block">
+                        Músicas <span class="text-blue-600">Hub</span>
+                    </h1>
+
+                    <div class="flex items-center gap-2">
+                        <button
+                            class="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-all"
+                            title="Trocar Tema" onclick="toggleThemePanel()">
+                            <i class="fas fa-palette"></i>
+                        </button>
+                        <button
+                            class="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-all"
+                            title="Sincronizar" onclick="loadStats(true)">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- CONTENT AREA -->
+                <main class="flex-grow pt-20 pb-10 px-4 md:px-8 max-w-7xl mx-auto w-full">
+
+                    <!-- TITLE SECTION -->
+                    <div class="flex flex-col gap-6 pt-4 animate-fade-in">
+                        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+                            <div>
+                                <h2 class="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">
+                                    MÚSICAS</h2>
+                                <p class="text-slate-500 font-medium text-sm mt-2">Gerenciamento do repertório e histórico musical.</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="bg-blue-100 text-blue-800 text-xs font-medium px-3 py-1 rounded-full">
+                                    Total: <span id="totalHeader">0</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ANALYTICS SECUNDÁRIOS -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+                            <div class="text-center mb-4">
+                                <h3 class="text-lg font-bold text-slate-800">Estilos Musicais</h3>
+                            </div>
+                            <div class="chart-wrapper" style="height: 200px;">
+                                <canvas id="chartEstilos"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+                            <div class="text-center mb-4">
+                                <h3 class="text-lg font-bold text-slate-800">Temas</h3>
+                            </div>
+                            <div class="chart-wrapper" style="height: 200px;">
+                                <canvas id="chartTemas"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SUBMENUS -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                        <a href="Musicas.html" class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 hover:shadow-md transition-all hover:border-blue-200 group">
+                            <div class="text-center">
+                                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                    <i class="fas fa-list-ul text-lg"></i>
+                                </div>
+                                <h3 class="font-semibold text-slate-800">Lista</h3>
+                                <p class="text-xs text-slate-500 mt-1">Ver todas as músicas</p>
+                            </div>
+                        </a>
+                        <a href="Repertorio.html" class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 hover:shadow-md transition-all hover:border-blue-200 group">
+                            <div class="text-center">
+                                <div class="w-12 h-12 bg-green-100 text-green-600 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:bg-green-600 group-hover:text-white transition-all">
+                                    <i class="fas fa-book-open text-lg"></i>
+                                </div>
+                                <h3 class="font-semibold text-slate-800">Repertórios</h3>
+                                <p class="text-xs text-slate-500 mt-1">Gerenciar repertórios</p>
+                            </div>
+                        </a>
+                        <a href="Cadastro de Repertorio.html" class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 hover:shadow-md transition-all hover:border-blue-200 group" id="menuMontarRepertorio">
+                            <div class="text-center">
+                                <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:bg-purple-600 group-hover:text-white transition-all">
+                                    <i class="fas fa-plus-circle text-lg"></i>
+                                </div>
+                                <h3 class="font-semibold text-slate-800">Montar</h3>
+                                <p class="text-xs text-slate-500 mt-1">Criar repertório</p>
+                            </div>
+                        </a>
+                        <a href="Historico de Musicas.html" class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 hover:shadow-md transition-all hover:border-blue-200 group">
+                            <div class="text-center">
+                                <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:bg-orange-600 group-hover:text-white transition-all">
+                                    <i class="fas fa-history text-lg"></i>
+                                </div>
+                                <h3 class="font-semibold text-slate-800">Histórico</h3>
+                                <p class="text-xs text-slate-500 mt-1">Ver histórico</p>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- GRÁFICO MAIS TOCADAS -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mt-8">
+                        <div class="text-center mb-6">
+                            <h3 class="text-xl font-bold text-slate-800">Mais Tocadas</h3>
+                            <p class="text-sm text-slate-500 mt-1">Músicas mais frequentes nas escalas</p>
+                        </div>
+                        <div id="loader" class="text-center py-8">
+                            <i class="fas fa-sync fa-spin text-2xl text-blue-600"></i>
+                        </div>
+                        <div class="chart-wrapper" id="chartMusicasContainer" style="height: 300px; min-height: 300px;">
+                            <canvas id="chartMusicas"></canvas>
+                        </div>
+                    </div>
+
+                </main>
+
+                <footer class="py-6 text-center text-slate-400 text-sm border-t border-slate-100">
+                    © 2024 LOUVOR CEVD • Músicas Ministry
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <!-- Theme Panel -->
+    <div id="themePanel" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">Escolha um Tema</h3>
+                <button onclick="toggleThemePanel()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="theme-buttons" id="themeButtonsGrid"></div>
+            <button class="w-full mt-4 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-all" onclick="confirmarTema()">
+                USAR ESTE TEMA
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../../Shared/JS/app-config.js"></script>
+    <script src="../../Shared/JS/store.js"></script>
+    <script src="../../Shared/JS/components.js"></script>
+    <script src="../../Shared/JS/spa-router.js"></script>
+    <script src="../../Shared/JS/toast.js"></script>
+    <script src="../../Shared/JS/temas-lista.js"></script>
+    <script src="../../Shared/JS/temas-core.js"></script>
+    <script src="../../Shared/JS/permissions.js"></script>
+    <script src="../../Shared/JS/sync.js"></script>
+    <script src="../../Shared/JS/common-init.js"></script>
+    <script src="../JS/menu-musicas.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // Placeholder functions to avoid errors if modules are loading async
+        function logout() {
+            if (confirm('Deseja realmente sair?')) {
+                localStorage.removeItem('user_token');
+                window.location.href = '../../Login.html';
+            }
+        }
+        function abrirModalPerfil() {
+            alert('Perfil do Usuário: ' + (document.getElementById('userNameSide')?.innerText || 'Usuário'));
+        }
+
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sideNavbar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('active');
+            }
+        }
+
+        function toggleThemePanel() {
+            const panel = document.getElementById('themePanel');
+            if (panel) {
+                panel.classList.toggle('hidden');
+                panel.classList.toggle('flex');
+                if (!panel.classList.contains('hidden') && typeof renderQuickThemes === 'function') {
+                    renderQuickThemes();
+                }
+            }
+        }
+
+        // SPA initialization for MenuMusicas
+        function initializeMusicas() {
+            console.log('Musicas page initialized via SPA');
+            // Re-initialize musicas-specific functionality
+            if (typeof loadStats === 'function') {
+                loadStats(true);
+            }
+        }
+
+    </script>
+</body>
+
+</html>

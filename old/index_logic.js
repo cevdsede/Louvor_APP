@@ -156,15 +156,19 @@ let participacoesDetalhas = {};
 function initDashboard() {
     const cached = localStorage.getItem('offline_escala');
     if (cached) {
-        document.getElementById('dashLoader').style.display = 'none';
+        const dashLoader = document.getElementById('dashLoader');
+        if (dashLoader) {
+            dashLoader.style.display = 'none';
+        }
         let dados = JSON.parse(cached);
         // Garante normalização mesmo se o cache for antigo
         dados = normalizeData(dados, 'escala');
         processarERenderizar(dados);
     } else {
         // Only show loader if we REALLY don't have data
-        if (!currentChart) {
-            document.getElementById('dashLoader').innerHTML = "Aguardando sincronização...";
+        const dashLoader = document.getElementById('dashLoader');
+        if (dashLoader && !currentChart) {
+            dashLoader.innerHTML = "Aguardando sincronização...";
         }
     }
 }
@@ -387,12 +391,19 @@ window.onclick = (event) => {
 
 window.onload = () => {
     if (userData.Nome) {
-        document.getElementById('userName').innerText = userData.Nome;
-        if (document.getElementById('userNameSide')) {
-            document.getElementById('userNameSide').innerText = userData.Nome;
+        const userNameElement = document.getElementById('userName');
+        if (userNameElement) {
+            userNameElement.innerText = userData.Nome;
         }
-        if (document.getElementById('userAvatar')) {
-            document.getElementById('userAvatar').innerText = userData.Nome.charAt(0).toUpperCase();
+        
+        const userNameSideElement = document.getElementById('userNameSide');
+        if (userNameSideElement) {
+            userNameSideElement.innerText = userData.Nome;
+        }
+        
+        const userAvatarElement = document.getElementById('userAvatar');
+        if (userAvatarElement) {
+            userAvatarElement.innerText = userData.Nome.charAt(0).toUpperCase();
         }
     }
     applyPermissions();
