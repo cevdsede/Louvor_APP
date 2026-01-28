@@ -22,7 +22,7 @@
         if (typeof Chart === 'undefined') {
             console.warn('Chart.js CDN falhou, carregando versão local...');
             // Criar Chart mock para evitar erros
-            window.Chart = function() {
+            window.Chart = function () {
                 console.warn('Chart.js não disponível - gráficos desabilitados');
             };
         }
@@ -65,7 +65,7 @@
                 <i class="fas fa-clipboard-check"></i>
                 <span>Chamada Consagração</span>
             </a>
-            
+
             <!-- Botões Admin Only -->
             <div class="menu-card admin-only" id="btnDashboard" style="display: none;" onclick="abrirDashboard()">
                 <i class="fas fa-chart-line"></i>

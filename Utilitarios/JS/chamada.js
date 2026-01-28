@@ -35,43 +35,28 @@ async function fetchData(silent = false) {
     const btnIcon = document.querySelector('.nav-btn.fa-sync-alt, .header-right-nav i.fa-sync-alt, .header-right i.fa-sync-alt');
     if (btnIcon) btnIcon.classList.add('fa-spin');
     try {
-        // Eventos do Cache
-        const cachedEvents = localStorage.getItem('offline_consagracao');
-        if (cachedEvents) {
-            allEvents = JSON.parse(cachedEvents);
-            if (!silent) renderEvents();
-        }
-
-        // Busca Live
-        const resEvents = await fetch(`${APP_CONFIG.SCRIPT_URL}?sheet=Consagração`);
-        const dataEvents = await resEvents.json();
-        allEvents = dataEvents.data || [];
-        localStorage.setItem('offline_consagracao', JSON.stringify(allEvents));
+        // Eventos do Supabase
+        console.log("🔄 Buscando eventos via Supabase...");
+        allEvents = await supabaseFetch('eventos');
+        localStorage.setItem('offline_eventos_chamada', JSON.stringify(allEvents));
         renderEvents();
 
-        // Componentes
-        const cachedComp = localStorage.getItem('offline_componentes');
-        let components = cachedComp ? JSON.parse(cachedComp) : [];
-        if (!cachedComp) {
-            const r = await fetch(`${APP_CONFIG.SCRIPT_URL}?sheet=Componentes`);
-            const d = await r.json();
-            components = d.data;
-            localStorage.setItem('offline_componentes', JSON.stringify(components));
-        }
+        // Componentes (Membros)
+        console.log("🔄 Buscando membros via Supabase...");
+        const members = await supabaseFetch('membros');
+        localStorage.setItem('offline_componentes', JSON.stringify(members));
 
-        allComponents = components.filter(c => {
-            const nome = (c.Nome || "").toUpperCase().trim();
-            const func = (c.Função || "").toUpperCase().trim();
-            return nome !== "CONVIDADO" && func !== "CONVIDADO";
+        allComponents = members.filter(c => {
+            const nome = (c.nome || c.Nome || "").toUpperCase().trim();
+            const ativo = String(c.ativo || c.Ativo || "").toUpperCase().trim();
+            return nome !== "CONVIDADO" && ativo === "SIM";
         });
 
-        // Cache PresenÃ§as
-        fetch(`${APP_CONFIG.SCRIPT_URL}?sheet=Comp_Cons`)
-            .then(res => res.json())
-            .then(json => localStorage.setItem('offline_chamada', JSON.stringify(json.data || [])))
-            .catch(e => console.warn("Cache background fail", e));
+        // Presenças em background
+        console.log("🔄 Buscando presenças via Supabase...");
+        const presencas = await supabaseFetch('presenca_consagracao');
+        localStorage.setItem('offline_chamada', JSON.stringify(presencas));
 
-        // Toast de sucesso apenas quando não for silencioso
         if (!silent) {
             showToast("Chamada sincronizada com sucesso!", 'success');
         }
@@ -96,13 +81,13 @@ function renderEvents() {
 
     container.innerHTML = sorted.map(ev => `
         <div class="event-card">
-            <div class="event-info-box" onclick="openAttendance('${ev.ID_AULA || ev.ID}')">
+            <div class="event-info-box" onclick="openAttendance('${ev.id_evento || ev.ID_EVENTO || ev.id}')">
                 <span class="event-title">${ev.TEMA || ev.Tema}</span>
                 <span class="event-subtitle">
                     <i class="far fa-calendar-alt"></i> ${formatDate(ev.DATA || ev.Data)}
                 </span>
             </div>
-            <div class="btn-action-icon" onclick="deleteEvent('${ev.ID_AULA || ev.ID}', '${ev.TEMA || ev.Tema}')">
+            <div class="btn-action-icon" onclick="deleteEvent('${ev.id_evento || ev.id}', '${ev.TEMA || ev.Tema}')">
                 <i class="fas fa-trash-alt"></i>
             </div>
         </div>
@@ -111,14 +96,18 @@ function renderEvents() {
 
 async function deleteEvent(id, theme) {
     if (!confirm(`Excluir permanentemente a aula "${theme}"?`)) return;
-    SyncManager.addToQueue({ action: "deleteEvent", ID_AULA: id });
-    allEvents = allEvents.filter(e => (e.ID_AULA || e.ID) !== id);
-    localStorage.setItem('offline_consagracao', JSON.stringify(allEvents));
+    SyncManager.addToQueue({
+        action: "delete",
+        sheet: "Eventos",
+        data: { id_evento: id }
+    });
+    allEvents = allEvents.filter(e => (e.id_evento || e.id) !== id);
+    localStorage.setItem('offline_eventos_chamada', JSON.stringify(allEvents));
     renderEvents();
 }
 
 async function openAttendance(id) {
-    currentEvent = allEvents.find(e => (e.ID_AULA || e.ID) === id);
+    currentEvent = allEvents.find(e => (e.id_evento || e.id) === id);
     if (!currentEvent) return;
 
     document.getElementById('displayTheme').innerText = currentEvent.TEMA || currentEvent.Tema;
@@ -126,7 +115,7 @@ async function openAttendance(id) {
 
     attendanceData = {};
     const cachedPres = localStorage.getItem('offline_chamada');
-    let existing = cachedPres ? JSON.parse(cachedPres).filter(c => c.ID_AULA === id) : [];
+    let existing = cachedPres ? JSON.parse(cachedPres).filter(c => c.id_evento === id) : [];
 
     if (existing.length > 0) {
         existing.forEach(c => {
@@ -162,7 +151,7 @@ function renderComponents() {
             }
         }
 
-        const urlLocal = `../../assets/equipe/${name}.png`;
+        const urlLocal = `../../assets/equipe/${comp.nome || comp.Nome}.png`;
 
         // SMART SEARCH: Tenta encontrar a foto de forma inteligente
         const fotoObj = dbImg.find(img => {
@@ -262,10 +251,19 @@ async function saveNewEvent() {
     const theme = document.getElementById('eventTheme').value.trim();
     if (!date || !theme) return showToast("Preencha todos os campos.", 'warning');
     const id = Math.random().toString(16).substring(2, 10);
-    const ev = { DATA: date, TEMA: theme, ID_AULA: id, STATUS: "FECHADO" };
-    SyncManager.addToQueue({ sheet: "Consagração", data: ev });
+    const ev = {
+        data: date,
+        tema: theme,
+        id_evento: id,
+        status: "FECHADO"
+    };
+    SyncManager.addToQueue({
+        action: "addRow",
+        sheet: "Eventos",
+        data: ev
+    });
     allEvents.unshift(ev);
-    localStorage.setItem('offline_consagracao', JSON.stringify(allEvents));
+    localStorage.setItem('offline_eventos_chamada', JSON.stringify(allEvents));
     renderEvents();
     closeModal('modalEvent');
 }
@@ -273,17 +271,30 @@ async function saveNewEvent() {
 document.getElementById('btnSaveAttendance').addEventListener('click', () => {
     const names = Object.keys(attendanceData);
     if (names.length === 0) return showToast("Lista vazia.", 'warning');
+
+    const idEvento = currentEvent.id_evento || currentEvent.id;
+
     const batch = names.map(n => ({
-        "COMPONENTES": attendanceData[n].text || "",
-        "NOME": n,
-        "PRESENÇA": attendanceData[n].status,
-        "ID_AULA": currentEvent.ID_AULA || currentEvent.ID
+        justificativa: attendanceData[n].text || "",
+        nome: n,
+        presenca: attendanceData[n].status,
+        id_evento: idEvento
     }));
-    SyncManager.addToQueue({ action: "saveAttendance", ID_AULA: currentEvent.ID_AULA || currentEvent.ID, data: batch });
+
+    // Envia o lote de presenças via SyncManager (lógica customizada ou múltiplos addRow)
+    // Para simplificar, usaremos uma ação dedicada no SyncManager se possível, ou enviaremos um por um
+    batch.forEach(item => {
+        SyncManager.addToQueue({
+            action: "addRow",
+            sheet: "Presenças",
+            data: item
+        });
+    });
+
     const cache = JSON.parse(localStorage.getItem('offline_chamada') || '[]');
-    const cleaned = cache.filter(c => c.ID_AULA !== (currentEvent.ID_AULA || currentEvent.ID));
+    const cleaned = cache.filter(c => c.id_evento !== idEvento);
     localStorage.setItem('offline_chamada', JSON.stringify([...cleaned, ...batch]));
-    showToast("Chamada sincronizada com sucesso!");
+    showToast("Chamada sincronizada e salva localmente!");
     showView('events');
 });
 

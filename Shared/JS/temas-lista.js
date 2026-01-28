@@ -136,5 +136,17 @@ const TEMAS_DISPONIVEIS = {
         text: "#3b0764",
         radius: "25px",
         gradient: "linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)"
+    },
+    13: {
+        nome: "Command Center Pro",
+        primary: "#1e293b",
+        secondary: "#3b82f6",
+        bg: "#f3f4f6",
+        cardBg: "#ffffff",
+        headerBg: "#ffffff",
+        text: "#1e293b",
+        radius: "25px",
+        border: "1px solid rgba(0,0,0,0.05)",
+        shadow: "0 10px 25px rgba(0,0,0,0.05)"
     }
 };

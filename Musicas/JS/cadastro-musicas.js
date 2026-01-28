@@ -14,13 +14,11 @@ async function loadTemas(force = false) {
         data = JSON.parse(cached);
     } else {
         try {
-            if (force) await new Promise(r => setTimeout(r, 500)); // Garantir que o usuário veja o giro
-            const response = await fetch(SCRIPT_URL + "?sheet=" + encodeURIComponent("Tema Músicas"));
-            const json = await response.json();
-            data = json.data;
+            if (force) await new Promise(r => setTimeout(r, 500));
+            // Usar helper global
+            data = await supabaseFetch('temas');
             localStorage.setItem('offline_temas', JSON.stringify(data));
-            
-            // Toast de sucesso apenas quando for sincronização manual
+
             if (force) {
                 showToast("Temas sincronizados com sucesso!", 'success');
             }
@@ -32,12 +30,8 @@ async function loadTemas(force = false) {
         }
     }
 
-    const options = (data || []).filter(item => {
-        let nomeTema = Object.values(item)[0];
-        return nomeTema && nomeTema !== "Tema";
-    }).map(item => {
-        let nomeTema = Object.values(item)[0];
-        return { value: nomeTema, text: nomeTema };
+    const options = (data || []).map(item => {
+        return { value: item.nome, text: item.nome };
     });
 
     if (tsTema) tsTema.destroy();
@@ -72,20 +66,19 @@ document.getElementById('musicForm').addEventListener('submit', function (e) {
     const btn = document.getElementById('btnSubmit');
     const status = document.getElementById('status');
     const formData = new FormData(this);
-    const data = {};
+    const rawData = {};
 
     formData.forEach((v, k) => {
         let val = v.toString().trim();
-        // Formatação: Primeira letra maiúscula de cada palavra
         if (k === "Musica" || k === "Cantor") val = toTitleCase(val);
-        data[k] = val;
+        rawData[k] = val;
     });
 
     // VALIDAÇÃO DE DUPLICATAS
     const musicasExistentes = JSON.parse(localStorage.getItem('offline_musicas') || '[]');
     const jaExiste = musicasExistentes.find(m =>
-        (m.Musica || m.MusicaCorigida || "").toLowerCase().trim() === data.Musica.toLowerCase().trim() &&
-        (m.Cantor || m["Cantor Corrigido"] || "").toLowerCase().trim() === data.Cantor.toLowerCase().trim()
+        (m.musica || m.Musica || "").toLowerCase().trim() === rawData.Musica.toLowerCase().trim() &&
+        (m.cantor || m.Cantor || "").toLowerCase().trim() === rawData.Cantor.toLowerCase().trim()
     );
 
     if (jaExiste) {
@@ -93,16 +86,26 @@ document.getElementById('musicForm').addEventListener('submit', function (e) {
         return;
     }
 
-    // Adiciona campos obrigatórios para o SyncManager se não estiverem no form
-    if (!data.sheet) data.sheet = "Musicas";
+    // MAPEAMENTO PARA SUPABASE (Campos em minúsculo)
+    const supabaseData = {
+        tema: rawData.Tema,
+        estilo: rawData.Estilo,
+        musica: rawData.Musica,
+        cantor: rawData.Cantor
+    };
 
-    // 1. Atualização Otimista local
-    SyncManager.updateLocalCache("Musicas", "add", data);
+    // 1. Atualização Otimista local (usando formato legado para compatibilidade visual imediata se necessário)
+    // Mas o SyncManager agora vai salvar em minúsculo, então o cache deve seguir
+    SyncManager.updateLocalCache("Musicas", "add", supabaseData);
 
     // 2. Adiciona na fila de sincronização
-    SyncManager.addToQueue(data);
+    SyncManager.addToQueue({
+        action: "addRow",
+        sheet: "Musicas",
+        data: supabaseData
+    });
 
-    // Notifica a página pai para atualizar os dados em background
+    // Notifica a página pai
     if (window.parent) {
         window.parent.postMessage({ action: 'saved' }, '*');
     }
@@ -119,14 +122,13 @@ document.getElementById('musicForm').addEventListener('submit', function (e) {
             handleBack();
         }, 1200);
     } else {
-        // Reset form and TomSelects se não estiver no modal
         this.reset();
         if (tsTema) tsTema.clear();
         if (tsEstilo) tsEstilo.clear();
     }
 
     if (!navigator.onLine) {
-        status.innerText = "☁️ Modo Offline: Salvo localmente. Sincronizará ao voltar conexão.";
+        status.innerText = "☁️ Modo Offline. Sincronizará ao voltar conexão.";
     }
 });
 

@@ -37,86 +37,41 @@ const iconsMap = {
     'Mídia': 'fa-camera'
 };
 
-async function loadData(force = false) {
-    const loader = document.getElementById('loader');
-    const container = document.getElementById('calendarsContainer');
-    const btnExport = document.getElementById('btnExport');
-
-    // 1. Prioridade: Local Storage (Carregamento Imediato)
-    const cachedE = localStorage.getItem('offline_escala');
-    const cachedR = localStorage.getItem('offline_repertorio');
-    const cachedL = localStorage.getItem('offline_lembretes');
-
-    if (!force && cachedE) {
-        globalEscalas = safeParse(cachedE);
-        globalRepertorio = safeParse(cachedR);
-        globalLembretes = safeParse(cachedL);
-        renderCalendars();
-        container.style.display = 'flex';
-        btnExport.style.display = 'flex';
-        // Faz um sync silencioso em segundo plano para atualizar
-        setTimeout(() => silentSync(), 1000);
-        return;
-    }
-
-    const btnIcon = document.querySelector('.nav-btn.fa-sync-alt') || document.querySelector('.header-right i.fa-sync-alt');
-    if (btnIcon) btnIcon.classList.add('fa-spin');
-
-    try {
-        await silentSync(); // Reusa a lógica de fetch
-        renderCalendars();
-        container.style.display = 'flex';
-        btnExport.style.display = 'flex';
-        
-        // Toast de sucesso apenas quando for sincronização manual (force = true)
-        if (force) {
-            showToast("Calendário sincronizado com sucesso!", 'success');
-        }
-    } catch (e) {
-        console.error("Erro ao carregar dados:", e);
-        if (!cachedE) {
-            alert("Erro ao conectar com o servidor.");
-            showToast("Erro ao sincronizar calendário.", 'error');
-        }
-    } finally {
-        if (btnIcon) btnIcon.classList.remove('fa-spin');
-        if (loader) loader.style.display = 'none';
-    }
-}
 
 async function silentSync() {
     try {
         let jsonE, jsonR, jsonL;
-        
+
         try {
-            // Tentar carregar online
-            const [respE, respR, respL] = await Promise.all([
-                fetch(SCRIPT_URL + "?sheet=Transformar"),
-                fetch(SCRIPT_URL + "?sheet=Repertório_PWA"),
-                fetch(SCRIPT_URL + "?sheet=Lembretes")
+            // Tentar carregar online com normalização centralizada
+            const [respE, respR, respL, respCu] = await Promise.all([
+                supabaseFetch('escalas'),
+                supabaseFetch('repertorio'),
+                supabaseFetch('lembretes'),
+                supabaseFetch('cultos')
             ]);
 
-            [jsonE, jsonR, jsonL] = await Promise.all([respE.json(), respR.json(), respL.json()]);
-
-            globalEscalas = jsonE.data;
-            globalRepertorio = jsonR.data;
-            globalLembretes = jsonL.data;
+            globalEscalas = normalizeData(respE, 'escala');
+            globalRepertorio = normalizeData(respR, 'repertorio');
+            globalLembretes = normalizeData(respL, 'lembrete');
+            const globalCultos = normalizeData(respCu, 'culto');
 
             localStorage.setItem('offline_escala', JSON.stringify(globalEscalas));
             localStorage.setItem('offline_repertorio', JSON.stringify(globalRepertorio));
             localStorage.setItem('offline_lembretes', JSON.stringify(globalLembretes));
+            localStorage.setItem('offline_cultos', JSON.stringify(globalCultos));
         } catch (corsError) {
             // Se CORS bloquear, usar cache local
             console.warn('CORS bloqueou sync, usando cache local:', corsError);
-            
+
             const cachedE = localStorage.getItem('offline_escala');
             const cachedR = localStorage.getItem('offline_repertorio');
             const cachedL = localStorage.getItem('offline_lembretes');
-            
+
             globalEscalas = safeParse(cachedE);
             globalRepertorio = safeParse(cachedR);
             globalLembretes = safeParse(cachedL);
-            
+
             // Se não tiver cache, criar dados de exemplo
             if (!cachedE || !cachedR) {
                 console.warn('Sem cache local, criando dados de exemplo');
@@ -132,7 +87,7 @@ async function silentSync() {
                     }];
                     localStorage.setItem('offline_escala', JSON.stringify(globalEscalas));
                 }
-                
+
                 if (!cachedR) {
                     globalRepertorio = [{
                         "Músicas": "Grande é o Senhor",
@@ -180,7 +135,8 @@ function generateCalendarHTML(year, month) {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const monthName = new Date(year, month).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
-    const search = document.getElementById('personSearch').value.toLowerCase().trim();
+    const searchInput = document.getElementById('globalSearchInput');
+    const search = searchInput ? searchInput.value.toLowerCase().trim() : "";
 
     let html = `<h3>${monthName.toUpperCase()}</h3>`;
     html += `<div class="calendar-grid">
@@ -258,6 +214,12 @@ window.openDetails = function (dateStr) {
     details.innerHTML = Object.values(cultos).map(c => {
         const dataAvisoCheck = new Date(c.info.Data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
         const musicas = (Array.isArray(globalRepertorio) ? globalRepertorio : []).filter(m => {
+            // Se as duas pontas tiverem id_culto (v2.9+), usa vínculo direto
+            if (m.id_culto && c.info.id_culto) {
+                return m.id_culto === c.info.id_culto;
+            }
+
+            // Fallback para strings (legado ou novos itens na fila)
             if (!m.Data || !m.Culto) return false;
             const normalizeDate = (d) => {
                 if (d.includes('/')) {
@@ -267,7 +229,7 @@ window.openDetails = function (dateStr) {
                 return d.split('T')[0];
             };
             const matchData = normalizeDate(c.info.Data) === normalizeDate(m.Data);
-            const matchNome = m.Culto.trim().toLowerCase() === c.info["Nome dos Cultos"].trim().toLowerCase();
+            const matchNome = (m.Culto || m.culto || "").trim().toLowerCase() === c.info["Nome dos Cultos"].trim().toLowerCase();
             return matchData && matchNome;
         });
 
@@ -427,14 +389,14 @@ window.addEventListener('syncCompleted', async () => {
 window.addEventListener('syncItemBlocked', (event) => {
     const { musica, cantor, culto, data } = event.detail;
     console.log("🚫 Duplicata bloqueada - Atualizando UI (calendário)");
-    
+
     // Mostrar aviso de duplicata apenas com toast
     if (typeof showToast === 'function') {
         showToast(`⚠️ "${musica}" já está no repertório para este culto!`, 'warning', 5000);
     }
 });
 
-window.onload = () => loadData();
+
 
 async function processarBulk(btn, encodedData) {
     const confirmed = await showConfirmModal(
@@ -451,7 +413,7 @@ async function processarBulk(btn, encodedData) {
 
     // Validação local de duplicatas APENAS no histórico
     const cachedHistorico = JSON.parse(localStorage.getItem('offline_historico') || '[]');
-    
+
     let musicasParaAdicionar = [];
     let duplicatasEncontradas = 0;
     let errosEncontrados = 0;
@@ -460,12 +422,12 @@ async function processarBulk(btn, encodedData) {
     for (const item of lista) {
         try {
             const musicaCantor = String(item.musicaCantor || "").trim();
-            
+
             if (!musicaCantor) {
                 errosEncontrados++;
                 continue;
             }
-            
+
             // Verificar se já existe no histórico local
             const duplicataLocal = cachedHistorico.some(historicoItem => {
                 // Tentar acessar como array (índice 1 = "Musica - Cantor")
@@ -478,7 +440,7 @@ async function processarBulk(btn, encodedData) {
                 }
                 return itemMusicaCantor === musicaCantor;
             });
-            
+
             if (duplicataLocal) {
                 duplicatasEncontradas++;
                 console.log(`⚠️ Duplicata encontrada no histórico: ${musicaCantor}`);
@@ -512,7 +474,7 @@ async function processarBulk(btn, encodedData) {
         musicasParaAdicionar.forEach(payload => {
             SyncManager.addToQueue(payload);
         });
-        
+
         // Feedback detalhado
         let mensagemFinal = "";
         if (musicasParaAdicionar.length > 0) {
@@ -524,21 +486,21 @@ async function processarBulk(btn, encodedData) {
         if (errosEncontrados > 0) {
             mensagemFinal += `❌ ${errosEncontrados} erro(s) encontrado(s).`;
         }
-        
+
         if (typeof showToast === 'function') {
             const toastType = musicasParaAdicionar.length > 0 ? 'success' : (duplicatasEncontradas > 0 ? 'warning' : 'info');
             showToast(mensagemFinal || "Nenhuma música processada.", toastType, 5000);
         }
-        
+
         // Atualizar botão
         btn.innerHTML = '<i class="fas fa-check"></i> Concluído';
         btn.classList.add('saved');
-        
+
         // Atualizar cache do histórico após um tempo
         setTimeout(() => {
             silentSync();
         }, 2000);
-        
+
     } catch (e) {
         console.error("Erro ao adicionar músicas ao histórico:", e);
         if (typeof showToast === 'function') {
@@ -553,7 +515,7 @@ async function processarBulk(btn, encodedData) {
 window.addEventListener('syncItemBlocked', (event) => {
     const { musica, cantor, culto, data } = event.detail;
     console.log("🚫 Duplicata bloqueada - Atualizando UI (calendário)");
-    
+
     // Mostrar aviso de duplicata apenas com toast
     if (typeof showToast === 'function') {
         showToast(`⚠️ "${musica}" já está no histórico!`, 'warning', 5000);
@@ -564,12 +526,12 @@ window.addEventListener('syncItemBlocked', (event) => {
 async function addHistorico(btn, musica, cantor, tom, ministro) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     btn.disabled = true;
-    
+
     try {
         // Verificação local de duplicatas
         const cachedHistorico = JSON.parse(localStorage.getItem('offline_historico') || '[]');
         const musicaCantor = `${musica} - ${cantor}`;
-        
+
         // Verificar se já existe no histórico local
         const duplicataLocal = cachedHistorico.some(item => {
             // Tentar acessar como array (índice 1 = "Musica - Cantor")
@@ -582,7 +544,7 @@ async function addHistorico(btn, musica, cantor, tom, ministro) {
             }
             return itemMusicaCantor === musicaCantor;
         });
-        
+
         if (duplicataLocal) {
             if (typeof showToast === 'function') {
                 showToast(`⚠️ "${musicaCantor}" já está no histórico!`, 'warning', 4000);
@@ -591,7 +553,7 @@ async function addHistorico(btn, musica, cantor, tom, ministro) {
             btn.disabled = false;
             return;
         }
-        
+
         // Criar payload para SyncManager
         const payload = {
             action: "addHistory",
@@ -599,18 +561,18 @@ async function addHistorico(btn, musica, cantor, tom, ministro) {
             ministro: ministro || "Líder não definido",
             tom: tom || "--"
         };
-        
+
         // Adicionar ao SyncManager
         SyncManager.addToQueue(payload);
-        
+
         // Feedback de sucesso
         if (typeof showToast === 'function') {
             showToast(`✅ "${musicaCantor}" adicionado ao histórico!`, 'success', 3000);
         }
-        
+
         btn.innerHTML = '<i class="fas fa-check"></i>';
         btn.classList.add('saved');
-        
+
     } catch (e) {
         console.error("Erro ao adicionar ao histórico:", e);
         if (typeof showToast === 'function') {
@@ -626,9 +588,9 @@ async function buscarDadosCulto(culto, data) {
     try {
         const response = await fetch(`${SCRIPT_URL}?sheet=Repertório_PWA`);
         const result = await response.json();
-        
+
         if (result.status === 'success' && result.data) {
-            return result.data.filter(item => 
+            return result.data.filter(item =>
                 item.Culto === culto && item.Data === data
             );
         }

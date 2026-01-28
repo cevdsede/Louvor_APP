@@ -295,9 +295,9 @@ async function buscarEscalasNoModal(nome) {
         } else {
             box.innerHTML = '<div style="padding:10px; text-align:center; color:var(--text-muted); font-size:0.8rem;">Nenhuma escala futura.</div>';
         }
-    } catch (e) { 
-        box.innerHTML = "Erro ao carregar."; 
-        console.log(e); 
+    } catch (e) {
+        box.innerHTML = "Erro ao carregar.";
+        console.log(e);
     }
 
     // Buscar histórico de músicas do componente
@@ -308,7 +308,7 @@ async function buscarEscalasNoModal(nome) {
 async function buscarHistoricoMusicasNoModal(nome) {
     const box = document.getElementById('modalHistorico');
     const container = document.getElementById('modalHistoricoContainer');
-    
+
     // Sempre mostrar o container
     container.style.display = 'block';
     box.innerHTML = '<div style="text-align:center; padding:10px; color:var(--text-muted);">Carregando...</div>';
@@ -316,7 +316,7 @@ async function buscarHistoricoMusicasNoModal(nome) {
     try {
         const cached = localStorage.getItem('offline_historico');
         console.log("🔍 DEBUG - Cache do histórico:", cached ? "EXISTS" : "NULL");
-        
+
         if (!cached) {
             console.log("❌ DEBUG - Cache do histórico está vazio");
             box.innerHTML = '<div style="padding:10px; text-align:center; color:var(--text-muted); font-size:0.8rem;">Nenhum histórico encontrado.</div>';
@@ -327,7 +327,7 @@ async function buscarHistoricoMusicasNoModal(nome) {
         console.log("📊 DEBUG - Total de itens no histórico:", data.length);
         console.log("🔍 DEBUG - Buscando por ministro:", nome);
         console.log("📋 DEBUG - Primeiros 3 itens do histórico:", data.slice(0, 3));
-        
+
         // Filtrar músicas onde o componente é ministro
         const musicasDoComponente = data
             .filter(item => {
@@ -338,7 +338,7 @@ async function buscarHistoricoMusicasNoModal(nome) {
                 } else {
                     ministro = String(item.Ministro || "").trim();
                 }
-                
+
                 const match = ministro.toLowerCase().includes(nome.toLowerCase());
                 if (match) {
                     console.log("✅ DEBUG - Item encontrado:", { ministro, item });
@@ -356,7 +356,7 @@ async function buscarHistoricoMusicasNoModal(nome) {
                 // Tentar acessar como array ou objeto
                 let musica = "";
                 let tom = "";
-                
+
                 if (Array.isArray(item)) {
                     musica = String(item[1] || "").trim(); // Índice 1 = Músicas
                     tom = String(item[2] || "").trim(); // Índice 2 = Tons
@@ -366,9 +366,9 @@ async function buscarHistoricoMusicasNoModal(nome) {
                     tom = String(item["Tons"] || "").trim(); // Chave correta
                     console.log(`📝 DEBUG - Item ${index} (Objeto):`, { ministro: item.Ministro, musica: item["Músicas"], tom: item["Tons"] });
                 }
-                
+
                 const displayText = tom ? `${musica} (${tom})` : musica;
-                
+
                 return `
                     <div style="
                         padding: 12px 16px; 
@@ -441,9 +441,9 @@ async function buscarHistoricoMusicasNoModal(nome) {
             console.log("❌ DEBUG - Nenhuma música encontrada para renderizar");
             box.innerHTML = '<div style="padding:10px; text-align:center; color:var(--text-muted); font-size:0.8rem;">Nenhuma música recente.</div>';
         }
-    } catch (e) { 
+    } catch (e) {
         box.innerHTML = '<div style="padding:10px; text-align:center; color:var(--text-muted); font-size:0.8rem;">Erro ao carregar histórico.</div>';
-        console.log(e); 
+        console.log(e);
     }
 }
 

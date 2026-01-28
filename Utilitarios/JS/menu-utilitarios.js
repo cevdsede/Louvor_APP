@@ -15,11 +15,11 @@ if (role === 'Admin' || role === 'Lider') {
 if (role === 'Admin') {
     const btnDashboard = document.getElementById('btnDashboard');
     const btnMetrics = document.getElementById('btnMetrics');
-    
+
     if (btnDashboard) {
         btnDashboard.style.display = 'flex';
     }
-    
+
     if (btnMetrics) {
         btnMetrics.style.display = 'flex';
     }
@@ -31,13 +31,13 @@ function abrirDashboard() {
         // Verificar se há dados antes de abrir
         const escalasData = localStorage.getItem('offline_escala');
         const componentesData = localStorage.getItem('offline_componentes');
-        
+
         if (!escalasData || !componentesData) {
             // Tentar sincronizar dados primeiro
             if (window.showToast) {
                 window.showToast('Sincronizando dados do dashboard...', 'info', 3000);
             }
-            
+
             // Tentar carregar dados se houver função de sincronização disponível
             if (typeof carregarDados === 'function') {
                 carregarDados(true).then(() => {
@@ -82,7 +82,7 @@ window.confirmarTema = confirmingTema;
 
 // Atalho Ctrl+Shift+M para Painel de Métricas (apenas para Admin)
 if (role === 'Admin') {
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function (e) {
         if (e.ctrlKey && e.shiftKey && e.key === 'M') {
             e.preventDefault();
             abrirMetrics();

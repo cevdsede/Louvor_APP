@@ -24,37 +24,41 @@ async function fazerLogin() {
     btn.style.opacity = '0.7';
 
     try {
-        const url = SCRIPT_URL + "?sheet=Acesso";
-        console.log("🌐 URL de Chamada:", url);
+        const SUPABASE_URL = APP_CONFIG.SUPABASE_URL;
+        const SUPABASE_KEY = APP_CONFIG.SUPABASE_KEY;
 
-        const response = await fetch(url);
+        // Usamos ilike para o username ser case-insensitive, mantendo o comportamento legado
+        const url = `${SUPABASE_URL}/rest/v1/acesso?username=ilike.${encodeURIComponent(user)}&password=eq.${encodeURIComponent(pass)}`;
+        console.log("🌐 URL de Chamada Supabase (Auth)");
+
+        const response = await fetch(url, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
 
         if (!response.ok) {
             throw new Error(`HTTP Error! Status: ${response.status}`);
         }
 
-        const json = await response.json();
-        console.log("📥 Resposta recebida do servidor:", json);
+        const data = await response.json();
+        console.log("📥 Resposta de Auth recebida:", data);
 
-        if (!json.data || !Array.isArray(json.data)) {
-            console.error("❌ Formato de dados inválido. Esperado 'data' como Array.");
-            mostrarErro("Erro na resposta do servidor.");
-            return;
-        }
+        if (data && data.length > 0) {
+            const usuarioValido = data[0];
+            console.log("✅ Usuário autenticado com sucesso:", usuarioValido.nome);
 
-        const usuarioValido = json.data.find(c => {
-            const loginPlanilha = String(c.User || "").trim().toLowerCase();
-            const senhaPlanilha = String(c.Senha || "").trim();
-            return loginPlanilha === user.toLowerCase() && senhaPlanilha === pass;
-        });
+            // Mapeamento para o formato legado esperado pelo app
+            const sessionData = {
+                Nome: usuarioValido.nome,
+                User: usuarioValido.username,
+                Role: usuarioValido.perfil || "User",
+                Perfil: usuarioValido.perfil || "User"
+            };
 
-        if (usuarioValido) {
-            console.log("✅ Usuário autenticado com sucesso:", usuarioValido.Nome);
-            // Normaliza o Perfil/Role
-            usuarioValido.Role = usuarioValido.Perfil || usuarioValido.Role || "User";
-
-            localStorage.setItem('user_token', JSON.stringify(usuarioValido));
-            localStorage.setItem('last_user_name', usuarioValido.Nome);
+            localStorage.setItem('user_token', JSON.stringify(sessionData));
+            localStorage.setItem('last_user_name', usuarioValido.nome);
 
             window.location.href = '../../index.html';
         } else {

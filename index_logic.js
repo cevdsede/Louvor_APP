@@ -1,4 +1,6 @@
 const SCRIPT_URL = APP_CONFIG.SCRIPT_URL;
+const SUPABASE_URL = APP_CONFIG.SUPABASE_URL;
+const SUPABASE_KEY = APP_CONFIG.SUPABASE_KEY;
 
 // AUTO LOGOUT - 24 horas
 const SESSION_TIMEOUT = 24 * 60 * 60 * 1000;
@@ -61,51 +63,69 @@ async function backgroundSync() {
 async function performFetches(progressCb) {
     try {
         progressCb(10, "Escalas...");
-        const res1 = await fetch(SCRIPT_URL + "?sheet=Transformar");
-        const data1 = await res1.json();
-        if (data1 && data1.data) localStorage.setItem('offline_escala', JSON.stringify(data1.data));
+        let data1 = await supabaseFetch('escalas');
+        data1 = normalizeData(data1, 'escala');
+        if (data1) localStorage.setItem('offline_escala', JSON.stringify(data1));
+
+        progressCb(20, "Cultos...");
+        let dataCultos = await supabaseFetch('cultos');
+        dataCultos = normalizeData(dataCultos, 'culto');
+        if (dataCultos) localStorage.setItem('offline_cultos', JSON.stringify(dataCultos));
 
         progressCb(30, "Repertório...");
-        const res2 = await fetch(SCRIPT_URL + "?sheet=Repertório_PWA");
-        const data2 = await res2.json();
-        if (data2 && data2.data) localStorage.setItem('offline_repertorio', JSON.stringify(data2.data));
+        const data2 = await supabaseFetch('repertorio');
+        if (data2) localStorage.setItem('offline_repertorio', JSON.stringify(data2));
 
         progressCb(50, "Músicas...");
-        const res3 = await fetch(SCRIPT_URL + "?sheet=Musicas");
-        const data3 = await res3.json();
-        if (data3 && data3.data) localStorage.setItem('offline_musicas', JSON.stringify(data3.data));
+        let data3 = await supabaseFetch('musicas', '?select=*&order=musica.asc');
+        data3 = normalizeData(data3, 'musica');
+        if (data3) localStorage.setItem('offline_musicas', JSON.stringify(data3));
 
-        progressCb(65, "Componentes...");
-        const res4 = await fetch(SCRIPT_URL + "?sheet=Componentes");
-        const data4 = await res4.json();
-        if (data4 && data4.data) localStorage.setItem('offline_componentes', JSON.stringify(data4.data));
+        progressCb(65, "Membros...");
+        let data4 = await supabaseFetch('membros');
+        data4 = normalizeData(data4, 'membro');
+        if (data4) localStorage.setItem('offline_componentes', JSON.stringify(data4));
 
         progressCb(80, "Temas...");
-        const resTemas = await fetch(SCRIPT_URL + "?sheet=" + encodeURIComponent("Tema Músicas"));
-        const dataTemas = await resTemas.json();
-        if (dataTemas && dataTemas.data) localStorage.setItem('offline_temas', JSON.stringify(dataTemas.data));
+        let dataTemas = await supabaseFetch('temas');
+        dataTemas = normalizeData(dataTemas, 'tema');
+        if (dataTemas) localStorage.setItem('offline_temas', JSON.stringify(dataTemas));
+
+        progressCb(82, "Nomes de Cultos...");
+        let dataNomes = await supabaseFetch('nome_cultos');
+        dataNomes = normalizeData(dataNomes, 'nome_culto');
+        if (dataNomes) localStorage.setItem('offline_nome_cultos', JSON.stringify(dataNomes));
 
         progressCb(85, "Lembretes...");
-        const resLemb = await fetch(SCRIPT_URL + "?sheet=Lembretes");
-        const dataLemb = await resLemb.json();
-        if (dataLemb && dataLemb.data) localStorage.setItem('offline_lembretes', JSON.stringify(dataLemb.data));
+        let dataLemb = await supabaseFetch('lembretes');
+        dataLemb = normalizeData(dataLemb, 'lembrete');
+        if (dataLemb) localStorage.setItem('offline_lembretes', JSON.stringify(dataLemb));
+
+        progressCb(88, "Eventos..."); // Atividades/Consagrações
+        let dataEvs = await supabaseFetch('eventos');
+        dataEvs = normalizeData(dataEvs, 'evento');
+        if (dataEvs) localStorage.setItem('offline_eventos', JSON.stringify(dataEvs));
 
         progressCb(90, "Histórico...");
-        const res5 = await fetch(SCRIPT_URL + "?sheet=" + encodeURIComponent("Historico de Músicas"));
-        const data5 = await res5.json();
-        if (data5 && data5.data) localStorage.setItem('offline_historico', JSON.stringify(data5.data));
+        const data5 = await supabaseFetch('historico_musicas');
+        if (data5) localStorage.setItem('offline_historico', JSON.stringify(data5));
 
         progressCb(95, "Imagens...");
-        const res6 = await fetch(SCRIPT_URL + "?action=getImages");
-        const data6 = await res6.json();
-        if (data6 && data6.data) localStorage.setItem('offline_imagens', JSON.stringify(data6.data));
+        // Fallback para o script antigo para imagens se ainda não migradas
+        try {
+            const res6 = await fetch(SCRIPT_URL + "?action=getImages");
+            const data6 = await res6.json();
+            if (data6 && data6.data) localStorage.setItem('offline_imagens', JSON.stringify(data6.data));
+        } catch (e) {
+            console.warn("Aviso: Imagens não disponíveis via Script antigo.");
+        }
 
         const now = new Date();
         localStorage.setItem('last_full_sync', now.toISOString());
 
         // PROCESSA NOTIFICAÇÕES APÓS SYNC
         processarNotificacoes();
-        initDashboard(); // Garante que o gráfico atualiza após sync pleno
+        initDashboard();
         updateLastUpdateText();
     } catch (err) {
         console.error("Erro durante o fetch de dados:", err);
@@ -137,7 +157,10 @@ function initDashboard() {
     const cached = localStorage.getItem('offline_escala');
     if (cached) {
         document.getElementById('dashLoader').style.display = 'none';
-        processarERenderizar(JSON.parse(cached));
+        let dados = JSON.parse(cached);
+        // Garante normalização mesmo se o cache for antigo
+        dados = normalizeData(dados, 'escala');
+        processarERenderizar(dados);
     } else {
         // Only show loader if we REALLY don't have data
         if (!currentChart) {
@@ -363,13 +386,23 @@ window.onclick = (event) => {
 }
 
 window.onload = () => {
-    if (userData.Nome) document.getElementById('userName').innerText = userData.Nome;
+    if (userData.Nome) {
+        document.getElementById('userName').innerText = userData.Nome;
+        if (document.getElementById('userNameSide')) {
+            document.getElementById('userNameSide').innerText = userData.Nome;
+        }
+        if (document.getElementById('userAvatar')) {
+            document.getElementById('userAvatar').innerText = userData.Nome.charAt(0).toUpperCase();
+        }
+    }
     applyPermissions();
     updateLastUpdateText();
     checkSession();
     initDashboard();
     processarNotificacoes();
     solicitarPermisaoNotificacao();
+    renderQuickThemes();
+    updateDarkModeIcon();
 
     // Listener para atualizar o gráfico se os dados mudarem em outra aba/página
     window.addEventListener('beforeinstallprompt', (e) => {
@@ -447,9 +480,13 @@ function processarNotificacoes() {
         }
     };
 
-    const escalas = safeParse('offline_escala');
-    const lembretes = safeParse('offline_lembretes');
-    const repertorios = safeParse('offline_repertorio');
+    let escalas = safeParse('offline_escala');
+    let lembretes = safeParse('offline_lembretes');
+    let repertorios = safeParse('offline_repertorio');
+
+    // Normalização defensiva do cache
+    escalas = normalizeData(escalas, 'escala');
+    lembretes = normalizeData(lembretes, 'lembrete');
 
     let notificacoes = JSON.parse(localStorage.getItem('user_notificacoes') || '[]');
     let conhecidasMaster = JSON.parse(localStorage.getItem('notificacoes_conhecidas_ids') || '[]');
@@ -478,7 +515,7 @@ function processarNotificacoes() {
     });
 
     // 2. Verificar Avisos e Avisos Lider
-    const meusCultosIds = new Set(escalas.filter(e => e.Nome.toLowerCase().trim().includes(meuNome)).map(e => e.Cultos));
+    const meusCultosIds = new Set(escalas.filter(e => (e.Nome || e.nome || "").toLowerCase().trim().includes(meuNome)).map(e => e.Cultos || e.nome_culto));
 
     const isLiderOrAdmin = user.Role === 'Lider' || user.Role === 'Admin' || user.Role === 'SuperAdmin';
 
@@ -905,4 +942,64 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initAppVersion);
 } else {
     initAppVersion();
+}
+function renderQuickThemes() {
+    const grid = document.getElementById('quickThemesGrid');
+    if (!grid || typeof TEMAS_DISPONIVEIS === 'undefined') return;
+
+    grid.innerHTML = '';
+    const currentId = localStorage.getItem('tema_escolhido_id') || 1;
+
+    Object.keys(TEMAS_DISPONIVEIS).forEach(id => {
+        const tema = TEMAS_DISPONIVEIS[id];
+        if (!tema) return;
+
+        const dot = document.createElement('div');
+        dot.className = 'theme-dot' + (currentId == id ? ' active' : '');
+        dot.style.background = tema.primary;
+        dot.title = tema.nome;
+
+        if (id == currentId) {
+            dot.innerHTML = '<i class="fas fa-plus" style="font-size: 0.6rem;"></i>';
+        }
+
+        dot.onclick = () => {
+            localStorage.setItem('tema_escolhido_id', id);
+            if (typeof aplicarTemaAtual === 'function') {
+                aplicarTemaAtual();
+            }
+            renderQuickThemes();
+            updateDarkModeIcon();
+        };
+        grid.appendChild(dot);
+    });
+}
+
+function updateDarkModeIcon() {
+    const currentId = localStorage.getItem('tema_escolhido_id') || 1;
+    const icon = document.querySelector('.dark-toggle i');
+    if (icon) {
+        // Se o tema for 13 (Pro/Dark) ou contiver 'Dark' no nome, mostra sol, senão lua
+        const tema = TEMAS_DISPONIVEIS[currentId];
+        const isDark = (currentId == 13 || (tema && tema.nome.toLowerCase().includes('dark')));
+        icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+    }
+}
+
+function toggleDarkLiteMode() {
+    const currentId = localStorage.getItem('tema_escolhido_id') || 1;
+    let nextId = 1;
+
+    if (currentId == 1) {
+        nextId = 13; // Alterna para Command Center Pro
+    } else {
+        nextId = 1; // Volta para o Light
+    }
+
+    localStorage.setItem('tema_escolhido_id', nextId);
+    if (typeof aplicarTemaAtual === 'function') {
+        aplicarTemaAtual();
+    }
+    renderQuickThemes();
+    updateDarkModeIcon();
 }

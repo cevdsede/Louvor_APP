@@ -15,7 +15,7 @@ function showToast(message, type = 'success', duration = 3000) {
     // Create toast element
     const toast = document.createElement('div');
     toast.id = 'globalToast';
-    
+
     // Define icon and color based on type
     const configs = {
         success: { icon: 'fa-check-circle', color: '#10b981', bgColor: '#d1fae5' },
@@ -23,9 +23,9 @@ function showToast(message, type = 'success', duration = 3000) {
         warning: { icon: 'fa-exclamation-triangle', color: '#f59e0b', bgColor: '#fef3c7' },
         info: { icon: 'fa-info-circle', color: '#3b82f6', bgColor: '#dbeafe' }
     };
-    
+
     const config = configs[type] || configs.success;
-    
+
     // Apply styles
     Object.assign(toast.style, {
         position: 'fixed',
@@ -50,22 +50,22 @@ function showToast(message, type = 'success', duration = 3000) {
         transition: 'all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
         fontFamily: 'system-ui, -apple-system, sans-serif'
     });
-    
+
     // Create content
     toast.innerHTML = `
         <i class="fas ${config.icon}" style="font-size: 18px; flex-shrink: 0;"></i>
         <span style="flex: 1;">${message}</span>
         <i class="fas fa-times" style="cursor: pointer; opacity: 0.6; font-size: 12px; flex-shrink: 0;" onclick="this.parentElement.remove()"></i>
     `;
-    
+
     // Add to page
     document.body.appendChild(toast);
-    
+
     // Animate in
     setTimeout(() => {
         toast.style.transform = 'translateX(0)';
     }, 10);
-    
+
     // Auto remove
     setTimeout(() => {
         if (toast.parentElement) {
@@ -123,7 +123,8 @@ async function loadNativeFormData() {
     const cultosMap = new Map();
     escalas.forEach(item => {
         if (!item["Nome dos Cultos"] || !item.Data) return;
-        const uniqueKey = item["Nome dos Cultos"] + "|" + item.Data;
+        const idCu = item.id_culto || item.id_Culto;
+        const uniqueKey = idCu ? idCu : (item["Nome dos Cultos"] + "|" + item.Data);
         if (!cultosMap.has(uniqueKey) && new Date(item.Data) >= hoje) {
             const d = new Date(item.Data);
             const dataDisplay = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
@@ -138,8 +139,8 @@ async function loadNativeFormData() {
     tsMusicaNative.clearOptions();
     musicasData.forEach(m => {
         // Suporta tanto o formato vindo do servidor quanto o formato salvo localmente via formulário
-        const nomeFinal = m.MusicaCorigida || m.Musica;
-        const cantorFinal = m["Cantor Corrigido"] || m.Cantor;
+        const nomeFinal = m.MusicaCorigida || m.Musica || m.musica;
+        const cantorFinal = m["Cantor Corrigido"] || m.Cantor || m.cantor;
 
         if (nomeFinal) {
             let txt = nomeFinal + (cantorFinal ? " - " + cantorFinal : "");
@@ -147,11 +148,11 @@ async function loadNativeFormData() {
         }
     });
 
-    // Temas (do Cache)
+    // Temas (do Cache com novo nome de coluna)
     const temasData = JSON.parse(localStorage.getItem('offline_temas') || '[]');
     tsTemaNative.clearOptions();
     temasData.forEach(item => {
-        let nomeTema = Object.values(item)[0];
+        let nomeTema = item.nome_tema || item.Nome || Object.values(item)[0];
         if (nomeTema && nomeTema !== "Tema") {
             tsTemaNative.addOption({ value: nomeTema, text: nomeTema });
         }
@@ -167,7 +168,7 @@ function filtrarEscalaNative(cultoKey) {
     const escalas = (typeof globalEscalas !== 'undefined') ? globalEscalas : JSON.parse(localStorage.getItem('offline_escala') || '[]');
 
     // Atualiza campos ocultos
-    const infoCulto = escalas.find(i => i["Nome dos Cultos"] === nomeTarget && i.Data === dataTarget);
+    const infoCulto = escalas.find(i => (i.id_culto === cultoKey || i.id_Culto === cultoKey) || (i["Nome dos Cultos"] === nomeTarget && i.Data === dataTarget));
     if (infoCulto) {
         const parts = infoCulto.Data.split('T')[0].split('-');
         document.getElementById('hiddenDataNative').value = `${parts[2]}/${parts[1]}/${parts[0]}`;
@@ -235,6 +236,36 @@ document.addEventListener('DOMContentLoaded', () => {
             new FormData(this).forEach((v, k) => formData[k] = v.toString().trim());
 
             const payload = { action: "addRow", sheet: "Repertório_PWA", data: formData };
+            const idCulto = tsCultoNative.getValue();
+            if (idCulto) {
+                // Se for UUID, salva no schema novo
+                if (idCulto.length > 20) payload.data.id_culto = idCulto;
+                else {
+                    const [nome, data] = idCulto.split('|');
+                    payload.data.Culto = nome;
+                    payload.data.Data = data;
+                }
+            }
+
+            // --- VALIDAÇÃO DE DUPLICATAS ---
+            const reperLocal = JSON.parse(localStorage.getItem('offline_repertorio') || '[]');
+            const musicaTarget = formData.Músicas || formData.musica;
+            const existe = reperLocal.find(m => {
+                const matchEvento = (m.id_culto && m.id_culto === idCulto) ||
+                    ((m.Culto === formData.Culto || m.culto === formData.culto) &&
+                        (m.Data === formData.Data || m.data === formData.data));
+                const matchMusica = (m.Músicas || m.musica || "").toLowerCase().trim() === musicaTarget.toLowerCase().trim();
+                return matchEvento && matchMusica;
+            });
+
+            if (existe) {
+                showToast(`⚠️ "${musicaTarget}" já está no repertório deste culto!`, 'warning', 4000);
+                return;
+            }
+            // -------------------------------
+
+            if (idCulto && idCulto.length > 20) formData.id_culto = idCulto;
+
             SyncManager.updateLocalCache("Repertório_PWA", "add", formData);
             SyncManager.addToQueue(payload);
 
