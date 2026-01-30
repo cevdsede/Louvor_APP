@@ -38,7 +38,16 @@ interface HistoryItem {
   song: string;
   singer: string;
   key: string;
+  keys: string[];
   date: string;
+}
+
+interface GroupedHistory {
+  [minister: string]: {
+    [theme: string]: {
+      [style: string]: HistoryItem[];
+    };
+  };
 }
 
 const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
@@ -62,6 +71,8 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
   const [expandedStyles, setExpandedStyles] = useState<Record<string, boolean>>({});
   const [expandedMinisters, setExpandedMinisters] = useState<Record<string, boolean>>({});
   const [expandedHistThemes, setExpandedHistThemes] = useState<Record<string, boolean>>({});
+  const [expandedHistMinisters, setExpandedHistMinisters] = useState<Record<string, boolean>>({});
+  const [expandedHistStyles, setExpandedHistStyles] = useState<Record<string, boolean>>({});
 
   // Form states
   const [newSong, setNewSong] = useState({ song: '', singer: '', theme: '', style: 'Adoração' });
@@ -103,16 +114,112 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
       const themes = Array.from(new Set(formattedSongs.map(s => s.theme)));
       setAvailableThemes(themes);
 
-      // 2. Fetch History (Mock for now, will implement real history table later if needed)
-      // For now we can maybe fetch from 'historico_musicas' if it exists and has data
-      const { data: historyData } = await supabase
+      // 2. Fetch Repertoire for Ranking
+      const { data: repData, error: repError } = await supabase
+        .from('repertorio')
+        .select('id, id_musicas');
+
+      if (repError) throw repError;
+
+      // Map repertoire for simple counting
+      // We will cast to any to store strictly what we need for ranking
+      setRepertoires((repData || []).map((r: any) => ({
+        id: r.id,
+        items: [{ id: r.id_musicas } as RepertoireItem] // hacking structure for simple counting for now to match interface
+      } as any)));
+
+
+      // 3. Fetch History from 'historico_musicas' with complete music info
+      console.log('Fetching history from historico_musicas...');
+
+      const { data: historyData, error: histError } = await supabase
         .from('historico_musicas')
-        .select('*')
+        .select(`
+          *,
+          membros ( nome ),
+          tons ( nome_tons )
+        `)
         .order('created_at', { ascending: false });
 
-      if (historyData) {
-        // Need to map history data effectively. Assuming structure for now.
-        // If history table structure is different, this needs adjustment.
+      console.log('History data:', historyData);
+      console.log('History error:', histError);
+
+      if (histError) {
+        console.warn('Error fetching history:', histError);
+        // Set empty array to avoid infinite loading
+        setHistory([]);
+      } else if (historyData && historyData.length > 0) {
+        console.log('Found', historyData.length, 'history records');
+
+        // For each history item, try to find the corresponding music
+        const historyWithMusicDetails = await Promise.all(
+          historyData.map(async (h: any) => {
+            console.log('Processing history item:', h);
+            console.log('id_tons:', h.id_tons);
+            console.log('tons data:', h.tons);
+
+            let musicDetails = null;
+
+            // Try to find music by song name if id_musica exists
+            if (h.id_musica) {
+              console.log('Searching music by id:', h.id_musica);
+              const { data: musicData } = await supabase
+                .from('musicas')
+                .select(`
+                  musica,
+                  cantor,
+                  estilo,
+                  temas (
+                    nome_tema
+                  )
+                `)
+                .eq('id', h.id_musica)
+                .single();
+
+              musicDetails = musicData;
+              console.log('Found music by id:', musicDetails);
+            } else if (h.musica) {
+              console.log('Searching music by name:', h.musica);
+              // Try to find by song name as fallback
+              const { data: musicData } = await supabase
+                .from('musicas')
+                .select(`
+                  musica,
+                  cantor,
+                  estilo,
+                  temas (
+                    nome_tema
+                  )
+                `)
+                .eq('musica', h.musica)
+                .single();
+
+              musicDetails = musicData;
+              console.log('Found music by name:', musicDetails);
+            }
+
+            const result = {
+              id: h.id,
+              date: new Date(h.created_at).toLocaleDateString('pt-BR'),
+              song: musicDetails?.musica || h.musica || 'Desconhecida',
+              singer: musicDetails?.cantor || '',
+              key: (Array.isArray(h.tons) ? h.tons[0]?.nome_tons : h.tons?.nome_tons) || '',
+              minister: h.membros?.nome || 'Sem ministro',
+              theme: musicDetails?.temas?.nome_tema || 'Geral',
+              style: musicDetails?.estilo || ''
+            };
+
+            console.log('Final result:', result);
+            console.log('Key extracted:', h.tons?.nome_tons);
+            return result;
+          })
+        );
+
+        console.log('History with music details:', historyWithMusicDetails);
+        setHistory(historyWithMusicDetails);
+      } else {
+        console.log('No history data found');
+        setHistory([]);
       }
 
     } catch (error) {
@@ -165,15 +272,56 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
   // Ranking calculation
   const getRanking = () => {
     const counts: Record<string, number> = {};
-    // Calculate from history and repertoires
-    // Placeholder logic until full history is linked
-    songs.forEach(s => counts[s.song] = Math.floor(Math.random() * 10)); // MOCK RANKING
+
+    // Calculate from repertoires (id_musicas)
+    // Flatten all items from repertoire sets (based on how we mapped it in fetchData)
+    const allRepMusicIds = repertoires.flatMap(r => r.items.map(i => i.id)); // mapped id_musicas to id in fetchData
+
+    allRepMusicIds.forEach(id => {
+      const songName = songs.find(s => s.id === id)?.song;
+      if (songName) {
+        counts[songName] = (counts[songName] || 0) + 1;
+      }
+    });
+
+    // If no repertoire data yet, fall back to showing top songs from list alphabetically or empty
+    if (Object.keys(counts).length === 0) {
+      return [];
+    }
 
     return Object.entries(counts)
       .map(([song, count]) => ({ song, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
   };
+
+  // Realtime subscription
+  useEffect(() => {
+    const channels = supabase.channel('custom-all-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'musicas' },
+        (payload) => {
+          console.log('Change received!', payload);
+          fetchData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'repertorio' },
+        () => fetchData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'historico_musicas' },
+        () => fetchData()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channels);
+    };
+  }, []);
 
   useEffect(() => {
     if (subView === 'music-stats' && !loading) {
@@ -239,7 +387,7 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [subView, songs, loading]);
+  }, [subView, songs, repertoires, loading]);
 
   const getLink = (type: string, song: string, singer: string) => {
     const query = encodeURIComponent(`${song} ${singer}`);
@@ -382,7 +530,267 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
     );
   }
 
+  // Repertoire View
+  if (subView === 'music-repertoire') {
+    // Group repertoire by cult/event
+    const groupedRepertoire = repertoires.reduce((acc, rep) => {
+      // For now, create a mock event structure since we only have basic data
+      const eventKey = `culto-${rep.id}`;
+      if (!acc[eventKey]) {
+        acc[eventKey] = {
+          id: eventKey,
+          title: `CULTO - ${rep.id}`,
+          date: new Date().toLocaleDateString('pt-BR'),
+          items: []
+        };
+      }
+      acc[eventKey].items.push(...rep.items);
+      return acc;
+    }, {} as Record<string, any>);
+
+    const events = Object.values(groupedRepertoire);
+
+    return (
+      <div className="pb-20 fade-in max-w-7xl mx-auto space-y-6">
+        <h2 className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-4 mb-4">Repertório</h2>
+        
+        {events.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 opacity-50">
+            <i className="fas fa-music text-4xl text-slate-300 mb-4"></i>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Nenhum repertório encontrado</p>
+            <p className="text-xs text-slate-500">Verifique se há registros na tabela 'repertorio'</p>
+          </div>
+        ) : (
+          events.map((event: any) => (
+            <div key={event.id} className="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-50 dark:border-slate-800 overflow-hidden shadow-sm">
+              <div 
+                onClick={() => setExpandedThemes(p => ({ ...p, [event.id]: !p[event.id] }))}
+                className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+              >
+                <div>
+                  <h4 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">
+                    {event.title}
+                  </h4>
+                  <p className="text-[8px] font-black text-slate-400 uppercase mt-1 tracking-widest">
+                    {event.items.length} MÚSICAS • {event.date}
+                  </p>
+                </div>
+                <button className="w-8 h-8 bg-emerald-500 text-white rounded-lg shadow-md flex items-center justify-center">
+                  <i className={`fas fa-chevron-${expandedThemes[event.id] ? 'up' : 'down'} text-[10px]`}></i>
+                </button>
+              </div>
+              
+              {expandedThemes[event.id] && (
+                <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
+                  {event.items.map((item: any, index: number) => {
+                    const song = songs.find(s => s.id === item.id);
+                    return song ? (
+                      <div key={index} className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center gap-3">
+                        <div className="w-8 h-8 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[10px] shrink-0">
+                          {song.style === 'Adoração' ? 'A' : 'C'}
+                        </div>
+                        <div className="min-w-0">
+                          <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate">{song.song}</h5>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
+                            MIN: <span className="text-brand">{song.singer}</span>
+                          </p>
+                        </div>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+    );
+  }
+
   // Placeholder for other subViews as they are waiting for real data derived from 'escalas' in ListView or similar
+  if (subView === 'music-history') {
+    console.log('History state:', history);
+    console.log('History length:', history.length);
+
+    // If no history data, show a message with option to create test data
+    if (history.length === 0) {
+      return (
+        <div className="pb-20 fade-in max-w-4xl mx-auto">
+          <div className="space-y-4">
+            <h2 className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-4 mb-4">Histórico de Músicas</h2>
+
+            <div className="flex flex-col items-center justify-center py-20 opacity-50">
+              <i className="fas fa-history text-4xl text-slate-300 mb-4"></i>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Nenhum histórico encontrado</p>
+              <p className="text-xs text-slate-500 mb-6">Verifique se há registros na tabela 'historico_musicas'</p>
+
+              <button
+                onClick={async () => {
+                  // Create some test data
+                  try {
+                    const { data: members } = await supabase.from('membros').select('id, nome').limit(3);
+                    const { data: songs } = await supabase.from('musicas').select('id, musica').limit(5);
+                    const { data: tones } = await supabase.from('tons').select('id, nome_tom').limit(3);
+
+                    if (members && songs && tones && members.length > 0 && songs.length > 0 && tones.length > 0) {
+                      for (let i = 0; i < 5; i++) {
+                        await supabase.from('historico_musicas').insert({
+                          id_membros: members[i % members.length].id,
+                          id_musicas: songs[i % songs.length].id,
+                          id_tons: tones[i % tones.length].id,
+                          musica: songs[i % songs.length].musica
+                        });
+                      }
+                      fetchData(); // Reload data
+                    }
+                  } catch (error) {
+                    console.error('Error creating test data:', error);
+                  }
+                }}
+                className="px-4 py-2 bg-brand text-white rounded-full text-xs font-black uppercase tracking-widest"
+              >
+                Criar Dados de Teste
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Group history by minister -> theme -> style -> songs (aggregated by song+singer)
+    const groupedHistory: GroupedHistory = history.reduce((acc, item) => {
+      console.log('Processing item:', item);
+
+      if (!item.minister || item.minister === 'Sem ministro') {
+        console.log('Skipping item without minister:', item);
+        return acc;
+      }
+
+      if (!acc[item.minister]) {
+        acc[item.minister] = {};
+      }
+
+      if (!acc[item.minister][item.theme]) {
+        acc[item.minister][item.theme] = {};
+      }
+
+      if (!acc[item.minister][item.theme][item.style]) {
+        acc[item.minister][item.theme][item.style] = [];
+      }
+
+      // Check if song+singer already exists in this style
+      const existingSongIndex = acc[item.minister][item.theme][item.style].findIndex(
+        existing => existing.song === item.song && existing.singer === item.singer
+      );
+
+      if (existingSongIndex >= 0) {
+        // Song exists, add the key if different
+        const existingSong = acc[item.minister][item.theme][item.style][existingSongIndex];
+        if (item.key && !existingSong.keys.includes(item.key)) {
+          existingSong.keys.push(item.key);
+        }
+        // Update dates to show the most recent
+        if (item.date > existingSong.date) {
+          existingSong.date = item.date;
+        }
+      } else {
+        // New song, initialize with keys array
+        acc[item.minister][item.theme][item.style].push({
+          ...item,
+          keys: item.key ? [item.key] : []
+        });
+      }
+
+      return acc;
+    }, {} as GroupedHistory);
+
+    console.log('Grouped history:', groupedHistory);
+
+    return (
+      <div className="pb-20 fade-in max-w-7xl mx-auto space-y-6">
+        <div className="space-y-4">
+          <h2 className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-4 mb-4">Histórico de Músicas</h2>
+
+          {Object.entries(groupedHistory).map(([minister, themes]) => (
+            <div key={minister} className="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-50 dark:border-slate-800 overflow-hidden shadow-sm">
+              {/* Minister Level */}
+              <div
+                onClick={() => setExpandedHistMinisters(p => ({ ...p, [minister]: !p[minister] }))}
+                className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-50 dark:border-slate-800"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center font-black text-sm">
+                    {minister.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">{minister}</h3>
+                    <p className="text-[8px] font-black text-brand uppercase mt-1 tracking-widest">MINISTRO</p>
+                  </div>
+                </div>
+                <i className={`fas fa-chevron-down text-slate-300 transition-transform ${expandedHistMinisters[minister] ? 'rotate-180' : ''}`}></i>
+              </div>
+
+              {expandedHistMinisters[minister] && (
+                <div className="px-6 pb-6 space-y-6 pt-4 animate-fade-in bg-slate-50/5 dark:bg-slate-800/5">
+                  {Object.entries(themes).map(([theme, styles]) => (
+                    <div key={theme} className="space-y-4">
+                      {/* Theme Level */}
+                      <div
+                        onClick={() => setExpandedHistThemes(p => ({ ...p, [`${minister}-${theme}`]: !p[`${minister}-${theme}`] }))}
+                        className="flex items-center gap-2 cursor-pointer group w-fit"
+                      >
+                        <h4 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest group-hover:text-brand transition-colors">{theme}</h4>
+                        <i className={`fas fa-chevron-right text-[8px] text-slate-200 transition-transform ${expandedHistThemes[`${minister}-${theme}`] ? 'rotate-90' : ''}`}></i>
+                      </div>
+
+                      {expandedHistThemes[`${minister}-${theme}`] && (
+                        <div className="space-y-6 animate-fade-in pl-4 border-l-2 border-slate-100 dark:border-slate-800">
+                          {Object.entries(styles).map(([style, songs]) => (
+                            <div key={style} className="space-y-3">
+                              {/* Style Level */}
+                              <div
+                                onClick={() => setExpandedHistStyles(p => ({ ...p, [`${minister}-${theme}-${style}`]: !p[`${minister}-${theme}-${style}`] }))}
+                                className="flex items-center gap-3 cursor-pointer group"
+                              >
+                                <div className={`w-1.5 h-1.5 rounded-full ${style === 'Adoração' ? 'bg-blue-500' : 'bg-amber-500'}`}></div>
+                                <span className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest group-hover:text-brand transition-colors">{style}</span>
+                                <i className={`fas fa-chevron-right text-[8px] text-slate-200 transition-transform ${expandedHistStyles[`${minister}-${theme}-${style}`] ? 'rotate-90' : ''}`}></i>
+                              </div>
+
+                              {expandedHistStyles[`${minister}-${theme}-${style}`] && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
+                                  {songs.map((song) => (
+                                    <div key={song.id} className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 flex justify-between items-center group shadow-sm">
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] font-black text-slate-800 dark:text-white uppercase truncate leading-tight">{song.song}</p>
+                                        <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1 truncate">
+                                          {song.singer || 'Desconhecido'}{song.keys && song.keys.length > 0 && (
+                                            <> • <span className="text-brand">{song.keys.join(' / ')}</span></>
+                                          )}
+                                        </p>
+                                      </div>
+                                      <div className="shrink-0">
+                                        <i className="fas fa-check-circle text-emerald-500 text-[10px]"></i>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return null;
 };
 

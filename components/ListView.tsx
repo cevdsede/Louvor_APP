@@ -84,13 +84,69 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
         setSingers(mappedMembers.filter(m => m.role.toLowerCase().includes('ministro') || m.role.toLowerCase().includes('vocal')));
       }
 
-      // 3. Fetch Events (Cultos)
+      // 3. Fetch Events (Cultos) and Notices
       fetchEvents();
+      fetchNotices();
 
     } catch (error) {
       console.error('Error fetching initial data:', error);
     }
   };
+
+  const fetchNotices = async () => {
+    try {
+      const { data: noticesData } = await supabase.from('avisos_cultos').select('*');
+      if (noticesData) {
+        const noticesByEvent: Record<string, Notice[]> = {};
+
+        noticesData.forEach((n: any) => {
+          if (!noticesByEvent[n.id_culto]) {
+            noticesByEvent[n.id_culto] = [];
+          }
+          noticesByEvent[n.id_culto].push({
+            id: n.id,
+            sender: n.responsavel || 'Admin', // Assuming responsavel column or default
+            text: n.aviso,
+            time: new Date(n.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+          });
+        });
+
+        setEventNotices(noticesByEvent);
+      }
+    } catch (error) {
+      console.error('Error fetching notices:', error);
+    }
+  };
+
+  // Realtime Subscription
+  useEffect(() => {
+    const channels = supabase.channel('list-view-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'cultos' },
+        () => fetchData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'escalas' },
+        () => fetchData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'avisos_cultos' },
+        () => fetchData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'repertorio' },
+        () => fetchData()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channels);
+    };
+  }, []);
 
   const fetchEvents = async () => {
     try {
@@ -110,7 +166,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
                     id,
                     musicas ( musica, cantor ),
                     tons ( nome_tom ),
-                    membros ( nome ) -- Minister
+                    membros ( nome )
                 )
             `)
         .order('data_culto', { ascending: true }); // Show upcoming first?

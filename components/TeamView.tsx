@@ -66,6 +66,21 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
     }
   };
 
+  // Realtime Subscription
+  useEffect(() => {
+    const channels = supabase.channel('team-view-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'membros' },
+        () => fetchMembers()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channels);
+    };
+  }, []);
+
   const kpis = [
     { label: 'Ministro', role: 'Ministro', icon: 'fa-crown' },
     { label: 'Vocal', role: 'Vocal', icon: 'fa-microphone-lines' },
