@@ -21,12 +21,15 @@ interface RepertoireItem {
   singer: string;
   minister: string;
   key: string;
+  style: string;
 }
 
 interface RepertoireSet {
   id: string;
-  eventId: string;
-  eventTitle: string;
+  title: string;
+  date: string;
+  cultName: string;
+  cultDate: string;
   items: RepertoireItem[];
 }
 
@@ -114,19 +117,68 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
       const themes = Array.from(new Set(formattedSongs.map(s => s.theme)));
       setAvailableThemes(themes);
 
-      // 2. Fetch Repertoire for Ranking
+      // 2. Fetch Repertoire with cult information
       const { data: repData, error: repError } = await supabase
         .from('repertorio')
-        .select('id, id_musicas');
+        .select(`
+          id,
+          id_culto,
+          id_musicas,
+          id_membros,
+          id_tons,
+          cultos (
+            data_culto,
+            nome_cultos (
+              nome_culto
+            )
+          ),
+          musicas (
+            id,
+            musica,
+            cantor,
+            estilo
+          ),
+          membros (
+            nome
+          ),
+          tons (
+            nome_tons
+          )
+        `)
+        .order('created_at', { ascending: false });
 
       if (repError) throw repError;
 
-      // Map repertoire for simple counting
-      // We will cast to any to store strictly what we need for ranking
-      setRepertoires((repData || []).map((r: any) => ({
-        id: r.id,
-        items: [{ id: r.id_musicas } as RepertoireItem] // hacking structure for simple counting for now to match interface
-      } as any)));
+      // Group repertoire by cult (nome_culto - data_culto)
+      const groupedRepertoire = (repData || []).reduce((acc, item: any) => {
+        const cultName = item.cultos?.nome_cultos?.nome_culto || 'Culto Sem Nome';
+        const cultDate = item.cultos?.data_culto ? new Date(item.cultos.data_culto).toLocaleDateString('pt-BR') : 'Sem Data';
+        const eventKey = `${cultName}-${cultDate}`;
+        
+        if (!acc[eventKey]) {
+          acc[eventKey] = {
+            id: eventKey,
+            title: `${cultName.toUpperCase()} - ${cultDate}`,
+            date: cultDate,
+            cultName: cultName,
+            cultDate: cultDate,
+            items: []
+          };
+        }
+        
+        acc[eventKey].items.push({
+          id: item.id,
+          song: item.musicas?.musica || 'Desconhecida',
+          singer: item.musicas?.cantor || '',
+          minister: item.membros?.nome || 'Sem ministro',
+          key: item.tons?.nome_tons || '',
+          style: item.musicas?.estilo || ''
+        });
+        
+        return acc;
+      }, {} as Record<string, any>);
+
+      setRepertoires(Object.values(groupedRepertoire));
 
 
       // 3. Fetch History from 'historico_musicas' with complete music info
@@ -273,14 +325,12 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
   const getRanking = () => {
     const counts: Record<string, number> = {};
 
-    // Calculate from repertoires (id_musicas)
-    // Flatten all items from repertoire sets (based on how we mapped it in fetchData)
-    const allRepMusicIds = repertoires.flatMap(r => r.items.map(i => i.id)); // mapped id_musicas to id in fetchData
+    // Calculate from repertoires (now with proper structure)
+    const allRepertoireItems = repertoires.flatMap(r => r.items);
 
-    allRepMusicIds.forEach(id => {
-      const songName = songs.find(s => s.id === id)?.song;
-      if (songName) {
-        counts[songName] = (counts[songName] || 0) + 1;
+    allRepertoireItems.forEach(item => {
+      if (item.song) {
+        counts[item.song] = (counts[item.song] || 0) + 1;
       }
     });
 
@@ -532,36 +582,18 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
 
   // Repertoire View
   if (subView === 'music-repertoire') {
-    // Group repertoire by cult/event
-    const groupedRepertoire = repertoires.reduce((acc, rep) => {
-      // For now, create a mock event structure since we only have basic data
-      const eventKey = `culto-${rep.id}`;
-      if (!acc[eventKey]) {
-        acc[eventKey] = {
-          id: eventKey,
-          title: `CULTO - ${rep.id}`,
-          date: new Date().toLocaleDateString('pt-BR'),
-          items: []
-        };
-      }
-      acc[eventKey].items.push(...rep.items);
-      return acc;
-    }, {} as Record<string, any>);
-
-    const events = Object.values(groupedRepertoire);
-
     return (
       <div className="pb-20 fade-in max-w-7xl mx-auto space-y-6">
         <h2 className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-4 mb-4">Repertório</h2>
         
-        {events.length === 0 ? (
+        {repertoires.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 opacity-50">
             <i className="fas fa-music text-4xl text-slate-300 mb-4"></i>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Nenhum repertório encontrado</p>
             <p className="text-xs text-slate-500">Verifique se há registros na tabela 'repertorio'</p>
           </div>
         ) : (
-          events.map((event: any) => (
+          repertoires.map((event: RepertoireSet) => (
             <div key={event.id} className="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-50 dark:border-slate-800 overflow-hidden shadow-sm">
               <div 
                 onClick={() => setExpandedThemes(p => ({ ...p, [event.id]: !p[event.id] }))}
@@ -572,7 +604,7 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
                     {event.title}
                   </h4>
                   <p className="text-[8px] font-black text-slate-400 uppercase mt-1 tracking-widest">
-                    {event.items.length} MÚSICAS • {event.date}
+                    {event.items.length} MÚSICAS
                   </p>
                 </div>
                 <button className="w-8 h-8 bg-emerald-500 text-white rounded-lg shadow-md flex items-center justify-center">
@@ -581,23 +613,20 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
               </div>
               
               {expandedThemes[event.id] && (
-                <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
-                  {event.items.map((item: any, index: number) => {
-                    const song = songs.find(s => s.id === item.id);
-                    return song ? (
-                      <div key={index} className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center gap-3">
-                        <div className="w-8 h-8 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[10px] shrink-0">
-                          {song.style === 'Adoração' ? 'A' : 'C'}
-                        </div>
-                        <div className="min-w-0">
-                          <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate">{song.song}</h5>
-                          <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
-                            MIN: <span className="text-brand">{song.singer}</span>
-                          </p>
-                        </div>
+                <div className="p-4 space-y-3 animate-fade-in">
+                  {event.items.map((item: RepertoireItem, index: number) => (
+                    <div key={item.id} className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center gap-3">
+                      <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
+                        {item.key || 'Ñ'}
                       </div>
-                    ) : null;
-                  })}
+                      <div className="flex-1 min-w-0">
+                        <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate">{item.song} - {item.singer}</h5>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
+                          MINISTRO: <span className="text-brand">{item.minister}</span>
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -768,9 +797,6 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
                                             <> • <span className="text-brand">{song.keys.join(' / ')}</span></>
                                           )}
                                         </p>
-                                      </div>
-                                      <div className="shrink-0">
-                                        <i className="fas fa-check-circle text-emerald-500 text-[10px]"></i>
                                       </div>
                                     </div>
                                   ))}

@@ -56,28 +56,28 @@ const Toolbar: React.FC<ToolbarProps> = ({ currentView, onViewChange }) => {
 
           {/* Music Selectors */}
           {isMusicMode && (
-            <div className="bg-white dark:bg-slate-800 p-1.5 rounded-2xl flex items-center shadow-sm border border-slate-100 dark:border-slate-700 overflow-x-auto no-scrollbar">
+            <div className="bg-white dark:bg-slate-800 p-1 lg:p-1.5 rounded-2xl flex items-center shadow-sm border border-slate-100 dark:border-slate-700 overflow-x-auto no-scrollbar w-full max-w-full">
               <button 
                 onClick={() => onViewChange('music-stats')}
-                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${currentView === 'music-stats' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`px-2 lg:px-6 py-1.5 lg:py-2.5 rounded-xl text-[8px] lg:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex-1 text-center ${currentView === 'music-stats' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 Dashboard
               </button>
               <button 
                 onClick={() => onViewChange('music-list')}
-                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${currentView === 'music-list' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`px-2 lg:px-6 py-1.5 lg:py-2.5 rounded-xl text-[8px] lg:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex-1 text-center ${currentView === 'music-list' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 Lista
               </button>
               <button 
                 onClick={() => onViewChange('music-repertoire')}
-                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${currentView === 'music-repertoire' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`px-2 lg:px-6 py-1.5 lg:py-2.5 rounded-xl text-[8px] lg:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex-1 text-center ${currentView === 'music-repertoire' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 Repertórios
               </button>
               <button 
                 onClick={() => onViewChange('music-history')}
-                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${currentView === 'music-history' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`px-2 lg:px-6 py-1.5 lg:py-2.5 rounded-xl text-[8px] lg:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex-1 text-center ${currentView === 'music-history' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 Histórico
               </button>
