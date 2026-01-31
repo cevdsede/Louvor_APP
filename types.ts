@@ -1,16 +1,18 @@
 
-export type ViewType = 
+export type ViewType =
   | 'dashboard'
-  | 'list' | 'calendar' | 'cleaning' 
-  | 'team' | 'attendance'
-  | 'music-stats' | 'music-list' | 'music-repertoire' | 'music-create' | 'music-history';
+  | 'list' | 'calendar' | 'cleaning'
+  | 'team' | 'attendance' | 'approvals'
+  | 'music-stats' | 'music-list' | 'music-repertoire' | 'music-create' | 'music-history' | 'music-escalas';
 
 export interface RepertoireItem {
   id: string;
   song: string;
   singer: string;
   key: string;
+  minister?: string;
 }
+
 
 export interface MemberScale {
   id: string;
@@ -52,6 +54,13 @@ export interface Member {
   songHistory?: SongHistoryItem[];
 }
 
+export interface Notice {
+  id: string;
+  text: string;
+  sender: string;
+  time: string;
+}
+
 export interface ScheduleEvent {
   id: string;
   title: string;
@@ -61,3 +70,4 @@ export interface ScheduleEvent {
   members: Member[];
   repertoire: RepertoireItem[];
 }
+

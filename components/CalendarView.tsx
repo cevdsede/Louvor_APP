@@ -1,63 +1,154 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { ScheduleEvent, Member, RepertoireItem } from '../types';
-
-interface Notice {
-  id: string;
-  sender: string;
-  text: string;
-  time: string;
-}
+import { ScheduleEvent, Notice } from '../types';
 
 const CalendarView: React.FC = () => {
   const [selectedDateEvents, setSelectedDateEvents] = useState<ScheduleEvent[] | null>(null);
-  const [currentBaseDate, setCurrentBaseDate] = useState(new Date(2024, 4, 1)); // Começa em Maio/2024
+  const [currentBaseDate, setCurrentBaseDate] = useState(new Date());
+
+  // Estados para cards colapsáveis (igual ListView)
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [activeSubTabs, setActiveSubTabs] = useState<Record<string, 'team' | 'repertoire' | 'notices'>>({});
 
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
+  const [eventNotices, setEventNotices] = useState<Record<string, Notice[]>>({});
+
+  // Role icons mapping (igual ListView)
+  const roleIcons = [
+    { label: 'Ministro', role: 'Ministro', icon: 'fa-crown' },
+    { label: 'Vocal', role: 'Vocal', icon: 'fa-microphone-lines' },
+    { label: 'Violão', role: 'Violão', icon: 'fa-guitar' },
+    { label: 'Teclado', role: 'Teclado', icon: 'fa-keyboard' },
+    { label: 'Guitarra', role: 'Guitarra', icon: 'fa-bolt' },
+    { label: 'Baixo', role: 'Baixo', icon: 'fa-music' },
+    { label: 'Bateria', role: 'Bateria', icon: 'fa-drum' },
+  ];
 
   const fetchEvents = async () => {
-    // Reuse logic or import fetch from a service if possible, or just re-fetch for now.
-    // Since ListView handles most logic, we can re-fetch just what we need for calendar or accept we need duplicate fetch logic here for now
-    // For simplicity in this step, I will add the subscription but we need actual fetch logic first.
-    // Assuming 'events' was mock in first read, I'll add a basic fetch here.
     try {
-      const { data: cultosData } = await (window as any).supabase // accessing global or imported? Need to import supabase
+      const { data: cultosData, error } = await supabase
         .from('cultos')
         .select(`
-            id, data_culto, horario, nome_cultos(nome_culto),
-            escalas(membros(id, nome, genero))
-          `);
+          id, 
+          data_culto, 
+          horario, 
+          id_nome_cultos,
+          nome_cultos!cultos_id_nome_cultos_fkey(nome_culto),
+          escalas(
+            id, 
+            id_membros, 
+            id_funcao,
+            membros(id, nome, foto, genero),
+            funcao(nome_funcao)
+          ),
+          repertorio(
+            id, 
+            id_culto,
+            id_musicas,
+            id_tons,
+            musicas(id, musica, cantor),
+            tons(nome_tons),
+            membros(nome)
+          )
+        `);
+
+      if (error) {
+        console.error('Erro na query de cultos:', error);
+        return;
+      }
 
       if (cultosData) {
-        // Map data... simplifying for brevity
-        const mapped: ScheduleEvent[] = cultosData.map((c: any) => ({
-          id: c.id,
-          title: c.nome_cultos?.nome_culto,
-          date: new Date(c.data_culto + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-          dayOfWeek: '', // Calc if needed
-          time: c.horario,
-          members: c.escalas.map((e: any) => ({ id: e.membros?.id, name: e.membros?.nome, gender: e.membros?.genero === 'Homem' ? 'M' : 'F' })),
-          repertoire: []
-        }));
+        const mapped: ScheduleEvent[] = cultosData.map((c: any) => {
+          const date = new Date(c.data_culto + 'T00:00:00');
+          const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+          return {
+            id: c.id,
+            title: c.nome_cultos?.nome_culto || 'Culto',
+            date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+            dayOfWeek: daysOfWeek[date.getDay()],
+            time: c.horario,
+            members: c.escalas?.map((e: any) => ({
+              id: e.membros?.id,
+              name: e.membros?.nome || 'Sem nome',
+              gender: e.membros?.genero === 'Homem' ? 'M' : 'F',
+              role: e.funcao?.nome_funcao || 'Sem função',
+              photo: e.membros?.foto,
+              avatar: e.membros?.foto || `https://ui-avatars.com/api/?name=${e.membros?.nome}&background=random`,
+              status: 'confirmed',
+              upcomingScales: [],
+              songHistory: []
+            })) || [],
+            repertoire: c.repertorio?.map((r: any) => ({
+              id: r.id,
+              song: r.musicas?.musica || 'Sem música',
+              singer: r.musicas?.cantor || 'Sem cantor',
+              key: r.tons?.nome_tons || 'Ñ',
+              minister: r.membros?.nome || ''
+            })) || []
+          };
+        });
         setEvents(mapped);
+        console.log('Eventos carregados:', mapped.length, 'cultos');
       }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error('Erro ao buscar eventos:', e);
+    }
+  };
+
+  const fetchEventNotices = async (eventId: string) => {
+    try {
+      const { data } = await supabase
+        .from('avisos_cultos')
+        .select(`
+          id_lembrete,
+          info,
+          created_at,
+          membros(nome)
+        `)
+        .eq('id_cultos', eventId);
+
+      if (data) {
+        const notices: Notice[] = data.map((notice: any) => ({
+          id: notice.id_lembrete,
+          text: notice.info,
+          sender: notice.membros?.nome || 'Admin',
+          time: new Date(notice.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        }));
+
+        setEventNotices(prev => ({
+          ...prev,
+          [eventId]: notices
+        }));
+      }
+    } catch (error) {
+      console.error('Erro ao buscar avisos:', error);
+    }
   };
 
   useEffect(() => {
-    // Initial fetch would go here
-    // fetchEvents();
+    fetchEvents();
   }, []);
 
-  // Realtime
-  // Note: CalendarView.tsx I read earlier didn't have imported supabase client at top?
-  // checking imports...
-  // import { supabase } from '../supabaseClient'; WAS MISSING in my view? 
-  // Wait, let's check previous view of CalendarView.tsx
-  // It did NOT have supabase import in lines 1-100?
-  // actually line 3 had imports. 'import { ScheduleEvent...'
-  // I need to add supabase import if missing.
+  // Buscar avisos quando abrir o modal
+  useEffect(() => {
+    if (selectedDateEvents) {
+      selectedDateEvents.forEach(event => {
+        fetchEventNotices(event.id);
+      });
+    }
+  }, [selectedDateEvents]);
+
+  const toggleExpand = (id: string) => {
+    setExpandedId(expandedId === id ? null : id);
+    if (!activeSubTabs[id]) {
+      setActiveSubTabs(prev => ({ ...prev, [id]: 'team' }));
+    }
+  };
+
+  const setSubTab = (eventId: string, tab: 'team' | 'repertoire' | 'notices') => {
+    setActiveSubTabs(prev => ({ ...prev, [eventId]: tab }));
+  };
 
   const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -113,8 +204,8 @@ const CalendarView: React.FC = () => {
                 </span>
                 {hasEvent && (
                   <div className="mt-1 space-y-0.5">
-                    {dayEvents[0].members.slice(0, 3).map(m => (
-                      <p key={m.id} className="text-[7px] font-black text-brand uppercase truncate leading-none">
+                    {dayEvents[0].members.slice(0, 3).map((m, idx) => (
+                      <p key={`${day}-member-${idx}`} className="text-[7px] font-black text-brand uppercase truncate leading-none">
                         {m.name.split(' ')[0]}
                       </p>
                     ))}
@@ -160,15 +251,15 @@ const CalendarView: React.FC = () => {
         {renderMonth(nextMonthDate)}
       </div>
 
-      {/* Modal de Detalhes (Card Estilo ListView) */}
+      {/* Modal com Cards Colapsáveis (Igual ListView) */}
       {selectedDateEvents && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md" onClick={() => setSelectedDateEvents(null)}></div>
-          <div className="relative w-full max-w-2xl max-h-[90vh] bg-[#f4f7fa] dark:bg-[#0b1120] rounded-[3rem] shadow-2xl overflow-y-auto custom-scrollbar animate-fade-in border border-slate-100 dark:border-slate-800">
+          <div className="relative w-full max-w-4xl max-h-[90vh] bg-[#f4f7fa] dark:bg-[#0b1120] rounded-[3rem] shadow-2xl overflow-y-auto custom-scrollbar animate-fade-in border border-slate-100 dark:border-slate-800">
             <div className="p-8 lg:p-10">
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter uppercase leading-none">
-                  Detalhes do Culto
+                  Cultos do Dia
                 </h3>
                 <button onClick={() => setSelectedDateEvents(null)} className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white dark:bg-slate-800 text-slate-400 hover:text-red-500 transition-all border border-slate-100 dark:border-slate-700 shadow-sm">
                   <i className="fas fa-times"></i>
@@ -176,101 +267,133 @@ const CalendarView: React.FC = () => {
               </div>
 
               <div className="space-y-6">
-                {selectedDateEvents.map(event => (
-                  <DetailedEventCard key={event.id} event={event} />
-                ))}
+                {selectedDateEvents.map(event => {
+                  const currentSubTab = activeSubTabs[event.id] || 'team';
+                  const isExpanded = expandedId === event.id;
+                  const notices = eventNotices[event.id] || [];
+
+                  return (
+                    <div key={event.id} className={`bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border ${isExpanded ? 'border-brand/40 ring-4 ring-brand/5' : 'border-slate-100 dark:border-slate-800'} overflow-hidden transition-all duration-300 h-fit`}>
+                      <div
+                        onClick={() => toggleExpand(event.id)}
+                        className="px-8 py-6 cursor-pointer flex justify-between items-center group hover:bg-slate-50 dark:hover:bg-slate-800/20"
+                      >
+                        <div className="flex items-center gap-5">
+                          <div className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center transition-all ${isExpanded ? 'bg-brand text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-400'}`}>
+                            <span className="text-[9px] font-black uppercase leading-none">{event.dayOfWeek}</span>
+                            <span className="text-lg font-black leading-none mt-1">{event.date.split('/')[0]}</span>
+                          </div>
+                          <div>
+                            <h3 className={`text-lg font-black tracking-tight uppercase leading-none ${isExpanded ? 'text-brand' : 'text-slate-800 dark:text-white'}`}>{event.title}</h3>
+                            <div className="flex items-center gap-3 text-slate-400 dark:text-slate-500 font-bold text-[10px] mt-2 uppercase tracking-widest">
+                              <span><i className="far fa-clock text-brand mr-1 opacity-70"></i> {event.time}</span>
+                              <span className="w-1 h-1 bg-slate-200 dark:bg-slate-700 rounded-full"></span>
+                              <span>{event.members.length} MEMBROS</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 dark:bg-slate-800 text-slate-400 transition-all ${isExpanded ? 'rotate-180 bg-brand/10 text-brand' : 'group-hover:text-brand'}`}>
+                            <i className="fas fa-chevron-down text-[10px]"></i>
+                          </div>
+                        </div>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="border-t border-slate-50 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-800/10 animate-fade-in">
+                          <div className="px-6 pt-6 pb-4">
+                            <div className="bg-white dark:bg-slate-800 p-1 rounded-2xl flex items-center shadow-sm border border-slate-100 dark:border-slate-700 w-full overflow-hidden">
+                              <button onClick={() => setSubTab(event.id, 'team')} className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${currentSubTab === 'team' ? 'bg-brand text-white shadow-md' : 'text-slate-400 hover:text-brand'}`}>Equipe</button>
+                              <button onClick={() => setSubTab(event.id, 'repertoire')} className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${currentSubTab === 'repertoire' ? 'bg-brand text-white shadow-md' : 'text-slate-400 hover:text-brand'}`}>Músicas</button>
+                              <button onClick={() => setSubTab(event.id, 'notices')} className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${currentSubTab === 'notices' ? 'bg-brand text-white shadow-md' : 'text-slate-400 hover:text-brand'}`}>Avisos</button>
+                            </div>
+                          </div>
+
+                          <div className="px-8 pb-10 fade-in min-h-[150px]">
+                            {currentSubTab === 'team' && (
+                              <div className="space-y-3 pt-4">
+                                {event.members.map((member, index) => (
+                                  <div key={`${event.id}-mem-${index}`} className="bg-slate-50/50 dark:bg-slate-800/30 p-3 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center justify-between group/member hover:bg-slate-100/50 dark:hover:bg-slate-700/50 transition-all duration-300">
+                                    <div className="flex items-center gap-3">
+                                      <div className="relative">
+                                        <img
+                                          src={member.avatar || `https://ui-avatars.com/api/?name=${member.name}&background=random`}
+                                          alt={member.name}
+                                          className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-slate-700 shadow-sm group-hover/member:scale-110 transition-transform duration-300"
+                                        />
+                                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-brand rounded-full border border-white dark:border-slate-700 flex items-center justify-center">
+                                          <i className={`fas ${roleIcons.find(r => member.role.includes(r.label))?.icon || 'fa-user'} text-[6px] text-white`}></i>
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col min-w-0">
+                                        <span className="text-xs font-black text-slate-800 dark:text-white leading-none truncate">{member.name}</span>
+                                        <span className="text-[8px] font-bold text-brand uppercase tracking-widest mt-0.5 truncate">{member.role}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {currentSubTab === 'repertoire' && (
+                              <div className="space-y-3 pt-4">
+                                {event.repertoire.map((item, index) => (
+                                  <div key={`${event.id}-rep-${index}`} className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                                    <div className="flex items-center gap-3 mb-3">
+                                      <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
+                                        {item.key || 'Ñ'}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate">{item.song} - {item.singer}</h5>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
+                                          MINISTRO: <span className="text-brand">{item.minister || 'Sem ministro'}</span>
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-1">
+                                      <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${item.song} ${item.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
+                                      <a href={`https://open.spotify.com/search/${encodeURIComponent(`${item.song} ${item.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-emerald-500 hover:bg-emerald-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
+                                      <a href={`https://www.letras.mus.br/?q=${encodeURIComponent(`${item.song} ${item.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-500 hover:bg-blue-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-align-left text-[9px]"></i></a>
+                                      <a href={`https://www.cifraclub.com.br/?q=${encodeURIComponent(`${item.song} ${item.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-amber-500 hover:bg-amber-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[10px]"></i></a>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {currentSubTab === 'notices' && (
+                              <div className="pt-4 space-y-3">
+                                <div className="space-y-3">
+                                  {notices.length === 0 ? (
+                                    <div className="text-center py-8">
+                                      <i className="fas fa-bell text-3xl text-slate-200 dark:text-slate-700 mb-3"></i>
+                                      <p className="text-sm font-bold text-slate-400 dark:text-slate-500">Nenhum aviso para este culto</p>
+                                    </div>
+                                  ) : (
+                                    notices.map((notice, index) => (
+                                      <div key={`${event.id}-not-${index}`} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 relative animate-fade-in group">
+                                        <div className="flex justify-between items-center mb-1.5">
+                                          <span className="text-[8px] font-black text-brand uppercase tracking-widest">{notice.sender}</span>
+                                          <span className="text-[7px] font-bold text-slate-400 uppercase">{notice.time}</span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-600 dark:text-slate-300 font-medium leading-relaxed">{notice.text}</p>
+                                      </div>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
         </div>
       )}
-    </div>
-  );
-};
-
-// Componente DetailedEventCard (Réplica do ListView)
-const DetailedEventCard: React.FC<{ event: ScheduleEvent }> = ({ event }) => {
-  const [activeTab, setActiveTab] = useState<'team' | 'repertoire' | 'notices'>('team');
-  const [notices] = useState<Notice[]>([
-    { id: 'n1', sender: 'Ewerton Silva', text: 'Vou me atrasar 10 minutos hoje devido ao trânsito.', time: '18:45' }
-  ]);
-
-  return (
-    <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 overflow-hidden shadow-sm">
-      <div className="px-8 py-6 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-brand text-white flex flex-col items-center justify-center font-black">
-            <span className="text-[9px] uppercase leading-none mb-1">{event.dayOfWeek}</span>
-            <span className="text-lg leading-none">{event.date.split('/')[0]}</span>
-          </div>
-          <div>
-            <h4 className="text-lg font-black text-slate-800 dark:text-white uppercase leading-none">{event.title}</h4>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 block">{event.time} • {event.members.length} INTEGRANTES</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-1.5 bg-white dark:bg-slate-800 m-4 rounded-2xl flex items-center shadow-sm border border-slate-100 dark:border-slate-700">
-        {(['team', 'repertoire', 'notices'] as const).map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-brand text-white shadow-md' : 'text-slate-400 hover:text-brand'}`}
-          >
-            {tab === 'team' ? 'Equipe' : tab === 'repertoire' ? 'Músicas' : 'Avisos'}
-          </button>
-        ))}
-      </div>
-
-      <div className="px-8 pb-10 min-h-[300px] animate-fade-in">
-        {activeTab === 'team' && (
-          <div className="space-y-3 pt-4">
-            {event.members.map(m => (
-              <div key={m.id} className="bg-slate-50/50 dark:bg-slate-800/20 p-4 rounded-2xl border border-slate-50 dark:border-slate-800 flex items-center justify-between group/member hover:border-brand transition-all">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center text-brand shadow-sm">
-                    <i className={`fas ${m.icon?.split(' ')[0] || 'fa-user'} text-xs`}></i>
-                  </div>
-                  <div>
-                    <p className="text-xs font-black text-slate-800 dark:text-white leading-none">{m.name}</p>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">{m.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {activeTab === 'repertoire' && (
-          <div className="space-y-3 pt-4">
-            {event.repertoire.map(item => (
-              <div key={item.id} className="bg-slate-50/50 dark:bg-slate-800/20 p-5 rounded-2xl border border-slate-50 dark:border-slate-800 flex items-center justify-between group/song hover:border-brand transition-all">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-brand/5 flex items-center justify-center text-brand shadow-sm"><i className="fas fa-play text-[10px]"></i></div>
-                  <div>
-                    <p className="text-sm font-black text-slate-800 dark:text-white leading-none">{item.song}</p>
-                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1.5">{item.singer} • {item.key}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {activeTab === 'notices' && (
-          <div className="space-y-4 pt-4">
-            {notices.map(n => (
-              <div key={n.id} className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-[9px] font-black text-brand uppercase tracking-widest">{n.sender}</span>
-                  <span className="text-[8px] font-bold text-slate-400 uppercase">{n.time}</span>
-                </div>
-                <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium leading-relaxed">{n.text}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 };

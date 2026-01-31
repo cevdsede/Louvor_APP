@@ -1,5 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
+import { supabase } from '../supabaseClient';
 
 const DashboardView: React.FC = () => {
   const escalaChartRef = useRef<HTMLCanvasElement>(null);
@@ -7,6 +8,7 @@ const DashboardView: React.FC = () => {
   const [isDevocionalModalOpen, setIsDevocionalModalOpen] = useState(false);
   const [devocionalInput, setDevocionalInput] = useState('');
   const [currentDevocional, setCurrentDevocional] = useState('Porque, onde estiverem dois ou três reunidos em meu nome, ali estou eu no meio deles. (Mateus 18:20)');
+
 
   // Mock de dados (Simulando o que viria do estado global/API)
   const memberStats: any[] = [];
@@ -69,27 +71,8 @@ const DashboardView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-10 fade-in max-w-[1400px] mx-auto pb-20">
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-3xl lg:text-5xl font-black text-slate-800 dark:text-white tracking-tighter uppercase leading-none">
-            Visão <span className="text-brand">Operacional</span>
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 font-semibold text-base mt-3">
-            Cloud Worship: Operando na terra, conectado ao céu.
-          </p>
-        </div>
-        <button 
-          onClick={() => setIsDevocionalModalOpen(true)}
-          className="flex items-center gap-3 px-6 py-4 bg-brand text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-2xl hover:scale-105 transition-all w-full lg:w-auto justify-center"
-        >
-          <i className="fas fa-bible text-brand-accent"></i>
-          Devocional do Dia
-        </button>
-      </div>
-
-      {/* KPI Cards Section - Mobile: side by side layout */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-8">
+    <div className="pb-20 fade-in max-w-7xl mx-auto space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* KPI 1 - Usuários Ativos */}
         <div className="bg-white dark:bg-slate-900 p-5 md:p-8 rounded-3xl shadow-sm border border-slate-50 dark:border-slate-800 flex flex-row md:flex-col items-center md:items-start group hover:shadow-xl transition-all">
           <div className="w-12 h-12 md:w-16 md:h-16 bg-blue-50 dark:bg-blue-900/20 text-brand rounded-2xl flex items-center justify-center text-xl md:text-2xl mr-4 md:mr-0 md:mb-6">

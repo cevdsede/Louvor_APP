@@ -4,6 +4,107 @@ import { supabase } from '../supabaseClient';
 import { Member, ViewType, ScheduleEvent, SongHistoryItem } from '../types';
 import AttendanceView from './AttendanceView';
 
+// Componente Multi-select
+const MultiSelect: React.FC<{
+  options: { id: string; label: string }[];
+  value: string[];
+  onChange: (value: string[]) => void;
+  placeholder?: string;
+}> = ({ options, value, onChange, placeholder = "Selecione as funções..." }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredOptions = options.filter(option =>
+    option.label.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const toggleOption = (optionId: string) => {
+    if (value.includes(optionId)) {
+      onChange(value.filter(id => id !== optionId));
+    } else {
+      onChange([...value, optionId]);
+    }
+  };
+
+  const removeOption = (optionId: string) => {
+    onChange(value.filter(id => id !== optionId));
+  };
+
+  return (
+    <div className="relative">
+      <div 
+        className="min-h-[42px] border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 p-2 cursor-pointer"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div className="flex flex-wrap gap-2">
+          {value.length === 0 ? (
+            <span className="text-slate-400 text-sm">{placeholder}</span>
+          ) : (
+            value.map(id => {
+              const option = options.find(o => o.id === id);
+              return (
+                <span
+                  key={id}
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-brand text-white rounded-md text-sm"
+                >
+                  {option?.label}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeOption(id);
+                    }}
+                    className="hover:bg-brand/80 rounded-full w-4 h-4 flex items-center justify-center"
+                  >
+                    <i className="fas fa-times text-xs"></i>
+                  </button>
+                </span>
+              );
+            })
+          )}
+        </div>
+        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+          <i className={`fas fa-chevron-${isOpen ? 'up' : 'down'} text-slate-400 text-xs`}></i>
+        </div>
+      </div>
+      
+      {isOpen && (
+        <div className="absolute z-10 w-full mt-1 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 shadow-lg max-h-60 overflow-y-auto">
+          <input
+            type="text"
+            placeholder="Buscar funções..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <div className="max-h-40 overflow-y-auto">
+            {filteredOptions.map(option => (
+              <div
+                key={option.id}
+                className={`p-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-2 ${
+                  value.includes(option.id) ? 'bg-brand/10' : ''
+                }`}
+                onClick={() => {
+                  toggleOption(option.id);
+                  setIsOpen(false);
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={value.includes(option.id)}
+                  onChange={() => {}}
+                  className="rounded border-slate-300 dark:border-slate-600"
+                />
+                <span className="text-sm">{option.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 interface TeamViewProps {
   currentView: ViewType;
 }
@@ -14,6 +115,12 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
   const [viewingEvent, setViewingEvent] = useState<ScheduleEvent | null>(null);
   const genderChartRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<any>(null);
+
+  // Estados para Aprovações
+  const [solicitacoes, setSolicitacoes] = useState<any[]>([]);
+  const [funcoes, setFuncoes] = useState<any[]>([]);
+  const [loadingAprovacoes, setLoadingAprovacoes] = useState(false);
+  const [funcoesSelecionadas, setFuncoesSelecionadas] = useState<Record<string, string[]>>({});
 
   // Mock de eventos para navegação
   const allEvents: ScheduleEvent[] = [];
@@ -32,7 +139,11 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
 
   useEffect(() => {
     fetchMembers();
-  }, []);
+    if (currentView === 'approvals') {
+      fetchFuncoes();
+      fetchSolicitacoes();
+    }
+  }, [currentView]);
 
   const fetchMembers = async () => {
     try {
@@ -45,17 +156,25 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
       if (error) throw error;
 
       if (data) {
-        const mappedMembers: Member[] = data.map(m => ({
-          id: m.id,
-          name: m.nome,
-          role: Array.isArray(m.funcoes) ? m.funcoes.join(', ') : (m.funcoes || ''),
-          gender: m.genero === 'Homem' ? 'M' : 'F',
-          status: m.ativo ? 'confirmed' : 'absent',
-          avatar: m.foto || (m.genero === 'Homem'
-            ? 'https://img.freepik.com/fotos-gratis/homem-bonito-sorrindo-no-fundo-branco_23-2148213426.jpg' // Default Man
-            : 'https://img.freepik.com/fotos-gratis/jovem-mulher-bonita-com-exibicao-natural-de-maquiagem_23-2148810238.jpg'), // Default Woman
-          upcomingScales: [], // To be implemented later or in another query
-          songHistory: []
+        const mappedMembers: Member[] = await Promise.all(data.map(async (m) => {
+          // Buscar próximas escalas do membro
+          const upcomingScales = await fetchMemberUpcomingScales(m.id);
+          
+          // Buscar histórico de músicas do membro
+          const songHistory = await fetchMemberSongHistory(m.id);
+          
+          return {
+            id: m.id,
+            name: m.nome,
+            role: Array.isArray(m.funcoes) ? m.funcoes.join(', ') : (m.funcoes || ''),
+            gender: m.genero === 'Homem' ? 'M' : 'F',
+            status: m.ativo ? 'confirmed' : 'absent',
+            avatar: m.foto || (m.genero === 'Homem'
+              ? 'https://img.freepik.com/fotos-gratis/homem-bonito-sorrindo-no-fundo-branco_23-2148213426.jpg' // Default Man
+              : 'https://img.freepik.com/fotos-gratis/jovem-mulher-bonita-com-exibicao-natural-de-maquiagem_23-2148810238.jpg'), // Default Woman
+            upcomingScales: upcomingScales,
+            songHistory: songHistory
+          };
         }));
         setMembers(mappedMembers);
       }
@@ -63,6 +182,173 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
       console.error('Erro ao buscar membros:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Funções para Aprovações
+  const fetchFuncoes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('funcao')
+        .select('id, nome_funcao')
+        .order('nome_funcao');
+
+      if (error) throw error;
+      setFuncoes(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar funções:', error);
+    }
+  };
+
+  const fetchSolicitacoes = async () => {
+    try {
+      setLoadingAprovacoes(true);
+      const { data, error } = await supabase
+        .from('solicitacoes_membro')
+        .select(`
+          id,
+          user_id,
+          status,
+          created_at,
+          membros(id, nome, email, foto, genero)
+        `)
+        .eq('status', 'pendente')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setSolicitacoes(data || []);
+      
+      // Inicializar funções selecionadas para cada solicitação
+      const inicialFuncoes: Record<string, string[]> = {};
+      data?.forEach(solicitacao => {
+        inicialFuncoes[solicitacao.id] = [];
+      });
+      setFuncoesSelecionadas(inicialFuncoes);
+    } catch (error) {
+      console.error('Erro ao buscar solicitações:', error);
+    } finally {
+      setLoadingAprovacoes(false);
+    }
+  };
+
+  const aprovarMembro = async (userId: string, funcoesIds: string[]) => {
+    try {
+      const { data, error } = await supabase.rpc('aprovar_membro', {
+        user_id: userId,
+        ids_selecionados: funcoesIds
+      });
+
+      if (error) throw error;
+
+      // Atualizar status da solicitação
+      await supabase
+        .from('solicitacoes_membro')
+        .update({ status: 'aprovado' })
+        .eq('user_id', userId);
+
+      // Recarregar solicitações
+      await fetchSolicitacoes();
+      
+      // Recarregar membros para incluir o novo membro
+      await fetchMembers();
+      
+      alert('Membro aprovado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao aprovar membro:', error);
+      alert('Erro ao aprovar membro. Tente novamente.');
+    }
+  };
+
+  const handleFuncoesChange = (solicitacaoId: string, funcoesIds: string[]) => {
+    setFuncoesSelecionadas(prev => ({
+      ...prev,
+      [solicitacaoId]: funcoesIds
+    }));
+  };
+
+  // Buscar próximas escalas do membro
+  const fetchMemberUpcomingScales = async (memberId: string) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Primeiro buscar as escalas do membro
+      const { data: escalasData, error: escalasError } = await supabase
+        .from('escalas')
+        .select(`
+          id,
+          id_culto,
+          id_funcao,
+          cultos!inner(
+            id,
+            data_culto,
+            horario,
+            nome_cultos(nome_culto)
+          ),
+          funcao(nome_funcao)
+        `)
+        .eq('id_membros', memberId)
+        .gte('cultos.data_culto', today)
+        .limit(5);
+
+      if (escalasError) throw escalasError;
+
+      // Ordenar no cliente
+      const sortedData = escalasData?.sort((a: any, b: any) => 
+        new Date(a.cultos.data_culto).getTime() - new Date(b.cultos.data_culto).getTime()
+      ) || [];
+
+      return sortedData.map((scale: any) => ({
+        id: scale.id,
+        date: new Date(scale.cultos.data_culto).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        event: scale.cultos.nome_cultos?.nome_culto || 'Culto',
+        role: scale.funcao?.nome_funcao || 'Sem função',
+        time: scale.cultos.horario
+      }));
+    } catch (error) {
+      console.error('Erro ao buscar escalas do membro:', error);
+      return [];
+    }
+  };
+
+  // Buscar histórico de músicas do membro (como ministro)
+  const fetchMemberSongHistory = async (memberId: string) => {
+    try {
+      // Primeiro buscar o repertório do membro
+      const { data: repertorioData, error: repertorioError } = await supabase
+        .from('repertorio')
+        .select(`
+          id,
+          id_culto,
+          id_musicas,
+          id_tons,
+          cultos!inner(
+            data_culto,
+            nome_cultos(nome_culto)
+          ),
+          musicas(musica, cantor),
+          tons(nome_tons)
+        `)
+        .eq('id_membros', memberId)
+        .limit(5);
+
+      if (repertorioError) throw repertorioError;
+
+      // Ordenar no cliente (mais recente primeiro)
+      const sortedData = repertorioData?.sort((a: any, b: any) => 
+        new Date(b.cultos.data_culto).getTime() - new Date(a.cultos.data_culto).getTime()
+      ) || [];
+
+      return sortedData.map((song: any) => ({
+        id: song.id,
+        song: song.musicas?.musica || 'Sem música',
+        singer: song.musicas?.cantor || 'Sem cantor',
+        key: song.tons?.nome_tons || 'Ñ',
+        date: new Date(song.cultos.data_culto).toLocaleDateString('pt-BR'),
+        event: song.cultos.nome_cultos?.nome_culto || 'Culto'
+      }));
+    } catch (error) {
+      console.error('Erro ao buscar histórico de músicas:', error);
+      return [];
     }
   };
 
@@ -134,7 +420,90 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
 
   return (
     <div className="animate-fade-in">
-      {currentView === 'team' ? (
+      {currentView === 'approvals' ? (
+        <div className="space-y-6 pb-20">
+          <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter uppercase">Aprovações</h2>
+              <div className="text-sm text-slate-500">
+                {solicitacoes.length} solicitação{solicitacoes.length !== 1 ? 's' : ''} pendente{solicitacoes.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+
+            {loadingAprovacoes ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
+                <p className="mt-4 text-slate-400 font-bold uppercase tracking-widest text-[9px]">Carregando solicitações...</p>
+              </div>
+            ) : solicitacoes.length === 0 ? (
+              <div className="text-center py-20">
+                <i className="fas fa-check-circle text-4xl text-green-500 mb-4"></i>
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-[9px]">Nenhuma solicitação pendente</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {solicitacoes.map(solicitacao => (
+                  <div key={solicitacao.id} className="bg-slate-50 dark:bg-slate-800 rounded-xl p-6 border border-slate-100 dark:border-slate-700">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-4">
+                        <img 
+                          src={solicitacao.membros?.foto || `https://ui-avatars.com/api/?name=${solicitacao.membros?.nome}&background=random`} 
+                          alt={solicitacao.membros?.nome}
+                          className="w-12 h-12 rounded-full border-2 border-slate-200 dark:border-slate-700"
+                        />
+                        <div>
+                          <h3 className="text-lg font-black text-slate-800 dark:text-white">{solicitacao.membros?.nome}</h3>
+                          <p className="text-sm text-slate-500">{solicitacao.membros?.email}</p>
+                          <p className="text-xs text-slate-400">
+                            Solicitado em {new Date(solicitacao.created_at).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-bold rounded-full">
+                        Pendente
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                          Selecionar Funções:
+                        </label>
+                        <MultiSelect
+                          options={funcoes.map(f => ({ id: f.id, label: f.nome_funcao }))}
+                          value={funcoesSelecionadas[solicitacao.id] || []}
+                          onChange={(value) => handleFuncoesChange(solicitacao.id, value)}
+                          placeholder="Selecione as funções..."
+                        />
+                      </div>
+
+                      <div className="flex justify-end gap-3">
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Tem certeza que deseja rejeitar esta solicitação?')) {
+                              // Implementar rejeição se necessário
+                            }
+                          }}
+                          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
+                        >
+                          Rejeitar
+                        </button>
+                        <button
+                          onClick={() => aprovarMembro(solicitacao.user_id, funcoesSelecionadas[solicitacao.id] || [])}
+                          disabled={!funcoesSelecionadas[solicitacao.id] || funcoesSelecionadas[solicitacao.id]?.length === 0}
+                          className="px-4 py-2 bg-brand text-white rounded-lg hover:bg-brand/90 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Aprovar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : currentView === 'team' ? (
         <div className="space-y-6 pb-20">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20">
@@ -254,12 +623,12 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
                 <div className="grid grid-cols-1 gap-2">
                   {selectedMember.songHistory && selectedMember.songHistory.length > 0 ? (
                     selectedMember.songHistory.map((h, idx) => (
-                      <div key={idx} className="flex items-center gap-3 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-50 dark:border-slate-800">
-                        <div className="w-8 h-8 bg-slate-50 dark:bg-slate-800 text-slate-300 rounded-xl flex items-center justify-center text-[8px]"><i className="fas fa-music"></i></div>
+                      <div key={idx} className="flex items-center gap-3 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-50 dark:border-slate-800 flex-nowrap">
+                        <div className="w-8 h-8 bg-slate-50 dark:bg-slate-800 text-slate-300 rounded-xl flex items-center justify-center text-[8px] flex-shrink-0"><i className="fas fa-music"></i></div>
                         <div className="flex-1 min-w-0 text-left">
                           <span className="text-[11px] font-black text-slate-600 dark:text-slate-300 truncate block">{h.song}</span>
                         </div>
-                        <div className="w-8 h-8 bg-brand/5 border border-brand/10 text-brand rounded-lg flex items-center justify-center font-black text-[9px] shrink-0">{h.key}</div>
+                        <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[9px] flex-shrink-0 p-1">{h.key}</div>
                       </div>
                     ))
                   ) : (

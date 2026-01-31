@@ -41,11 +41,73 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     }
   }, [showScaleModal]);
 
+  // Role icons mapping
+  const roleIcons = [
+    { label: 'Ministro', role: 'Ministro', icon: 'fa-crown' },
+    { label: 'Vocal', role: 'Vocal', icon: 'fa-microphone-lines' },
+    { label: 'Violão', role: 'Violão', icon: 'fa-guitar' },
+    { label: 'Teclado', role: 'Teclado', icon: 'fa-keyboard' },
+    { label: 'Guitarra', role: 'Guitarra', icon: 'fa-bolt' },
+    { label: 'Baixo', role: 'Baixo', icon: 'fa-music' },
+    { label: 'Bateria', role: 'Bateria', icon: 'fa-drum' },
+  ];
+
   // Form states
   const [newSongData, setNewSongData] = useState({ song: '', singer: '', key: '' });
   const [noticeText, setNoticeText] = useState('');
   const [scaleFormData, setScaleFormData] = useState({ title: '', date: '', time: '' });
   const [newMemberFormData, setNewMemberFormData] = useState({ memberId: '', role: '' });
+
+  // User logged state - exige membro válido
+  const [currentUser, setCurrentUser] = useState<{ id: string, name: string } | null>(null);
+  const [isMember, setIsMember] = useState(false);
+
+  // Buscar usuário logado do Supabase Auth e verificar se é membro
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Verificar se é membro válido
+          const { data: memberData, error: memberError } = await supabase
+            .from('membros')
+            .select('id, nome')
+            .eq('email', user.email)
+            .single();
+          
+          if (memberData && !memberError) {
+            setCurrentUser({ id: memberData.id, name: memberData.nome });
+            setIsMember(true);
+          } else {
+            // Não é membro - limpa estado
+            setCurrentUser(null);
+            setIsMember(false);
+          }
+        } else {
+          setCurrentUser(null);
+          setIsMember(false);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar usuário:', error);
+        setCurrentUser(null);
+        setIsMember(false);
+      }
+    };
+
+    getCurrentUser();
+
+    // Escutar mudanças na autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        getCurrentUser();
+      } else {
+        setCurrentUser(null);
+        setIsMember(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Data
   const [allRegisteredMembers, setAllRegisteredMembers] = useState<Member[]>([]);
@@ -95,37 +157,55 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
 
   const fetchNotices = async () => {
     try {
-      const { data: noticesData } = await supabase.from('avisos_cultos').select('*');
-      if (noticesData) {
+      // Agora com a estrutura correta: id_lembrete, id_cultos, info, id_membros
+      const { data: noticesData, error: noticesError } = await supabase
+        .from('avisos_cultos')
+        .select(`
+          id_lembrete,
+          id_cultos,
+          id_membros,
+          info,
+          created_at,
+          membros ( nome )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (noticesError) {
+        console.error('Error fetching notices:', noticesError);
+        setEventNotices({});
+        return;
+      }
+
+      if (noticesData && noticesData.length > 0) {
         const noticesByEvent: Record<string, Notice[]> = {};
 
         noticesData.forEach((n: any) => {
-          if (!noticesByEvent[n.id_culto]) {
-            noticesByEvent[n.id_culto] = [];
+          if (n.id_cultos && !noticesByEvent[n.id_cultos]) {
+            noticesByEvent[n.id_cultos] = [];
           }
-          noticesByEvent[n.id_culto].push({
-            id: n.id,
-            sender: n.responsavel || 'Admin', // Assuming responsavel column or default
-            text: n.aviso,
-            time: new Date(n.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-          });
+          if (n.id_cultos) {
+            noticesByEvent[n.id_cultos].push({
+              id: n.id_lembrete,
+              sender: n.membros?.nome || 'Admin', // Mostra nome do membro ou Admin
+              text: n.info || 'Sem texto',
+              time: n.created_at ? new Date(n.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+            });
+          }
         });
 
         setEventNotices(noticesByEvent);
+      } else {
+        setEventNotices({});
       }
     } catch (error) {
       console.error('Error fetching notices:', error);
+      setEventNotices({});
     }
   };
 
   // Realtime Subscription
   useEffect(() => {
     const channels = supabase.channel('list-view-channel')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'cultos' },
-        () => fetchData()
-      )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'escalas' },
@@ -165,17 +245,17 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
                 repertorio (
                     id,
                     musicas ( musica, cantor ),
-                    tons ( nome_tom ),
+                    tons ( nome_tons ),
                     membros ( nome )
                 )
             `)
-        .order('data_culto', { ascending: true }); // Show upcoming first?
+        .order('data_culto', { ascending: true });
 
       if (error) throw error;
 
       const mappedEvents: ScheduleEvent[] = (cultosData || []).map((c: any) => {
         const weekDays = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
-        const dateObj = new Date(c.data_culto + 'T00:00:00'); // Ensure date is treated correctly
+        const dateObj = new Date(c.data_culto + 'T00:00:00');
         const dayOfWeek = weekDays[dateObj.getUTCDay()];
         const formattedDate = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 
@@ -198,11 +278,12 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
             id: r.id,
             song: r.musicas?.musica,
             singer: r.musicas?.cantor,
-            key: r.tons?.nome_tom || '',
+            key: r.tons?.nome_tons || '',
             minister: r.membros?.nome || ''
           }))
         };
       });
+      
       setEvents(mappedEvents);
     } catch (err) {
       console.error('Error fetching events:', err);
@@ -279,7 +360,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
       }
 
       // Get tone ID
-      const { data: toneData } = await supabase.from('tons').select('id').eq('nome_tom', newSongData.key).single();
+      const { data: toneData } = await supabase.from('tons').select('id').eq('nome_tons', newSongData.key).single();
       if (!toneData) return;
 
       await supabase.from('repertorio').insert({
@@ -335,32 +416,78 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
 
   // ... (Keep handleSaveNotice primarily local for now but linked to ID)
   // Updating to use state for now as notices schema wasn't fully detailed in plan
-  const handleSaveNotice = (eventId: string) => {
-    if (!noticeText.trim()) return;
-    const currentTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const handleDeleteNotice = async (eventId: string, noticeId: string) => {
+    try {
+      const { error } = await supabase
+        .from('avisos_cultos')
+        .delete()
+        .eq('id_lembrete', noticeId);
 
-    if (editingNoticeId) {
+      if (error) throw error;
+
+      // Update local state
       setEventNotices(prev => ({
         ...prev,
-        [eventId]: prev[eventId].map(n => n.id === editingNoticeId.noticeId ? { ...n, text: noticeText } : n)
+        [eventId]: prev[eventId].filter(n => n.id !== noticeId)
       }));
-    } else {
-      const newNotice: Notice = {
-        id: Math.random().toString(36).substr(2, 9),
-        sender: 'Administrador',
-        text: noticeText,
-        time: currentTime
-      };
-      setEventNotices(prev => ({
-        ...prev,
-        [eventId]: [...(prev[eventId] || []), newNotice]
-      }));
+    } catch (error) {
+      console.error('Error deleting notice:', error);
+      alert('Erro ao deletar aviso.');
     }
-    setShowAddNotice(null);
-    setEditingNoticeId(null);
-    setNoticeText('');
   };
 
+  const handleSaveNotice = async (eventId: string) => {
+    if (!noticeText.trim()) return;
+
+    // Verifica se é membro válido
+    if (!isMember || !currentUser) {
+      alert('Apenas membros cadastrados podem criar avisos.');
+      return;
+    }
+
+    try {
+      const noticeData = {
+        id_cultos: eventId,
+        info: noticeText.trim(),
+        id_membros: currentUser.id // Usa ID do membro válido
+      };
+
+      if (editingNoticeId) {
+        // Update existing notice
+        const { error } = await supabase
+          .from('avisos_cultos')
+          .update({ info: noticeText.trim() })
+          .eq('id_lembrete', editingNoticeId.noticeId);
+
+        if (error) throw error;
+
+        // Update local state
+        setEventNotices(prev => ({
+          ...prev,
+          [eventId]: prev[eventId].map(n => n.id === editingNoticeId.noticeId ? { ...n, text: noticeText.trim() } : n)
+        }));
+      } else {
+        // Insert new notice
+        const { data, error } = await supabase
+          .from('avisos_cultos')
+          .insert(noticeData)
+          .select();
+
+        if (error) throw error;
+
+        // Refresh notices to get the new data
+        await fetchNotices();
+      }
+
+      // Reset form
+      setNoticeText('');
+      setEditingNoticeId(null);
+      setShowAddNotice(null);
+    } catch (error) {
+      console.error('Error saving notice:', error);
+      alert('Erro ao salvar aviso.');
+    }
+  };
 
   return (
     <div className="max-w-[1200px] mx-auto pb-20">
@@ -473,18 +600,27 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
                           </div>
                         )}
 
-                        {event.members.map(member => (
-                          <div key={member.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-between group/member">
+                        {event.members.map((member, index) => (
+                          <div key={`${event.id}-mem-${index}`} className="bg-slate-50/50 dark:bg-slate-800/30 p-3 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center justify-between group/member hover:bg-slate-100/50 dark:hover:bg-slate-700/50 transition-all duration-300">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400">
-                                <i className={`fas ${member.icon || 'fa-user'} text-[10px]`}></i>
+                              <div className="relative">
+                                <img 
+                                  src={member.avatar || `https://ui-avatars.com/api/?name=${member.name}&background=random`} 
+                                  alt={member.name} 
+                                  className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-slate-700 shadow-sm group-hover/member:scale-110 transition-transform duration-300"
+                                />
+                                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-brand rounded-full border border-white dark:border-slate-700 flex items-center justify-center">
+                                  <i className={`fas ${roleIcons.find(r => member.role.includes(r.label))?.icon || 'fa-user'} text-[6px] text-white`}></i>
+                                </div>
                               </div>
-                              <div className="flex flex-col">
-                                <span className="text-xs font-black text-slate-800 dark:text-white leading-none">{member.name}</span>
-                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">{member.role}</span>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-black text-slate-800 dark:text-white leading-none truncate">{member.name}</span>
+                                <span className="text-[8px] font-bold text-brand uppercase tracking-widest mt-0.5 truncate">{member.role}</span>
                               </div>
                             </div>
-                            <button className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400"><i className="fas fa-trash-alt text-[9px]"></i></button>
+                            <button className="w-6 h-6 flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 text-red-400 dark:text-red-400 opacity-0 group-hover/member:opacity-100 transition-all duration-300 hover:bg-red-100 dark:hover:bg-red-900/40">
+                              <i className="fas fa-trash-alt text-[8px]"></i>
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -541,16 +677,25 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
                           </div>
                         )}
 
-                        {event.repertoire.map(item => (
-                          <div key={item.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between group/song">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-lg bg-brand/5 flex items-center justify-center text-brand"><i className="fas fa-play text-[8px]"></i></div>
-                              <div>
-                                <p className="text-[11px] font-black text-slate-800 dark:text-white leading-none">{item.song}</p>
-                                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1">{item.singer} • {item.key}</p>
+                        {event.repertoire.map((item, index) => (
+                          <div key={`${event.id}-rep-${index}`} className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
+                                {item.key || 'Ñ'}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate">{item.song} - {item.singer}</h5>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
+                                  MINISTRO: <span className="text-brand">{item.minister || 'Sem ministro'}</span>
+                                </p>
                               </div>
                             </div>
-                            <button className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400"><i className="fas fa-trash-alt text-[9px]"></i></button>
+                            <div className="grid grid-cols-4 gap-1">
+                              <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${item.song} ${item.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
+                              <a href={`https://open.spotify.com/search/${encodeURIComponent(`${item.song} ${item.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-emerald-500 hover:bg-emerald-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
+                              <a href={`https://www.letras.mus.br/?q=${encodeURIComponent(`${item.song} ${item.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-500 hover:bg-blue-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-align-left text-[9px]"></i></a>
+                              <a href={`https://www.cifraclub.com.br/?q=${encodeURIComponent(`${item.song} ${item.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-amber-500 hover:bg-amber-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[10px]"></i></a>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -558,7 +703,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
 
                     {currentSubTab === 'notices' && (
                       <div className="pt-4 space-y-3">
-                        {!showAddNotice && (
+                        {!showAddNotice && isMember && (
                           <div className="flex justify-end mb-2">
                             <button
                               onClick={() => { setShowAddNotice(event.id); setEditingNoticeId(null); setNoticeText(''); }}
@@ -569,27 +714,60 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
                           </div>
                         )}
 
+                        {!isMember && (
+                          <div className="flex justify-center mb-4">
+                            <div className="text-center p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                              <i className="fas fa-lock text-amber-500 text-sm mb-2"></i>
+                              <p className="text-[9px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">
+                                Apenas membros cadastrados podem criar avisos
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
                         {showAddNotice === event.id && (
                           <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-brand/20 shadow-xl mb-4 animate-fade-in">
                             <textarea
                               value={noticeText}
                               onChange={(e) => setNoticeText(e.target.value)}
-                              placeholder="Digite o aviso..."
+                              placeholder={editingNoticeId ? "Edite o aviso..." : "Digite o aviso..."}
                               className="w-full h-20 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-xl p-3 text-xs outline-none focus:ring-1 focus:ring-brand transition-all resize-none mb-4"
                             ></textarea>
                             <div className="flex gap-2">
-                              <button onClick={() => { setShowAddNotice(null); setEditingNoticeId(null); }} className="flex-1 py-2 bg-slate-100 dark:bg-slate-700 text-slate-500 rounded-xl text-[9px] font-black uppercase tracking-widest">Cancelar</button>
-                              <button onClick={() => handleSaveNotice(event.id)} className="flex-1 py-2 bg-brand text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md">Postar</button>
+                              <button onClick={() => { setShowAddNotice(null); setEditingNoticeId(null); setNoticeText(''); }} className="flex-1 py-2 bg-slate-100 dark:bg-slate-700 text-slate-500 rounded-xl text-[9px] font-black uppercase tracking-widest">Cancelar</button>
+                              <button onClick={() => handleSaveNotice(event.id)} className="flex-1 py-2 bg-brand text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md">
+                                {editingNoticeId ? 'Atualizar' : 'Postar'}
+                              </button>
                             </div>
                           </div>
                         )}
 
                         <div className="space-y-3">
-                          {notices.map(notice => (
-                            <div key={notice.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 relative animate-fade-in">
+                          {notices.map((notice, index) => (
+                            <div key={`${event.id}-not-${index}`} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 relative animate-fade-in group">
                               <div className="flex justify-between items-center mb-1.5">
                                 <span className="text-[8px] font-black text-brand uppercase tracking-widest">{notice.sender}</span>
-                                <span className="text-[7px] font-bold text-slate-400 uppercase">{notice.time}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[7px] font-bold text-slate-400 uppercase">{notice.time}</span>
+                                  <button 
+                                    onClick={() => {
+                                      setEditingNoticeId({ eventId: event.id, noticeId: notice.id });
+                                      setNoticeText(notice.text);
+                                      setShowAddNotice(event.id);
+                                    }}
+                                    className="w-6 h-6 flex items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-400 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                                    title="Editar aviso"
+                                  >
+                                    <i className="fas fa-edit text-[8px]"></i>
+                                  </button>
+                                  <button 
+                                    onClick={() => handleDeleteNotice(event.id, notice.id)}
+                                    className="w-6 h-6 flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 text-red-400 dark:text-red-400 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-red-100 dark:hover:bg-red-900/40"
+                                    title="Deletar aviso"
+                                  >
+                                    <i className="fas fa-trash-alt text-[8px]"></i>
+                                  </button>
+                                </div>
                               </div>
                               <p className="text-[10px] text-slate-600 dark:text-slate-300 font-medium leading-relaxed">{notice.text}</p>
                             </div>

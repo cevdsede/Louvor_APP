@@ -67,6 +67,7 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
   const [repertoires, setRepertoires] = useState<RepertoireSet[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [escalas, setEscalas] = useState<any[]>([]);
 
   // UI Controls
   const [isSongModalOpen, setIsSongModalOpen] = useState(false);
@@ -76,6 +77,17 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
   const [expandedHistThemes, setExpandedHistThemes] = useState<Record<string, boolean>>({});
   const [expandedHistMinisters, setExpandedHistMinisters] = useState<Record<string, boolean>>({});
   const [expandedHistStyles, setExpandedHistStyles] = useState<Record<string, boolean>>({});
+
+  // Role icons mapping
+  const roleIcons = [
+    { label: 'Ministro', role: 'Ministro', icon: 'fa-crown' },
+    { label: 'Vocal', role: 'Vocal', icon: 'fa-microphone-lines' },
+    { label: 'Violão', role: 'Violão', icon: 'fa-guitar' },
+    { label: 'Teclado', role: 'Teclado', icon: 'fa-keyboard' },
+    { label: 'Guitarra', role: 'Guitarra', icon: 'fa-bolt' },
+    { label: 'Baixo', role: 'Baixo', icon: 'fa-music' },
+    { label: 'Bateria', role: 'Bateria', icon: 'fa-drum' },
+  ];
 
   // Form states
   const [newSong, setNewSong] = useState({ song: '', singer: '', theme: '', style: 'Adoração' });
@@ -182,8 +194,6 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
 
 
       // 3. Fetch History from 'historico_musicas' with complete music info
-      console.log('Fetching history from historico_musicas...');
-
       const { data: historyData, error: histError } = await supabase
         .from('historico_musicas')
         .select(`
@@ -191,30 +201,21 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
           membros ( nome ),
           tons ( nome_tons )
         `)
-        .order('created_at', { ascending: false });
-
-      console.log('History data:', historyData);
-      console.log('History error:', histError);
+        .order('created_at', { ascending: false })
+        .limit(50); // Limit to reduce processing
 
       if (histError) {
         console.warn('Error fetching history:', histError);
-        // Set empty array to avoid infinite loading
         setHistory([]);
       } else if (historyData && historyData.length > 0) {
-        console.log('Found', historyData.length, 'history records');
 
         // For each history item, try to find the corresponding music
         const historyWithMusicDetails = await Promise.all(
           historyData.map(async (h: any) => {
-            console.log('Processing history item:', h);
-            console.log('id_tons:', h.id_tons);
-            console.log('tons data:', h.tons);
-
             let musicDetails = null;
 
             // Try to find music by song name if id_musica exists
             if (h.id_musica) {
-              console.log('Searching music by id:', h.id_musica);
               const { data: musicData } = await supabase
                 .from('musicas')
                 .select(`
@@ -229,9 +230,7 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
                 .single();
 
               musicDetails = musicData;
-              console.log('Found music by id:', musicDetails);
             } else if (h.musica) {
-              console.log('Searching music by name:', h.musica);
               // Try to find by song name as fallback
               const { data: musicData } = await supabase
                 .from('musicas')
@@ -247,10 +246,9 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
                 .single();
 
               musicDetails = musicData;
-              console.log('Found music by name:', musicDetails);
             }
 
-            const result = {
+            return {
               id: h.id,
               date: new Date(h.created_at).toLocaleDateString('pt-BR'),
               song: musicDetails?.musica || h.musica || 'Desconhecida',
@@ -260,18 +258,38 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
               theme: musicDetails?.temas?.nome_tema || 'Geral',
               style: musicDetails?.estilo || ''
             };
-
-            console.log('Final result:', result);
-            console.log('Key extracted:', h.tons?.nome_tons);
-            return result;
           })
         );
 
-        console.log('History with music details:', historyWithMusicDetails);
         setHistory(historyWithMusicDetails);
       } else {
-        console.log('No history data found');
         setHistory([]);
+      }
+
+      // 4. Fetch Escalas
+      const { data: escalasData, error: escalasError } = await supabase
+        .from('escalas')
+        .select(`
+          id,
+          id_culto,
+          id_membro,
+          id_funcao,
+          cultos (
+            id,
+            data_culto,
+            horario,
+            nome_cultos (nome_culto)
+          ),
+          membros (id, nome, foto, genero),
+          funcao (nome_funcao)
+        `)
+        .order('cultos(data_culto)', { ascending: false });
+
+      if (escalasError) {
+        console.error('Error fetching escalas:', escalasError);
+        setEscalas([]);
+      } else {
+        setEscalas(escalasData || []);
       }
 
     } catch (error) {
@@ -352,7 +370,6 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'musicas' },
         (payload) => {
-          console.log('Change received!', payload);
           fetchData();
         }
       )
@@ -363,7 +380,7 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'historico_musicas' },
+        { event: '*', schema: 'public', table: 'escalas' },
         () => fetchData()
       )
       .subscribe();
@@ -551,7 +568,7 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
                         {expandedStyles[styleKey] && (
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {sList.sort((a: any, b: any) => a.song.localeCompare(b.song)).map((s: Music) => (
-                              <div key={s.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 group hover:border-brand/40 transition-all shadow-sm">
+                              <div key={s.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 group hover:border-brand/40 transition-all duration-300 transform hover:scale-105 shadow-sm hover:shadow-lg">
                                 <div className="flex justify-between items-start mb-4">
                                   <div className="flex-1 pr-2 min-w-0">
                                     <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate">{s.song}</h5>
@@ -559,10 +576,10 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
                                   </div>
                                 </div>
                                 <div className="grid grid-cols-4 gap-1">
-                                  <a href={getLink('youtube', s.song, s.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-slate-400 hover:text-red-600 border border-slate-100 dark:border-slate-700" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
-                                  <a href={getLink('spotify', s.song, s.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-slate-400 hover:text-emerald-500 border border-slate-100 dark:border-slate-700" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
-                                  <a href={getLink('lyrics', s.song, s.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-slate-400 hover:text-blue-500 border border-slate-100 dark:border-slate-700" title="Letra"><i className="fas fa-align-left text-[9px]"></i></a>
-                                  <a href={getLink('chords', s.song, s.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-slate-400 hover:text-amber-500 border border-slate-100 dark:border-slate-700" title="Cifra"><i className="fas fa-guitar text-[9px]"></i></a>
+                                  <a href={getLink('youtube', s.song, s.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
+                                  <a href={getLink('spotify', s.song, s.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-emerald-500 hover:bg-emerald-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
+                                  <a href={getLink('lyrics', s.song, s.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-500 hover:bg-blue-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-align-left text-[9px]"></i></a>
+                                  <a href={getLink('chords', s.song, s.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-amber-500 hover:bg-amber-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[9px]"></i></a>
                                 </div>
                               </div>
                             ))}
@@ -615,15 +632,23 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
               {expandedThemes[event.id] && (
                 <div className="p-4 space-y-3 animate-fade-in">
                   {event.items.map((item: RepertoireItem, index: number) => (
-                    <div key={item.id} className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center gap-3">
-                      <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
-                        {item.key || 'Ñ'}
+                    <div key={item.id} className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
+                          {item.key || 'Ñ'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate">{item.song} - {item.singer}</h5>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
+                            MINISTRO: <span className="text-brand">{item.minister}</span>
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate">{item.song} - {item.singer}</h5>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
-                          MINISTRO: <span className="text-brand">{item.minister}</span>
-                        </p>
+                      <div className="grid grid-cols-4 gap-1">
+                        <a href={getLink('youtube', item.song, item.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
+                        <a href={getLink('spotify', item.song, item.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-emerald-500 hover:bg-emerald-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
+                        <a href={getLink('lyrics', item.song, item.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-500 hover:bg-blue-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-align-left text-[9px]"></i></a>
+                        <a href={getLink('chords', item.song, item.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-amber-500 hover:bg-amber-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[9px]"></i></a>
                       </div>
                     </div>
                   ))}
@@ -638,8 +663,6 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
 
   // Placeholder for other subViews as they are waiting for real data derived from 'escalas' in ListView or similar
   if (subView === 'music-history') {
-    console.log('History state:', history);
-    console.log('History length:', history.length);
 
     // If no history data, show a message with option to create test data
     if (history.length === 0) {
@@ -688,10 +711,8 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
 
     // Group history by minister -> theme -> style -> songs (aggregated by song+singer)
     const groupedHistory: GroupedHistory = history.reduce((acc, item) => {
-      console.log('Processing item:', item);
 
       if (!item.minister || item.minister === 'Sem ministro') {
-        console.log('Skipping item without minister:', item);
         return acc;
       }
 
@@ -732,8 +753,6 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
 
       return acc;
     }, {} as GroupedHistory);
-
-    console.log('Grouped history:', groupedHistory);
 
     return (
       <div className="pb-20 fade-in max-w-7xl mx-auto space-y-6">
@@ -789,14 +808,20 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
                               {expandedHistStyles[`${minister}-${theme}-${style}`] && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
                                   {songs.map((song) => (
-                                    <div key={song.id} className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 flex justify-between items-center group shadow-sm">
-                                      <div className="flex-1 min-w-0">
+                                    <div key={song.id} className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                                      <div className="flex-1 min-w-0 mb-3">
                                         <p className="text-[10px] font-black text-slate-800 dark:text-white uppercase truncate leading-tight">{song.song}</p>
                                         <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1 truncate">
                                           {song.singer || 'Desconhecido'}{song.keys && song.keys.length > 0 && (
                                             <> • <span className="text-brand">{song.keys.join(' / ')}</span></>
                                           )}
                                         </p>
+                                      </div>
+                                      <div className="grid grid-cols-4 gap-1">
+                                        <a href={getLink('youtube', song.song, song.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
+                                        <a href={getLink('spotify', song.song, song.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-emerald-500 hover:bg-emerald-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
+                                        <a href={getLink('lyrics', song.song, song.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-500 hover:bg-blue-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-align-left text-[9px]"></i></a>
+                                        <a href={getLink('chords', song.song, song.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-amber-500 hover:bg-amber-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[9px]"></i></a>
                                       </div>
                                     </div>
                                   ))}
@@ -813,6 +838,91 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
             </div>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  // Escalas View
+  if (subView === 'music-escalas') {
+    // Group escalas by cult/event
+    const groupedEscalas = escalas.reduce((acc, escala) => {
+      const cultName = escala.cultos?.nome_cultos?.nome_culto || 'Culto Sem Nome';
+      const cultDate = escala.cultos?.data_culto ? new Date(escala.cultos.data_culto).toLocaleDateString('pt-BR') : 'Sem Data';
+      const eventKey = `${cultName}-${cultDate}`;
+      
+      if (!acc[eventKey]) {
+        acc[eventKey] = {
+          id: eventKey,
+          title: cultName,
+          date: cultDate,
+          time: escala.cultos?.horario || 'Sem Horário',
+          items: []
+        };
+      }
+      acc[eventKey].items.push(escala);
+      return acc;
+    }, {} as Record<string, any>);
+
+    const events = Object.values(groupedEscalas);
+
+    return (
+      <div className="pb-20 fade-in max-w-7xl mx-auto space-y-6">
+        <h2 className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-4 mb-4">Escalas de Música</h2>
+        
+        {events.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 opacity-50">
+            <i className="fas fa-calendar-alt text-4xl text-slate-300 mb-4"></i>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Nenhuma escala encontrada</p>
+            <p className="text-xs text-slate-500">Verifique se há registros na tabela 'escalas'</p>
+          </div>
+        ) : (
+          events.map((event: any) => (
+            <div key={event.id} className="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-50 dark:border-slate-800 overflow-hidden shadow-sm">
+              <div 
+                onClick={() => setExpandedThemes(p => ({ ...p, [event.id]: !p[event.id] }))}
+                className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+              >
+                <div>
+                  <h4 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">
+                    {event.title}
+                  </h4>
+                  <p className="text-[8px] font-black text-slate-400 uppercase mt-1 tracking-widest">
+                    {event.date} • {event.time}
+                  </p>
+                </div>
+                <button className="w-8 h-8 bg-emerald-500 text-white rounded-lg shadow-md flex items-center justify-center">
+                  <i className={`fas fa-chevron-${expandedThemes[event.id] ? 'up' : 'down'} text-[10px]`}></i>
+                </button>
+              </div>
+              
+              {expandedThemes[event.id] && (
+                <div className="p-4 space-y-3 animate-fade-in">
+                  {event.items.map((item: any, index: number) => (
+                    <div key={item.id} className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
+                          {item.membros?.nome?.charAt(0)?.toUpperCase() || 'M'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate">{item.membros?.nome || 'Sem Nome'}</h5>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
+                            FUNÇÃO: <span className="text-brand">{item.funcao?.nome_funcao || 'Membro'}</span>
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 gap-1">
+                        <a href={getLink('youtube', item.membros?.nome || '', item.funcao?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
+                        <a href={getLink('spotify', item.membros?.nome || '', item.funcao?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-emerald-500 hover:bg-emerald-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
+                        <a href={getLink('lyrics', item.membros?.nome || '', item.funcao?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-500 hover:bg-blue-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-align-left text-[9px]"></i></a>
+                        <a href={getLink('chords', item.membros?.nome || '', item.funcao?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-amber-500 hover:bg-amber-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[10px]"></i></a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
     );
   }
