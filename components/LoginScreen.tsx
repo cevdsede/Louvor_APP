@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
+import CreateProfileScreen from './CreateProfileScreen';
 
 interface LoginScreenProps {
   onLogin: () => void;
@@ -9,6 +10,7 @@ interface LoginScreenProps {
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showCreateProfile, setShowCreateProfile] = useState(false);
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
 
@@ -40,6 +42,30 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
       setIsLoading(false);
     }
   };
+
+  const handleCreateProfile = () => {
+    setShowCreateProfile(true);
+  };
+
+  const handleBackToLogin = () => {
+    setShowCreateProfile(false);
+    setError('');
+  };
+
+  const handleProfileCreated = () => {
+    setShowCreateProfile(false);
+    setError('');
+    // Opcional: mostrar mensagem de sucesso
+  };
+
+  if (showCreateProfile) {
+    return (
+      <CreateProfileScreen
+        onBack={handleBackToLogin}
+        onSuccess={handleProfileCreated}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0b1120] flex items-center justify-center p-6 relative transition-colors duration-300">
@@ -139,7 +165,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
 
         <div className="mt-10 pt-8 border-t border-slate-50 dark:border-slate-800 text-center">
           <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            Ainda não tem conta? <button className="text-brand ml-1">Criar Perfil</button>
+            Ainda não tem conta? <button 
+              type="button"
+              onClick={handleCreateProfile}
+              className="text-brand ml-1 hover:text-brand/80 transition-colors"
+            >
+              Criar Perfil
+            </button>
           </p>
         </div>
       </div>

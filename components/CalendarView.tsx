@@ -251,12 +251,12 @@ const CalendarView: React.FC = () => {
         {renderMonth(nextMonthDate)}
       </div>
 
-      {/* Modal com Cards Colapsáveis (Igual ListView) */}
+      {/* Modal com Cards Colapsáveis (Dentro do container) */}
       {selectedDateEvents && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md" onClick={() => setSelectedDateEvents(null)}></div>
-          <div className="relative w-full max-w-4xl max-h-[90vh] bg-[#f4f7fa] dark:bg-[#0b1120] rounded-[3rem] shadow-2xl overflow-y-auto custom-scrollbar animate-fade-in border border-slate-100 dark:border-slate-800">
-            <div className="p-8 lg:p-10">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 lg:pl-[312px] antialiased">
+          <div className="absolute inset-0 bg-slate-900/80" onClick={() => setSelectedDateEvents(null)}></div>
+          <div className="relative w-full max-w-4xl max-h-[85vh] lg:max-h-[90vh] bg-[#f4f7fa] dark:bg-[#0b1120] rounded-[2rem] lg:rounded-[3rem] shadow-2xl overflow-y-auto custom-scrollbar border border-slate-100 dark:border-slate-800">
+            <div className="p-6 lg:p-10">
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter uppercase leading-none">
                   Cultos do Dia
@@ -273,7 +273,10 @@ const CalendarView: React.FC = () => {
                   const notices = eventNotices[event.id] || [];
 
                   return (
-                    <div key={event.id} className={`bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border ${isExpanded ? 'border-brand/40 ring-4 ring-brand/5' : 'border-slate-100 dark:border-slate-800'} overflow-hidden transition-all duration-300 h-fit`}>
+                    <div
+                      key={event.id}
+                      className={`bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border ${isExpanded ? 'border-brand/40 ring-4 ring-brand/5' : 'border-slate-100 dark:border-slate-800'} overflow-hidden transition-all duration-300 h-fit transform-gpu`}
+                    >
                       <div
                         onClick={() => toggleExpand(event.id)}
                         className="px-8 py-6 cursor-pointer flex justify-between items-center group hover:bg-slate-50 dark:hover:bg-slate-800/20"
@@ -300,7 +303,7 @@ const CalendarView: React.FC = () => {
                       </div>
 
                       {isExpanded && (
-                        <div className="border-t border-slate-50 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-800/10 animate-fade-in">
+                        <div className="border-t border-slate-50 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-800/10">
                           <div className="px-6 pt-6 pb-4">
                             <div className="bg-white dark:bg-slate-800 p-1 rounded-2xl flex items-center shadow-sm border border-slate-100 dark:border-slate-700 w-full overflow-hidden">
                               <button onClick={() => setSubTab(event.id, 'team')} className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${currentSubTab === 'team' ? 'bg-brand text-white shadow-md' : 'text-slate-400 hover:text-brand'}`}>Equipe</button>
@@ -309,17 +312,22 @@ const CalendarView: React.FC = () => {
                             </div>
                           </div>
 
-                          <div className="px-8 pb-10 fade-in min-h-[150px]">
+                          <div className="px-6 lg:px-8 pb-6 lg:pb-10 max-h-[35vh] lg:max-h-[45vh] overflow-y-auto custom-scrollbar">
                             {currentSubTab === 'team' && (
-                              <div className="space-y-3 pt-4">
+                              <div className="space-y-2 pt-4">
+                                <div className="flex justify-end mb-3 sticky top-0 bg-[#f4f7fa] dark:bg-[#0b1120] py-2 z-10">
+                                  <button className="text-[9px] font-black text-slate-400 hover:text-brand uppercase tracking-widest flex items-center gap-2 py-1 px-3 rounded-lg hover:bg-brand/5 transition-all">
+                                    <i className="fas fa-plus-circle text-[8px]"></i> Escalar Membro
+                                  </button>
+                                </div>
                                 {event.members.map((member, index) => (
-                                  <div key={`${event.id}-mem-${index}`} className="bg-slate-50/50 dark:bg-slate-800/30 p-3 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center justify-between group/member hover:bg-slate-100/50 dark:hover:bg-slate-700/50 transition-all duration-300">
+                                  <div key={`${event.id}-mem-${index}`} className="bg-slate-50/50 dark:bg-slate-800/30 p-2 lg:p-3 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center justify-between group/member hover:bg-slate-100/50 dark:hover:bg-slate-700/50 transition-all duration-300">
                                     <div className="flex items-center gap-3">
                                       <div className="relative">
                                         <img
                                           src={member.avatar || `https://ui-avatars.com/api/?name=${member.name}&background=random`}
                                           alt={member.name}
-                                          className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-slate-700 shadow-sm group-hover/member:scale-110 transition-transform duration-300"
+                                          className="w-8 h-8 lg:w-10 lg:h-10 rounded-full object-cover border-2 border-white dark:border-slate-700 shadow-sm group-hover/member:scale-110 transition-transform duration-300"
                                         />
                                         <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-brand rounded-full border border-white dark:border-slate-700 flex items-center justify-center">
                                           <i className={`fas ${roleIcons.find(r => member.role.includes(r.label))?.icon || 'fa-user'} text-[6px] text-white`}></i>
@@ -330,6 +338,9 @@ const CalendarView: React.FC = () => {
                                         <span className="text-[8px] font-bold text-brand uppercase tracking-widest mt-0.5 truncate">{member.role}</span>
                                       </div>
                                     </div>
+                                    <button className="w-5 h-5 lg:w-6 lg:h-6 flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 text-red-400 dark:text-red-400 opacity-0 group-hover/member:opacity-100 transition-all duration-300 hover:bg-red-100 dark:hover:bg-red-900/40">
+                                      <i className="fas fa-trash-alt text-[7px] lg:text-[8px]"></i>
+                                    </button>
                                   </div>
                                 ))}
                               </div>
@@ -337,8 +348,13 @@ const CalendarView: React.FC = () => {
 
                             {currentSubTab === 'repertoire' && (
                               <div className="space-y-3 pt-4">
+                                <div className="flex justify-end mb-4 sticky top-0 bg-[#f4f7fa] dark:bg-[#0b1120] py-2 z-10">
+                                  <button className="text-[9px] font-black text-slate-400 hover:text-brand uppercase tracking-widest flex items-center gap-2 py-1 px-3 rounded-lg hover:bg-brand/5 transition-all">
+                                    <i className="fas fa-plus text-[8px]"></i> Nova Música
+                                  </button>
+                                </div>
                                 {event.repertoire.map((item, index) => (
-                                  <div key={`${event.id}-rep-${index}`} className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                                  <div key={`${event.id}-rep-${index}`} className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 relative group">
                                     <div className="flex items-center gap-3 mb-3">
                                       <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
                                         {item.key || 'Ñ'}
@@ -350,11 +366,19 @@ const CalendarView: React.FC = () => {
                                         </p>
                                       </div>
                                     </div>
-                                    <div className="grid grid-cols-4 gap-1">
+                                    <div className="grid grid-cols-4 gap-1 mb-3">
                                       <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${item.song} ${item.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
                                       <a href={`https://open.spotify.com/search/${encodeURIComponent(`${item.song} ${item.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-emerald-500 hover:bg-emerald-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
                                       <a href={`https://www.letras.mus.br/?q=${encodeURIComponent(`${item.song} ${item.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-500 hover:bg-blue-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-align-left text-[9px]"></i></a>
                                       <a href={`https://www.cifraclub.com.br/?q=${encodeURIComponent(`${item.song} ${item.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-amber-500 hover:bg-amber-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[10px]"></i></a>
+                                    </div>
+                                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                      <button className="w-6 h-6 flex items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-400 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all duration-300">
+                                        <i className="fas fa-edit text-[8px]"></i>
+                                      </button>
+                                      <button className="w-6 h-6 flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 text-red-400 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-all duration-300">
+                                        <i className="fas fa-trash-alt text-[8px]"></i>
+                                      </button>
                                     </div>
                                   </div>
                                 ))}
@@ -363,6 +387,11 @@ const CalendarView: React.FC = () => {
 
                             {currentSubTab === 'notices' && (
                               <div className="pt-4 space-y-3">
+                                <div className="flex justify-end mb-2 sticky top-0 bg-[#f4f7fa] dark:bg-[#0b1120] py-2 z-10">
+                                  <button className="text-[9px] font-black text-slate-400 hover:text-brand uppercase tracking-widest flex items-center gap-2 py-1 px-3 rounded-lg hover:bg-brand/5 transition-all">
+                                    <i className="fas fa-plus text-[8px]"></i> Novo Aviso
+                                  </button>
+                                </div>
                                 <div className="space-y-3">
                                   {notices.length === 0 ? (
                                     <div className="text-center py-8">
@@ -374,7 +403,15 @@ const CalendarView: React.FC = () => {
                                       <div key={`${event.id}-not-${index}`} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 relative animate-fade-in group">
                                         <div className="flex justify-between items-center mb-1.5">
                                           <span className="text-[8px] font-black text-brand uppercase tracking-widest">{notice.sender}</span>
-                                          <span className="text-[7px] font-bold text-slate-400 uppercase">{notice.time}</span>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-[7px] font-bold text-slate-400 uppercase">{notice.time}</span>
+                                            <button className="w-6 h-6 flex items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-400 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-blue-100 dark:hover:bg-blue-900/40" title="Editar aviso">
+                                              <i className="fas fa-edit text-[8px]"></i>
+                                            </button>
+                                            <button className="w-6 h-6 flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 text-red-400 dark:text-red-400 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-red-100 dark:hover:bg-red-900/40" title="Deletar aviso">
+                                              <i className="fas fa-trash-alt text-[8px]"></i>
+                                            </button>
+                                          </div>
                                         </div>
                                         <p className="text-[10px] text-slate-600 dark:text-slate-300 font-medium leading-relaxed">{notice.text}</p>
                                       </div>

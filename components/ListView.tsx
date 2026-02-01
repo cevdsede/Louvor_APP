@@ -67,21 +67,33 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     const getCurrentUser = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          // Verificar se é membro válido
+        if (user && user.email) {
+          // Verificar se é membro válido usando email (case-insensitive)
           const { data: memberData, error: memberError } = await supabase
             .from('membros')
-            .select('id, nome')
-            .eq('email', user.email)
+            .select('id, nome, perfil')
+            .ilike('email', user.email)
+            .limit(1)
             .single();
           
           if (memberData && !memberError) {
             setCurrentUser({ id: memberData.id, name: memberData.nome });
+            
+            // Verificar se é admin ou líder baseado no perfil
+            const isAdmin = memberData.perfil && (
+              memberData.perfil.toLowerCase().includes('admin') || 
+              memberData.perfil.toLowerCase().includes('líder') ||
+              memberData.perfil.toLowerCase().includes('lider')
+            );
+            
             setIsMember(true);
+            
+            console.log('ListView - Usuário:', user.email, 'Perfil:', memberData.perfil, 'É membro:', true);
           } else {
             // Não é membro - limpa estado
             setCurrentUser(null);
             setIsMember(false);
+            console.log('ListView - Membro não encontrado pelo email:', user.email);
           }
         } else {
           setCurrentUser(null);

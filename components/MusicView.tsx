@@ -272,7 +272,7 @@ const MusicView: React.FC<{ subView: ViewType }> = ({ subView }) => {
         .select(`
           id,
           id_culto,
-          id_membro,
+          id_membros,
           id_funcao,
           cultos (
             id,

@@ -1,25 +1,269 @@
-
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { supabase } from '../supabaseClient';
 
 const CleaningView: React.FC = () => {
   const [cleaningImage, setCleaningImage] = useState("https://picsum.photos/id/160/800/1000");
   const [isZoomed, setIsZoomed] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ id: string, name: string, roles: string[] } | null>(null);
+  const [canEdit, setCanEdit] = useState(false);
+  const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Buscar usuário logado e verificar permissões
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (user && user.email) {
+          // Buscar dados do membro pelo email (case-insensitive)
+          const { data: memberData, error: memberError } = await supabase
+            .from('membros')
+            .select('id, nome, perfil')
+            .ilike('email', user.email)
+            .limit(1)
+            .single();
+          
+          if (memberData && !memberError) {
+            setCurrentUser({ 
+              id: memberData.id, 
+              name: memberData.nome || user.email?.split('@')[0] || 'Usuário', 
+              roles: memberData.perfil ? [memberData.perfil] : []
+            });
+            
+            // Verificar se tem permissão (Admin ou Líder) baseado no campo perfil
+            const hasPermission = memberData.perfil && (
+              memberData.perfil.toLowerCase().includes('admin') || 
+              memberData.perfil.toLowerCase().includes('líder') ||
+              memberData.perfil.toLowerCase().includes('lider')
+            );
+            
+            setCanEdit(hasPermission);
+            
+            // Se perfil for null, mostrar informação útil
+            if (!memberData.perfil) {
+              console.warn('ATENÇÃO: Campo perfil está NULL para o usuário:', user.email);
+              console.warn('Verifique na tabela membros se o campo perfil foi preenchido para este usuário.');
+            }
+          } else {
+            // Se não encontrar na tabela membros, verificar metadados como fallback
+            const userMetadata = user.user_metadata || {};
+            const appMetadata = user.app_metadata || {};
+            
+            let roles: string[] = [];
+            
+            if (appMetadata.role) {
+              if (Array.isArray(appMetadata.role)) {
+                roles = appMetadata.role;
+              } else if (typeof appMetadata.role === 'string') {
+                roles = [appMetadata.role];
+              }
+            }
+            
+            if (roles.length === 0 && userMetadata.roles) {
+              if (Array.isArray(userMetadata.roles)) {
+                roles = userMetadata.roles;
+              } else if (typeof userMetadata.roles === 'string') {
+                roles = userMetadata.roles.split(',').map(r => r.trim());
+              }
+            }
+            
+            if (roles.length === 0 && user.email) {
+              const isAdminEmail = user.email.includes('admin') || 
+                                 user.email.includes('lider') || 
+                                 user.email.includes('pastor');
+              
+              if (isAdminEmail) {
+                roles = ['admin'];
+              }
+            }
+            
+            setCurrentUser({ 
+              id: user.id, 
+              name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário', 
+              roles 
+            });
+            
+            const hasPermission = roles.some(role => 
+              role.toLowerCase().includes('admin') || 
+              role.toLowerCase().includes('líder') ||
+              role.toLowerCase().includes('lider')
+            );
+            
+            setCanEdit(hasPermission);
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao buscar usuário:', error);
+      }
+    };
+
+    getCurrentUser();
+
+    // Escutar mudanças na autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        getCurrentUser();
+      } else {
+        setCurrentUser(null);
+        setCanEdit(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Carregar foto atual da limpeza
+  useEffect(() => {
+    const fetchCleaningPhoto = async () => {
+      try {
+        // Tentar carregar da tabela limpeza
+        const { data, error } = await supabase
+          .from('limpeza')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        
+        if (error) {
+          console.error('Erro ao carregar foto da limpeza:', error);
+          // Se der erro, tentar com query mais simples
+          try {
+            const { data: fallbackData, error: fallbackError } = await supabase
+              .from('limpeza')
+              .select('foto')
+              .limit(1);
+            
+            if (!fallbackError && fallbackData && fallbackData.length > 0 && fallbackData[0].foto) {
+              setCleaningImage(fallbackData[0].foto);
+            }
+          } catch (fallbackErr) {
+            console.error('Erro no fallback:', fallbackErr);
+          }
+        } else if (data && data.length > 0 && data[0].foto) {
+          setCleaningImage(data[0].foto);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar foto da limpeza:', error);
+      }
+    };
+
+    fetchCleaningPhoto();
+  }, []);
+
   const handleEditPhoto = () => {
+    if (!canEdit) {
+      alert('Apenas administradores e líderes podem alterar a foto da escala de limpeza.');
+      return;
+    }
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setCleaningImage(event.target.result as string);
+      if (!canEdit) {
+        alert('Apenas administradores e líderes podem alterar a foto da escala de limpeza.');
+        return;
+      }
+
+      setLoading(true);
+      
+      try {
+        // Função robusta para atualizar foto da limpeza
+        const atualizarFotoLimpeza = async (file: File) => {
+          const fileName = `limpeza/status_atual_${Date.now()}.png`; // Pasta limpeza dentro de public-assets
+
+          // 1. Buscar e deletar arquivos antigos da pasta limpeza
+          const { data: arquivosAntigos } = await supabase.storage
+            .from('public-assets')
+            .list('limpeza', {
+              limit: 100,
+              offset: 0
+            });
+
+          if (arquivosAntigos && arquivosAntigos.length > 0) {
+            // 2. Deletar todos os arquivos antigos da pasta limpeza
+            const caminhosParaDeletar = arquivosAntigos.map(arquivo => `limpeza/${arquivo.name}`);
+            
+            await supabase.storage
+              .from('public-assets')
+              .remove(caminhosParaDeletar);
+          }
+
+          // 3. Fazer o upload do novo arquivo na pasta limpeza
+          const { data, error } = await supabase.storage
+            .from('public-assets')
+            .upload(fileName, file);
+
+          if (error) {
+            throw error;
+          }
+
+          // 4. Pegar a URL pública da nova foto
+          const { data: { publicUrl } } = supabase.storage
+            .from('public-assets')
+            .getPublicUrl(fileName);
+
+          // 5. Atualizar a tabela public.limpeza (id 1 como exemplo de registro único)
+          const { error: dbError } = await supabase
+            .from('limpeza')
+            .upsert({ id: 1, foto: publicUrl }); // id 1 garante que sempre teremos apenas uma linha
+
+          if (dbError) {
+            throw dbError;
+          }
+
+          return publicUrl;
+        };
+
+        // Usar a função robusta
+        const novaFotoUrl = await atualizarFotoLimpeza(file);
+        
+        // Atualizar o estado com a nova foto
+        setCleaningImage(novaFotoUrl);
+        alert('Foto da escala de limpeza atualizada com sucesso!');
+        
+      } catch (error) {
+        console.error('Erro ao atualizar foto:', error);
+        
+        // Fallback: Tentar método base64 se Storage falhar
+        try {
+          const reader = new FileReader();
+          reader.onload = async (event) => {
+            if (event.target?.result) {
+              const base64Image = event.target.result as string;
+              
+              try {
+                const { error: fallbackError } = await supabase
+                  .from('limpeza')
+                  .upsert({ id: 1, foto: base64Image });
+                
+                if (fallbackError) {
+                  throw fallbackError;
+                }
+                
+                setCleaningImage(base64Image);
+                alert('Foto atualizada com sucesso (modo base64)!');
+              } catch (dbError) {
+                console.error('Erro no fallback:', dbError);
+                
+                setCleaningImage(base64Image);
+                alert('Foto atualizada localmente. Configure as permissões do Storage ou RLS.');
+              }
+              
+              setLoading(false);
+            }
+          };
+          
+          reader.readAsDataURL(file);
+          return;
+        } catch (fallbackErr) {
+          console.error('Erro no processo fallback:', fallbackErr);
+          alert('Erro ao processar a imagem. Tente novamente.');
         }
-      };
-      reader.readAsDataURL(file);
+      }
+      
+      setLoading(false);
     }
   };
 
@@ -38,8 +282,15 @@ const CleaningView: React.FC = () => {
           <img 
             src={cleaningImage} 
             alt="Escala de Limpeza" 
-            className="w-full h-auto transition-transform duration-1000 group-hover:scale-105"
+            className={`w-full h-auto transition-transform duration-1000 group-hover:scale-105 ${loading ? 'opacity-50' : ''}`}
           />
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-900/20">
+              <div className="bg-white rounded-full p-4 shadow-lg">
+                <i className="fas fa-spinner fa-spin text-brand text-2xl"></i>
+              </div>
+            </div>
+          )}
           <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-4">
             <div className="flex gap-4">
               <button 
@@ -50,13 +301,20 @@ const CleaningView: React.FC = () => {
               </button>
               <button 
                 onClick={handleEditPhoto}
-                className="bg-white text-slate-900 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl hover:bg-brand-gold hover:text-white transition-all transform translate-y-4 group-hover:translate-y-0 duration-300 delay-75"
+                disabled={loading}
+                className={`bg-white text-slate-900 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl transition-all transform translate-y-4 group-hover:translate-y-0 duration-300 delay-75 ${
+                  loading 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : 'hover:bg-brand-gold hover:text-white'
+                }`}
               >
-                <i className="fas fa-edit mr-2"></i> Trocar Foto
+                <i className={`fas ${loading ? 'fa-spinner fa-spin' : 'fa-edit'} mr-2`}></i> 
+                {loading ? 'Processando...' : 'Trocar Foto'}
               </button>
             </div>
             <div className="text-white/60 font-black text-[8px] uppercase tracking-[0.3em] flex items-center gap-2">
-              <i className="fas fa-info-circle text-brand"></i> Clique para gerenciar a escala
+              <i className="fas fa-info-circle text-brand"></i> 
+              {canEdit ? 'Você pode alterar esta foto' : 'Apenas admin e líderes podem alterar'}
             </div>
           </div>
         </div>

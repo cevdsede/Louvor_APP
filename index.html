@@ -9,6 +9,27 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            DEFAULT: '#1e3a8a',
+                            accent: '#eab308',
+                            navy: '#1e3a8a',
+                            gold: '#eab308'
+                        }
+                    },
+                    borderRadius: {
+                        '4xl': '2rem',
+                        '5xl': '2.5rem'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
         :root {
             --brand-primary: #1e3a8a;
@@ -47,38 +68,10 @@
         .shadow-brand { --tw-shadow-color: var(--brand-primary); }
         .bg-accent { background-color: var(--brand-accent); }
         .text-accent { color: var(--brand-accent); }
-    </style>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            DEFAULT: 'var(--brand-primary)',
-                            accent: 'var(--brand-accent)',
-                            navy: '#1e3a8a',
-                            gold: '#eab308'
-                        }
-                    },
-                    borderRadius: {
-                        '4xl': '2rem',
-                        '5xl': '2.5rem'
-                    }
-                }
-            }
+        .animate-fade-in {
+            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
-    </script>
-<script type="importmap">
-{
-  "imports": {
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "react": "https://esm.sh/react@^19.2.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
-  }
-}
-</script>
-    <link rel="stylesheet" href="/index.css">
+    </style>
     <link rel="manifest" href="/manifest.webmanifest">
     <meta name="theme-color" content="#3b82f6">
     <link rel="apple-touch-icon" href="/Cloud Worship.png">
