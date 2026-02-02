@@ -1,5 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from '../../supabaseClient';
+import { showSuccess, showError, showWarning } from '../../utils/toast';
+import { logger } from '../../utils/logger';
+import { confirmInfo } from '../../utils/confirmModal';
 
 const CleaningView: React.FC = () => {
   const [cleaningImage, setCleaningImage] = useState("https://picsum.photos/id/160/800/1000");
@@ -42,8 +45,8 @@ const CleaningView: React.FC = () => {
             
             // Se perfil for null, mostrar informação útil
             if (!memberData.perfil) {
-              console.warn('ATENÇÃO: Campo perfil está NULL para o usuário:', user.email);
-              console.warn('Verifique na tabela membros se o campo perfil foi preenchido para este usuário.');
+              logger.warn('ATENÇÃO: Campo perfil está NULL para o usuário:', { email: user.email }, 'auth');
+              logger.warn('Verifique na tabela membros se o campo perfil foi preenchido para este usuário.', {}, 'auth');
             }
           } else {
             // Se não encontrar na tabela membros, verificar metadados como fallback
@@ -94,7 +97,7 @@ const CleaningView: React.FC = () => {
           }
         }
       } catch (error) {
-        console.error('Erro ao buscar usuário:', error);
+        logger.error('Erro ao buscar usuário:', error, 'auth');
       }
     };
 
@@ -125,7 +128,7 @@ const CleaningView: React.FC = () => {
           .limit(1);
         
         if (error) {
-          console.error('Erro ao carregar foto da limpeza:', error);
+          logger.error('Erro ao carregar foto da limpeza:', error, 'database');
           // Se der erro, tentar com query mais simples
           try {
             const { data: fallbackData, error: fallbackError } = await supabase
@@ -137,22 +140,22 @@ const CleaningView: React.FC = () => {
               setCleaningImage(fallbackData[0].foto);
             }
           } catch (fallbackErr) {
-            console.error('Erro no fallback:', fallbackErr);
+            logger.error('Erro no fallback:', fallbackErr, 'database');
           }
         } else if (data && data.length > 0 && data[0].foto) {
           setCleaningImage(data[0].foto);
         }
       } catch (error) {
-        console.error('Erro ao carregar foto da limpeza:', error);
+        logger.error('Erro ao carregar foto da limpeza:', error, 'database');
       }
     };
 
     fetchCleaningPhoto();
   }, []);
 
-  const handleEditPhoto = () => {
+  const handleEditPhoto = async () => {
     if (!canEdit) {
-      alert('Apenas administradores e líderes podem alterar a foto da escala de limpeza.');
+      await confirmInfo('Apenas administradores e líderes podem alterar a foto da escala de limpeza.', 'Acesso Restrito');
       return;
     }
     fileInputRef.current?.click();
@@ -162,7 +165,7 @@ const CleaningView: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       if (!canEdit) {
-        alert('Apenas administradores e líderes podem alterar a foto da escala de limpeza.');
+        showError('Apenas administradores e líderes podem alterar a foto da escala de limpeza.');
         return;
       }
 
@@ -221,10 +224,10 @@ const CleaningView: React.FC = () => {
         
         // Atualizar o estado com a nova foto
         setCleaningImage(novaFotoUrl);
-        alert('Foto da escala de limpeza atualizada com sucesso!');
+        showSuccess('Foto da escala de limpeza atualizada com sucesso!');
         
       } catch (error) {
-        console.error('Erro ao atualizar foto:', error);
+        logger.error('Erro ao atualizar foto:', error, 'database');
         
         // Fallback: Tentar método base64 se Storage falhar
         try {
@@ -243,12 +246,12 @@ const CleaningView: React.FC = () => {
                 }
                 
                 setCleaningImage(base64Image);
-                alert('Foto atualizada com sucesso (modo base64)!');
+                showSuccess('Foto atualizada com sucesso (modo base64)!');
               } catch (dbError) {
-                console.error('Erro no fallback:', dbError);
+                logger.error('Erro no fallback:', dbError, 'database');
                 
                 setCleaningImage(base64Image);
-                alert('Foto atualizada localmente. Configure as permissões do Storage ou RLS.');
+                showWarning('Foto atualizada localmente. Configure as permissões do Storage ou RLS.');
               }
               
               setLoading(false);
@@ -258,8 +261,8 @@ const CleaningView: React.FC = () => {
           reader.readAsDataURL(file);
           return;
         } catch (fallbackErr) {
-          console.error('Erro no processo fallback:', fallbackErr);
-          alert('Erro ao processar a imagem. Tente novamente.');
+          logger.error('Erro no processo fallback:', fallbackErr, 'database');
+          showError('Erro ao processar a imagem. Tente novamente.');
         }
       }
       

@@ -1,18 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
-import Header from './components/Header';
-import Sidebar from './components/Sidebar';
-import Toolbar from './components/Toolbar';
-import DashboardView from './components/DashboardView';
-import ListView from './components/ListView';
-import CalendarView from './components/CalendarView';
-import CleaningView from './components/CleaningView';
-import TeamView from './components/TeamView';
-import MusicView from './components/MusicView';
-import AvisoModal from './components/AvisoModal';
-import SplashScreen from './components/SplashScreen';
-import LoginScreen from './components/LoginScreen';
+import Header from './components/layout/Header';
+import Sidebar from './components/layout/Sidebar';
+import Toolbar from './components/layout/Toolbar';
+import DashboardView from './components/dashboard/DashboardView';
+import ListView from './components/escalas/ListView';
+import CalendarView from './components/escalas/CalendarView';
+import CleaningView from './components/ui/CleaningView';
+import TeamView from './components/equipe/TeamView';
+import MusicView from './components/musicas/MusicView';
+import AvisoModal from './components/ui/AvisoModal';
+import SplashScreen from './components/auth/SplashScreen';
+import LoginScreen from './components/auth/LoginScreen';
 import { ViewType } from './types';
 
 type AppState = 'splash' | 'login' | 'main';

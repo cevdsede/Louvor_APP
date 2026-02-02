@@ -1,17 +1,18 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabaseClient';
+import { ChartInstance, MemberStat } from '../types-supabase';
 
 const DashboardView: React.FC = () => {
   const escalaChartRef = useRef<HTMLCanvasElement>(null);
-  const chartInstance = useRef<any>(null);
+  const chartInstance = useRef<ChartInstance | null>(null);
   const [isDevocionalModalOpen, setIsDevocionalModalOpen] = useState(false);
   const [devocionalInput, setDevocionalInput] = useState('');
   const [currentDevocional, setCurrentDevocional] = useState('Porque, onde estiverem dois ou três reunidos em meu nome, ali estou eu no meio deles. (Mateus 18:20)');
 
 
   // Mock de dados (Simulando o que viria do estado global/API)
-  const memberStats: any[] = [];
+  const memberStats: MemberStat[] = [];
 
   // Dados para os novos KPIs
   const totalUserAtivos = 0; // Membros escalados nos próximos eventos
@@ -27,7 +28,7 @@ const DashboardView: React.FC = () => {
         chartInstance.current.destroy();
       }
 
-      chartInstance.current = new (window as any).Chart(escalaChartRef.current, {
+      chartInstance.current = new window.Chart(escalaChartRef.current, {
         type: 'bar',
         data: {
           labels: memberStats.map(m => m.name),

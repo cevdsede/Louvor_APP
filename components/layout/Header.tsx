@@ -1,5 +1,5 @@
-
 import React from 'react';
+import { ViewType } from '../../types';
 
 interface HeaderProps {
   onSync: () => void;

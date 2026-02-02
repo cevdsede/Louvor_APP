@@ -1,6 +1,9 @@
-
-import React, { useState } from 'react';
-import { AttendanceEvent, AttendanceStatus, Member } from '../types';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../supabaseClient';
+import { showSuccess, showError, showWarning } from '../../utils/toast';
+import { logger } from '../../utils/logger';
+import { confirmDelete } from '../../utils/confirmModal';
+import { AttendanceEvent, AttendanceStatus, Member } from '../../types';
 
 const AttendanceView: React.FC = () => {
   const [view, setView] = useState<'list' | 'marking'>('list');
@@ -42,12 +45,13 @@ const AttendanceView: React.FC = () => {
   };
 
   const finalizeAttendance = () => {
-    alert('Chamada finalizada com sucesso!');
+    showSuccess('Chamada finalizada com sucesso!');
     setView('list');
   };
 
-  const handleDeleteEvent = (id: string) => {
-    if(confirm('Excluir este evento de chamada?')) {
+  const handleDeleteEvent = async (id: string) => {
+    const confirmed = await confirmDelete('este evento de chamada');
+    if (confirmed) {
       setEvents(events.filter(e => e.id !== id));
     }
   };

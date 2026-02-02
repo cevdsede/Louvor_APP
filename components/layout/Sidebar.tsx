@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../../supabaseClient';
+import { showSuccess } from '../../utils/toast';
 
-import { ViewType } from '../types';
+import { ViewType } from '../../types';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -193,7 +194,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
             <div className="flex gap-4 mt-8">
               <button onClick={() => setIsProfileModalOpen(false)} className="flex-1 py-3.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-xl font-black uppercase tracking-widest text-[9px]">Fechar</button>
-              <button onClick={() => { setIsProfileModalOpen(false); alert('Salvo!'); }} className="flex-1 py-3.5 bg-brand text-white rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-brand/20">Salvar</button>
+              <button onClick={() => { setIsProfileModalOpen(false); showSuccess('Salvo!'); }} className="flex-1 py-3.5 bg-brand text-white rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-brand/20">Salvar</button>
             </div>
           </div>
         </div>

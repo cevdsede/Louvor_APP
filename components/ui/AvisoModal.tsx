@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { showSuccess } from '../../utils/toast';
 
 interface AvisoModalProps {
   eventId: string | null;
@@ -16,7 +17,7 @@ const AvisoModal: React.FC<AvisoModalProps> = ({ eventId, onClose }) => {
     setTimeout(() => {
       setLoading(false);
       onClose();
-      alert('Seu aviso foi enviado com sucesso à liderança.');
+      showSuccess('Seu aviso foi enviado com sucesso à liderança.');
     }, 1500);
   };
 

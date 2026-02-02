@@ -49,6 +49,9 @@ export interface Member {
   gender: 'M' | 'F';
   status: 'confirmed' | 'pending' | 'absent';
   avatar: string;
+  telefone?: string;
+  email?: string;
+  data_nasc?: string;
   icon?: string;
   upcomingScales?: MemberScale[];
   songHistory?: SongHistoryItem[];

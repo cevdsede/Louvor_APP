@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../../supabaseClient';
+import { logger } from '../../utils/logger';
 import CreateProfileScreen from './CreateProfileScreen';
 
 interface LoginScreenProps {
@@ -37,7 +38,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
       }
     } catch (err) {
       setError('Ocorreu um erro inesperado.');
-      console.error(err);
+      logger.error('Erro no login:', err, 'auth');
     } finally {
       setIsLoading(false);
     }

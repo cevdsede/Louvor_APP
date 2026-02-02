@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../../supabaseClient';
+import { logger } from '../../utils/logger';
 
 interface CreateProfileScreenProps {
   onBack: () => void;
@@ -78,7 +79,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
           });
 
         if (solicitacaoError) {
-          console.error('Erro ao criar solicitação:', solicitacaoError);
+          logger.error('Erro ao criar solicitação:', solicitacaoError, 'database');
           setError('Erro ao registrar solicitação. Tente novamente.');
           setIsLoading(false);
           return;
@@ -95,7 +96,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
             .upload(fileName, formData.foto);
 
           if (uploadError) {
-            console.warn('Erro ao fazer upload da foto:', uploadError);
+            logger.warn('Erro ao fazer upload da foto:', uploadError, 'database');
           } else {
             const { data: { publicUrl } } = supabase.storage
               .from('profile-photos')
@@ -119,7 +120,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
           });
 
         if (membroError) {
-          console.error('Erro ao criar membro:', membroError);
+          logger.error('Erro ao criar membro:', membroError, 'database');
           setError('Erro ao criar perfil. Tente novamente.');
           setIsLoading(false);
           return;
@@ -131,7 +132,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
       }
     } catch (err) {
       setError('Ocorreu um erro inesperado.');
-      console.error(err);
+      logger.error('Erro geral no processo:', err, 'general');
     } finally {
       setIsLoading(false);
     }

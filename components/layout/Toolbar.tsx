@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ViewType } from '../types';
+import { ViewType } from '../../types';
 
 interface ToolbarProps {
   currentView: ViewType;
