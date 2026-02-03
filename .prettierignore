@@ -1,0 +1,13 @@
+node_modules
+dist
+build
+public
+*.md
+.env*
+coverage
+*.log
+.DS_Store
+.vscode
+.idea
+*.config.js
+*.config.ts

@@ -1,0 +1,51 @@
+Plano de Profissionalização (Refinado)
+Este plano eleva o projeto "Louvor" a um patamar de excelência técnica, focando em escalabilidade, manutenção e robustez.
+
+1. Internacionalização e Clean Code (i18n)
+Remover strings fixas do código para facilitar a manutenção e permitir múltiplos idiomas.
+
+[NOVO] Implementar react-i18next.
+[MODIFICAR] Mover todas as mensagens do app para arquivos de tradução (pt.json). Isso limpa o código JSX e facilita a alteração de textos em um só lugar.
+2. Desacoplamento de Domínio (Repository Pattern)
+A lógica de negócio deve ser independente da interface visual.
+
+[MODIFICAR] Criar uma camada de Services/Repositories. Em vez de chamadas diretas ao supabase nos componentes, usaremos funções como MusicService.getAll().
+[BENEFÍCIO] Código mais limpo, fácil de testar e independente da tecnologia de banco de dados.
+3. Observabilidade e Resiliência
+Garantir que o sistema seja estável e que erros sejam capturados.
+
+[NOVO] Configurar Global Error Boundary com uma interface amigável de recuperação.
+[NOVO] Implementar loggers profissionais para monitorar falhas em produção.
+4. Design System Atômico
+[MODIFICAR] Extrair componentes base (Botão, Input, ModalBase) para uma pasta src/core-ui.
+[BENEFÍCIO] Garantia de consistência visual absoluta e maior velocidade para criar novas telas.
+5. Performance e Dados (TanStack Query)
+[NOVO] Migrar a gestão de dados para o TanStack Query.
+[BENEFÍCIO] Sistema de cache automático e eliminação de "loading spinners" desnecessários.
+Plano de Verificação
+Verificação de Dados
+Validar se a camada de Service consegue fornecer dados corretamente para os componentes sem acoplamento direto.
+Teste de Resiliência
+Simular falhas de rede e validar se o sistema se recupera de forma amigável para o usuário.
+Prontidão para Tradução
+Verificar se todos os textos da interface estão vindo dos arquivos de tradução.
+
+
+Task    
+
+Tarefa: Profissionalizar o Projeto Louvor
+ Internacionalização (i18n) [/]
+ Configurar react-i18next
+ Mover strings para arquivos JSON
+ Refatoração de Arquitetura [ ]
+ Implementar Repository Pattern (Services)
+ Criar Design System Atômico em src/core-ui
+ Gestão de Dados e Performance [ ]
+ Migrar para TanStack Query
+ Implementar Skeleton Screens
+ Resiliência e Monitoramento [ ]
+ Implementar Global Error Boundary
+ Configurar loggers profissionais
+ Entrega e Qualidade [ ]
+ Sincronização de preferências de usuário no DB
+ Auditoria final de performance
