@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Member, ScheduleEvent } from '../../types';
 import { showSuccess, showError } from '../../utils/toast';
 import { supabase } from '../../supabaseClient';
 import { logger } from '../../utils/logger';
+import AvisoGeralService, { AvisoGeral } from '../../services/AvisoGeralService';
 
 interface TeamModalsProps {
   selectedMember: Member | null;
@@ -26,6 +27,10 @@ const TeamModals: React.FC<TeamModalsProps> = ({
   const [isInactiveExpanded, setIsInactiveExpanded] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [avisosGerais, setAvisosGerais] = useState<AvisoGeral[]>([]);
+  const [loadingAvisos, setLoadingAvisos] = useState(false);
+  const [availableFunctions, setAvailableFunctions] = useState<any[]>([]);
+  const [selectedFunctions, setSelectedFunctions] = useState<string[]>([]);
 
   // Função para abrir WhatsApp com o membro
   const handleWhatsAppContact = (member: Member) => {
@@ -146,6 +151,29 @@ const TeamModals: React.FC<TeamModalsProps> = ({
 
       if (memberError) throw memberError;
 
+      // Atualiza as funções na tabela membros_funcoes
+      // 1. Remove todas as funções atuais
+      const { error: deleteError } = await supabase
+        .from('membros_funcoes')
+        .delete()
+        .eq('id_membro', editingMember.id);
+
+      if (deleteError) throw deleteError;
+
+      // 2. Insere as novas funções selecionadas
+      if (selectedFunctions.length > 0) {
+        const newFunctions = selectedFunctions.map(functionId => ({
+          id_membro: editingMember.id,
+          id_funcao: parseInt(functionId)
+        }));
+
+        const { error: insertError } = await supabase
+          .from('membros_funcoes')
+          .insert(newFunctions);
+
+        if (insertError) throw insertError;
+      }
+
       // Atualiza email na tabela auth.users se fornecido
       if (updatedMember.email && updatedMember.email !== editingMember.email) {
         const { error: authError } = await supabase.auth.admin.updateUserById(
@@ -167,7 +195,13 @@ const TeamModals: React.FC<TeamModalsProps> = ({
               foto: updatedMember.foto || m.foto,
               telefone: updatedMember.telefone || m.telefone,
               email: updatedMember.email || m.email,
-              data_nasc: updatedMember.data_nasc || m.data_nasc
+              data_nasc: updatedMember.data_nasc || m.data_nasc,
+              role: selectedFunctions.length > 0 
+                ? availableFunctions
+                    .filter(f => selectedFunctions.includes(f.id.toString()))
+                    .map(f => f.nome_funcao)
+                    .join(', ')
+                : 'Sem função'
             }
           : m
       ));
@@ -178,6 +212,67 @@ const TeamModals: React.FC<TeamModalsProps> = ({
     } catch (error) {
       logger.error('Erro ao atualizar membro:', error, 'database');
       showError('Erro ao atualizar membro. Tente novamente.');
+    }
+  };
+
+  // Buscar avisos gerais do membro quando o modal é aberto
+  useEffect(() => {
+    if (selectedMember) {
+      fetchAvisosGerais();
+    }
+  }, [selectedMember]);
+
+  // Buscar funções disponíveis e funções do membro ao abrir modal de edição
+  useEffect(() => {
+    if (editingMember) {
+      fetchAvailableFunctions();
+      fetchMemberFunctions();
+    }
+  }, [editingMember]);
+
+  const fetchAvailableFunctions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('funcao')
+        .select('*')
+        .order('nome_funcao');
+      
+      if (error) throw error;
+      setAvailableFunctions(data || []);
+    } catch (error) {
+      logger.error('Erro ao buscar funções:', error, 'database');
+    }
+  };
+
+  const fetchMemberFunctions = async () => {
+    if (!editingMember) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('membros_funcoes')
+        .select('id_funcao')
+        .eq('id_membro', editingMember.id);
+      
+      if (error) throw error;
+      const functionIds = (data || []).map(mf => mf.id_funcao.toString());
+      setSelectedFunctions(functionIds);
+    } catch (error) {
+      logger.error('Erro ao buscar funções do membro:', error, 'database');
+    }
+  };
+
+  const fetchAvisosGerais = async () => {
+    if (!selectedMember) return;
+    
+    setLoadingAvisos(true);
+    try {
+      const avisos = await AvisoGeralService.getAvisosByMembro(selectedMember.id);
+      setAvisosGerais(avisos);
+    } catch (error) {
+      logger.error('Erro ao buscar avisos gerais:', error, 'ui');
+      // Não mostrar erro para o usuário, apenas log
+    } finally {
+      setLoadingAvisos(false);
     }
   };
 
@@ -273,34 +368,66 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                 </div>
               </div>
 
-              {/* Repertório Recente */}
-              <div className="space-y-4">
-                <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left">Repertório Recente</h4>
-                <div className="space-y-3">
-                  {selectedMember.songHistory && selectedMember.songHistory.length > 0 ? (
-                    selectedMember.songHistory.map((h, idx) => (
-                      <div key={idx} className="flex items-center gap-3 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-50 dark:border-slate-800 flex-nowrap">
-                        <div className="w-16 h-12 bg-gradient-to-br from-brand to-brand/80 text-white rounded-2xl shadow-lg flex items-center justify-center font-black text-[10px] flex-shrink-0 p-1">{h.key}</div>
-                        <div className="flex-1 min-w-0 text-left">
-                          <span className="text-[11px] font-black text-slate-600 dark:text-slate-300 truncate block">{h.song}</span>
-                          <div className="flex items-center gap-2 text-[8px] text-slate-400">
-                            <span>{h.date}</span>
-                            <span>•</span>
-                            <span>{h.event}</span>
+              {/* Repertório Recente - Apenas para Ministro ou Vocal */}
+              {(selectedMember.role?.toLowerCase().includes('ministro') || selectedMember.role?.toLowerCase().includes('vocal')) && (
+                <div className="space-y-4">
+                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left">Repertório Recente</h4>
+                  <div className="space-y-3">
+                    {selectedMember.songHistory && selectedMember.songHistory.length > 0 ? (
+                      selectedMember.songHistory.map((h, idx) => (
+                        <div key={idx} className="flex items-center gap-3 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-50 dark:border-slate-800 flex-nowrap">
+                          <div className="w-16 h-12 bg-gradient-to-br from-brand to-brand/80 text-white rounded-2xl shadow-lg flex items-center justify-center font-black text-[10px] flex-shrink-0 p-1">{h.key}</div>
+                          <div className="flex-1 min-w-0 text-left">
+                            <span className="text-[11px] font-black text-slate-600 dark:text-slate-300 truncate block">{h.song}</span>
+                            <div className="flex items-center gap-2 text-[8px] text-slate-400">
+                              <span>{h.date}</span>
+                              <span>•</span>
+                              <span>{h.event}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                          <i className="fas fa-music text-slate-300 text-xl"></i>
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase">Nenhuma música registrada</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Avisos Gerais - Apenas se houver avisos */}
+              {!loadingAvisos && avisosGerais.length > 0 && (
+                <div className="space-y-4">
+                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left">Avisos Gerais</h4>
+                  <div className="space-y-3">
+                    {avisosGerais.map((aviso) => (
+                      <div key={aviso.id.toString()} className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl border border-amber-200 dark:border-amber-800/50">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-500 text-white rounded-xl flex items-center justify-center flex-shrink-0">
+                            <i className="fas fa-bell text-[10px]"></i>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed mb-2">
+                              {aviso.texto}
+                            </p>
+                            <p className="text-[8px] text-slate-400 uppercase tracking-widest">
+                              {new Date(aviso.created_at).toLocaleDateString('pt-BR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              })}
+                            </p>
                           </div>
                         </div>
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                        <i className="fas fa-music text-slate-300 text-xl"></i>
-                      </div>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase">Nenhuma música registrada</p>
-                    </div>
-                  )}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex gap-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
@@ -414,6 +541,42 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                     className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition-colors"
                     placeholder="email@exemplo.com"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-2">Funções</label>
+                  <div className="space-y-2 max-h-32 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-xl p-3 bg-white dark:bg-slate-800">
+                    {availableFunctions.map((func) => (
+                      <label key={func.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 p-2 rounded-lg transition-colors">
+                        <input
+                          type="checkbox"
+                          value={func.id}
+                          checked={selectedFunctions.includes(func.id.toString())}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedFunctions([...selectedFunctions, func.id.toString()]);
+                            } else {
+                              setSelectedFunctions(selectedFunctions.filter(id => id !== func.id.toString()));
+                            }
+                          }}
+                          className="w-4 h-4 text-brand border-slate-300 rounded focus:ring-brand focus:ring-2"
+                        />
+                        <span className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">
+                          {func.nome_funcao}
+                        </span>
+                      </label>
+                    ))}
+                    {availableFunctions.length === 0 && (
+                      <p className="text-[10px] text-slate-400 text-center py-2">
+                        Nenhuma função disponível
+                      </p>
+                    )}
+                  </div>
+                  {selectedFunctions.length > 0 && (
+                    <p className="text-[9px] text-slate-400 mt-1">
+                      {selectedFunctions.length} função(ões) selecionada(s)
+                    </p>
+                  )}
                 </div>
 
                 <div>

@@ -8,6 +8,9 @@ import { sortMembersByRole, getRoleIcon } from '../../utils/teamUtils';
 
 // Importar componentes do ListView
 import EventCard from './EventCard';
+import TeamManager from './TeamManager';
+import RepertoireManager from './RepertoireManager';
+import NoticeManager from './NoticeManager';
 
 const CalendarView: React.FC = () => {
   const [selectedDateEvents, setSelectedDateEvents] = useState<ScheduleEvent[] | null>(null);
@@ -19,6 +22,13 @@ const CalendarView: React.FC = () => {
 
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [eventNotices, setEventNotices] = useState<Record<string, Notice[]>>({});
+
+  // Estados para os componentes (igual ListView)
+  const [allRegisteredMembers, setAllRegisteredMembers] = useState<Member[]>([]);
+  const [allSongs, setAllSongs] = useState<any[]>([]);
+  const [tones, setTones] = useState<any[]>([]);
+  const [isMember, setIsMember] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ id: string, name: string } | null>(null);
 
   // Role icons mapping (igual ListView)
   const roleIcons = [
@@ -65,34 +75,36 @@ const CalendarView: React.FC = () => {
       }
 
       if (cultosData) {
-        const mapped: ScheduleEvent[] = cultosData.map((c: CalendarCultoQuery) => {
+        const mapped: ScheduleEvent[] = cultosData.map((c: any) => {
           const date = new Date(c.data_culto + 'T00:00:00');
           const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
           return {
             id: c.id,
-            title: c.nome_cultos?.[0]?.nome_culto || 'Culto',
+            title: (c.nome_cultos as any)?.nome_culto || 'CULTO',
             date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
             dayOfWeek: daysOfWeek[date.getDay()],
             time: c.horario,
-            members: sortMembersByRole(c.escalas?.map((e) => ({
-              id: e.membros?.[0]?.id || '',
-              name: e.membros?.[0]?.nome || 'Sem nome',
-              gender: e.membros?.[0]?.genero === 'Homem' ? 'M' : 'F',
-              role: e.funcao?.[0]?.nome_funcao || 'Sem função',
-              photo: e.membros?.[0]?.foto,
-              avatar: e.membros?.[0]?.foto || `https://ui-avatars.com/api/?name=${e.membros?.[0]?.nome || 'Sem nome'}&background=random`,
+            members: sortMembersByRole((c.escalas || []).map((e: any) => ({
+              id: e.membros?.id || '',
+              name: e.membros?.nome || 'Sem nome',
+              gender: e.membros?.genero === 'Homem' ? 'M' : 'F',
+              role: e.funcao?.nome_funcao || 'Membro',
+              photo: e.membros?.foto,
+              avatar: e.membros?.foto || `https://ui-avatars.com/api/?name=${e.membros?.nome || 'Sem nome'}&background=random`,
               status: 'confirmed',
               upcomingScales: [],
-              songHistory: []
-            })) || []),
-            repertoire: c.repertorio?.map((r) => ({
+              songHistory: [],
+              roleId: e.id_funcao, // ← Adiciona o ID da função
+              escalaId: e.id // ← Adiciona o ID da escala
+            }))),
+            repertoire: (c.repertorio || []).map((r: any) => ({
               id: r.id,
-              song: r.musicas?.[0]?.musica || 'Sem música',
-              singer: r.musicas?.[0]?.cantor || 'Sem cantor',
-              key: r.tons?.[0]?.nome_tons || 'Ñ',
-              minister: r.membros?.[0]?.nome || ''
-            })) || []
+              song: (r.musicas as any)?.musica || 'Sem música',
+              singer: (r.musicas as any)?.cantor || 'Sem cantor',
+              key: (r.tons as any)?.nome_tons || 'Ñ',
+              minister: (r.membros as any)?.nome || ''
+            }))
           };
         });
         setEvents(mapped);
@@ -116,10 +128,10 @@ const CalendarView: React.FC = () => {
         .eq('id_cultos', eventId);
 
       if (data) {
-        const notices: Notice[] = data.map((notice: CalendarNotice) => ({
+        const notices: Notice[] = data.map((notice: any) => ({
           id: notice.id_lembrete,
           text: notice.info,
-          sender: notice.membros?.[0]?.nome || 'Admin',
+          sender: (notice.membros as any)?.nome || 'Admin',
           time: new Date(notice.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
         }));
 
@@ -133,8 +145,59 @@ const CalendarView: React.FC = () => {
     }
   };
 
+  // Funções para buscar dados adicionais (igual ListView)
+  const fetchAdditionalData = async () => {
+    try {
+      // 1. Fetch Members
+      const { data: membersData } = await supabase.from('membros').select('*').order('nome');
+      if (membersData) {
+        const mappedMembers: Member[] = membersData.map(m => ({
+          id: m.id,
+          name: m.nome,
+          role: 'Membro',
+          gender: m.genero === 'Homem' ? 'M' : 'F',
+          avatar: m.foto || `https://ui-avatars.com/api/?name=${m.nome}&background=random`,
+          status: 'confirmed',
+          upcomingScales: [],
+          songHistory: []
+        }));
+        setAllRegisteredMembers(mappedMembers);
+      }
+
+      // 2. Fetch Songs
+      const { data: songsData } = await supabase.from('musicas').select('*').order('musica');
+      if (songsData) {
+        setAllSongs(songsData);
+      }
+
+      // 3. Fetch Tones
+      const { data: tonesData } = await supabase.from('tons').select('*').order('nome_tons');
+      if (tonesData) {
+        setTones(tonesData);
+      }
+
+      // 4. Check current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: memberData } = await supabase
+          .from('membros')
+          .select('id, nome')
+          .eq('id', user.id)
+          .single();
+        
+        if (memberData) {
+          setCurrentUser({ id: memberData.id, name: memberData.nome });
+          setIsMember(true);
+        }
+      }
+    } catch (error) {
+      logger.error('Erro ao buscar dados adicionais:', error, 'database');
+    }
+  };
+
   useEffect(() => {
     fetchEvents();
+    fetchAdditionalData();
   }, []);
 
   // Buscar avisos quando abrir o modal
@@ -246,9 +309,6 @@ const CalendarView: React.FC = () => {
           <button onClick={handleNextMonth} className="bg-white dark:bg-slate-800 text-slate-400 w-10 h-10 rounded-xl flex items-center justify-center border border-slate-100 dark:border-slate-700 hover:text-brand transition-all">
             <i className="fas fa-chevron-right text-xs"></i>
           </button>
-          <button className="bg-brand text-white px-5 h-10 rounded-xl flex items-center gap-2 shadow-lg shadow-brand/20 font-black text-[9px] uppercase tracking-widest transition-all hover:scale-105 active:scale-95 ml-2">
-            <i className="fas fa-download"></i> PDF
-          </button>
         </div>
       </div>
 
@@ -284,23 +344,102 @@ const CalendarView: React.FC = () => {
                     onSubTabChange={(tab) => setSubTab(event.id, tab)}
                   >
                     {activeSubTabs[event.id] === 'team' && (
-                      <div className="p-4 text-center text-slate-400 dark:text-slate-500">
-                        <i className="fas fa-users text-2xl mb-2"></i>
-                        <p className="text-sm font-bold">Em desenvolvimento</p>
+                      <div className="p-6">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                          {event.members.map((member, index) => (
+                            <div key={`${member.id}-${member.roleId || index}`} className="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                              <div className="flex flex-col items-center text-center">
+                                <div className="relative mb-3">
+                                  <div className="w-16 h-16 bg-gradient-to-br from-brand to-brand-gold rounded-full flex items-center justify-center shadow-lg">
+                                    {member.avatar ? (
+                                      <img src={member.avatar} alt={member.name} className="w-full h-full rounded-full object-cover" />
+                                    ) : (
+                                      <i className={`fas ${getRoleIcon(member.role)} text-white text-xl`}></i>
+                                    )}
+                                  </div>
+                                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-md border-2 border-brand">
+                                    <i className={`fas ${getRoleIcon(member.role)} text-brand text-[8px]`}></i>
+                                  </div>
+                                </div>
+                                <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate w-full">{member.name}</h5>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase truncate w-full">{member.role}</p>
+                                <div className="flex items-center gap-1 mt-2">
+                                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                  <span className="text-[7px] font-bold text-slate-500 uppercase">Presente</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        {event.members.length === 0 && (
+                          <div className="text-center py-8">
+                            <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                              <i className="fas fa-users-slash text-slate-400 text-lg"></i>
+                            </div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nenhum membro escalado</p>
+                          </div>
+                        )}
                       </div>
                     )}
                     
                     {activeSubTabs[event.id] === 'repertoire' && (
-                      <div className="p-4 text-center text-slate-400 dark:text-slate-500">
-                        <i className="fas fa-music text-2xl mb-2"></i>
-                        <p className="text-sm font-bold">Em desenvolvimento</p>
+                      <div className="p-6">
+                        <div className="space-y-3">
+                          {event.repertoire.map((song) => (
+                            <div key={song.id} className="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <h4 className="text-sm font-black text-slate-800 dark:text-white">{song.song}</h4>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400">{song.singer}</p>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  <div className="text-center">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase">Tom</p>
+                                    <p className="text-sm font-black text-brand">{song.key}</p>
+                                  </div>
+                                  {song.minister && (
+                                    <div className="text-center">
+                                      <p className="text-[10px] font-bold text-slate-400 uppercase">Ministro</p>
+                                      <p className="text-xs text-slate-600 dark:text-slate-300">{song.minister}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        {event.repertoire.length === 0 && (
+                          <div className="text-center py-8">
+                            <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                              <i className="fas fa-music-slash text-slate-400 text-lg"></i>
+                            </div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nenhuma música no repertório</p>
+                          </div>
+                        )}
                       </div>
                     )}
                     
                     {activeSubTabs[event.id] === 'notices' && (
-                      <div className="p-4 text-center text-slate-400 dark:text-slate-500">
-                        <i className="fas fa-bell text-2xl mb-2"></i>
-                        <p className="text-sm font-bold">Em desenvolvimento</p>
+                      <div className="p-6">
+                        <div className="space-y-3">
+                          {(eventNotices[event.id] || []).map((notice) => (
+                            <div key={notice.id} className="bg-slate-50/50 dark:bg-slate-800/30 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                              <div className="flex justify-between items-center mb-1.5">
+                                <span className="text-[8px] font-black text-brand uppercase tracking-widest">{notice.sender}</span>
+                                <span className="text-[7px] font-bold text-slate-400 uppercase">{notice.time}</span>
+                              </div>
+                              <p className="text-[10px] text-slate-600 dark:text-slate-300 font-medium leading-relaxed">{notice.text}</p>
+                            </div>
+                          ))}
+                        </div>
+                        {(eventNotices[event.id] || []).length === 0 && (
+                          <div className="text-center py-8">
+                            <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                              <i className="fas fa-bell-slash text-slate-400 text-lg"></i>
+                            </div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nenhum aviso</p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </EventCard>

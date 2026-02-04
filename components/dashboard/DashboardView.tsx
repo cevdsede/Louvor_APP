@@ -166,57 +166,57 @@ const DashboardView: React.FC = () => {
 
   return (
     <div className="pb-20 fade-in max-w-7xl mx-auto space-y-8">
-      {/* Grid de KPIs - 3 Colunas com Destaque Central */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-        {/* KPI 1 - Total de Cultos (Normal) */}
-        <div className="bg-white dark:bg-slate-900/50 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center group hover:shadow-xl transition-all duration-300">
-          <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+      {/* Grid de KPIs - Layout com Central Destacado */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4 lg:gap-6 items-stretch px-1 sm:px-2 md:px-4">
+        {/* KPI 1 - Total de Cultos (Lateral Esquerdo - Menor) */}
+        <div className="bg-white dark:bg-slate-900/50 backdrop-blur-xl p-2 sm:p-3 md:p-4 lg:p-6 rounded-[0.8rem] sm:rounded-[1rem] md:rounded-[1.5rem] shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center group hover:shadow-xl transition-all duration-300 aspect-square min-h-[80px] sm:min-h-[100px] md:min-h-[120px] lg:min-h-[140px]">
+          <div className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center text-xs sm:text-sm md:text-base lg:text-lg mb-1 sm:mb-2 md:mb-3 group-hover:scale-110 transition-transform flex-shrink-0">
             <i className="fas fa-church"></i>
           </div>
-          <span className="text-4xl md:text-6xl font-black text-slate-800 dark:text-white tracking-tighter leading-none mb-3">{loading ? '...' : totalCultos}</span>
-          <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Cultos Realizados</p>
+          <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-black text-slate-800 dark:text-white tracking-tighter leading-none mb-1 sm:mb-2 break-words">{loading ? '...' : totalCultos}</span>
+          <p className="text-[6px] sm:text-[7px] md:text-[8px] lg:text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center">Cultos</p>
         </div>
 
-        {/* KPI 2 - Próxima Escala (ESTILO MANTIDO, INFO REORGANIZADA) */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-brand via-brand/90 to-brand-dark p-8 md:p-10 rounded-[3rem] shadow-2xl shadow-brand/30 flex flex-col items-center justify-center text-center group hover:scale-[1.02] transition-all duration-500 border border-white/10 ring-4 ring-brand/5 dark:ring-white/5">
+        {/* KPI 2 - Próxima Escala (Central - Maior e Destacado) */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-brand via-brand/90 to-brand-dark p-3 sm:p-4 md:p-6 lg:p-8 xl:p-10 max-[400px]:p-2 rounded-[1rem] sm:rounded-[1.5rem] md:rounded-[2.5rem] lg:rounded-[3rem] shadow-2xl shadow-brand/30 flex flex-col items-center justify-center text-center group hover:scale-[1.02] transition-all duration-500 border border-white/10 ring-4 ring-brand/5 dark:ring-white/5 aspect-square min-h-[90px] max-[400px]:min-h-[80px] sm:min-h-[120px] md:min-h-[140px] lg:min-h-[160px] xl:min-h-[180px]">
           {/* Efeitos de Fundo */}
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
+          <div className="absolute -top-4 -right-4 w-12 h-12 max-[400px]:-top-3 max-[400px]:-right-3 max-[400px]:w-8 max-[400px]:h-8 sm:-top-6 sm:-right-6 sm:w-16 sm:h-16 md:-top-12 md:-right-12 md:w-32 md:h-32 lg:-top-16 lg:-right-16 lg:w-48 lg:h-48 xl:-top-20 xl:-right-20 xl:w-56 xl:h-56 bg-white/10 rounded-full blur-lg sm:blur-xl md:blur-2xl lg:blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
 
-          <div className="w-16 h-16 md:w-20 md:h-20 bg-white/20 backdrop-blur-md text-white rounded-[1.5rem] flex items-center justify-center text-2xl md:text-3xl mb-6 border border-white/30 shadow-inner group-hover:rotate-6 transition-transform">
+          <div className="w-6 h-6 max-[400px]:w-5 max-[400px]:h-5 sm:w-8 sm:h-8 md:w-12 md:h-12 lg:w-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20 bg-white/20 backdrop-blur-md text-white rounded-lg sm:rounded-xl md:rounded-[1.5rem] flex items-center justify-center text-xs max-[400px]:text-[10px] sm:text-sm md:text-lg lg:text-xl xl:text-2xl mb-1 max-[400px]:mb-1 sm:mb-2 md:mb-4 lg:mb-6 border border-white/30 shadow-inner group-hover:rotate-6 transition-transform flex-shrink-0">
             <i className="fas fa-calendar-check"></i>
           </div>
 
-          <div className="relative z-10 w-full px-2">
-            <h3 className="text-[10px] md:text-[11px] font-black text-white/70 uppercase tracking-[0.3em] mb-4">Sua Próxima Escala</h3>
+          <div className="relative z-10 w-full px-1 max-[400px]:px-0.5 sm:px-2 md:px-3">
+            <h3 className="text-[4px] max-[400px]:text-[3px] sm:text-[5px] md:text-[6px] lg:text-[7px] xl:text-[8px] font-black text-white/70 uppercase tracking-[0.1em] sm:tracking-[0.2em] md:tracking-[0.3em] mb-1 max-[400px]:mb-0.5 sm:mb-2 md:mb-3">Sua Escala</h3>
 
-            <div className="flex flex-col items-center gap-1">
-              <span className="text-2xl md:text-3xl font-black text-white tracking-tight leading-tight drop-shadow-md">
+            <div className="flex flex-col items-center gap-0.5 max-[400px]:gap-0.5 sm:gap-1">
+              <span className="text-[8px] max-[400px]:text-[7px] sm:text-[10px] md:text-sm lg:text-base xl:text-lg font-black text-white tracking-tight leading-none drop-shadow-md px-1 max-[400px]:px-0.5 text-center">
                 {loading ? '...' : (proximaEscalaData?.culto || 'Livre')}
               </span>
-              <span className="text-xl md:text-2xl font-bold text-white/90 tracking-tight drop-shadow-sm mb-4">
+              <span className="text-[8px] max-[400px]:text-[7px] sm:text-[10px] md:text-xs lg:text-sm xl:text-lg font-bold text-white/90 tracking-tight drop-shadow-sm mb-1 max-[400px]:mb-1 sm:mb-2 md:mb-3">
                 ({loading ? '...' : (proximaEscalaData ? new Date(proximaEscalaData.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '--/--')})
               </span>
             </div>
 
-            <div className="mt-2 text-[11px] md:text-xs font-bold text-white/60 tracking-wider bg-black/10 px-4 py-2 rounded-2xl flex items-center gap-2 border border-white/5">
-              <span className="uppercase opacity-70">Função:</span>
-              <span className="text-white drop-shadow-sm">
-                {loading ? '...' : (proximaEscalaData?.funcoes.join(', ') || 'Nênuma')}
+            <div className="mt-1 max-[400px]:mt-0.5 sm:mt-2 text-[4px] max-[400px]:text-[3px] sm:text-[5px] md:text-[6px] lg:text-[7px] xl:text-[8px] font-bold text-white/60 tracking-wider bg-black/10 px-1 max-[400px]:px-0.5 sm:px-2 md:px-3 lg:px-4 py-0.5 max-[400px]:py-0.5 sm:py-1 md:py-2 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center gap-0.5 max-[400px]:gap-0.5 sm:gap-2 border border-white/5">
+              <span className="uppercase opacity-70 whitespace-nowrap text-[6px] max-[400px]:text-[5px]">Função:</span>
+              <span className="text-white drop-shadow-sm text-[6px] max-[400px]:text-[5px] sm:text-[8px] md:text-[9px] lg:text-xs break-words text-center flex-1">
+                {loading ? '...' : (proximaEscalaData?.funcoes.join(', ') || 'Nenhuma')}
               </span>
             </div>
           </div>
         </div>
 
-        {/* KPI 3 - Aniversariantes (Com Nomes) */}
-        <div className="bg-white dark:bg-slate-900/50 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center group hover:shadow-xl transition-all duration-300">
-          <div className="w-14 h-14 bg-pink-50 dark:bg-pink-900/20 text-pink-500 rounded-2xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+        {/* KPI 3 - Aniversariantes (Lateral Direito - Menor) */}
+        <div className="bg-white dark:bg-slate-900/50 backdrop-blur-xl p-2 sm:p-3 md:p-4 lg:p-6 rounded-[0.8rem] sm:rounded-[1rem] md:rounded-[1.5rem] shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center group hover:shadow-xl transition-all duration-300 aspect-square min-h-[80px] sm:min-h-[100px] md:min-h-[120px] lg:min-h-[140px]">
+          <div className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 bg-pink-50 dark:bg-pink-900/20 text-pink-500 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center text-xs sm:text-sm md:text-base lg:text-lg mb-1 sm:mb-2 md:mb-3 group-hover:scale-110 transition-transform flex-shrink-0">
             <i className="fas fa-birthday-cake"></i>
           </div>
-          <div className="flex flex-col items-center">
-            <span className="text-xl md:text-2xl font-black text-slate-800 dark:text-white tracking-tight leading-tight mb-3 px-4 capitalize">
+          <div className="flex flex-col items-center flex-1 min-w-0">
+            <span className="text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl font-black text-slate-800 dark:text-white tracking-tight leading-tight mb-1 sm:mb-2 md:mb-3 px-1 sm:px-2 md:px-4 capitalize break-words text-center">
               {loading ? '...' : renderBirthdayNames()}
             </span>
-            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Aniversariantes do Mês</p>
+            <p className="text-[6px] sm:text-[7px] md:text-[8px] lg:text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center">Aniversariantes</p>
           </div>
         </div>
       </div>

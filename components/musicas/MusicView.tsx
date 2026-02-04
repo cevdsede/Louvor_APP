@@ -18,6 +18,10 @@ interface Music {
 
 interface RepertoireItem {
   id: string;
+  id_culto: string;
+  id_musicas: string;
+  id_membros: string;
+  id_tons: string;
   song: string;
   singer: string;
   minister: string;
@@ -72,6 +76,8 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
 
   // UI Controls
   const [isSongModalOpen, setIsSongModalOpen] = useState(false);
+  const [isRepertoireModalOpen, setIsRepertoireModalOpen] = useState(false);
+  const [editingRepertoire, setEditingRepertoire] = useState<RepertoireItem | null>(null);
   const [expandedThemes, setExpandedThemes] = useState<Record<string, boolean>>({});
   const [expandedStyles, setExpandedStyles] = useState<Record<string, boolean>>({});
   const [expandedMinisters, setExpandedMinisters] = useState<Record<string, boolean>>({});
@@ -79,20 +85,24 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
   const [expandedHistMinisters, setExpandedHistMinisters] = useState<Record<string, boolean>>({});
   const [expandedHistStyles, setExpandedHistStyles] = useState<Record<string, boolean>>({});
 
-  // Role icons mapping
-  const roleIcons = [
-    { label: 'Ministro', role: 'Ministro', icon: 'fa-crown' },
-    { label: 'Vocal', role: 'Vocal', icon: 'fa-microphone-lines' },
-    { label: 'Violão', role: 'Violão', icon: 'fa-guitar' },
-    { label: 'Teclado', role: 'Teclado', icon: 'fa-keyboard' },
-    { label: 'Guitarra', role: 'Guitarra', icon: 'fa-bolt' },
-    { label: 'Baixo', role: 'Baixo', icon: 'fa-music' },
-    { label: 'Bateria', role: 'Bateria', icon: 'fa-drum' },
-  ];
-
   // Form states
   const [newSong, setNewSong] = useState({ song: '', singer: '', theme: '', style: 'Adoração' });
+  const [newRepertoire, setNewRepertoire] = useState({ 
+    song: '', 
+    singer: '', 
+    minister: '', 
+    key: '', 
+    style: 'Adoração',
+    id_culto: '',
+    id_musicas: '',
+    id_membros: '',
+    id_tons: ''
+  });
   const [availableThemes, setAvailableThemes] = useState<string[]>([]);
+  const [availableSongs, setAvailableSongs] = useState<Music[]>([]);
+  const [availableMembers, setAvailableMembers] = useState<any[]>([]);
+  const [availableTones, setAvailableTones] = useState<any[]>([]);
+  const [availableCults, setAvailableCults] = useState<any[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -109,18 +119,20 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
           musica,
           cantor,
           estilo,
+          id_temas,
           temas (
+            id,
             nome_tema
           )
         `);
 
       if (songsError) throw songsError;
 
-      const formattedSongs: Music[] = (songsData || []).map((s) => ({
+      const formattedSongs: Music[] = (songsData || []).map((s: any) => ({
         id: s.id,
         song: s.musica,
         singer: s.cantor,
-        theme: s.temas?.[0]?.nome_tema || 'Geral',
+        theme: s.temas?.nome_tema || 'Geral',
         style: s.estilo
       }));
 
@@ -140,8 +152,10 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
           id_membros,
           id_tons,
           cultos (
+            id,
             data_culto,
             nome_cultos (
+              id,
               nome_culto
             )
           ),
@@ -152,9 +166,11 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
             estilo
           ),
           membros (
+            id,
             nome
           ),
           tons (
+            id,
             nome_tons
           )
         `)
@@ -163,9 +179,9 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
       if (repError) throw repError;
 
       // Group repertoire by cult (nome_culto - data_culto)
-      const groupedRepertoire = (repData || []).reduce((acc, item: RepertorioMusicView) => {
-        const cultName = item.cultos?.[0]?.nome_cultos?.[0]?.nome_culto || 'Culto Sem Nome';
-        const cultDate = item.cultos?.[0]?.data_culto ? new Date(item.cultos[0].data_culto).toLocaleDateString('pt-BR') : 'Sem Data';
+      const groupedRepertoire = (repData || []).reduce((acc, item: any) => {
+        const cultName = item.cultos?.nome_cultos?.[0]?.nome_culto || 'Culto Sem Nome';
+        const cultDate = item.cultos?.data_culto ? new Date(item.cultos.data_culto).toLocaleDateString('pt-BR') : 'Sem Data';
         const eventKey = `${cultName}-${cultDate}`;
         
         if (!acc[eventKey]) {
@@ -181,17 +197,38 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
         
         acc[eventKey].items.push({
           id: item.id,
-          song: item.musicas?.[0]?.musica || 'Sem música',
-          singer: item.musicas?.[0]?.cantor || 'Sem cantor',
-          minister: item.membros?.[0]?.nome || 'Sem ministro',
-          key: item.tons?.[0]?.nome_tons || 'Ñ',
-          style: item.musicas?.[0]?.estilo || 'Adoração'
+          id_culto: item.id_culto,
+          id_musicas: item.id_musicas,
+          id_membros: item.id_membros,
+          id_tons: item.id_tons,
+          song: item.musicas?.musica || 'Sem música',
+          singer: item.musicas?.cantor || 'Sem cantor',
+          minister: item.membros?.nome || 'Sem ministro',
+          key: item.tons?.nome_tons || 'Ñ',
+          style: item.musicas?.estilo || 'Adoração'
         });
         
         return acc;
       }, {} as Record<string, RepertoireSet>);
 
       setRepertoires(Object.values(groupedRepertoire));
+
+      // 4. Fetch additional data for repertoire forms
+      const { data: membersData } = await supabase.from('membros').select('id, nome').order('nome');
+      const { data: tonesData } = await supabase.from('tons').select('id, nome_tons').order('nome_tons');
+      const { data: cultsData } = await supabase.from('cultos').select(`
+        id, 
+        data_culto, 
+        nome_cultos (
+          id,
+          nome_culto
+        )
+      `).order('data_culto', { ascending: false });
+
+      setAvailableMembers(membersData || []);
+      setAvailableTones(tonesData || []);
+      setAvailableCults(cultsData || []);
+      setAvailableSongs(formattedSongs);
 
 
       // 3. Fetch History from 'historico_musicas' with complete music info
@@ -338,6 +375,106 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
       logger.error('Error adding song:', err, 'database');
       showError('Erro ao adicionar música.');
     }
+  };
+
+  // Repertoire functions
+  const handleAddRepertoire = async () => {
+    try {
+      if (!newRepertoire.id_culto || !newRepertoire.id_musicas || !newRepertoire.id_membros || !newRepertoire.id_tons) {
+        showError('Preencha todos os campos obrigatórios.');
+        return;
+      }
+
+      const { error } = await supabase.from('repertorio').insert({
+        id_culto: newRepertoire.id_culto,
+        id_musicas: newRepertoire.id_musicas,
+        id_membros: newRepertoire.id_membros,
+        id_tons: newRepertoire.id_tons
+      });
+
+      if (error) throw error;
+
+      setIsRepertoireModalOpen(false);
+      setEditingRepertoire(null);
+      setNewRepertoire({ 
+        song: '', 
+        singer: '', 
+        minister: '', 
+        key: '', 
+        style: 'Adoração',
+        id_culto: '',
+        id_musicas: '',
+        id_membros: '',
+        id_tons: ''
+      });
+      fetchData();
+    } catch (err) {
+      logger.error('Error adding repertoire:', err, 'database');
+      showError('Erro ao adicionar repertório.');
+    }
+  };
+
+  const handleEditRepertoire = async (item: RepertoireItem) => {
+    try {
+      if (!item.id_culto || !item.id_musicas || !item.id_membros || !item.id_tons) {
+        showError('Preencha todos os campos obrigatórios.');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('repertorio')
+        .update({
+          id_culto: item.id_culto,
+          id_musicas: item.id_musicas,
+          id_membros: item.id_membros,
+          id_tons: item.id_tons
+        })
+        .eq('id', item.id);
+
+      if (error) throw error;
+
+      setEditingRepertoire(null);
+      fetchData();
+    } catch (err) {
+      logger.error('Error editing repertoire:', err, 'database');
+      showError('Erro ao editar repertório.');
+    }
+  };
+
+  const handleDeleteRepertoire = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este item do repertório?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('repertorio')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      fetchData();
+    } catch (err) {
+      logger.error('Error deleting repertoire:', err, 'database');
+      showError('Erro ao excluir repertório.');
+    }
+  };
+
+  const openEditModal = (item: RepertoireItem) => {
+    setEditingRepertoire(item);
+    setNewRepertoire({
+      song: item.song,
+      singer: item.singer,
+      minister: item.minister,
+      key: item.key,
+      style: item.style,
+      id_culto: item.id_culto,
+      id_musicas: item.id_musicas,
+      id_membros: item.id_membros,
+      id_tons: item.id_tons
+    });
+    setIsRepertoireModalOpen(true);
   };
 
   // Ranking calculation
@@ -503,12 +640,13 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
   }
 
   if (subView === 'music-list') {
+    // Reorganizar: tema -> estilo -> música
     const grouped = songs.reduce((acc, s) => {
       if (!acc[s.theme]) acc[s.theme] = {};
       if (!acc[s.theme][s.style]) acc[s.theme][s.style] = [];
       acc[s.theme][s.style].push(s);
       return acc;
-    }, {} as GroupedHistory);
+    }, {} as Record<string, Record<string, Music[]>>);
 
     return (
       <div className="pb-20 fade-in max-w-7xl mx-auto">
@@ -546,41 +684,127 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           {Object.entries(grouped).map(([theme, styles]: [string, Record<string, Music[]>]) => (
-            <div key={theme} className="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-50 dark:border-slate-800 overflow-hidden shadow-sm">
-              <div onClick={() => setExpandedThemes(p => ({ ...p, [theme]: !p[theme] }))} className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                <div className="flex items-center gap-4">
-                  <div className="w-8 h-8 bg-brand/5 text-brand rounded-lg flex items-center justify-center"><i className="fas fa-tags text-[10px]"></i></div>
-                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">{theme}</h3>
+            <div key={theme} className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+              {/* Nível Tema - Header Melhorado */}
+              <div 
+                onClick={() => setExpandedThemes(p => ({ ...p, [theme]: !p[theme] }))} 
+                className="px-4 sm:px-8 py-4 sm:py-6 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900 border-b border-slate-100 dark:border-slate-700 cursor-pointer group hover:from-brand/5 hover:to-brand/10 transition-all duration-300"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-brand to-brand/80 text-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <i className="fas fa-folder text-sm sm:text-lg"></i>
+                    </div>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-black text-slate-800 dark:text-white uppercase tracking-tight mb-1">{theme}</h3>
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <span className="text-[10px] sm:text-xs font-bold text-brand uppercase tracking-widest bg-brand/10 px-2 sm:px-3 py-1 rounded-full border border-brand/20">
+                          {Object.values(styles).reduce((total, styleList) => total + styleList.length, 0)} músicas
+                        </span>
+                        <span className="text-[9px] sm:text-xs text-slate-400 uppercase tracking-widest">
+                          {Object.keys(styles).length} estilos
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 sm:w-10 sm:h-10 bg-slate-100 dark:bg-slate-800 rounded-lg sm:rounded-xl flex items-center justify-center transition-all duration-300 ${expandedThemes[theme] ? 'bg-brand text-white rotate-180' : 'text-slate-400 group-hover:bg-brand group-hover:text-white'}`}>
+                      <i className="fas fa-chevron-down text-xs sm:text-sm"></i>
+                    </div>
+                  </div>
                 </div>
-                <i className={`fas fa-chevron-down text-slate-300 transition-transform ${expandedThemes[theme] ? 'rotate-180' : ''}`}></i>
               </div>
+              
               {expandedThemes[theme] && (
-                <div className="px-6 pb-6 space-y-6 pt-2 animate-fade-in bg-slate-50/10 dark:bg-slate-800/10">
+                <div className="px-8 pb-8 space-y-6 pt-6 animate-fade-in bg-gradient-to-b from-slate-50/30 to-white dark:from-slate-800/20 dark:to-slate-900">
                   {Object.entries(styles).map(([style, sList]: [string, Music[]]) => {
                     const styleKey = `${theme}-${style}`;
                     return (
-                      <div key={style} className="space-y-3">
-                        <div onClick={() => setExpandedStyles(p => ({ ...p, [styleKey]: !p[styleKey] }))} className="flex items-center gap-2 cursor-pointer group w-fit">
-                          <div className={`w-1.5 h-1.5 rounded-full ${style === 'Adoração' ? 'bg-blue-500' : 'bg-amber-500'}`}></div>
-                          <h4 className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{style} ({sList.length})</h4>
+                      <div key={style} className="space-y-4">
+                        {/* Nível Estilo - Melhorado */}
+                        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-3 h-3 rounded-full shadow-lg ${style === 'Adoração' ? 'bg-gradient-to-br from-blue-400 to-blue-600' : 'bg-gradient-to-br from-amber-400 to-amber-600'}`}></div>
+                            <div>
+                              <h4 className="text-sm font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                                {style}
+                              </h4>
+                              <p className="text-[10px] text-slate-400 uppercase tracking-widest">
+                                {sList.length} música{sList.length !== 1 ? 's' : ''}
+                              </p>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => setExpandedStyles(p => ({ ...p, [styleKey]: !p[styleKey] }))} 
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${expandedStyles[styleKey] ? 'bg-brand text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-400 hover:bg-brand hover:text-white'}`}
+                          >
+                            <i className={`fas fa-chevron-${expandedStyles[styleKey] ? 'up' : 'down'} text-xs`}></i>
+                          </button>
                         </div>
+                        
+                        {/* Nível Músicas - Formato Cartões */}
                         {expandedStyles[styleKey] && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {sList.sort((a: Music, b: Music) => a.song.localeCompare(b.song)).map((s: Music) => (
-                              <div key={s.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 group hover:border-brand/40 transition-all duration-300 transform hover:scale-105 shadow-sm hover:shadow-lg">
-                                <div className="flex justify-between items-start mb-4">
-                                  <div className="flex-1 pr-2 min-w-0">
-                                    <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate">{s.song}</h5>
-                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1 truncate">{s.singer}</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6 animate-fade-in">
+                            {sList.sort((a: Music, b: Music) => a.song.localeCompare(b.song)).map((s: Music, index: number) => (
+                              <div key={s.id} className="group relative">
+                                {/* Cartão da Música */}
+                                <div className="bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800 p-3 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.03] hover:border-brand/40 relative overflow-hidden">
+                                  {/* Header do Cartão */}
+                                  <div className="flex items-start justify-between mb-3 sm:mb-4">
+                                    <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                                      {/* Ícone musical */}
+                                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-brand to-brand/80 text-white rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                                        <i className="fas fa-music text-sm sm:text-base"></i>
+                                      </div>
+                                      
+                                      {/* Informações principais - Sem truncamento */}
+                                      <div className="flex-1 min-w-0">
+                                        <h5 className="text-[10px] sm:text-xs font-black text-slate-800 dark:text-white uppercase leading-tight mb-1 group-hover:text-brand transition-colors break-words">
+                                          {s.song}
+                                        </h5>
+                                        <p className="text-[8px] sm:text-[10px] text-slate-400 font-medium uppercase tracking-widest break-words">
+                                          {s.singer}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Número da música */}
+                                    <div className="w-8 h-8 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                                      <span className="text-[10px] font-black text-slate-500 dark:text-slate-400">
+                                        {String(index + 1).padStart(2, '0')}
+                                      </span>
+                                    </div>
                                   </div>
-                                </div>
-                                <div className="grid grid-cols-4 gap-1">
-                                  <a href={getLink('youtube', s.song, s.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
-                                  <a href={getLink('spotify', s.song, s.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-emerald-500 hover:bg-emerald-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
-                                  <a href={getLink('lyrics', s.song, s.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-500 hover:bg-blue-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-align-left text-[9px]"></i></a>
-                                  <a href={getLink('chords', s.song, s.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-amber-500 hover:bg-amber-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[9px]"></i></a>
+                                  
+                                  {/* Barra de estilo */}
+                                  <div className="mb-3 sm:mb-4">
+                                    <div className={`h-1 rounded-full ${style === 'Adoração' ? 'bg-gradient-to-r from-blue-400 to-blue-600' : 'bg-gradient-to-r from-amber-400 to-amber-600'}`}></div>
+                                  </div>
+                                  
+                                  {/* Links de streaming - Cartão */}
+                                  <div className="grid grid-cols-4 gap-1 sm:gap-2">
+                                    <a href={getLink('youtube', s.song, s.singer)} target="_blank" className="group/link bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl p-2 sm:p-3 flex flex-col items-center justify-center hover:bg-red-500 hover:text-white transition-all duration-300 hover:scale-110" title="Youtube">
+                                      <i className="fab fa-youtube text-xs sm:text-sm mb-1"></i>
+                                      <span className="text-[7px] sm:text-[8px] font-medium hidden sm:block">YouTube</span>
+                                    </a>
+                                    <a href={getLink('spotify', s.song, s.singer)} target="_blank" className="group/link bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-xl p-2 sm:p-3 flex flex-col items-center justify-center hover:bg-emerald-500 hover:text-white transition-all duration-300 hover:scale-110" title="Spotify">
+                                      <i className="fab fa-spotify text-xs sm:text-sm mb-1"></i>
+                                      <span className="text-[7px] sm:text-[8px] font-medium hidden sm:block">Spotify</span>
+                                    </a>
+                                    <a href={getLink('lyrics', s.song, s.singer)} target="_blank" className="group/link bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-xl p-2 sm:p-3 flex flex-col items-center justify-center hover:bg-blue-500 hover:text-white transition-all duration-300 hover:scale-110" title="Letra">
+                                      <i className="fas fa-align-left text-xs sm:text-sm mb-1"></i>
+                                      <span className="text-[7px] sm:text-[8px] font-medium hidden sm:block">Letra</span>
+                                    </a>
+                                    <a href={getLink('chords', s.song, s.singer)} target="_blank" className="group/link bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-xl p-2 sm:p-3 flex flex-col items-center justify-center hover:bg-amber-500 hover:text-white transition-all duration-300 hover:scale-110" title="Cifra">
+                                      <i className="fas fa-guitar text-xs sm:text-sm mb-1"></i>
+                                      <span className="text-[7px] sm:text-[8px] font-medium hidden sm:block">Cifra</span>
+                                    </a>
+                                  </div>
+                                  
+                                  {/* Efeito de brilho no hover */}
+                                  <div className="absolute inset-0 bg-gradient-to-br from-brand/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                                 </div>
                               </div>
                             ))}
@@ -602,7 +826,29 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
   if (subView === 'music-repertoire') {
     return (
       <div className="pb-20 fade-in max-w-7xl mx-auto space-y-6">
-        <h2 className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-4 mb-4">Repertório</h2>
+        <div className="flex justify-between items-center px-4 mb-4">
+          <h2 className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Repertório</h2>
+          <button 
+            onClick={() => {
+              setEditingRepertoire(null);
+              setNewRepertoire({ 
+                song: '', 
+                singer: '', 
+                minister: '', 
+                key: '', 
+                style: 'Adoração',
+                id_culto: '',
+                id_musicas: '',
+                id_membros: '',
+                id_tons: ''
+              });
+              setIsRepertoireModalOpen(true);
+            }} 
+            className="px-4 py-2 bg-brand text-white rounded-full font-black text-[9px] uppercase tracking-widest shadow-lg active:scale-95 transition-transform"
+          >
+            <i className="fas fa-plus mr-2"></i> Adicionar Repertório
+          </button>
+        </div>
         
         {repertoires.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 opacity-50">
@@ -615,7 +861,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
             <div key={event.id} className="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-50 dark:border-slate-800 overflow-hidden shadow-sm">
               <div 
                 onClick={() => setExpandedThemes(p => ({ ...p, [event.id]: !p[event.id] }))}
-                className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+                className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-50 dark:border-slate-800"
               >
                 <div>
                   <h4 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">
@@ -632,19 +878,65 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
               
               {expandedThemes[event.id] && (
                 <div className="p-4 space-y-3 animate-fade-in">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">MÚSICAS</span>
+                    <button 
+                      onClick={() => {
+                        setEditingRepertoire(null);
+                        setNewRepertoire({ 
+                          song: '', 
+                          singer: '', 
+                          minister: '', 
+                          key: '', 
+                          style: 'Adoração',
+                          id_culto: '',
+                          id_musicas: '',
+                          id_membros: '',
+                          id_tons: ''
+                        });
+                        setIsRepertoireModalOpen(true);
+                      }}
+                      className="px-3 py-1 bg-brand text-white rounded-lg text-xs font-bold hover:bg-brand/90 transition-colors"
+                    >
+                      <i className="fas fa-plus mr-1"></i> Adicionar
+                    </button>
+                  </div>
+                  
                   {event.items.map((item: RepertoireItem, index: number) => (
-                    <div key={item.id} className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                    <div key={item.id} className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 relative group">
+                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => openEditModal(item)}
+                          className="w-6 h-6 bg-blue-500 text-white rounded-lg flex items-center justify-center hover:bg-blue-600 transition-colors"
+                          title="Editar"
+                        >
+                          <i className="fas fa-edit text-[10px]"></i>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteRepertoire(item.id)}
+                          className="w-6 h-6 bg-red-500 text-white rounded-lg flex items-center justify-center hover:bg-red-600 transition-colors"
+                          title="Excluir"
+                        >
+                          <i className="fas fa-trash text-[10px]"></i>
+                        </button>
+                      </div>
+                      
                       <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
                           {item.key || 'Ñ'}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate">{item.song} - {item.singer}</h5>
+                          <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate">{item.song}</h5>
                           <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
-                            MINISTRO: <span className="text-brand">{item.minister}</span>
+                            {item.singer}
                           </p>
                         </div>
                       </div>
+                      
+                      <div className="text-[9px] font-bold text-slate-400 uppercase mb-3">
+                        MINISTRO: <span className="text-brand">{item.minister}</span>
+                      </div>
+                      
                       <div className="grid grid-cols-4 gap-1">
                         <a href={getLink('youtube', item.song, item.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
                         <a href={getLink('spotify', item.song, item.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-emerald-500 hover:bg-emerald-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
@@ -657,6 +949,130 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
               )}
             </div>
           ))
+        )}
+
+        {/* Modal Adicionar/Editar Repertório */}
+        {isRepertoireModalOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsRepertoireModalOpen(false)}></div>
+            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl animate-fade-in border border-slate-100 dark:border-slate-800">
+              <h3 className="text-lg font-black text-slate-800 dark:text-white mb-6">
+                {editingRepertoire ? 'Editar Repertório' : 'Novo Repertório'}
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-2">Culto</label>
+                  <select 
+                    value={newRepertoire.id_culto} 
+                    onChange={e => setNewRepertoire({ ...newRepertoire, id_culto: e.target.value })} 
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand"
+                  >
+                    <option value="">Selecione um culto...</option>
+                    {availableCults.map(cult => (
+                      <option key={cult.id} value={cult.id}>
+                        {cult.nome_cultos?.[0]?.nome_culto || 'Culto Sem Nome'} - {cult.data_culto ? new Date(cult.data_culto).toLocaleDateString('pt-BR') : 'Sem data'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-2">Música</label>
+                  <select 
+                    value={newRepertoire.id_musicas} 
+                    onChange={e => {
+                      const selectedSong = availableSongs.find(s => s.id === e.target.value);
+                      setNewRepertoire({ 
+                        ...newRepertoire, 
+                        id_musicas: e.target.value,
+                        song: selectedSong?.song || '',
+                        singer: selectedSong?.singer || ''
+                      });
+                    }} 
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand"
+                  >
+                    <option value="">Selecione uma música...</option>
+                    {availableSongs.map(song => (
+                      <option key={song.id} value={song.id}>
+                        {song.song} - {song.singer}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-2">Cantor</label>
+                  <input 
+                    type="text"
+                    value={newRepertoire.singer} 
+                    onChange={e => setNewRepertoire({ ...newRepertoire, singer: e.target.value })} 
+                    placeholder="Nome do cantor"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-2">Ministro</label>
+                    <select 
+                      value={newRepertoire.id_membros} 
+                      onChange={e => setNewRepertoire({ ...newRepertoire, id_membros: e.target.value, minister: availableMembers.find(m => m.id === e.target.value)?.nome || '' })} 
+                      className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand"
+                    >
+                      <option value="">Selecione um ministro...</option>
+                      {availableMembers.map(member => (
+                        <option key={member.id} value={member.id}>
+                          {member.nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-2">Tom</label>
+                    <select 
+                      value={newRepertoire.id_tons} 
+                      onChange={e => setNewRepertoire({ ...newRepertoire, id_tons: e.target.value, key: availableTones.find(t => t.id === e.target.value)?.nome_tons || '' })} 
+                      className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand"
+                    >
+                      <option value="">Selecione um tom...</option>
+                      {availableTones.map(tone => (
+                        <option key={tone.id} value={tone.id}>
+                          {tone.nome_tons}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-2">Estilo</label>
+                  <select 
+                    value={newRepertoire.style} 
+                    onChange={e => setNewRepertoire({ ...newRepertoire, style: e.target.value as 'Adoração' | 'Celebração' })} 
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand"
+                  >
+                    <option value="Adoração">Adoração</option>
+                    <option value="Celebração">Celebração</option>
+                  </select>
+                </div>
+                
+                <div className="flex gap-3 pt-4">
+                  <button 
+                    onClick={() => setIsRepertoireModalOpen(false)} 
+                    className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold rounded-xl text-xs uppercase tracking-widest"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={editingRepertoire ? () => handleEditRepertoire(editingRepertoire) : handleAddRepertoire} 
+                    className="flex-1 py-3 bg-brand text-white font-bold rounded-xl text-xs uppercase tracking-widest shadow-lg"
+                  >
+                    {editingRepertoire ? 'Salvar' : 'Adicionar'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     );
@@ -711,7 +1127,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
     }
 
     // Group history by minister -> theme -> style -> songs (aggregated by song+singer)
-    const groupedHistory: GroupedHistory = history.reduce((acc, item) => {
+    const groupedHistory: GroupedHistory = Array.isArray(history) ? history.reduce((acc, item) => {
 
       if (!item.minister || item.minister === 'Sem ministro') {
         return acc;
@@ -753,7 +1169,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
       }
 
       return acc;
-    }, {} as GroupedHistory);
+    }, {} as GroupedHistory) : {};
 
     return (
       <div className="pb-20 fade-in max-w-7xl mx-auto space-y-6">
@@ -847,7 +1263,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
   if (subView === 'music-escalas') {
     // Group escalas by cult/event
     const groupedEscalas = escalas.reduce((acc, escala) => {
-      const cultName = escala.cultos?.nome_cultos?.nome_culto || 'Culto Sem Nome';
+      const cultName = escala.cultos?.nome_culto?.nome_culto || 'Culto Sem Nome';
       const cultDate = escala.cultos?.data_culto ? new Date(escala.cultos.data_culto).toLocaleDateString('pt-BR') : 'Sem Data';
       const eventKey = `${cultName}-${cultDate}`;
       
@@ -915,7 +1331,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                         <a href={getLink('youtube', item.membros?.[0]?.nome || '', item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
                         <a href={getLink('spotify', item.membros?.[0]?.nome || '', item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-emerald-500 hover:bg-emerald-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
                         <a href={getLink('lyrics', item.membros?.[0]?.nome || '', item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-500 hover:bg-blue-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-align-left text-[9px]"></i></a>
-                        <a href={getLink('chords', item.membros?.[0]?.nome || '', item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-amber-500 hover:bg-amber-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[10px]"></i></a>
+                        <a href={getLink('chords', item.membros?.[0]?.nome || '', item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-amber-500 hover:bg-amber-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[9px]"></i></a>
                       </div>
                     </div>
                   ))}
