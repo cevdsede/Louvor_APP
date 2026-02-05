@@ -77,10 +77,11 @@ export interface SupabaseAviso {
 // Tipos para músicas (usado no ListView)
 export interface Song {
   id: string;
-  song: string;
-  singer?: string;
-  theme?: string;
-  style?: string;
+  musica: string;
+  cantor: string;
+  id_temas: string;
+  estilo: string;
+  created_at: string;
 }
 
 // Tipos para tons musicais

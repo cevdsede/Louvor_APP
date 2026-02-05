@@ -76,8 +76,8 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
             member.role.toLowerCase().includes(searchLower)
           ) ||
           event.repertoire.some(song => 
-            song.song?.toLowerCase().includes(searchLower) ||
-            song.singer?.toLowerCase().includes(searchLower)
+            song.musica?.toLowerCase().includes(searchLower) ||
+            song.cantor?.toLowerCase().includes(searchLower)
           )
         );
       });
@@ -362,8 +362,8 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
           members: groupedMembers,
           repertoire: (c.repertorio || []).map((r: any) => ({
             id: r.id,
-            song: r.musicas?.musica,
-            singer: r.musicas?.cantor,
+            musica: r.musicas?.musica,
+            cantor: r.musicas?.cantor,
             key: r.tons?.nome_tons || '',
             minister: r.membros?.nome || ''
           }))
@@ -667,7 +667,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
                     m.role.toLowerCase().includes('cantor')
                   )}
                   isMember={isMember}
-                  onRepertoireUpdated={fetchEvents}
+                  onSongAdded={fetchEvents}
                 />
               )}
               

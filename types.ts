@@ -7,8 +7,8 @@ export type ViewType =
 
 export interface RepertoireItem {
   id: string;
-  song: string;
-  singer: string;
+  musica: string;
+  cantor: string;
   key: string;
   minister?: string;
 }

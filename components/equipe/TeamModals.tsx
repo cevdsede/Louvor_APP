@@ -29,8 +29,6 @@ const TeamModals: React.FC<TeamModalsProps> = ({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [avisosGerais, setAvisosGerais] = useState<AvisoGeral[]>([]);
   const [loadingAvisos, setLoadingAvisos] = useState(false);
-  const [availableFunctions, setAvailableFunctions] = useState<any[]>([]);
-  const [selectedFunctions, setSelectedFunctions] = useState<string[]>([]);
 
   // Função para abrir WhatsApp com o membro
   const handleWhatsAppContact = (member: Member) => {
@@ -151,29 +149,6 @@ const TeamModals: React.FC<TeamModalsProps> = ({
 
       if (memberError) throw memberError;
 
-      // Atualiza as funções na tabela membros_funcoes
-      // 1. Remove todas as funções atuais
-      const { error: deleteError } = await supabase
-        .from('membros_funcoes')
-        .delete()
-        .eq('id_membro', editingMember.id);
-
-      if (deleteError) throw deleteError;
-
-      // 2. Insere as novas funções selecionadas
-      if (selectedFunctions.length > 0) {
-        const newFunctions = selectedFunctions.map(functionId => ({
-          id_membro: editingMember.id,
-          id_funcao: parseInt(functionId)
-        }));
-
-        const { error: insertError } = await supabase
-          .from('membros_funcoes')
-          .insert(newFunctions);
-
-        if (insertError) throw insertError;
-      }
-
       // Atualiza email na tabela auth.users se fornecido
       if (updatedMember.email && updatedMember.email !== editingMember.email) {
         const { error: authError } = await supabase.auth.admin.updateUserById(
@@ -195,13 +170,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
               foto: updatedMember.foto || m.foto,
               telefone: updatedMember.telefone || m.telefone,
               email: updatedMember.email || m.email,
-              data_nasc: updatedMember.data_nasc || m.data_nasc,
-              role: selectedFunctions.length > 0 
-                ? availableFunctions
-                    .filter(f => selectedFunctions.includes(f.id.toString()))
-                    .map(f => f.nome_funcao)
-                    .join(', ')
-                : 'Sem função'
+              data_nasc: updatedMember.data_nasc || m.data_nasc
             }
           : m
       ));
@@ -221,45 +190,6 @@ const TeamModals: React.FC<TeamModalsProps> = ({
       fetchAvisosGerais();
     }
   }, [selectedMember]);
-
-  // Buscar funções disponíveis e funções do membro ao abrir modal de edição
-  useEffect(() => {
-    if (editingMember) {
-      fetchAvailableFunctions();
-      fetchMemberFunctions();
-    }
-  }, [editingMember]);
-
-  const fetchAvailableFunctions = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('funcao')
-        .select('*')
-        .order('nome_funcao');
-      
-      if (error) throw error;
-      setAvailableFunctions(data || []);
-    } catch (error) {
-      logger.error('Erro ao buscar funções:', error, 'database');
-    }
-  };
-
-  const fetchMemberFunctions = async () => {
-    if (!editingMember) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('membros_funcoes')
-        .select('id_funcao')
-        .eq('id_membro', editingMember.id);
-      
-      if (error) throw error;
-      const functionIds = (data || []).map(mf => mf.id_funcao.toString());
-      setSelectedFunctions(functionIds);
-    } catch (error) {
-      logger.error('Erro ao buscar funções do membro:', error, 'database');
-    }
-  };
 
   const fetchAvisosGerais = async () => {
     if (!selectedMember) return;
@@ -541,42 +471,6 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                     className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition-colors"
                     placeholder="email@exemplo.com"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-2">Funções</label>
-                  <div className="space-y-2 max-h-32 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-xl p-3 bg-white dark:bg-slate-800">
-                    {availableFunctions.map((func) => (
-                      <label key={func.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 p-2 rounded-lg transition-colors">
-                        <input
-                          type="checkbox"
-                          value={func.id}
-                          checked={selectedFunctions.includes(func.id.toString())}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedFunctions([...selectedFunctions, func.id.toString()]);
-                            } else {
-                              setSelectedFunctions(selectedFunctions.filter(id => id !== func.id.toString()));
-                            }
-                          }}
-                          className="w-4 h-4 text-brand border-slate-300 rounded focus:ring-brand focus:ring-2"
-                        />
-                        <span className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">
-                          {func.nome_funcao}
-                        </span>
-                      </label>
-                    ))}
-                    {availableFunctions.length === 0 && (
-                      <p className="text-[10px] text-slate-400 text-center py-2">
-                        Nenhuma função disponível
-                      </p>
-                    )}
-                  </div>
-                  {selectedFunctions.length > 0 && (
-                    <p className="text-[9px] text-slate-400 mt-1">
-                      {selectedFunctions.length} função(ões) selecionada(s)
-                    </p>
-                  )}
                 </div>
 
                 <div>
