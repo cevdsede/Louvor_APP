@@ -447,21 +447,31 @@ const TeamManager: React.FC<TeamManagerProps> = ({
                     {member.avatar ? (
                       <img src={member.avatar} alt={member.name} className="w-full h-full rounded-full object-cover" />
                     ) : (
-                      <i className={`fas ${getRoleIcon(member.role)} text-white text-xl`}></i>
+                      <i className={`fas ${getRoleIcon(member.roles && member.roles.length > 0 ? member.roles[0] : member.role)} text-white text-xl`}></i>
                     )}
                   </div>
                   {/* Ícone da função no canto inferior direito */}
                   <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-md border-2 border-brand">
-                    <i className={`fas ${getRoleIcon(member.role)} text-brand text-[8px]`}></i>
+                    <i className={`fas ${getRoleIcon(member.roles && member.roles.length > 0 ? member.roles[0] : member.role)} text-brand text-[8px]`}></i>
                   </div>
                 </div>
                 <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate w-full">{member.name}</h5>
-                <p className="text-[9px] font-bold text-slate-400 uppercase truncate w-full">{member.role}</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase truncate w-full">
+                  {member.roles && member.roles.length > 1 
+                    ? member.roles.join(' / ') 
+                    : member.role
+                  }
+                </p>
                 <div className="flex items-center gap-1 mt-2">
                   <div className={`w-2 h-2 rounded-full ${member.status === 'confirmed' ? 'bg-green-500' : 'bg-red-500'}`}></div>
                   <span className="text-[7px] font-bold text-slate-500 uppercase">
                     {member.status === 'confirmed' ? 'Presente' : 'Ausente'}
                   </span>
+                  {member.roles && member.roles.length > 1 && (
+                    <span className="text-[7px] font-bold text-brand ml-1">
+                      +{member.roles.length - 1}
+                    </span>
+                  )}
                 </div>
               </div>
               

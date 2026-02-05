@@ -154,8 +154,8 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
       const { data: cultoTypesData } = await supabase.from('nome_cultos').select('*');
       if (cultoTypesData) setCultoTypes(cultoTypesData);
 
-      // 2. Fetch Members
-      const { data: membersData } = await supabase.from('membros').select('*').order('nome');
+      // 2. Fetch Members (apenas ativos)
+      const { data: membersData } = await supabase.from('membros').select('*').eq('ativo', true).order('nome');
       if (membersData) {
         const mappedMembers: Member[] = membersData.map(m => ({
           id: m.id,
@@ -263,6 +263,56 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     };
   }, []);
 
+  // Função para agrupar membros com múltiplas funções
+  const groupMembersByPerson = (escalas: any[]) => {
+    const memberMap = new Map();
+    
+    escalas.forEach(escala => {
+      const memberId = escala.membros?.id;
+      const memberName = escala.membros?.nome;
+      const memberRole = escala.funcao?.nome_funcao;
+      const roleId = escala.funcao?.id;
+      
+      if (memberId && memberName) {
+        if (!memberMap.has(memberId)) {
+          memberMap.set(memberId, {
+            id: memberId,
+            name: memberName,
+            gender: escala.membros?.genero === 'Homem' ? 'M' : 'F',
+            avatar: escala.membros?.foto || `https://ui-avatars.com/api/?name=${memberName}&background=random`,
+            status: 'confirmed',
+            upcomingScales: [],
+            songHistory: [],
+            roles: [],
+            roleIds: []
+          });
+        }
+        
+        const member = memberMap.get(memberId);
+        if (memberRole && !member.roles.includes(memberRole)) {
+          member.roles.push(memberRole);
+          member.roleIds.push(roleId);
+        }
+      }
+    });
+    
+    // Ordenar funções por ID e criar string de funções
+    return Array.from(memberMap.values()).map(member => {
+      // Ordenar roles pelos IDs correspondentes
+      const sortedRoles = member.roleIds
+        .map((id: number, index: number) => ({ id, role: member.roles[index] }))
+        .sort((a, b) => a.id - b.id)
+        .map(item => item.role);
+      
+      return {
+        ...member,
+        role: sortedRoles.join(' / '), // Usar " / " como separador
+        roles: sortedRoles,
+        roleIds: member.roleIds
+      };
+    });
+  };
+
   const fetchEvents = async () => {
     try {
       const { data: cultosData, error } = await supabase
@@ -300,23 +350,16 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
         const dayOfWeek = weekDays[dateObj.getUTCDay()];
         const formattedDate = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 
+        // Agrupar membros com múltiplas funções
+        const groupedMembers = groupMembersByPerson(c.escalas || []);
+
         return {
           id: c.id,
           title: c.nome_cultos?.nome_culto || 'CULTO',
           date: formattedDate,
           dayOfWeek: dayOfWeek,
           time: c.horario ? c.horario.substring(0, 5) : '19:00',
-          members: (c.escalas || []).map((e: any) => ({
-            id: e.membros?.id || '',
-            name: e.membros?.nome || 'Sem nome',
-            role: e.funcao?.nome_funcao || 'Membro',
-            gender: e.membros?.genero === 'Homem' ? 'M' : 'F',
-            avatar: e.membros?.foto || `https://ui-avatars.com/api/?name=${e.membros?.nome || 'Sem nome'}&background=random`,
-            status: 'confirmed',
-            upcomingScales: [], songHistory: [],
-            roleId: e.id_funcao, // ← Adiciona o ID da função
-            escalaId: e.id // ← Adiciona o ID da escala
-          })),
+          members: groupedMembers,
           repertoire: (c.repertorio || []).map((r: any) => ({
             id: r.id,
             song: r.musicas?.musica,
@@ -539,21 +582,22 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
   return (
     <div className="max-w-[1200px] mx-auto pb-20">
       {/* Header com campo de pesquisa */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-10">
+      <div className="flex flex-col gap-4 mb-10">
         <div>
           <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tighter">Lista de <span className="text-brand">Cultos</span></h2>
           <p className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest text-[11px] mt-1">Próximos eventos e escalas</p>
         </div>
         
-        <div className="flex items-center gap-3">
+        {/* Campo de pesquisa e botões na mesma linha - centralizado no desktop */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           {/* Campo de pesquisa */}
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Pesquisar cultos, membros, músicas..."
-              className="w-64 md:w-80 px-4 py-2.5 pl-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
+              className="w-full sm:w-64 md:w-80 px-4 py-2.5 pl-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
             />
             <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm"></i>
             {searchTerm && (
@@ -566,23 +610,27 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
             )}
           </div>
           
-          {/* Botão de exportação */}
-          <button
-            onClick={() => exportFilteredData()}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-brand hover:border-brand transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm"
-            title="Exportar lista filtrada"
-          >
-            <i className="fas fa-camera text-[8px]"></i>
-            Exportar
-          </button>
-          
-          <button
-            onClick={() => setShowScaleModal({ mode: 'add' })}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-brand hover:border-brand transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm"
-          >
-            <i className="fas fa-plus text-[8px]"></i>
-            Nova Escala
-          </button>
+          {/* Botões */}
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            {/* Botão de exportação */}
+            <button
+              onClick={() => exportFilteredData()}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-brand hover:border-brand transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm"
+              title="Exportar lista filtrada"
+            >
+              <i className="fas fa-camera text-[8px]"></i>
+              Exportar
+            </button>
+            
+            {/* Botão Nova Escala */}
+            <button
+              onClick={() => setShowScaleModal({ mode: 'add' })}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-brand hover:border-brand transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm"
+            >
+              <i className="fas fa-plus text-[8px]"></i>
+              Nova Escala
+            </button>
+          </div>
         </div>
       </div>
 

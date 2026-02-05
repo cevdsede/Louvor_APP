@@ -41,6 +41,56 @@ const CalendarView: React.FC = () => {
     { label: 'Bateria', role: 'Bateria', icon: 'fa-drum' },
   ];
 
+  // Função para agrupar membros com múltiplas funções
+  const groupMembersByPerson = (escalas: any[]) => {
+    const memberMap = new Map();
+    
+    escalas.forEach(escala => {
+      const memberId = escala.membros?.id;
+      const memberName = escala.membros?.nome;
+      const memberRole = escala.funcao?.nome_funcao;
+      const roleId = escala.funcao?.id;
+      
+      if (memberId && memberName) {
+        if (!memberMap.has(memberId)) {
+          memberMap.set(memberId, {
+            id: memberId,
+            name: memberName,
+            gender: escala.membros?.genero === 'Homem' ? 'M' : 'F',
+            avatar: escala.membros?.foto || `https://ui-avatars.com/api/?name=${memberName}&background=random`,
+            status: 'confirmed',
+            upcomingScales: [],
+            songHistory: [],
+            roles: [],
+            roleIds: []
+          });
+        }
+        
+        const member = memberMap.get(memberId);
+        if (memberRole && !member.roles.includes(memberRole)) {
+          member.roles.push(memberRole);
+          member.roleIds.push(roleId);
+        }
+      }
+    });
+    
+    // Ordenar funções por ID e criar string de funções
+    return Array.from(memberMap.values()).map(member => {
+      // Ordenar roles pelos IDs correspondentes
+      const sortedRoles = member.roleIds
+        .map((id: number, index: number) => ({ id, role: member.roles[index] }))
+        .sort((a, b) => a.id - b.id)
+        .map(item => item.role);
+      
+      return {
+        ...member,
+        role: sortedRoles.join(' / '), // Usar " / " como separador
+        roles: sortedRoles,
+        roleIds: member.roleIds
+      };
+    });
+  };
+
   const fetchEvents = async () => {
     try {
       const { data: cultosData, error } = await supabase
@@ -56,7 +106,7 @@ const CalendarView: React.FC = () => {
             id_membros, 
             id_funcao,
             membros(id, nome, foto, genero),
-            funcao(nome_funcao)
+            funcao(id, nome_funcao)
           ),
           repertorio(
             id, 
@@ -79,25 +129,16 @@ const CalendarView: React.FC = () => {
           const date = new Date(c.data_culto + 'T00:00:00');
           const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
+          // Agrupar membros com múltiplas funções
+          const groupedMembers = groupMembersByPerson(c.escalas || []);
+
           return {
             id: c.id,
             title: (c.nome_cultos as any)?.nome_culto || 'CULTO',
             date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
             dayOfWeek: daysOfWeek[date.getDay()],
             time: c.horario,
-            members: sortMembersByRole((c.escalas || []).map((e: any) => ({
-              id: e.membros?.id || '',
-              name: e.membros?.nome || 'Sem nome',
-              gender: e.membros?.genero === 'Homem' ? 'M' : 'F',
-              role: e.funcao?.nome_funcao || 'Membro',
-              photo: e.membros?.foto,
-              avatar: e.membros?.foto || `https://ui-avatars.com/api/?name=${e.membros?.nome || 'Sem nome'}&background=random`,
-              status: 'confirmed',
-              upcomingScales: [],
-              songHistory: [],
-              roleId: e.id_funcao, // ← Adiciona o ID da função
-              escalaId: e.id // ← Adiciona o ID da escala
-            }))),
+            members: sortMembersByRole(groupedMembers),
             repertoire: (c.repertorio || []).map((r: any) => ({
               id: r.id,
               song: (r.musicas as any)?.musica || 'Sem música',
@@ -148,8 +189,8 @@ const CalendarView: React.FC = () => {
   // Funções para buscar dados adicionais (igual ListView)
   const fetchAdditionalData = async () => {
     try {
-      // 1. Fetch Members
-      const { data: membersData } = await supabase.from('membros').select('*').order('nome');
+      // 1. Fetch Members (apenas ativos)
+      const { data: membersData } = await supabase.from('membros').select('*').eq('ativo', true).order('nome');
       if (membersData) {
         const mappedMembers: Member[] = membersData.map(m => ({
           id: m.id,
@@ -345,27 +386,55 @@ const CalendarView: React.FC = () => {
                   >
                     {activeSubTabs[event.id] === 'team' && (
                       <div className="p-6">
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <div className={`grid gap-4 ${
+                          event.members.some(m => m.roles && m.roles.length > 2) 
+                            ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
+                            : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+                        }`}>
                           {event.members.map((member, index) => (
-                            <div key={`${member.id}-${member.roleId || index}`} className="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                            <div key={`${member.id}-${member.roleId || index}`} className={`bg-slate-50 dark:bg-slate-800/30 rounded-xl p-4 border border-slate-100 dark:border-slate-700 ${
+                              member.roles && member.roles.length > 2 ? 'md:col-span-1' : ''
+                            }`}>
                               <div className="flex flex-col items-center text-center">
                                 <div className="relative mb-3">
                                   <div className="w-16 h-16 bg-gradient-to-br from-brand to-brand-gold rounded-full flex items-center justify-center shadow-lg">
                                     {member.avatar ? (
                                       <img src={member.avatar} alt={member.name} className="w-full h-full rounded-full object-cover" />
                                     ) : (
-                                      <i className={`fas ${getRoleIcon(member.role)} text-white text-xl`}></i>
+                                      <i className={`fas ${getRoleIcon(member.roles && member.roles.length > 0 ? member.roles[0] : member.role)} text-white text-xl`}></i>
                                     )}
                                   </div>
                                   <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-md border-2 border-brand">
-                                    <i className={`fas ${getRoleIcon(member.role)} text-brand text-[8px]`}></i>
+                                    <i className={`fas ${getRoleIcon(member.roles && member.roles.length > 0 ? member.roles[0] : member.role)} text-brand text-[8px]`}></i>
                                   </div>
                                 </div>
                                 <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate w-full">{member.name}</h5>
-                                <p className="text-[9px] font-bold text-slate-400 uppercase truncate w-full">{member.role}</p>
-                                <div className="flex items-center gap-1 mt-2">
-                                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                  <span className="text-[7px] font-bold text-slate-500 uppercase">Presente</span>
+                                <div className="flex flex-col items-center gap-1 mt-2">
+                                  {member.roles && member.roles.length > 1 ? (
+                                    <div className="text-center">
+                                      <p className="text-[9px] font-bold text-slate-400 uppercase leading-tight">
+                                        {member.roles.map((role, idx) => (
+                                          <span key={idx}>
+                                            {role}
+                                            {idx < member.roles.length - 1 && (
+                                              <span className="text-slate-300 mx-1">/</span>
+                                            )}
+                                          </span>
+                                        ))}
+                                      </p>
+                                      {member.roles.length > 2 && (
+                                        <span className="text-[7px] font-bold text-brand">
+                                          +{member.roles.length - 1} funções
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase truncate w-full">{member.role}</p>
+                                  )}
+                                  <div className="flex items-center gap-1 mt-2">
+                                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                    <span className="text-[7px] font-bold text-slate-500 uppercase">Presente</span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -381,28 +450,28 @@ const CalendarView: React.FC = () => {
                         )}
                       </div>
                     )}
-                    
                     {activeSubTabs[event.id] === 'repertoire' && (
                       <div className="p-6">
-                        <div className="space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {event.repertoire.map((song) => (
-                            <div key={song.id} className="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <h4 className="text-sm font-black text-slate-800 dark:text-white">{song.song}</h4>
-                                  <p className="text-xs text-slate-500 dark:text-slate-400">{song.singer}</p>
+                            <div key={song.id} className="group bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+                              <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
+                                <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
+                                  {song.key || 'Ñ'}
                                 </div>
-                                <div className="flex items-center gap-4">
-                                  <div className="text-center">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase">Tom</p>
-                                    <p className="text-sm font-black text-brand">{song.key}</p>
-                                  </div>
-                                  {song.minister && (
-                                    <div className="text-center">
-                                      <p className="text-[10px] font-bold text-slate-400 uppercase">Ministro</p>
-                                      <p className="text-xs text-slate-600 dark:text-slate-300">{song.minister}</p>
-                                    </div>
-                                  )}
+                                <div className="flex-1 px-4">
+                                  <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate">{song.song} - {song.singer}</h5>
+                                  <p className="text-[9px] font-bold text-slate-400 uppercase">
+                                    Ministro: <span className="text-brand">{song.minister || 'Sem ministro'}</span>
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="p-4">
+                                <div className="grid grid-cols-4 gap-1">
+                                  <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${song.song} ${song.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
+                                  <a href={`https://open.spotify.com/search/${encodeURIComponent(`${song.song} ${song.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-green-600 hover:bg-green-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
+                                  <a href={`https://www.google.com/search?q=${encodeURIComponent(`${song.song} ${song.singer} cifra`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-600 hover:bg-blue-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[10px]"></i></a>
+                                  <a href={`https://www.google.com/search?q=${encodeURIComponent(`${song.song} ${song.singer} letra`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-purple-600 hover:bg-purple-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-microphone-alt text-[10px]"></i></a>
                                 </div>
                               </div>
                             </div>
@@ -418,7 +487,6 @@ const CalendarView: React.FC = () => {
                         )}
                       </div>
                     )}
-                    
                     {activeSubTabs[event.id] === 'notices' && (
                       <div className="p-6">
                         <div className="space-y-3">

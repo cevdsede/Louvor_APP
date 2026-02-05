@@ -362,19 +362,15 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
       )}
 
       {/* Song List */}
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {repertoire.map((item, index) => (
-          <div key={`${eventId}-rep-${index}`} className="group p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700">
-            <div className="flex items-center gap-3 mb-3">
+          <div key={`${eventId}-rep-${index}`} className="group bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+            {/* Header com Tom e Botões */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
               <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
                 {item.key || 'Ñ'}
               </div>
-              <div className="flex-1 min-w-0">
-                <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate">{item.song} - {item.singer}</h5>
-                <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
-                  CANTOR: <span className="text-brand">{item.minister || 'Sem cantor'}</span>
-                </p>
-              </div>
+              <div className="flex-1"></div>
               {isMember && (
                 <div className="flex items-center gap-1">
                   <button 
@@ -394,11 +390,21 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
                 </div>
               )}
             </div>
-            <div className="grid grid-cols-4 gap-1">
-              <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${item.song} ${item.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
-              <a href={`https://open.spotify.com/search/${encodeURIComponent(`${item.song} ${item.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-green-600 hover:bg-green-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
-              <a href={`https://www.google.com/search?q=${encodeURIComponent(`${item.song} ${item.singer} cifra`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-600 hover:bg-blue-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[10px]"></i></a>
-              <a href={`https://www.google.com/search?q=${encodeURIComponent(`${item.song} ${item.singer} letra`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-purple-600 hover:bg-purple-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-microphone-alt text-[10px]"></i></a>
+            
+            {/* Conteúdo Principal */}
+            <div className="p-4">
+              <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate mb-1">{item.song} - {item.singer}</h5>
+              <p className="text-[9px] font-bold text-slate-400 uppercase mb-3">
+                Ministro: <span className="text-brand">{item.minister || 'Sem ministro'}</span>
+              </p>
+              
+              {/* Botões de Links */}
+              <div className="grid grid-cols-4 gap-1">
+                <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${item.song} ${item.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
+                <a href={`https://open.spotify.com/search/${encodeURIComponent(`${item.song} ${item.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-green-600 hover:bg-green-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
+                <a href={`https://www.google.com/search?q=${encodeURIComponent(`${item.song} ${item.singer} cifra`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-600 hover:bg-blue-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[10px]"></i></a>
+                <a href={`https://www.google.com/search?q=${encodeURIComponent(`${item.song} ${item.singer} letra`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-purple-600 hover:bg-purple-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-microphone-alt text-[10px]"></i></a>
+              </div>
             </div>
           </div>
         ))}
