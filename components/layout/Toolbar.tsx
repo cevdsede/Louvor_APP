@@ -11,12 +11,14 @@ const Toolbar: React.FC<ToolbarProps> = ({ currentView, onViewChange }) => {
   const isScaleMode = ['list', 'calendar', 'cleaning'].includes(currentView);
   const isMusicMode = ['music-stats', 'music-list', 'music-repertoire', 'music-create', 'music-history'].includes(currentView);
   const isTeamMode = ['team', 'attendance', 'approvals'].includes(currentView);
+  const isToolsMode = ['tools-admin', 'tools-users', 'tools-approvals', 'tools-performance'].includes(currentView);
 
   if (currentView === 'dashboard') return null;
 
   const getTitle = () => {
     if (isTeamMode) return 'Equipe';
     if (isMusicMode) return 'Músicas';
+    if (isToolsMode) return 'Ferramentas';
     return 'Escalas';
   };
 
@@ -58,12 +60,6 @@ const Toolbar: React.FC<ToolbarProps> = ({ currentView, onViewChange }) => {
           {isMusicMode && (
             <div className="bg-white dark:bg-slate-800 p-1 lg:p-1.5 rounded-2xl flex items-center shadow-sm border border-slate-100 dark:border-slate-700 overflow-x-auto no-scrollbar w-full max-w-full">
               <button 
-                onClick={() => onViewChange('music-stats')}
-                className={`px-2 lg:px-6 py-1.5 lg:py-2.5 rounded-xl text-[8px] lg:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex-1 text-center ${currentView === 'music-stats' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
-              >
-                Dashboard
-              </button>
-              <button 
                 onClick={() => onViewChange('music-list')}
                 className={`px-2 lg:px-6 py-1.5 lg:py-2.5 rounded-xl text-[8px] lg:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex-1 text-center ${currentView === 'music-list' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
               >
@@ -104,6 +100,36 @@ const Toolbar: React.FC<ToolbarProps> = ({ currentView, onViewChange }) => {
                 className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${currentView === 'approvals' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 <i className="fas fa-user-check"></i> Aprovações
+              </button>
+            </div>
+          )}
+
+          {/* Tools Selectors */}
+          {isToolsMode && (
+            <div className="bg-white dark:bg-slate-800 p-1.5 rounded-2xl flex items-center shadow-sm border border-slate-100 dark:border-slate-700 overflow-x-auto no-scrollbar">
+              <button 
+                onClick={() => onViewChange('tools-admin')}
+                className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${currentView === 'tools-admin' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                <i className="fas fa-cog"></i> Admin
+              </button>
+              <button 
+                onClick={() => onViewChange('tools-users')}
+                className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${currentView === 'tools-users' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                <i className="fas fa-user-cog"></i> Usuários
+              </button>
+              <button 
+                onClick={() => onViewChange('tools-approvals')}
+                className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${currentView === 'tools-approvals' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                <i className="fas fa-shield-alt"></i> Aprovações
+              </button>
+              <button 
+                onClick={() => onViewChange('tools-performance')}
+                className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${currentView === 'tools-performance' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                <i className="fas fa-chart-line"></i> Desempenho
               </button>
             </div>
           )}

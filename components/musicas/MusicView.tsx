@@ -573,65 +573,72 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
   }, []);
 
   useEffect(() => {
-    if (subView === 'music-stats' && !loading) {
+    if (!loading && (subView === 'music-list' || subView === 'music-repertoire')) {
       // ... (Chart logic - same as before but using real 'songs' state)
       // Re-use the existing chart logic inside setTimeout
       const timer = setTimeout(() => {
-        if (stylesChartRef.current) {
-          if (chartInstances.current.styles) chartInstances.current.styles.destroy();
-          chartInstances.current.styles = new window.Chart(stylesChartRef.current, {
-            type: 'doughnut',
-            data: {
-              labels: ['Adoração', 'Celebração'],
-              datasets: [{
-                data: [songs.filter(s => s.style === 'Adoração').length, songs.filter(s => s.style === 'Celebração').length],
-                backgroundColor: ['#3b82f6', '#f59e0b'],
-                borderWidth: 0
-              }]
-            },
-            options: { plugins: { legend: { display: false } }, cutout: '70%', maintainAspectRatio: false }
-          });
+        // Gráficos Estilos e Temas para aba Lista
+        if (subView === 'music-list') {
+          if (stylesChartRef.current) {
+            if (chartInstances.current.styles) chartInstances.current.styles.destroy();
+            chartInstances.current.styles = new window.Chart(stylesChartRef.current, {
+              type: 'doughnut',
+              data: {
+                labels: ['Adoração', 'Celebração'],
+                datasets: [{
+                  data: [songs.filter(s => s.style === 'Adoração').length, songs.filter(s => s.style === 'Celebração').length],
+                  backgroundColor: ['#3b82f6', '#f59e0b'],
+                  borderWidth: 0
+                }]
+              },
+              options: { plugins: { legend: { display: false } }, cutout: '70%', maintainAspectRatio: false }
+            });
+          }
+          if (themesChartRef.current) {
+            const uniqueThemes = Array.from(new Set(songs.map(s => s.theme)));
+            if (chartInstances.current.themes) chartInstances.current.themes.destroy();
+            chartInstances.current.themes = new window.Chart(themesChartRef.current, {
+              type: 'doughnut',
+              data: {
+                labels: uniqueThemes,
+                datasets: [{
+                  data: uniqueThemes.map(t => songs.filter(s => s.theme === t).length),
+                  backgroundColor: themeColorsPalette,
+                  borderWidth: 0
+                }]
+              },
+              options: { plugins: { legend: { display: false } }, cutout: '70%', maintainAspectRatio: false }
+            });
+          }
         }
-        if (themesChartRef.current) {
-          const uniqueThemes = Array.from(new Set(songs.map(s => s.theme)));
-          if (chartInstances.current.themes) chartInstances.current.themes.destroy();
-          chartInstances.current.themes = new window.Chart(themesChartRef.current, {
-            type: 'doughnut',
-            data: {
-              labels: uniqueThemes,
-              datasets: [{
-                data: uniqueThemes.map(t => songs.filter(s => s.theme === t).length),
-                backgroundColor: themeColorsPalette,
-                borderWidth: 0
-              }]
-            },
-            options: { plugins: { legend: { display: false } }, cutout: '70%', maintainAspectRatio: false }
-          });
-        }
-        if (rankingChartRef.current) {
-          const ranking = getRanking();
-          if (chartInstances.current.ranking) chartInstances.current.ranking.destroy();
-          chartInstances.current.ranking = new window.Chart(rankingChartRef.current, {
-            type: 'bar',
-            data: {
-              labels: ranking.map(r => r.song.length > 15 ? r.song.substring(0, 12) + '...' : r.song),
-              datasets: [{
-                label: 'Execuções',
-                data: ranking.map(r => r.count),
-                backgroundColor: '#1e3a8a',
-                borderRadius: 6
-              }]
-            },
-            options: {
-              indexAxis: 'y',
-              plugins: { legend: { display: false } },
-              maintainAspectRatio: false,
-              scales: {
-                x: { grid: { display: false } },
-                y: { grid: { display: false } }
+        
+        // Gráfico Ranking Músicas para aba Repertório
+        if (subView === 'music-repertoire') {
+          if (rankingChartRef.current) {
+            const ranking = getRanking();
+            if (chartInstances.current.ranking) chartInstances.current.ranking.destroy();
+            chartInstances.current.ranking = new window.Chart(rankingChartRef.current, {
+              type: 'bar',
+              data: {
+                labels: ranking.map(r => r.song.length > 15 ? r.song.substring(0, 12) + '...' : r.song),
+                datasets: [{
+                  label: 'Execuções',
+                  data: ranking.map(r => r.count),
+                  backgroundColor: '#1e3a8a',
+                  borderRadius: 6
+                }]
+              },
+              options: {
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                maintainAspectRatio: false,
+                scales: {
+                  x: { grid: { display: false } },
+                  y: { grid: { display: false } }
+                }
               }
-            }
-          });
+            });
+          }
         }
       }, 100);
       return () => clearTimeout(timer);
@@ -656,33 +663,6 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
     );
   }
 
-  if (subView === 'music-stats') {
-    return (
-      <div className="space-y-6 animate-fade-in pb-20">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-50 dark:border-slate-800 flex flex-col items-center">
-            <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">Estilos</h3>
-            <div className="h-40 w-full relative">
-              <canvas ref={stylesChartRef}></canvas>
-            </div>
-          </div>
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-50 dark:border-slate-800 flex flex-col items-center">
-            <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">Temas (Paleta)</h3>
-            <div className="h-40 w-full relative">
-              <canvas ref={themesChartRef}></canvas>
-            </div>
-          </div>
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-50 dark:border-slate-800 flex flex-col">
-            <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">Ranking Músicas</h3>
-            <div className="h-40 w-full">
-              <canvas ref={rankingChartRef}></canvas>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (subView === 'music-list') {
     // Filtrar músicas baseado na busca
     const filteredSongsList = songListSearch 
@@ -702,6 +682,22 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
 
     return (
       <div className="pb-20 fade-in max-w-7xl mx-auto">
+        {/* Gráficos Estilos e Temas */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-50 dark:border-slate-800 flex flex-col items-center">
+            <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">Estilos</h3>
+            <div className="h-40 w-full relative">
+              <canvas ref={stylesChartRef}></canvas>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-50 dark:border-slate-800 flex flex-col items-center">
+            <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">Temas (Paleta)</h3>
+            <div className="h-40 w-full relative">
+              <canvas ref={themesChartRef}></canvas>
+            </div>
+          </div>
+        </div>
+
         <div className="flex justify-center mb-6">
           <button onClick={() => setIsSongModalOpen(true)} className="px-6 py-2.5 bg-brand text-white rounded-full font-black text-[9px] uppercase tracking-widest shadow-lg active:scale-95 transition-transform">
             <i className="fas fa-plus mr-2"></i> Adicionar Música
@@ -911,6 +907,14 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
   if (subView === 'music-repertoire') {
     return (
       <div className="pb-20 fade-in max-w-7xl mx-auto space-y-6">
+        {/* Gráfico Ranking Músicas */}
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-50 dark:border-slate-800 flex flex-col">
+          <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">Ranking Músicas</h3>
+          <div className="h-40 w-full">
+            <canvas ref={rankingChartRef}></canvas>
+          </div>
+        </div>
+
         <div className="flex justify-between items-center px-4 mb-4">
           <h2 className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Repertório</h2>
           <button 

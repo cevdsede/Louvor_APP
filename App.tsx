@@ -10,6 +10,7 @@ import CalendarView from './components/escalas/CalendarView';
 import CleaningView from './components/ui/CleaningView';
 import TeamView from './components/equipe/TeamView';
 import MusicView from './components/musicas/MusicView';
+import ToolsView from './components/tools/ToolsView';
 import AvisoModal from './components/ui/AvisoModal';
 import SplashScreen from './components/auth/SplashScreen';
 import LoginScreen from './components/auth/LoginScreen';
@@ -99,6 +100,7 @@ const App: React.FC = () => {
 
   const isMusicView = (view: ViewType) => ['music-stats', 'music-list', 'music-repertoire', 'music-create', 'music-history'].includes(view);
   const isTeamView = (view: ViewType) => ['team', 'attendance'].includes(view);
+  const isToolsView = (view: ViewType) => ['tools-admin', 'tools-users', 'tools-approvals', 'tools-performance'].includes(view);
 
   useEffect(() => {
     if (appState === 'splash') {
@@ -179,6 +181,7 @@ const App: React.FC = () => {
                 {currentView === 'cleaning' && <CleaningView />}
                 {isTeamView(currentView) && <TeamView currentView={currentView} />}
                 {isMusicView(currentView) && <MusicView subView={currentView} />}
+                {isToolsView(currentView) && <ToolsView subView={currentView} />}
               </div>
             )}
           </div>
