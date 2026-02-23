@@ -269,17 +269,19 @@ const Sidebar: React.FC<SidebarProps> = ({
   const menuItems = [
     { id: 'dashboard', default: 'dashboard', label: 'Início', icon: 'fas fa-th-large' },
     { id: 'scales', default: 'list', label: 'Escalas', icon: 'fas fa-calendar-alt' },
-    { id: 'music', default: 'music-stats', label: 'Músicas', icon: 'fas fa-music' },
+    { id: 'music', default: 'music-list', label: 'Músicas', icon: 'fas fa-music' },
     { id: 'team', default: 'team', label: 'Equipe', icon: 'fas fa-users' },
+    { id: 'tools', default: 'tools-admin', label: 'Ferramentas', icon: 'fas fa-tools' },
   ];
 
-  const themeColors = ['#1e3a8a', '#ef4444', '#f59e0b', '#10b981', '#ec4899'];
+  const themeColors = ['#1e3a8a', '#ef4444', '#f59e0b', '#10b981', '#ec4899', '#6366f1'];
 
   const isActive = (id: string) => {
     if (id === 'dashboard') return currentView === 'dashboard';
     if (id === 'scales') return ['list', 'calendar', 'cleaning'].includes(currentView);
     if (id === 'music') return ['music-stats', 'music-list', 'music-repertoire', 'music-create', 'music-history'].includes(currentView);
     if (id === 'team') return ['team', 'attendance', 'approvals'].includes(currentView);
+    if (id === 'tools') return ['tools-admin', 'tools-users', 'tools-approvals', 'tools-performance'].includes(currentView);
     return false;
   };
 

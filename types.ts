@@ -3,7 +3,8 @@ export type ViewType =
   | 'dashboard'
   | 'list' | 'calendar' | 'cleaning'
   | 'team' | 'attendance' | 'approvals'
-  | 'music-stats' | 'music-list' | 'music-repertoire' | 'music-create' | 'music-history' | 'music-escalas';
+  | 'music-stats' | 'music-list' | 'music-repertoire' | 'music-create' | 'music-history' | 'music-escalas'
+  | 'tools-admin' | 'tools-users' | 'tools-approvals' | 'tools-performance';
 
 export interface RepertoireItem {
   id: string;
