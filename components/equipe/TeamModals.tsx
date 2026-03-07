@@ -84,7 +84,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
           const oldPath = oldUrl.pathname.split('/').slice(-2).join('/'); // pega "membros/nome_arquivo.ext"
           
           const { error: deleteError } = await supabase.storage
-            .from('public-assets')
+            .from('public')
             .remove([oldPath]);
           
           if (deleteError) {
@@ -97,7 +97,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
 
       // Fazer upload para o Supabase Storage
       const { error: uploadError } = await supabase.storage
-        .from('public-assets')
+        .from('public')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true
@@ -107,7 +107,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
 
       // Obter URL pública
       const { data: { publicUrl } } = supabase.storage
-        .from('public-assets')
+        .from('public')
         .getPublicUrl(filePath);
 
       // Atualizar o avatar no estado do modal
@@ -163,7 +163,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
       }
 
       // Atualiza o estado local
-      onMembersChange(prev => prev.map(m => 
+      onMembersChange((prev) => prev.map(m => 
         m.id === editingMember.id 
           ? { 
               ...m, 
@@ -216,11 +216,11 @@ const TeamModals: React.FC<TeamModalsProps> = ({
       {/* Modal de Membro - Centralizado apenas na área de conteúdo (ignorando navbar) */}
       {selectedMember && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 lg:p-10 py-20 lg:py-10 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-slate-900/90 to-slate-950/95 dark:from-slate-950/90 dark:via-black/95 dark:to-black/98 backdrop-blur-xl" onClick={() => onSelectedMemberChange(null)}></div>
+          <div className="absolute inset-0 bg-slate-900/80 dark:bg-black/90 backdrop-blur-xl" onClick={() => onSelectedMemberChange(null)}></div>
 
-          <div className="relative w-full max-w-lg bg-gradient-to-br from-white via-white to-slate-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 rounded-[3rem] shadow-2xl border border-white/10 dark:border-slate-700/50 overflow-hidden animate-fade-in max-h-[75vh] lg:max-h-[85vh] flex flex-col lg:ml-64">
-            {/* Header com gradiente */}
-            <div className="relative p-6 pb-4 bg-gradient-to-r from-brand/5 via-brand/10 to-brand/5 dark:from-brand/10 dark:via-brand/20 dark:to-brand/10 border-b border-slate-100/50 dark:border-slate-800/50 z-10 shrink-0">
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl border border-white/10 dark:border-slate-700/50 overflow-hidden animate-fade-in max-h-[75vh] lg:max-h-[85vh] flex flex-col lg:ml-64">
+            {/* Header sem gradiente */}
+            <div className="relative p-6 pb-4 bg-brand/5 dark:bg-brand/10 border-b border-slate-100/50 dark:border-slate-800/50 z-10 shrink-0">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-brand rounded-full animate-pulse"></div>
@@ -236,7 +236,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
               {/* Seção Perfil */}
               <div className="text-center space-y-4">
                 <div className="relative inline-block">
-                  <div className="absolute inset-0 bg-gradient-to-br from-brand/20 to-pink-500/20 rounded-full blur-xl animate-pulse"></div>
+                  <div className="absolute inset-0 bg-brand/20 rounded-full blur-xl animate-pulse"></div>
                   <img 
                     src={selectedMember.avatar} 
                     alt={selectedMember.name}
@@ -244,17 +244,17 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                   />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black bg-gradient-to-r from-slate-800 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent leading-none mb-2">
+                  <h2 className="text-2xl font-black text-slate-800 dark:text-white leading-none mb-2">
                     {selectedMember.name}
                   </h2>
                   <div className="flex flex-wrap justify-center gap-2 mb-4">
-                    <span className="px-3 py-1 bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 rounded-full border border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-600 dark:text-slate-300">
+                    <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-600 dark:text-slate-300">
                       {selectedMember.role}
                     </span>
                     <span className={`px-3 py-1 rounded-full border text-[10px] font-black ${
                       selectedMember.gender === 'M' 
-                        ? 'bg-gradient-to-r from-brand/10 to-brand/5 border-brand/20 text-brand' 
-                        : 'bg-gradient-to-r from-pink-500/10 to-pink-500/5 border-pink-500/20 text-pink-500'
+                        ? 'bg-brand/10 border-brand/20 text-brand' 
+                        : 'bg-pink-500/10 border-pink-500/20 text-pink-500'
                     }`}>
                       {selectedMember.gender === 'M' ? 'Masculino' : 'Feminino'}
                     </span>
@@ -268,9 +268,9 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                 <div className="space-y-3">
                   {selectedMember.upcomingScales && selectedMember.upcomingScales.length > 0 ? (
                     selectedMember.upcomingScales.map((s, idx) => (
-                      <button key={idx} onClick={() => openScaleDetail(s.id)} className="w-full bg-gradient-to-r from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-800/30 px-5 py-4 rounded-[2rem] border border-slate-100/50 dark:border-slate-700/50 flex justify-between items-center group transition-all hover:border-brand/40 hover:shadow-lg hover:shadow-brand/10 active:scale-[0.98]">
+                      <button key={idx} onClick={() => openScaleDetail(s.id)} className="w-full bg-slate-50 dark:bg-slate-800/50 px-5 py-4 rounded-[2rem] border border-slate-100/50 dark:border-slate-700/50 flex justify-between items-center group transition-all hover:border-brand/40 hover:shadow-lg hover:shadow-brand/10 active:scale-[0.98]">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-gradient-to-br from-white to-slate-50 dark:from-slate-700 dark:to-slate-800 rounded-2xl flex flex-col items-center justify-center border border-slate-100/50 dark:border-slate-600/50 shadow-md">
+                          <div className="w-12 h-12 bg-white dark:bg-slate-700 rounded-2xl flex flex-col items-center justify-center border border-slate-100/50 dark:border-slate-600/50 shadow-md">
                             <span className="text-[8px] font-black text-slate-400 leading-none">{s.date.split('/')[1]}</span>
                             <span className="text-lg font-black text-brand leading-none mt-1">{s.date.split('/')[0]}</span>
                           </div>
@@ -306,7 +306,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                     {selectedMember.songHistory && selectedMember.songHistory.length > 0 ? (
                       selectedMember.songHistory.map((h, idx) => (
                         <div key={idx} className="flex items-center gap-3 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-50 dark:border-slate-800 flex-nowrap">
-                          <div className="w-16 h-12 bg-gradient-to-br from-brand to-brand/80 text-white rounded-2xl shadow-lg flex items-center justify-center font-black text-[10px] flex-shrink-0 p-1">{h.key}</div>
+                          <div className="w-16 h-12 bg-brand text-white rounded-2xl shadow-lg flex items-center justify-center font-black text-[10px] flex-shrink-0 p-1">{h.key}</div>
                           <div className="flex-1 min-w-0 text-left">
                             <span className="text-[11px] font-black text-slate-600 dark:text-slate-300 truncate block">{h.song}</span>
                             <div className="flex items-center gap-2 text-[8px] text-slate-400">
@@ -335,9 +335,9 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                   <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left">Avisos Gerais</h4>
                   <div className="space-y-3">
                     {avisosGerais.map((aviso) => (
-                      <div key={aviso.id.toString()} className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl border border-amber-200 dark:border-amber-800/50">
+                      <div key={aviso.id.toString()} className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200 dark:border-amber-800/50">
                         <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-500 text-white rounded-xl flex items-center justify-center flex-shrink-0">
+                          <div className="w-8 h-8 bg-amber-500 text-white rounded-xl flex items-center justify-center flex-shrink-0">
                             <i className="fas fa-bell text-[10px]"></i>
                           </div>
                           <div className="flex-1">
@@ -381,11 +381,11 @@ const TeamModals: React.FC<TeamModalsProps> = ({
       {/* Modal de Edição de Membro */}
       {editingMember && (
         <div className="fixed inset-0 z-[700] flex items-center justify-center p-4 lg:p-10 py-20 lg:py-10 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-slate-900/90 to-slate-950/95 dark:from-slate-950/90 dark:via-black/95 dark:to-black/98 backdrop-blur-xl" onClick={() => onEditingMemberChange(null)}></div>
+          <div className="absolute inset-0 bg-slate-900/80 dark:bg-black/90 backdrop-blur-xl" onClick={() => onEditingMemberChange(null)}></div>
 
-          <div className="relative w-full max-w-lg bg-gradient-to-br from-white via-white to-slate-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 rounded-[3rem] shadow-2xl border border-white/10 dark:border-slate-700/50 overflow-hidden animate-fade-in max-h-[75vh] lg:max-h-[85vh] flex flex-col lg:ml-64">
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl border border-white/10 dark:border-slate-700/50 overflow-hidden animate-fade-in max-h-[75vh] lg:max-h-[85vh] flex flex-col lg:ml-64">
             {/* Header */}
-            <div className="relative p-6 pb-4 bg-gradient-to-r from-emerald-500/5 via-emerald-500/10 to-emerald-500/5 dark:from-emerald-500/10 dark:via-emerald-500/20 dark:to-emerald-500/10 border-b border-slate-100/50 dark:border-slate-800/50 z-10 shrink-0">
+            <div className="relative p-6 pb-4 bg-emerald-500/5 dark:bg-emerald-500/10 border-b border-slate-100/50 dark:border-slate-800/50 z-10 shrink-0">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>

@@ -35,14 +35,15 @@ const DashboardView: React.FC = () => {
         setCurrentUser(user);
       }
 
-      // Carregar dados em paralelo
-      const [totalCultosData, totalMusicasData, totalMembrosData, proximaEscalaData, frequenciaData, niverData] = await Promise.all([
+      // Carregar dados em paralelo incluindo versículo diário
+      const [totalCultosData, totalMusicasData, totalMembrosData, proximaEscalaData, frequenciaData, niverData, versiculoData] = await Promise.all([
         DashboardService.getTotalCultos(),
         DashboardService.getTotalMusicas(),
         DashboardService.getTotalMembrosAtivos(),
         user ? DashboardService.getProximaEscala(user.id) : Promise.resolve(null),
         DashboardService.getFrequenciaPorMembro(),
-        DashboardService.getAniversariantesDoMes()
+        DashboardService.getAniversariantesDoMes(),
+        DashboardService.getVersiculoDiario() // Buscar versículo automático
       ]);
 
       setTotalCultos(totalCultosData);
@@ -58,6 +59,12 @@ const DashboardView: React.FC = () => {
       // Ordenar frequencia por quantidade
       const sortedFrequencia = [...frequenciaData].sort((a, b) => b.quantidade - a.quantidade);
       setFrequenciaMembros(sortedFrequencia);
+      
+      // Atualizar versículo diário (automático)
+      if (versiculoData) {
+        setCurrentDevocional(versiculoData);
+      }
+      
       setLoading(false);
     } catch (error) {
       console.error('Erro ao carregar dados do dashboard:', error);
@@ -363,7 +370,7 @@ const DashboardView: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 overflow-hidden">
       {/* Header Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-brand via-brand/90 to-brand-dark dark:from-brand/90 dark:via-brand dark:to-brand-dark">
+      <div className="relative overflow-hidden bg-brand dark:bg-brand">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-[100px]"></div>
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-brand/20 rounded-full blur-[100px]"></div>
@@ -371,7 +378,11 @@ const DashboardView: React.FC = () => {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-2 tracking-tight">
-              Bem-vindo ao <span className="text-brand-accent">Louvor</span>
+              Bem-vindo ao <span className="relative">
+                <span className="relative z-10 text-brand-accent font-black">Louvor</span>
+                <span className="absolute inset-0 bg-brand-accent/20 blur-xl scale-110"></span>
+                <span className="absolute inset-0 bg-brand-accent/10 blur-2xl scale-125"></span>
+              </span>
             </h1>
           </div>
         </div>
@@ -508,62 +519,65 @@ const DashboardView: React.FC = () => {
 
           {/* Card Devocional */}
           <div className="lg:col-span-1">
-            <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-3xl shadow-2xl p-8 h-[420px] relative overflow-hidden group">
-              {/* Efeitos de Fundo Animados */}
-              <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-[80px] group-hover:scale-110 transition-transform duration-1000"></div>
-              <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-yellow-300/20 rounded-full blur-[80px] group-hover:scale-110 transition-transform duration-1000 delay-100"></div>
+            <div className="bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 rounded-2xl shadow-xl p-6 h-[420px] relative overflow-hidden group border border-gray-100 dark:border-gray-700">
+              {/* Efeitos de Fundo - Modo Claro (Modelo 5) / Modo Escuro (Modelo 4) */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-brand/20 dark:bg-brand/30 rounded-full blur-3xl"></div>
+              <div className="absolute bottom-0 left-0 w-40 h-40 bg-brand-accent/20 dark:bg-brand-accent/30 rounded-full blur-3xl"></div>
               
-              {/* Partículas Flutuantes */}
-              <div className="absolute top-8 left-8 w-2 h-2 bg-white/40 rounded-full animate-pulse"></div>
-              <div className="absolute top-16 right-12 w-1.5 h-1.5 bg-white/30 rounded-full animate-pulse delay-300"></div>
-              <div className="absolute bottom-12 left-16 w-2.5 h-2.5 bg-white/35 rounded-full animate-pulse delay-500"></div>
-              <div className="absolute bottom-20 right-8 w-1.8 h-1.8 bg-white/25 rounded-full animate-pulse delay-700"></div>
+              {/* Gradiente adicional para modo escuro */}
+              <div className="absolute inset-0 bg-gradient-to-br from-brand/5 dark:from-brand/10 via-transparent to-brand-accent/3 dark:to-brand-accent/5 opacity-60 dark:opacity-80"></div>
               
               <div className="relative h-full flex flex-col">
                 <div className="text-center">
-                  {/* Ícone com Animação */}
-                  <div className="w-16 h-16 bg-white/15 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/20 shadow-xl group-hover:scale-105 group-hover:rotate-6 transition-all duration-500">
-                    <i className="fas fa-dove text-2xl text-white group-hover:animate-bounce"></i>
+                  {/* Ícone - Adapta entre Modelo 5 (claro) e Modelo 4 (escuro) */}
+                  <div className="w-16 h-16 bg-white/80 dark:bg-gray-800 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4 border border-brand/20 dark:border-brand/30 shadow-lg dark:shadow-xl">
+                    <i className="fas fa-dove text-2xl text-[var(--brand-primary)] dark:text-[var(--brand-accent)]"></i>
                   </div>
                   
-                  {/* Título com Gradiente */}
-                  <div className="mb-8">
-                    <h3 className="text-sm font-black uppercase tracking-wider text-white/80 mb-2">
-                      Edificação do Dia
-                    </h3>
-                    <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-white/60 to-transparent mx-auto"></div>
-                  </div>
+                  {/* Título - Adapta cores entre modo claro e escuro */}
+                  <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-3">
+                    Edificação do Dia
+                  </h3>
                   
-                  {/* Versículo com Efeito de Luz */}
-                  <div className="flex-1 flex items-center justify-center py-4">
+                  {/* Versículo - Container adaptativo com tamanho dinâmico */}
+                  <div className="flex-1 flex items-center justify-center py-6">
                     <div className="relative max-w-full">
-                      {/* Efeito de Luz de Fundo */}
-                      <div className="absolute -inset-4 bg-gradient-to-r from-white/5 to-transparent rounded-2xl blur-xl"></div>
-                      <div className="absolute -inset-2 bg-white/10 rounded-xl"></div>
+                      {/* Efeito de luz de fundo - sutil no claro, mais forte no escuro */}
+                      <div className="absolute -inset-6 bg-brand/5 dark:bg-brand/10 rounded-2xl blur-2xl opacity-50 dark:opacity-70"></div>
                       
-                      {/* Texto do Versículo */}
-                      <p className="relative text-xl text-white font-semibold leading-relaxed italic font-serif px-6 py-4 text-center drop-shadow-lg">
-                        "{currentDevocional}"
-                      </p>
+                      {/* Container do versículo - mais translúcido no claro, mais opaco no escuro */}
+                      <div className="relative bg-white/60 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 border border-brand/10 dark:border-brand/20 shadow-lg dark:shadow-xl">
+                        <p className="relative text-xl text-gray-700 dark:text-gray-200 font-medium leading-relaxed italic font-serif text-center transition-all duration-300" 
+                           style={{
+                             fontSize: currentDevocional.length > 150 ? '0.875rem' : 
+                                     currentDevocional.length > 100 ? '1rem' : 
+                                     currentDevocional.length > 80 ? '1.125rem' : '1.25rem',
+                             lineHeight: currentDevocional.length > 150 ? '1.4' : '1.5'
+                           }}>
+                          "{currentDevocional}"
+                        </p>
+                      </div>
                     </div>
                   </div>
                   
-                  {/* Separador Decorativo */}
-                  <div className="flex items-center justify-center gap-4 mt-8">
-                    <div className="h-px w-8 bg-gradient-to-r from-transparent to-white/30"></div>
-                    <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center border border-white/20">
-                      <i className="fas fa-cross text-white/60 text-sm"></i>
+                  {/* Separador - Adapta cores */}
+                  <div className="flex items-center justify-center gap-3 mt-6">
+                    <div className="h-px w-10 bg-brand/20 dark:bg-brand/30"></div>
+                    <div className="w-8 h-8 bg-brand/10 dark:bg-brand/20 rounded-full flex items-center justify-center border border-brand/20 dark:border-brand/30">
+                      <i className="fas fa-cross text-[var(--brand-primary)] dark:text-[var(--brand-accent)] text-sm"></i>
                     </div>
-                    <div className="h-px w-8 bg-gradient-to-l from-transparent to-white/30"></div>
+                    <div className="h-px w-10 bg-brand/20 dark:bg-brand/30"></div>
                   </div>
                   
-                  {/* Botão de Editar Sutil */}
+                  {/* Botão de Editar - Oculto (versículo automático) */}
+                  {/* 
                   <button
                     onClick={() => setIsDevocionalModalOpen(true)}
-                    className="absolute top-4 right-4 w-8 h-8 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center border border-white/20 transition-all duration-300 opacity-0 group-hover:opacity-100"
+                    className="absolute top-4 right-4 w-10 h-10 bg-white/80 dark:bg-gray-800/80 hover:bg-white/90 dark:hover:bg-gray-800/90 backdrop-blur-sm rounded-xl flex items-center justify-center border border-brand/20 dark:border-brand/30 transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-lg hover:shadow-xl"
                   >
-                    <i className="fas fa-edit text-white/70 text-xs"></i>
+                    <i className="fas fa-edit text-[var(--brand-primary)] dark:text-[var(--brand-accent)] text-sm"></i>
                   </button>
+                  */}
                 </div>
               </div>
             </div>

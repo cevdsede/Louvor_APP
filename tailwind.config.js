@@ -13,7 +13,7 @@ export default {
       colors: {
         brand: {
           DEFAULT: 'var(--brand-primary)',
-          accent: '#eab308',
+          accent: 'var(--brand-accent)',
           navy: 'var(--brand-primary)',
           gold: '#eab308'
         },

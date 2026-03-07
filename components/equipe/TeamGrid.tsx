@@ -57,7 +57,7 @@ const TeamGrid: React.FC<TeamGridProps> = ({ members, activeFilter, onMemberClic
 
       {/* Card de Membros Inativos */}
       {sortedInactiveMembers.length > 0 && (
-        <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-[2rem] border border-red-100 dark:border-red-800/50 overflow-hidden transition-all">
+        <div className="bg-red-50 dark:bg-red-900/20 rounded-[2rem] border border-red-100 dark:border-red-800/50 overflow-hidden transition-all">
           {/* Header Clicável */}
           <button 
             onClick={() => setIsInactiveExpanded(!isInactiveExpanded)}

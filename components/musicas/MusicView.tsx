@@ -160,11 +160,11 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
           // Filtrar apenas membros com funções "ministro" ou "vocal"
           const ministrosAndVocals = (escalaData || [])
             .filter(item => {
-              const funcaoNome = item.funcao?.nome_funcao?.toLowerCase() || '';
+              const funcaoNome = (item.funcao as any)?.nome_funcao?.toLowerCase() || '';
               return funcaoNome.includes('ministro') || funcaoNome.includes('vocal');
             })
-            .map(item => item.membros)
-            .filter((member, index, arr) => 
+            .map(item => item.membros as any)
+            .filter((member: any, index: number, arr: any[]) => 
               arr.findIndex(m => m.id === member.id) === index // Remove duplicados
             );
 
@@ -863,11 +863,11 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
               {/* Nível Tema - Header Melhorado */}
               <div 
                 onClick={() => setExpandedThemes(p => ({ ...p, [theme]: !p[theme] }))} 
-                className="px-4 sm:px-8 py-4 sm:py-6 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900 border-b border-slate-100 dark:border-slate-700 cursor-pointer group hover:from-brand/5 hover:to-brand/10 transition-all duration-300"
+                className="px-4 sm:px-8 py-4 sm:py-6 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700 cursor-pointer group hover:bg-brand/5 dark:hover:bg-brand/10 transition-all duration-300"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 sm:gap-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-brand to-brand/80 text-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-brand text-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <i className="fas fa-folder text-sm sm:text-lg"></i>
                     </div>
                     <div>
@@ -891,15 +891,15 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
               </div>
               
               {expandedThemes[theme] && (
-                <div className="px-8 pb-8 space-y-6 pt-6 animate-fade-in bg-gradient-to-b from-slate-50/30 to-white dark:from-slate-800/20 dark:to-slate-900">
+                <div className="px-8 pb-8 space-y-6 pt-6 animate-fade-in bg-slate-50/30 dark:bg-slate-800/20">
                   {Object.entries(styles).map(([style, sList]: [string, Music[]]) => {
                     const styleKey = `${theme}-${style}`;
                     return (
-                      <div key={style} className="space-y-4">
+                      <div key={styleKey} className="bg-white dark:bg-slate-800/50 rounded-[2rem] border border-slate-100 dark:border-slate-700 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
                         {/* Nível Estilo - Melhorado */}
                         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
                           <div className="flex items-center gap-3">
-                            <div className={`w-3 h-3 rounded-full shadow-lg ${style === 'Adoração' ? 'bg-gradient-to-br from-blue-400 to-blue-600' : 'bg-gradient-to-br from-amber-400 to-amber-600'}`}></div>
+                            <div className={`w-3 h-3 rounded-full shadow-lg ${style === 'Adoração' ? 'bg-blue-500' : 'bg-amber-500'}`}></div>
                             <div>
                               <h4 className="text-sm font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider">
                                 {style}

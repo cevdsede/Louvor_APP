@@ -47,8 +47,29 @@ const App: React.FC = () => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       document.documentElement.style.setProperty('--brand-primary', brandColor);
+      // Adicionar cor complementar para modo escuro
+      const accentColor = getAccentColor(brandColor);
+      document.documentElement.style.setProperty('--brand-accent', accentColor);
     }
   }, []);
+
+  // Função para gerar cor complementar
+  const getAccentColor = (primaryColor: string) => {
+    // Converter hex para RGB
+    const hex = primaryColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    
+    // Gerar cor complementar (invertendo e ajustando)
+    const accentR = Math.min(255, r + 40);
+    const accentG = Math.min(255, g + 40);
+    const accentB = Math.min(255, b + 40);
+    
+    // Converter de volta para hex
+    const toHex = (n: number) => n.toString(16).padStart(2, '0');
+    return `#${toHex(accentR)}${toHex(accentG)}${toHex(accentB)}`;
+  };
 
   // Salvar tema no localStorage quando mudar
   useEffect(() => {
@@ -84,6 +105,9 @@ const App: React.FC = () => {
   useEffect(() => {
     // Aplicar a variável CSS
     document.documentElement.style.setProperty('--brand-primary', brandColor);
+    // Atualizar também a cor complementar
+    const accentColor = getAccentColor(brandColor);
+    document.documentElement.style.setProperty('--brand-accent', accentColor);
   }, [brandColor]);
 
   const handleSync = () => {
