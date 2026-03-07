@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
+import { showSuccess, showError } from '../../utils/toast';
+import MultiSelect from '../equipe/MultiSelect';
+import { ChartInstance, SolicitacaoAprovacao, Funcao } from '../../types-supabase';
 
 interface ToolsViewProps {
   subView: 'tools-admin' | 'tools-users' | 'tools-approvals' | 'tools-performance';
@@ -9,6 +12,12 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
   const [editingProfile, setEditingProfile] = useState<string | null>(null);
+
+  // Estados para Aprovações
+  const [solicitacoes, setSolicitacoes] = useState<SolicitacaoAprovacao[]>([]);
+  const [funcoes, setFuncoes] = useState<Funcao[]>([]);
+  const [loadingAprovacoes, setLoadingAprovacoes] = useState(false);
+  const [funcoesSelecionadas, setFuncoesSelecionadas] = useState<Record<string, string[]>>({});
 
   // Funções para os botões de acesso rápido
   const handleEditMember = (member: any) => {
@@ -73,6 +82,87 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
     { value: 'Advanced', label: 'Advanced' }
   ];
 
+  // Funções para Aprovações
+  const fetchFuncoes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('funcao')
+        .select('id, nome_funcao')
+        .order('nome_funcao');
+
+      if (error) throw error;
+      setFuncoes(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar funções:', error);
+    }
+  };
+
+  const fetchSolicitacoes = async () => {
+    try {
+      setLoadingAprovacoes(true);
+      const { data, error } = await supabase
+        .from('solicitacoes_membro')
+        .select(`
+          id,
+          user_id,
+          status,
+          created_at,
+          membros(id, nome, email, foto, genero)
+        `)
+        .eq('status', 'pendente')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setSolicitacoes(data || []);
+      
+      // Inicializar funções selecionadas para cada solicitação
+      const inicialFuncoes: Record<string, string[]> = {};
+      data?.forEach(solicitacao => {
+        inicialFuncoes[solicitacao.id] = [];
+      });
+      setFuncoesSelecionadas(inicialFuncoes);
+    } catch (error) {
+      console.error('Erro ao buscar solicitações:', error);
+    } finally {
+      setLoadingAprovacoes(false);
+    }
+  };
+
+  const aprovarMembro = async (userId: string, funcoesIds: string[]) => {
+    try {
+      const { data, error } = await supabase.rpc('aprovar_membro', {
+        user_id: userId,
+        ids_selecionados: funcoesIds
+      });
+
+      if (error) throw error;
+
+      // Atualizar status da solicitação
+      await supabase
+        .from('solicitacoes_membro')
+        .update({ status: 'aprovado' })
+        .eq('user_id', userId);
+
+      // Recarregar solicitações
+      await fetchSolicitacoes();
+      
+      showSuccess('Membro aprovado com sucesso!');
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Erro ao aprovar membro:', error);
+      showError('Erro ao aprovar membro. Tente novamente.');
+      return { success: false, error };
+    }
+  };
+
+  const handleFuncoesChange = (solicitacaoId: string, funcoesIds: string[]) => {
+    setFuncoesSelecionadas(prev => ({
+      ...prev,
+      [solicitacaoId]: funcoesIds
+    }));
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -97,10 +187,10 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
             setData(membersData || []);
             break;
           case 'tools-approvals':
-            setData([
-              { id: 1, type: 'new_user', name: 'Carlos Oliveira', requestDate: '2024-02-06', status: 'pending' },
-              { id: 2, type: 'role_change', name: 'Ana Silva', requestDate: '2024-02-05', status: 'pending' },
-            ]);
+            // Carregar dados reais de aprovações
+            await fetchFuncoes();
+            await fetchSolicitacoes();
+            setData(null); // Não usar dados mockados para aprovações
             break;
           case 'tools-performance':
             setData({
@@ -347,35 +437,69 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
 
       case 'tools-approvals':
         return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter">Aprovações Pendentes</h2>
-
-            <div className="space-y-4">
-              {Array.isArray(data) && data.map((request: any) => (
-                <div key={request.id} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/20 rounded-xl flex items-center justify-center">
-                        <i className="fas fa-exclamation-triangle text-amber-600 dark:text-amber-400 text-xl"></i>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">{request.name}</h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                          {request.type === 'new_user' ? 'Novo Usuário' : 'Alteração de Função'} • {request.requestDate}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button className="px-4 py-2 bg-emerald-500 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-emerald-600 transition-colors">
-                        <i className="fas fa-check mr-2"></i> Aprovar
-                      </button>
-                      <button className="px-4 py-2 bg-red-500 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-red-600 transition-colors">
-                        <i className="fas fa-times mr-2"></i> Rejeitar
-                      </button>
-                    </div>
-                  </div>
+          <div className="space-y-6 pb-20">
+            <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter uppercase">Aprovações</h2>
+                <div className="text-sm text-slate-500">
+                  {solicitacoes.length} solicitação{solicitacoes.length !== 1 ? 's' : ''} pendente{solicitacoes.length !== 1 ? 's' : ''}
                 </div>
-              ))}
+              </div>
+
+              {loadingAprovacoes ? (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <div className="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
+                  <p className="mt-4 text-slate-400 font-bold uppercase tracking-widest text-[9px]">Carregando solicitações...</p>
+                </div>
+              ) : solicitacoes.length === 0 ? (
+                <div className="text-center py-20">
+                  <i className="fas fa-check-circle text-4xl text-green-500 mb-4"></i>
+                  <p className="text-slate-400 font-bold uppercase tracking-widest text-[9px]">Nenhuma solicitação pendente</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {solicitacoes.map(solicitacao => (
+                    <div key={solicitacao.id} className="bg-slate-50 dark:bg-slate-800 rounded-xl p-6 border border-slate-100 dark:border-slate-700">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-4">
+                          <img 
+                            src={solicitacao.membros?.foto || `https://ui-avatars.com/api/?name=${solicitacao.membros?.nome}&background=random`} 
+                            alt={solicitacao.membros?.nome}
+                            className="w-12 h-12 rounded-full border-2 border-slate-200 dark:border-slate-700"
+                          />
+                          <div>
+                            <h3 className="font-black text-slate-800 dark:text-white">{solicitacao.membros?.nome}</h3>
+                            <p className="text-sm text-slate-500">{solicitacao.membros?.email}</p>
+                          </div>
+                        </div>
+                        <span className="text-xs text-slate-400">
+                          {new Date(solicitacao.created_at).toLocaleDateString('pt-BR')}
+                        </span>
+                      </div>
+                      
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                          Selecionar funções:
+                        </label>
+                        <MultiSelect
+                          options={funcoes.map(f => ({ id: f.id, label: f.nome_funcao }))}
+                          value={funcoesSelecionadas[solicitacao.id] || []}
+                          onChange={(value) => handleFuncoesChange(solicitacao.id, value)}
+                        />
+                      </div>
+                      
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => aprovarMembro(solicitacao.user_id, funcoesSelecionadas[solicitacao.id] || [])}
+                          className="flex-1 py-2 bg-brand text-white rounded-lg font-medium hover:bg-brand/600 transition-colors"
+                        >
+                          Aprovar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         );

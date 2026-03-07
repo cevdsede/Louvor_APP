@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { showSuccess, showError } from '../../utils/toast';
 import { ViewType } from '../../types';
 import { ChartInstance } from '../../types-supabase';
 import AttendanceView from './AttendanceView';
@@ -7,7 +6,6 @@ import EventsView from './EventsView';
 import TeamKPIs from './TeamKPIs';
 import TeamGrid from './TeamGrid';
 import TeamModals from './TeamModals';
-import MultiSelect from './MultiSelect';
 import { useTeamData } from '../../hooks/useTeamData';
 import { sortMembersByRole } from '../../utils/teamUtils';
 import EventService, { Evento } from '../../services/EventService';
@@ -27,10 +25,6 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
     activeFilter,
     members,
     loading,
-    solicitacoes,
-    funcoes,
-    loadingAprovacoes,
-    funcoesSelecionadas,
     genderChartRef,
     chartInstance,
     setSelectedMember,
@@ -38,11 +32,9 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
     setViewingEvent,
     setActiveFilter,
     setMembers,
-    aprovarMembro,
-    handleFuncoesChange,
     fetchMembers,
-    fetchFuncoes,
-    fetchSolicitacoes
+    fetchMemberUpcomingScales,
+    fetchMemberSongHistory
   } = useTeamData({ currentView });
 
   // Gerar KPIs dinamicamente baseados nas funções existentes no banco
@@ -217,73 +209,7 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
 
   return (
     <div className="animate-fade-in">
-      {currentView === 'approvals' ? (
-        <div className="space-y-6 pb-20">
-          <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-sm border border-slate-100 dark:border-slate-800">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter uppercase">Aprovações</h2>
-              <div className="text-sm text-slate-500">
-                {solicitacoes.length} solicitação{solicitacoes.length !== 1 ? 's' : ''} pendente{solicitacoes.length !== 1 ? 's' : ''}
-              </div>
-            </div>
-
-            {loadingAprovacoes ? (
-              <div className="flex flex-col items-center justify-center py-20">
-                <div className="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
-                <p className="mt-4 text-slate-400 font-bold uppercase tracking-widest text-[9px]">Carregando solicitações...</p>
-              </div>
-            ) : solicitacoes.length === 0 ? (
-              <div className="text-center py-20">
-                <i className="fas fa-check-circle text-4xl text-green-500 mb-4"></i>
-                <p className="text-slate-400 font-bold uppercase tracking-widest text-[9px]">Nenhuma solicitação pendente</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {solicitacoes.map(solicitacao => (
-                  <div key={solicitacao.id} className="bg-slate-50 dark:bg-slate-800 rounded-xl p-6 border border-slate-100 dark:border-slate-700">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-4">
-                        <img 
-                          src={solicitacao.membros?.foto || `https://ui-avatars.com/api/?name=${solicitacao.membros?.nome}&background=random`} 
-                          alt={solicitacao.membros?.nome}
-                          className="w-12 h-12 rounded-full border-2 border-slate-200 dark:border-slate-700"
-                        />
-                        <div>
-                          <h3 className="font-black text-slate-800 dark:text-white">{solicitacao.membros?.nome}</h3>
-                          <p className="text-sm text-slate-500">{solicitacao.membros?.email}</p>
-                        </div>
-                      </div>
-                      <span className="text-xs text-slate-400">
-                        {new Date(solicitacao.created_at).toLocaleDateString('pt-BR')}
-                      </span>
-                    </div>
-                    
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        Selecionar funções:
-                      </label>
-                      <MultiSelect
-                        options={funcoes.map(f => ({ id: f.id, label: f.nome_funcao }))}
-                        value={funcoesSelecionadas[solicitacao.id] || []}
-                        onChange={(value) => handleFuncoesChange(solicitacao.id, value)}
-                      />
-                    </div>
-                    
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => aprovarMembro(solicitacao.user_id, funcoesSelecionadas[solicitacao.id] || [])}
-                        className="flex-1 py-2 bg-brand text-white rounded-lg font-medium hover:bg-brand/600 transition-colors"
-                      >
-                        Aprovar
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      ) : currentView === 'attendance' ? (
+      {currentView === 'attendance' ? (
         <div>
           {showAttendance && selectedEvento ? (
             <AttendanceView 

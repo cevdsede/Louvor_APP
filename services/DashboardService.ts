@@ -105,7 +105,23 @@ class DashboardService {
     }
   }
 
-  // KIP 3: Frequência por Membro
+  // KIP 3: Total de Membros Ativos
+  async getTotalMembrosAtivos(): Promise<number> {
+    try {
+      const { count, error } = await supabase
+        .from('membros')
+        .select('*', { count: 'exact', head: true })
+        .eq('ativo', true);
+
+      if (error) throw error;
+      return count || 0;
+    } catch (error) {
+      console.error('Erro ao buscar total de membros ativos:', error);
+      return 0;
+    }
+  }
+
+  // KIP 4: Frequência por Membro
   async getFrequenciaPorMembro(): Promise<FrequenciaMembro[]> {
     try {
       const { data, error } = await supabase
@@ -141,14 +157,13 @@ class DashboardService {
         frequenciaMap.get(membroNome)?.add(cultoId);
       });
 
-      // Converter para o formato esperado
+      // Converter para o formato esperado - MOSTRAR TODOS OS MEMBROS
       const frequencia: FrequenciaMembro[] = Array.from(frequenciaMap.entries())
         .map(([nome, cultosSet]) => ({
           nome,
           quantidade: cultosSet.size
         }))
-        .sort((a, b) => b.quantidade - a.quantidade)
-        .slice(0, 10); // Top 10 membros
+        .sort((a, b) => b.quantidade - a.quantidade); // Removido o slice(0, 10) para mostrar todos
 
       return frequencia;
     } catch (error) {

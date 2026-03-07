@@ -10,7 +10,7 @@ interface ToolbarProps {
 const Toolbar: React.FC<ToolbarProps> = ({ currentView, onViewChange }) => {
   const isScaleMode = ['list', 'calendar', 'cleaning'].includes(currentView);
   const isMusicMode = ['music-stats', 'music-list', 'music-repertoire', 'music-create', 'music-history'].includes(currentView);
-  const isTeamMode = ['team', 'attendance', 'approvals'].includes(currentView);
+  const isTeamMode = ['team', 'attendance'].includes(currentView);
   const isToolsMode = ['tools-admin', 'tools-users', 'tools-approvals', 'tools-performance'].includes(currentView);
 
   if (currentView === 'dashboard') return null;
@@ -94,12 +94,6 @@ const Toolbar: React.FC<ToolbarProps> = ({ currentView, onViewChange }) => {
                 className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${currentView === 'attendance' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 <i className="fas fa-clipboard-check"></i> Chamada
-              </button>
-              <button 
-                onClick={() => onViewChange('approvals')}
-                className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${currentView === 'approvals' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
-              >
-                <i className="fas fa-user-check"></i> Aprovações
               </button>
             </div>
           )}
