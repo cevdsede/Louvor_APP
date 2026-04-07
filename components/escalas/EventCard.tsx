@@ -7,6 +7,8 @@ interface EventCardProps {
   onToggle: () => void;
   activeSubTab: 'team' | 'repertoire' | 'notices';
   onSubTabChange: (tab: 'team' | 'repertoire' | 'notices') => void;
+  onDelete: (eventId: string, eventTitle: string) => void;
+  isAdminOrLeader: boolean;
   children: React.ReactNode;
 }
 
@@ -16,6 +18,8 @@ const EventCard: React.FC<EventCardProps> = ({
   onToggle,
   activeSubTab,
   onSubTabChange,
+  onDelete,
+  isAdminOrLeader,
   children
 }) => {
   return (
@@ -40,6 +44,19 @@ const EventCard: React.FC<EventCardProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Botão de Excluir - apenas para admin/líder */}
+          {isAdminOrLeader && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(event.id, event.title);
+              }}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all group"
+              title="Excluir escala"
+            >
+              <i className="fas fa-trash text-[10px]"></i>
+            </button>
+          )}
           <div className={`w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 dark:bg-slate-800 text-slate-400 transition-all ${isExpanded ? 'rotate-180 bg-brand/10 text-brand' : 'group-hover:text-brand'}`}>
             <i className="fas fa-chevron-down text-[10px]"></i>
           </div>

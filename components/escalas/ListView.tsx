@@ -5,6 +5,7 @@ import { Song, SupabaseCulto, SupabaseEscala, SupabaseRepertorio, SupabaseAviso,
 import { showSuccess, showError, showWarning } from '../../utils/toast';
 import { logger } from '../../utils/logger';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
+import ModalUtils from '../../utils/modalUtils';
 
 // Import new components
 import EventCard from './EventCard';
@@ -31,14 +32,16 @@ interface NomeCulto {
   nome_culto: string;
 }
 
+
 const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeSubTabs, setActiveSubTabs] = useState<Record<string, SubTab>>({});
   const [showScaleModal, setShowScaleModal] = useState<{ mode: 'add' | 'edit', eventId?: string } | null>(null);
 
   // User logged state - exige membro válido
-  const [currentUser, setCurrentUser] = useState<{ id: string, name: string } | null>(null);
-  const [isMember, setIsMember] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isMember, setIsMember] = useState<boolean>(false);
+  const [isAdminOrLeader, setIsAdminOrLeader] = useState<boolean>(false);
 
   // Usar localStorage-first para todos os dados
   const { data: cultosRaw } = useLocalStorageFirst<any>({ table: 'cultos' });
@@ -122,19 +125,30 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
           
           if (memberData) {
             setCurrentUser({ id: memberData.id, name: memberData.nome });
+            const isAdmin = memberData.perfil && (
+              memberData.perfil.toLowerCase().includes('admin') || 
+              memberData.perfil.toLowerCase().includes('líder') ||
+              memberData.perfil.toLowerCase().includes('lider')
+            );
+            setIsAdminOrLeader(isAdmin);
             setIsMember(true);
-            logger.auth('ListView - Usuário identificado via cache/auth:', { email: userEmail, isMember: true });
+            logger.auth('ListView - Usuário autenticado:', { email: userEmail, perfil: memberData.perfil, isMember: true, isAdminOrLeader: isAdmin });
           } else {
             setCurrentUser(null);
             setIsMember(false);
+            setIsAdminOrLeader(false);
+            logger.auth('ListView - Membro não encontrado pelo email:', { email: userEmail });
           }
         } else if (!userEmail) {
           setCurrentUser(null);
           setIsMember(false);
+          setIsAdminOrLeader(false);
         }
       } catch (error) {
-        logger.error('Erro ao identificar usuário (Offline-safe):', error, 'auth');
-        // Não resetar estados se falhar por rede
+        logger.error('Erro ao buscar usuário:', error, 'auth');
+        setCurrentUser(null);
+        setIsMember(false);
+        setIsAdminOrLeader(false);
       }
     };
 
@@ -152,6 +166,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
       } else {
         setCurrentUser(null);
         setIsMember(false);
+        setIsAdminOrLeader(false);
       }
     });
 
@@ -376,6 +391,58 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
   const fetchNotices = async () => {};
   const fetchEvents = async () => {};
 
+  const handleDeleteScale = async (eventId: string, eventTitle: string) => {
+    const userWantsToDelete = await ModalUtils.confirmDelete(
+      eventTitle,
+      'Esta ação irá excluir:\n• O culto\n• Todos os membros escalados\n• Todas as músicas do repertório\n\nEsta ação não pode ser desfeita.'
+    );
+
+    if (!userWantsToDelete) {
+      return;
+    }
+
+    try {
+      // 1. Excluir repertório do culto
+      const { error: repertorioError } = await supabase
+        .from('repertorio')
+        .delete()
+        .eq('id_culto', eventId);
+
+      if (repertorioError) {
+        logger.error('Erro ao excluir repertório:', repertorioError, 'database');
+        throw repertorioError;
+      }
+
+      // 2. Excluir escalas dos membros
+      const { error: escalaError } = await supabase
+        .from('escalas')
+        .delete()
+        .eq('id_culto', eventId);
+
+      if (escalaError) {
+        logger.error('Erro ao excluir escalas:', escalaError, 'database');
+        throw escalaError;
+      }
+
+      // 3. Excluir o culto
+      const { error: cultoError } = await supabase
+        .from('cultos')
+        .delete()
+        .eq('id', eventId);
+
+      if (cultoError) {
+        logger.error('Erro ao excluir culto:', cultoError, 'database');
+        throw cultoError;
+      }
+
+      showSuccess(`Escala "${eventTitle}" excluída com sucesso!`);
+      fetchEvents(); // Recarregar a lista
+    } catch (err) {
+      logger.error('Error deleting scale:', err, 'database');
+      showError('Erro ao excluir escala. Tente novamente.');
+    }
+  };
+
   const exportFilteredData = async () => {
     try {
       // Importar html2canvas dinamicamente
@@ -572,14 +639,16 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
               Exportar
             </button>
             
-            {/* Botão Nova Escala */}
-            <button
-              onClick={() => setShowScaleModal({ mode: 'add' })}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-brand hover:border-brand transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm"
-            >
-              <i className="fas fa-plus text-[8px]"></i>
-              Nova Escala
-            </button>
+            {/* Botão Nova Escala - apenas para admin/líder */}
+            {isAdminOrLeader && (
+              <button
+                onClick={() => setShowScaleModal({ mode: 'add' })}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-brand hover:border-brand transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm"
+              >
+                <i className="fas fa-plus text-[8px]"></i>
+                Nova Escala
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -594,6 +663,8 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
               onToggle={() => toggleExpand(event.id)}
               activeSubTab={activeSubTabs[event.id] || 'team'}
               onSubTabChange={(tab) => setSubTab(event.id, tab)}
+              onDelete={handleDeleteScale}
+              isAdminOrLeader={isAdminOrLeader}
             >
               {activeSubTabs[event.id] === 'team' && (
                 <TeamManager
@@ -660,8 +731,8 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
 
       {/* Modal de Escala */}
       {showScaleModal && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md" onClick={() => setShowScaleModal(null)}></div>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ left: '256px' }}>
+          <div className="absolute inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md" style={{ left: '-256px' }} onClick={() => setShowScaleModal(null)}></div>
           <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 lg:p-10 shadow-2xl animate-fade-in border border-slate-100 dark:border-slate-800 max-h-[90vh] overflow-y-auto no-scrollbar">
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Escala</h3>

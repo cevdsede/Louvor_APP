@@ -23,12 +23,6 @@ export const useTeamData = ({ currentView }: UseTeamDataProps) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Estados para Aprovações
-  const [solicitacoes, setSolicitacoes] = useState<SolicitacaoAprovacao[]>([]);
-  const [funcoes, setFuncoes] = useState<Funcao[]>([]);
-  const [loadingAprovacoes, setLoadingAprovacoes] = useState(false);
-  const [funcoesSelecionadas, setFuncoesSelecionadas] = useState<Record<string, string[]>>({});
-
   // Refs para gráficos
   const genderChartRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<ChartInstance | null>(null);
@@ -166,96 +160,6 @@ export const useTeamData = ({ currentView }: UseTeamDataProps) => {
     }
   };
 
-  // Funções para Aprovações
-  const fetchFuncoes = async () => {
-    try {
-      const data = LocalStorageFirstService.get<any>('funcao');
-      setFuncoes(data || []);
-      
-      // Tentar atualizar em background
-      LocalStorageFirstService.forceSync('funcao').catch(() => {});
-    } catch (error) {
-      logger.error('Erro ao buscar funções no cache:', error, 'database');
-    }
-  };
-
-  const fetchSolicitacoes = async () => {
-    try {
-      setLoadingAprovacoes(true);
-      const { data, error } = await supabase
-        .from('solicitacoes_membro')
-        .select(`
-          id,
-          user_id,
-          status,
-          created_at,
-          membros(id, nome, email, foto, genero)
-        `)
-        .eq('status', 'pendente')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      
-      const mapped: SolicitacaoAprovacao[] = (data || []).map((s: any) => ({
-        id: s.id,
-        memberId: s.user_id,
-        memberName: s.membros?.nome || 'Desconhecido',
-        memberEmail: s.membros?.email || '',
-        requestedRole: 'Membro',
-        status: s.status as any,
-        createdAt: s.created_at
-      }));
-
-      setSolicitacoes(mapped);
-      
-      // Inicializar funções selecionadas para cada solicitação
-      const inicialFuncoes: Record<string, string[]> = {};
-      data?.forEach(solicitacao => {
-        inicialFuncoes[solicitacao.id] = [];
-      });
-      setFuncoesSelecionadas(inicialFuncoes);
-    } catch (error) {
-      logger.error('Erro ao buscar solicitações:', error, 'database');
-    } finally {
-      setLoadingAprovacoes(false);
-    }
-  };
-
-  const aprovarMembro = async (userId: string, funcoesIds: string[]) => {
-    try {
-      const { data, error } = await supabase.rpc('aprovar_membro', {
-        user_id: userId,
-        ids_selecionados: funcoesIds
-      });
-
-      if (error) throw error;
-
-      // Atualizar status da solicitação
-      await supabase
-        .from('solicitacoes_membro')
-        .update({ status: 'aprovado' })
-        .eq('user_id', userId);
-
-      // Recarregar solicitações
-      await fetchSolicitacoes();
-      
-      // Recarregar membros para incluir o novo membro
-      await fetchMembers();
-      
-      return { success: true };
-    } catch (error) {
-      logger.error('Erro ao aprovar membro:', error, 'database');
-      return { success: false, error };
-    }
-  };
-
-  const handleFuncoesChange = (solicitacaoId: string, funcoesIds: string[]) => {
-    setFuncoesSelecionadas(prev => ({
-      ...prev,
-      [solicitacaoId]: funcoesIds
-    }));
-  };
-
   // Buscar próximas escalas do membro
   const fetchMemberUpcomingScales = async (memberId: string) => {
     try {
@@ -378,10 +282,6 @@ export const useTeamData = ({ currentView }: UseTeamDataProps) => {
   // useEffect principal
   useEffect(() => {
     fetchMembers();
-    if (currentView === 'approvals') {
-      fetchFuncoes();
-      fetchSolicitacoes();
-    }
   }, [currentView]);
 
   return {
@@ -392,10 +292,6 @@ export const useTeamData = ({ currentView }: UseTeamDataProps) => {
     activeFilter,
     members,
     loading,
-    solicitacoes,
-    funcoes,
-    loadingAprovacoes,
-    funcoesSelecionadas,
     genderChartRef,
     chartInstance,
     allEvents,
@@ -406,13 +302,9 @@ export const useTeamData = ({ currentView }: UseTeamDataProps) => {
     setViewingEvent,
     setActiveFilter,
     setMembers,
-    aprovarMembro,
-    handleFuncoesChange,
     
     // Funções de fetch
     fetchMembers,
-    fetchFuncoes,
-    fetchSolicitacoes,
     fetchMemberUpcomingScales,
     fetchMemberSongHistory
   };

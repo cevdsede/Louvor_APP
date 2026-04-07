@@ -368,7 +368,7 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
         {repertoire.map((item, index) => (
           <div key={`${eventId}-rep-${index}`} className="group bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
             {/* Header com Tom e Informações da Música */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700 relative">
               <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
                 {item.key || 'Ñ'}
               </div>
@@ -379,17 +379,17 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
                 </p>
               </div>
               {isMember && (
-                <div className="flex items-center gap-1">
+                <div className="absolute top-2 right-2 flex gap-1 z-10">
                   <button 
                     onClick={() => handleEditSong(item)}
-                    className="w-6 h-6 flex items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-400 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                    className="w-6 h-6 flex items-center justify-center rounded-lg bg-blue-500 text-white shadow-md hover:bg-blue-600 transition-all duration-300"
                     title="Editar música"
                   >
                     <i className="fas fa-edit text-[8px]"></i>
                   </button>
                   <button 
                     onClick={() => handleDeleteSong(item.id)}
-                    className="w-6 h-6 flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 text-red-400 dark:text-red-400 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-red-100 dark:hover:bg-red-900/40"
+                    className="w-6 h-6 flex items-center justify-center rounded-lg bg-red-500 text-white shadow-md hover:bg-red-600 transition-all duration-300"
                     title="Excluir música"
                   >
                     <i className="fas fa-trash-alt text-[8px]"></i>
@@ -399,11 +399,13 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
             </div>
             
             {/* Botões de Links */}
-            <div className="grid grid-cols-4 gap-1">
-              <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${item.musica} ${item.cantor}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
-              <a href={`https://open.spotify.com/search/${encodeURIComponent(`${item.musica} ${item.cantor}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-green-600 hover:bg-green-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
-              <a href={`https://www.google.com/search?q=${encodeURIComponent(`${item.musica} ${item.cantor} cifra`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-600 hover:bg-blue-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[10px]"></i></a>
-              <a href={`https://www.google.com/search?q=${encodeURIComponent(`${item.musica} ${item.cantor} letra`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-purple-600 hover:bg-purple-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-microphone-alt text-[10px]"></i></a>
+            <div className="px-4 pb-4">
+              <div className="grid grid-cols-4 gap-1">
+                <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${item.musica} ${item.cantor}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
+                <a href={`https://open.spotify.com/search/${encodeURIComponent(`${item.musica} ${item.cantor}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-green-600 hover:bg-green-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
+                <a href={`https://www.google.com/search?q=${encodeURIComponent(`${item.musica} ${item.cantor} cifra`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-600 hover:bg-blue-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[10px]"></i></a>
+                <a href={`https://www.google.com/search?q=${encodeURIComponent(`${item.musica} ${item.cantor} letra`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-purple-600 hover:bg-purple-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-microphone-alt text-[10px]"></i></a>
+              </div>
             </div>
           </div>
         ))}

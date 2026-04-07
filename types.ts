@@ -2,7 +2,7 @@
 export type ViewType =
   | 'dashboard'
   | 'list' | 'calendar' | 'cleaning'
-  | 'team' | 'attendance' | 'approvals'
+  | 'team' | 'attendance'
   | 'music-stats' | 'music-list' | 'music-repertoire' | 'music-create' | 'music-history' | 'music-escalas'
   | 'tools-admin' | 'tools-users' | 'tools-approvals' | 'tools-performance';
 
@@ -20,6 +20,7 @@ export interface MemberScale {
   date: string;
   event: string;
   role: string;
+  time?: string;
 }
 
 export type AttendanceStatus = 'present' | 'absent' | 'justified';
@@ -41,6 +42,8 @@ export interface AttendanceEvent {
 export interface SongHistoryItem {
   song: string;
   key: string;
+  date: string;
+  event: string;
 }
 
 export interface Member {
@@ -55,6 +58,7 @@ export interface Member {
   telefone?: string;
   email?: string;
   data_nasc?: string;
+  foto?: string;
   icon?: string;
   upcomingScales?: MemberScale[];
   songHistory?: SongHistoryItem[];

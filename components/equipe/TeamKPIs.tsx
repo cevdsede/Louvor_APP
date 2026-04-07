@@ -79,7 +79,7 @@ const TeamKPIs: React.FC<TeamKPIsProps> = ({ members, activeFilter, onFilter }) 
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 mb-8">
       {/* KPI Total */}
-      <div className="flex flex-col items-center justify-center p-2 rounded-2xl border-2 border-brand/20 bg-gradient-to-br from-brand/5 to-brand/10 text-brand">
+      <div className="flex flex-col items-center justify-center p-2 rounded-2xl border-2 border-brand/20 bg-brand/5 text-brand">
         <div className="w-6 h-6 bg-brand/20 rounded-lg flex items-center justify-center mb-1">
           <i className="fas fa-users text-[9px]"></i>
         </div>

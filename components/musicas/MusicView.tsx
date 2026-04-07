@@ -81,7 +81,12 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
   // UI Controls
   const [isSongModalOpen, setIsSongModalOpen] = useState(false);
   const [isRepertoireModalOpen, setIsRepertoireModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isEscalaDeleteModalOpen, setIsEscalaDeleteModalOpen] = useState(false);
   const [editingRepertoire, setEditingRepertoire] = useState<RepertoireItem | null>(null);
+  const [deletingRepertoire, setDeletingRepertoire] = useState<RepertoireItem | null>(null);
+  const [editingEscala, setEditingEscala] = useState<any>(null);
+  const [deletingEscala, setDeletingEscala] = useState<any>(null);
   const [expandedThemes, setExpandedThemes] = useState<Record<string, boolean>>({});
   const [expandedStyles, setExpandedStyles] = useState<Record<string, boolean>>({});
   const [expandedMinisters, setExpandedMinisters] = useState<Record<string, boolean>>({});
@@ -102,6 +107,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
     id_membros: '',
     id_tons: ''
   });
+  const [loadingMinisters, setLoadingMinisters] = useState(false);
   const [availableThemes, setAvailableThemes] = useState<string[]>([]);
   const [availableSongs, setAvailableSongs] = useState<Music[]>([]);
   const [filteredSongs, setFilteredSongs] = useState<Music[]>([]);
@@ -132,25 +138,53 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
   // Filtrar ministros baseado no culto selecionado
   useEffect(() => {
     if (newRepertoire.id_culto) {
-      // Buscar ministros e vocais que já participaram deste culto
-      const cultMinisters = repertoires
-        .filter(rep => rep.cultName === availableCults.find(c => c.id === newRepertoire.id_culto)?.nome_cultos?.nome_culto)
-        .flatMap(rep => rep.items)
-        .map(item => item.minister)
-        .filter((minister, index, arr) => arr.indexOf(minister) === index); // Remove duplicados
-      
-      // Adicionar membros que são ministros/vocais
-      const ministersAndVocals = availableMembers.filter(member => 
-        member.nome.toLowerCase().includes('ministro') || 
-        member.nome.toLowerCase().includes('vocal') ||
-        cultMinisters.includes(member.nome)
-      );
-      
-      setFilteredMembers(ministersAndVocals);
+      // Buscar membros escalados para este culto com funções "ministro" e "back"
+      const fetchMinistrosForCulto = async () => {
+        setLoadingMinisters(true);
+        try {
+          const { data: escalaData, error: escalaError } = await supabase
+            .from('escalas')
+            .select(`
+              id_membros,
+              funcao (
+                id,
+                nome_funcao
+              ),
+              membros (
+                id,
+                nome
+              )
+            `)
+            .eq('id_culto', newRepertoire.id_culto);
+
+          if (escalaError) throw escalaError;
+
+          // Filtrar apenas membros com funções "ministro" ou "vocal"
+          const ministrosAndVocals = (escalaData || [])
+            .filter(item => {
+              const funcaoNome = (item.funcao as any)?.nome_funcao?.toLowerCase() || '';
+              return funcaoNome.includes('ministro') || funcaoNome.includes('vocal');
+            })
+            .map(item => item.membros as any)
+            .filter((member: any, index: number, arr: any[]) => 
+              arr.findIndex(m => m.id === member.id) === index // Remove duplicados
+            );
+
+          setFilteredMembers(ministrosAndVocals);
+        } catch (error) {
+          logger.error('Erro ao buscar ministros para o culto:', error, 'database');
+          setFilteredMembers([]);
+        } finally {
+          setLoadingMinisters(false);
+        }
+      };
+
+      fetchMinistrosForCulto();
     } else {
       setFilteredMembers([]);
+      setLoadingMinisters(false);
     }
-  }, [newRepertoire.id_culto, availableMembers, repertoires, availableCults]);
+  }, [newRepertoire.id_culto]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -377,17 +411,54 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
     }
   };
 
-  const handleDeleteRepertoire = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este item do repertório?')) {
-      return;
-    }
+  const handleDeleteRepertoire = (item: RepertoireItem) => {
+    setDeletingRepertoire(item);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteRepertoire = async () => {
+    if (!deletingRepertoire) return;
 
     try {
-      LocalStorageFirstService.remove('repertorio', id);
+      LocalStorageFirstService.remove('repertorio', deletingRepertoire.id);
+      setIsDeleteModalOpen(false);
+      setDeletingRepertoire(null);
       fetchData();
     } catch (err) {
       logger.error('Error deleting repertoire:', err, 'database');
       showError('Erro ao excluir repertório.');
+    }
+  };
+
+  // Funções para escalas
+  const openEditEscalaModal = (item: any) => {
+    setEditingEscala(item);
+    // TODO: Implementar modal de edição de escala
+    console.log('Editar escala:', item);
+  };
+
+  const handleDeleteEscala = (item: any) => {
+    setDeletingEscala(item);
+    setIsEscalaDeleteModalOpen(true);
+  };
+
+  const confirmDeleteEscala = async () => {
+    if (!deletingEscala) return;
+
+    try {
+      const { error } = await supabase
+        .from('escalas')
+        .delete()
+        .eq('id', deletingEscala.id);
+
+      if (error) throw error;
+
+      setIsEscalaDeleteModalOpen(false);
+      setDeletingEscala(null);
+      fetchData();
+    } catch (err) {
+      logger.error('Error deleting escala:', err, 'database');
+      showError('Erro ao excluir escala.');
     }
   };
 
@@ -646,8 +717,8 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
 
         {/* Modal Adicionar Música */}
         {isSongModalOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsSongModalOpen(false)}></div>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ left: '256px' }}>
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" style={{ left: '-256px' }} onClick={() => setIsSongModalOpen(false)}></div>
             <div className="relative w-full max-w-md bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl animate-fade-in border border-slate-100 dark:border-slate-800">
               <h3 className="text-lg font-black text-slate-800 dark:text-white mb-6">Nova Música</h3>
               <div className="space-y-4">
@@ -678,11 +749,11 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
               {/* Nível Tema - Header Melhorado */}
               <div 
                 onClick={() => setExpandedThemes(p => ({ ...p, [theme]: !p[theme] }))} 
-                className="px-4 sm:px-8 py-4 sm:py-6 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900 border-b border-slate-100 dark:border-slate-700 cursor-pointer group hover:from-brand/5 hover:to-brand/10 transition-all duration-300"
+                className="px-4 sm:px-8 py-4 sm:py-6 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700 cursor-pointer group hover:bg-brand/5 dark:hover:bg-brand/10 transition-all duration-300"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 sm:gap-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-brand to-brand/80 text-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-brand text-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <i className="fas fa-folder text-sm sm:text-lg"></i>
                     </div>
                     <div>
@@ -706,15 +777,15 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
               </div>
               
               {expandedThemes[theme] && (
-                <div className="px-8 pb-8 space-y-6 pt-6 animate-fade-in bg-gradient-to-b from-slate-50/30 to-white dark:from-slate-800/20 dark:to-slate-900">
+                <div className="px-8 pb-8 space-y-6 pt-6 animate-fade-in bg-slate-50/30 dark:bg-slate-800/20">
                   {Object.entries(styles).map(([style, sList]: [string, Music[]]) => {
                     const styleKey = `${theme}-${style}`;
                     return (
-                      <div key={style} className="space-y-4">
+                      <div key={styleKey} className="bg-white dark:bg-slate-800/50 rounded-[2rem] border border-slate-100 dark:border-slate-700 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
                         {/* Nível Estilo - Melhorado */}
                         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
                           <div className="flex items-center gap-3">
-                            <div className={`w-3 h-3 rounded-full shadow-lg ${style === 'Adoração' ? 'bg-gradient-to-br from-blue-400 to-blue-600' : 'bg-gradient-to-br from-amber-400 to-amber-600'}`}></div>
+                            <div className={`w-3 h-3 rounded-full shadow-lg ${style === 'Adoração' ? 'bg-blue-500' : 'bg-amber-500'}`}></div>
                             <div>
                               <h4 className="text-sm font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider">
                                 {style}
@@ -881,8 +952,8 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {event.items.map((item: RepertoireItem, index: number) => (
-                    <div key={item.id} className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 relative group">
-                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div key={item.id} className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 relative">
+                      <div className="absolute top-2 right-2 flex gap-1">
                         <button
                           onClick={() => openEditModal(item)}
                           className="w-6 h-6 bg-blue-500 text-white rounded-lg flex items-center justify-center hover:bg-blue-600 transition-colors"
@@ -891,7 +962,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                           <i className="fas fa-edit text-[10px]"></i>
                         </button>
                         <button
-                          onClick={() => handleDeleteRepertoire(item.id)}
+                          onClick={() => handleDeleteRepertoire(item)}
                           className="w-6 h-6 bg-red-500 text-white rounded-lg flex items-center justify-center hover:bg-red-600 transition-colors"
                           title="Excluir"
                         >
@@ -928,8 +999,8 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
 
         {/* Modal Adicionar/Editar Repertório */}
         {isRepertoireModalOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsRepertoireModalOpen(false)}></div>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ left: '256px' }}>
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" style={{ left: '-256px' }} onClick={() => setIsRepertoireModalOpen(false)}></div>
             <div className="relative w-full max-w-md bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl animate-fade-in border border-slate-100 dark:border-slate-800">
               <h3 className="text-lg font-black text-slate-800 dark:text-white mb-6">
                 {editingRepertoire ? 'Editar Repertório' : 'Novo Repertório'}
@@ -1017,18 +1088,37 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-2">Ministro</label>
-                    <select 
-                      value={newRepertoire.id_membros} 
-                      onChange={e => setNewRepertoire({ ...newRepertoire, id_membros: e.target.value, minister: filteredMembers.find(m => m.id === e.target.value)?.nome || '' })} 
-                      className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand"
-                    >
-                      <option value="">Selecione um ministro...</option>
-                      {filteredMembers.map(member => (
-                        <option key={member.id} value={member.id}>
-                          {member.nome}
+                    <div className="relative">
+                      <select 
+                        value={newRepertoire.id_membros} 
+                        onChange={e => setNewRepertoire({ ...newRepertoire, id_membros: e.target.value, minister: filteredMembers.find(m => m.id === e.target.value)?.nome || '' })} 
+                        className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand appearance-none"
+                        disabled={!newRepertoire.id_culto || loadingMinisters}
+                      >
+                        <option value="">
+                          {loadingMinisters ? 'Buscando ministros...' : 
+                           newRepertoire.id_culto ? 'Selecione um ministro...' : 'Selecione um culto primeiro...'}
                         </option>
-                      ))}
-                    </select>
+                        {filteredMembers.map(member => (
+                          <option key={member.id} value={member.id}>
+                            {member.nome}
+                          </option>
+                        ))}
+                      </select>
+                      {loadingMinisters && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <div className="w-4 h-4 border-2 border-brand border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                      {!loadingMinisters && newRepertoire.id_culto && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <i className="fas fa-chevron-down text-slate-400 text-xs"></i>
+                        </div>
+                      )}
+                    </div>
+                    {newRepertoire.id_culto && !loadingMinisters && filteredMembers.length === 0 && (
+                      <p className="text-[9px] text-amber-600 mt-1">Nenhum ministro/vocal encontrado para este culto</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-2">Tom</label>
@@ -1062,6 +1152,134 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                     {editingRepertoire ? 'Salvar' : 'Adicionar'}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Confirmação de Exclusão */}
+        {isDeleteModalOpen && deletingRepertoire && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ left: '256px' }}>
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" style={{ left: '-256px' }} onClick={() => setIsDeleteModalOpen(false)}></div>
+            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl animate-fade-in border border-slate-100 dark:border-slate-800">
+              {/* Ícone de Alerta */}
+              <div className="flex justify-center mb-6">
+                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                  <i className="fas fa-exclamation-triangle text-red-600 dark:text-red-400 text-2xl"></i>
+                </div>
+              </div>
+              
+              {/* Título e Descrição */}
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-black text-slate-800 dark:text-white mb-3">
+                  Excluir Item do Repertório
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                  Tem certeza que deseja excluir permanentemente esta música do repertório?
+                </p>
+                
+                {/* Card com informações da música */}
+                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 text-left">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
+                      {deletingRepertoire.key || 'Ñ'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-black text-slate-800 dark:text-white uppercase truncate">
+                        {deletingRepertoire.song} - {deletingRepertoire.singer}
+                      </h4>
+                      {deletingRepertoire.minister && (
+                        <p className="text-[9px] font-bold text-slate-400 uppercase">
+                          Ministro: <span className="text-brand">{deletingRepertoire.minister}</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Botões de Ação */}
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => {
+                    setIsDeleteModalOpen(false);
+                    setDeletingRepertoire(null);
+                  }} 
+                  className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold rounded-xl text-xs uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <i className="fas fa-times mr-2"></i>
+                  Cancelar
+                </button>
+                <button 
+                  onClick={confirmDeleteRepertoire}
+                  className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl text-xs uppercase tracking-widest shadow-lg hover:bg-red-700 transition-colors"
+                >
+                  <i className="fas fa-trash mr-2"></i>
+                  Excluir
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Confirmação de Exclusão de Escala */}
+        {isEscalaDeleteModalOpen && deletingEscala && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ left: '256px' }}>
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" style={{ left: '-256px' }} onClick={() => setIsEscalaDeleteModalOpen(false)}></div>
+            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl animate-fade-in border border-slate-100 dark:border-slate-800">
+              {/* Ícone de Alerta */}
+              <div className="flex justify-center mb-6">
+                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                  <i className="fas fa-exclamation-triangle text-red-600 dark:text-red-400 text-2xl"></i>
+                </div>
+              </div>
+              
+              {/* Título e Descrição */}
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-black text-slate-800 dark:text-white mb-3">
+                  Excluir Membro da Escala
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                  Tem certeza que deseja excluir permanentemente este membro da escala?
+                </p>
+                
+                {/* Card com informações do membro */}
+                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 text-left">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
+                      {deletingEscala.membros?.[0]?.nome?.charAt(0)?.toUpperCase() || 'M'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-black text-slate-800 dark:text-white uppercase truncate">
+                        {deletingEscala.membros?.[0]?.nome || 'Sem Nome'}
+                      </h4>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase">
+                        Função: <span className="text-brand">{deletingEscala.funcao?.[0]?.nome_funcao || 'Membro'}</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Botões de Ação */}
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => {
+                    setIsEscalaDeleteModalOpen(false);
+                    setDeletingEscala(null);
+                  }} 
+                  className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold rounded-xl text-xs uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <i className="fas fa-times mr-2"></i>
+                  Cancelar
+                </button>
+                <button 
+                  onClick={confirmDeleteEscala}
+                  className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl text-xs uppercase tracking-widest shadow-lg hover:bg-red-700 transition-colors"
+                >
+                  <i className="fas fa-trash mr-2"></i>
+                  Excluir
+                </button>
               </div>
             </div>
           </div>
@@ -1312,18 +1530,18 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                 <div className="p-4 space-y-3 animate-fade-in">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {event.items.map((item: any, index: number) => (
-                      <div key={item.id} className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 relative group">
-                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div key={item.id} className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 relative">
+                        <div className="absolute top-2 right-2 flex gap-1 z-50">
                           <button
-                            onClick={() => console.log('Editar escala:', item)}
-                            className="w-6 h-6 bg-blue-500 text-white rounded-lg flex items-center justify-center hover:bg-blue-600 transition-colors"
+                            onClick={() => openEditEscalaModal(item)}
+                            className="w-6 h-6 bg-blue-500/90 text-white rounded-lg flex items-center justify-center hover:bg-blue-600 transition-colors shadow-md backdrop-blur-sm"
                             title="Editar"
                           >
                             <i className="fas fa-edit text-[10px]"></i>
                           </button>
                           <button
-                            onClick={() => console.log('Excluir escala:', item.id)}
-                            className="w-6 h-6 bg-red-500 text-white rounded-lg flex items-center justify-center hover:bg-red-600 transition-colors"
+                            onClick={() => handleDeleteEscala(item)}
+                            className="w-6 h-6 bg-red-500/90 text-white rounded-lg flex items-center justify-center hover:bg-red-600 transition-colors shadow-md backdrop-blur-sm"
                             title="Excluir"
                           >
                             <i className="fas fa-trash text-[10px]"></i>
