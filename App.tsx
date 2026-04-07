@@ -14,6 +14,7 @@ import ToolsView from './components/tools/ToolsView';
 import AvisoModal from './components/ui/AvisoModal';
 import SplashScreen from './components/auth/SplashScreen';
 import LoginScreen from './components/auth/LoginScreen';
+import { LocalStorageFirstInitializer } from './components/LocalStorageFirstInitializer';
 import { ViewType } from './types';
 
 type AppState = 'splash' | 'login' | 'main';
@@ -102,32 +103,71 @@ const App: React.FC = () => {
   const isTeamView = (view: ViewType) => ['team', 'attendance'].includes(view);
   const isToolsView = (view: ViewType) => ['tools-admin', 'tools-users', 'tools-approvals', 'tools-performance'].includes(view);
 
+  // Cache da sessão para offline
+  const [sessionCached, setSessionCached] = useState<any>(() => {
+    const saved = localStorage.getItem('supabase_session_cache');
+    return saved ? JSON.parse(saved) : null;
+  });
+
   useEffect(() => {
     if (appState === 'splash') {
       const checkSession = async () => {
-        // Wait a bit for splash effect
+        // Delay inicial para o efeito da splash screen
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          setAppState('main');
-        } else {
-          setAppState('login');
+        // Se estiver offline, usar cache se disponível, senão ir para login
+        if (!navigator.onLine) {
+          if (sessionCached) {
+            console.log('📶 Offline: Usando cache de sessão para entrar.');
+            setAppState('main');
+          } else {
+            console.log('📶 Offline: Sem cache de sessão, indo para login.');
+            setAppState('login');
+          }
+          return;
+        }
+
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            localStorage.setItem('supabase_session_cache', JSON.stringify(session));
+            setSessionCached(session);
+            setAppState('main');
+          } else {
+            setAppState('login');
+          }
+        } catch (err) {
+          if (sessionCached) {
+            console.warn('Erro ao verificar sessão, usando cache:', err);
+            setAppState('main');
+          } else {
+            setAppState('login');
+          }
         }
       };
 
       checkSession();
     }
-  }, [appState]);
+  }, [appState, sessionCached]);
 
-  // Listen for auth changes
+  // Escutar mudança de Auth e atualizar cache
   useEffect(() => {
+    if (!navigator.onLine) {
+      console.log('📶 Offline: Pulando listener de auth.');
+      return;
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
+        localStorage.setItem('supabase_session_cache', JSON.stringify(session));
+        setSessionCached(session);
         setAppState('main');
-      } else if (appState !== 'splash') {
-        // Only redirect to login if not in splash screen (to avoid conflict with initial check)
-        setAppState('login');
+      } else {
+        if (appState !== 'splash') {
+          // Se não houver sessão e não estiver em splash, ir para login
+          localStorage.removeItem('supabase_session_cache');
+          setAppState('login');
+        }
       }
     });
 
@@ -143,55 +183,70 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-[#f4f7fa] dark:bg-[#0b1120] transition-colors duration-300">
-      <Sidebar
-        currentView={currentView}
-        onViewChange={setCurrentView}
-        isDarkMode={isDarkMode}
-        onToggleTheme={toggleDarkMode}
-        brandColor={brandColor}
-        onColorChange={setBrandColor}
-        isProfileModalOpen={isProfileModalOpen}
-        setIsProfileModalOpen={setIsProfileModalOpen}
-      />
-
-      <div className="flex-grow flex flex-col lg:pl-[280px]">
-        <Header
-          onSync={handleSync}
-          onOpenProfile={() => setIsProfileModalOpen(true)}
-        />
-
-        <main className="flex-grow pt-24 lg:pt-10 pb-20 lg:pb-10 px-6 lg:px-12 w-full">
-          <Toolbar
-            currentView={currentView}
-            onViewChange={setCurrentView}
-          />
-
-          <div className="">
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-40">
-                <div className="w-12 h-12 border-[6px] border-brand border-t-transparent rounded-full animate-spin"></div>
-                <p className="mt-6 text-slate-400 font-bold uppercase tracking-widest text-[10px]">Sincronizando...</p>
-              </div>
-            ) : (
-              <div className="fade-in">
-                {currentView === 'dashboard' && <DashboardView />}
-                {currentView === 'list' && <ListView onReportAbsence={openAviso} />}
-                {currentView === 'calendar' && <CalendarView />}
-                {currentView === 'cleaning' && <CleaningView />}
-                {isTeamView(currentView) && <TeamView currentView={currentView} />}
-                {isMusicView(currentView) && <MusicView subView={currentView} />}
-                {isToolsView(currentView) && <ToolsView subView={currentView} />}
-              </div>
-            )}
+    <LocalStorageFirstInitializer
+      config={{
+        syncInterval: 2 * 60 * 1000, // 2 minutos
+        enableBackgroundSync: true,
+        priorityLocal: true
+      }}
+      onReady={() => console.log('🏠 Sistema localStorage-first pronto!')}
+      onError={(error) => console.error('❌ Erro na inicialização:', error)}
+    >
+      <div className={`min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 transition-colors duration-300 ${isDarkMode ? 'dark' : ''}`}>
+        {appState === 'main' && (
+          <div className="flex h-screen overflow-hidden bg-white dark:bg-slate-900">
+            <Sidebar 
+              currentView={currentView} 
+              onViewChange={setCurrentView} 
+              isDarkMode={isDarkMode}
+              onToggleTheme={toggleDarkMode}
+              brandColor={brandColor}
+              onColorChange={setBrandColor}
+              isProfileModalOpen={isProfileModalOpen}
+              setIsProfileModalOpen={setIsProfileModalOpen}
+            />
+            
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <Header 
+                onSync={handleSync}
+                onOpenProfile={() => setIsProfileModalOpen(true)}
+              />
+              
+              <Toolbar 
+                currentView={currentView} 
+                onViewChange={setCurrentView}
+              />
+              
+              <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 dark:bg-slate-800">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                  <div className="">
+                    {isLoading ? (
+                      <div className="flex flex-col items-center justify-center py-40">
+                        <div className="w-12 h-12 border-[6px] border-brand border-t-transparent rounded-full animate-spin"></div>
+                        <p className="mt-6 text-slate-400 font-bold uppercase tracking-widest text-[10px]">Sincronizando...</p>
+                      </div>
+                    ) : (
+                      <div className="fade-in">
+                        {currentView === 'dashboard' && <DashboardView />}
+                        {currentView === 'list' && <ListView onReportAbsence={openAviso} />}
+                        {currentView === 'calendar' && <CalendarView />}
+                        {currentView === 'cleaning' && <CleaningView />}
+                        {isTeamView(currentView) && <TeamView currentView={currentView as any} />}
+                        {isMusicView(currentView) && <MusicView subView={currentView as any} />}
+                        {isToolsView(currentView) && <ToolsView subView={currentView as any} />}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </main>
+            </div>
           </div>
-        </main>
-      </div>
+        )}
 
-      {isAvisoModalOpen && <AvisoModal eventId={selectedEventId} onClose={() => setIsAvisoModalOpen(false)} />}
-    </div>
+        {isAvisoModalOpen && <AvisoModal eventId={selectedEventId} onClose={() => setIsAvisoModalOpen(false)} />}
+      </div>
+    </LocalStorageFirstInitializer>
   );
 };
 
 export default App;
-

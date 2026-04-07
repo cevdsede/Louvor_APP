@@ -1,16 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
-import { showSuccess, showError, showWarning } from '../../utils/toast';
-import { logger } from '../../utils/logger';
-import { ScheduleEvent, Member, RepertoireItem, Notice } from '../../types';
-import { CalendarCultoQuery, CalendarEscala, CalendarRepertorio, CalendarNotice } from '../../types-supabase';
+import { ScheduleEvent, Member, Notice } from '../../types';
 import { sortMembersByRole, getRoleIcon } from '../../utils/teamUtils';
-
-// Importar componentes do ListView
+import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import EventCard from './EventCard';
-import TeamManager from './TeamManager';
-import RepertoireManager from './RepertoireManager';
-import NoticeManager from './NoticeManager';
 
 const CalendarView: React.FC = () => {
   const [selectedDateEvents, setSelectedDateEvents] = useState<ScheduleEvent[] | null>(null);
@@ -29,17 +22,6 @@ const CalendarView: React.FC = () => {
   const [tones, setTones] = useState<any[]>([]);
   const [isMember, setIsMember] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ id: string, name: string } | null>(null);
-
-  // Role icons mapping (igual ListView)
-  const roleIcons = [
-    { label: 'Ministro', role: 'Ministro', icon: 'fa-crown' },
-    { label: 'Vocal', role: 'Vocal', icon: 'fa-microphone-lines' },
-    { label: 'Violão', role: 'Violão', icon: 'fa-guitar' },
-    { label: 'Teclado', role: 'Teclado', icon: 'fa-keyboard' },
-    { label: 'Guitarra', role: 'Guitarra', icon: 'fa-bolt' },
-    { label: 'Baixo', role: 'Baixo', icon: 'fa-music' },
-    { label: 'Bateria', role: 'Bateria', icon: 'fa-drum' },
-  ];
 
   // Função para agrupar membros com múltiplas funções
   const groupMembersByPerson = (escalas: any[]) => {
@@ -91,155 +73,120 @@ const CalendarView: React.FC = () => {
     });
   };
 
-  const fetchEvents = async () => {
-    try {
-      const { data: cultosData, error } = await supabase
-        .from('cultos')
-        .select(`
-          id, 
-          data_culto, 
-          horario, 
-          id_nome_cultos,
-          nome_cultos!cultos_id_nome_cultos_fkey(nome_culto),
-          escalas(
-            id, 
-            id_membros, 
-            id_funcao,
-            membros(id, nome, foto, genero),
-            funcao(id, nome_funcao)
-          ),
-          repertorio(
-            id, 
-            id_culto,
-            id_musicas,
-            id_tons,
-            musicas(id, musica, cantor),
-            tons(nome_tons),
-            membros(nome)
-          )
-        `);
+  // Usar localStorage-first para todos os dados
+  const { data: cultosRaw } = useLocalStorageFirst<any>({ table: 'cultos' });
+  const { data: nomeCultosRaw } = useLocalStorageFirst<any>({ table: 'nome_cultos' });
+  const { data: membrosRaw } = useLocalStorageFirst<any>({ table: 'membros' });
+  const { data: escalasRaw } = useLocalStorageFirst<any>({ table: 'escalas' });
+  const { data: repertorioRaw } = useLocalStorageFirst<any>({ table: 'repertorio' });
+  const { data: musicasRaw } = useLocalStorageFirst<any>({ table: 'musicas' });
+  const { data: tonsRaw } = useLocalStorageFirst<any>({ table: 'tons' });
+  const { data: avisosRaw } = useLocalStorageFirst<any>({ table: 'avisos_cultos' });
+  const { data: funcoesRaw } = useLocalStorageFirst<any>({ table: 'funcao' });
 
-      if (error) {
-        logger.error('Erro na query de cultos:', error, 'database');
+  // JOIN LOCAL DOS DADOS
+  useEffect(() => {
+    if (!cultosRaw || !membrosRaw || !escalasRaw) return;
+
+    // 1. Membros Ativos
+    const mappedMembers: Member[] = membrosRaw.filter((m: any) => m.ativo).map((m: any) => ({
+      id: m.id,
+      name: m.nome,
+      role: 'Membro',
+      gender: m.genero === 'Homem' ? 'M' : 'F',
+      avatar: m.foto || `https://ui-avatars.com/api/?name=${m.nome}&background=random`,
+      status: 'confirmed',
+      upcomingScales: [],
+      songHistory: []
+    }));
+    setAllRegisteredMembers(mappedMembers);
+
+    // 2. Músicas e Tons
+    setAllSongs(musicasRaw);
+    setTones(tonsRaw);
+
+    // 3. Avisos por Evento
+    const noticesByEvent: Record<string, Notice[]> = {};
+    avisosRaw.forEach((n: any) => {
+      if (!n.id_cultos) return;
+      if (!noticesByEvent[n.id_cultos]) noticesByEvent[n.id_cultos] = [];
+      const membro = membrosRaw.find((m: any) => m.id === n.id_membros);
+      noticesByEvent[n.id_cultos].push({
+        id: n.id_lembrete,
+        text: n.info,
+        sender: membro?.nome || 'Admin',
+        time: n.created_at ? new Date(n.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''
+      });
+    });
+    setEventNotices(noticesByEvent);
+
+    // 4. Eventos e Escalas (O Join Principal)
+    const mapped: ScheduleEvent[] = cultosRaw.map((c: any) => {
+      const date = new Date(c.data_culto + 'T12:00:00');
+      const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+      // Local Join: Escalas
+      const cEscalas = escalasRaw.filter((e: any) => e.id_culto === c.id);
+      const eventMembrosRaw = cEscalas.map((e: any) => ({
+        membros: membrosRaw.find((m: any) => m.id === e.id_membros),
+        funcao: funcoesRaw.find((f: any) => f.id === e.id_funcao)
+      }));
+
+      const groupedMembers = groupMembersByPerson(eventMembrosRaw);
+
+      // Local Join: Repertório
+      const cRepertorio = (repertorioRaw || [])
+        .filter((r: any) => r.id_culto === c.id)
+        .map((r: any) => {
+          const musica = musicasRaw.find((m: any) => m.id === r.id_musicas);
+          const tom = tonsRaw.find((t: any) => t.id === r.id_tons);
+          const membro = membrosRaw.find((m: any) => m.id === r.id_membros);
+          return {
+            id: r.id,
+            musica: musica?.musica || 'Sem música',
+            cantor: musica?.cantor || 'Sem cantor',
+            key: tom?.nome_tons || 'Ñ',
+            minister: membro?.nome || ''
+          };
+        });
+
+      return {
+        id: c.id,
+        title: nomeCultosRaw.find((n: any) => n.id === c.id_nome_cultos)?.nome_culto || 'CULTO',
+        date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        dayOfWeek: daysOfWeek[date.getDay()],
+        time: c.horario,
+        members: sortMembersByRole(groupedMembers),
+        repertoire: cRepertorio
+      };
+    });
+    setEvents(mapped);
+  }, [cultosRaw, membrosRaw, escalasRaw, repertorioRaw, musicasRaw, tonsRaw, nomeCultosRaw, avisosRaw, funcoesRaw]);
+
+  // Auth check
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!navigator.onLine) {
+        console.log('📶 Offline: Pulando check de auth.');
         return;
       }
 
-      if (cultosData) {
-        const mapped: ScheduleEvent[] = cultosData.map((c: any) => {
-          const date = new Date(c.data_culto + 'T00:00:00');
-          const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-
-          // Agrupar membros com múltiplas funções
-          const groupedMembers = groupMembersByPerson(c.escalas || []);
-
-          return {
-            id: c.id,
-            title: (c.nome_cultos as any)?.nome_culto || 'CULTO',
-            date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-            dayOfWeek: daysOfWeek[date.getDay()],
-            time: c.horario,
-            members: sortMembersByRole(groupedMembers),
-            repertoire: (c.repertorio || []).map((r: any) => ({
-              id: r.id,
-              song: (r.musicas as any)?.musica || 'Sem música',
-              singer: (r.musicas as any)?.cantor || 'Sem cantor',
-              key: (r.tons as any)?.nome_tons || 'Ñ',
-              minister: (r.membros as any)?.nome || ''
-            }))
-          };
-        });
-        setEvents(mapped);
-        logger.info('Eventos carregados:', { count: mapped.length, type: 'cultos' }, 'database');
-      }
-    } catch (e) {
-      logger.error('Erro ao buscar eventos:', e, 'database');
-    }
-  };
-
-  const fetchEventNotices = async (eventId: string) => {
-    try {
-      const { data } = await supabase
-        .from('avisos_cultos')
-        .select(`
-          id_lembrete,
-          info,
-          created_at,
-          membros(nome)
-        `)
-        .eq('id_cultos', eventId);
-
-      if (data) {
-        const notices: Notice[] = data.map((notice: any) => ({
-          id: notice.id_lembrete,
-          text: notice.info,
-          sender: (notice.membros as any)?.nome || 'Admin',
-          time: new Date(notice.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-        }));
-
-        setEventNotices(prev => ({
-          ...prev,
-          [eventId]: notices
-        }));
-      }
-    } catch (error) {
-      logger.error('Erro ao buscar avisos:', error, 'database');
-    }
-  };
-
-  // Funções para buscar dados adicionais (igual ListView)
-  const fetchAdditionalData = async () => {
-    try {
-      // 1. Fetch Members (apenas ativos)
-      const { data: membersData } = await supabase.from('membros').select('*').eq('ativo', true).order('nome');
-      if (membersData) {
-        const mappedMembers: Member[] = membersData.map(m => ({
-          id: m.id,
-          name: m.nome,
-          role: 'Membro',
-          gender: m.genero === 'Homem' ? 'M' : 'F',
-          avatar: m.foto || `https://ui-avatars.com/api/?name=${m.nome}&background=random`,
-          status: 'confirmed',
-          upcomingScales: [],
-          songHistory: []
-        }));
-        setAllRegisteredMembers(mappedMembers);
-      }
-
-      // 2. Fetch Songs
-      const { data: songsData } = await supabase.from('musicas').select('*').order('musica');
-      if (songsData) {
-        setAllSongs(songsData);
-      }
-
-      // 3. Fetch Tones
-      const { data: tonesData } = await supabase.from('tons').select('*').order('nome_tons');
-      if (tonesData) {
-        setTones(tonesData);
-      }
-
-      // 4. Check current user
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: memberData } = await supabase
-          .from('membros')
-          .select('id, nome')
-          .eq('id', user.id)
-          .single();
-        
-        if (memberData) {
-          setCurrentUser({ id: memberData.id, name: memberData.nome });
+      if (user && user.email) {
+        const member = membrosRaw?.find((m: any) => m.email?.toLowerCase() === user.email?.toLowerCase());
+        if (member) {
+          setCurrentUser({ id: member.id, name: member.nome });
           setIsMember(true);
         }
       }
-    } catch (error) {
-      logger.error('Erro ao buscar dados adicionais:', error, 'database');
-    }
-  };
+    };
+    checkAuth();
+  }, [membrosRaw]);
 
-  useEffect(() => {
-    fetchEvents();
-    fetchAdditionalData();
-  }, []);
+  // Funções mockadas para não quebrar referências no JSX se houver
+  const fetchEvents = async () => {};
+  const fetchEventNotices = async (eventId: string) => {};
+  const fetchAdditionalData = async () => {};
 
   // Buscar avisos quando abrir o modal
   useEffect(() => {
@@ -392,7 +339,7 @@ const CalendarView: React.FC = () => {
                             : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
                         }`}>
                           {event.members.map((member, index) => (
-                            <div key={`${member.id}-${member.roleId || index}`} className={`bg-slate-50 dark:bg-slate-800/30 rounded-xl p-4 border border-slate-100 dark:border-slate-700 ${
+                            <div key={`${member.id}-${index}`} className={`bg-slate-50 dark:bg-slate-800/30 rounded-xl p-4 border border-slate-100 dark:border-slate-700 ${
                               member.roles && member.roles.length > 2 ? 'md:col-span-1' : ''
                             }`}>
                               <div className="flex flex-col items-center text-center">
@@ -460,7 +407,7 @@ const CalendarView: React.FC = () => {
                                   {song.key || 'Ñ'}
                                 </div>
                                 <div className="flex-1 px-4">
-                                  <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate">{song.song} - {song.singer}</h5>
+                                  <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate">{song.musica} - {song.cantor}</h5>
                                   <p className="text-[9px] font-bold text-slate-400 uppercase">
                                     Ministro: <span className="text-brand">{song.minister || 'Sem ministro'}</span>
                                   </p>
@@ -468,10 +415,10 @@ const CalendarView: React.FC = () => {
                               </div>
                               <div className="p-4">
                                 <div className="grid grid-cols-4 gap-1">
-                                  <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${song.song} ${song.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
-                                  <a href={`https://open.spotify.com/search/${encodeURIComponent(`${song.song} ${song.singer}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-green-600 hover:bg-green-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
-                                  <a href={`https://www.google.com/search?q=${encodeURIComponent(`${song.song} ${song.singer} cifra`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-600 hover:bg-blue-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[10px]"></i></a>
-                                  <a href={`https://www.google.com/search?q=${encodeURIComponent(`${song.song} ${song.singer} letra`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-purple-600 hover:bg-purple-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-microphone-alt text-[10px]"></i></a>
+                                  <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${song.musica} ${song.cantor}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
+                                  <a href={`https://open.spotify.com/search/${encodeURIComponent(`${song.musica} ${song.cantor}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-green-600 hover:bg-green-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
+                                  <a href={`https://www.google.com/search?q=${encodeURIComponent(`${song.musica} ${song.cantor} cifra`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-600 hover:bg-blue-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[10px]"></i></a>
+                                  <a href={`https://www.google.com/search?q=${encodeURIComponent(`${song.musica} ${song.cantor} letra`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-purple-600 hover:bg-purple-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-microphone-alt text-[10px]"></i></a>
                                 </div>
                               </div>
                             </div>

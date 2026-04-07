@@ -39,3 +39,38 @@ export const getRoleIcon = (role: string) => {
   const found = roleOrder.find(r => r.role.toLowerCase() === role.toLowerCase());
   return found ? found.icon : 'fa-user';
 };
+
+// Função para limpar cache de imagens
+export const clearImageCache = () => {
+  try {
+    const keys = Object.keys(localStorage).filter(key => key.startsWith('image_cache_'));
+    keys.forEach(key => localStorage.removeItem(key));
+    console.log(`Limpou ${keys.length} imagens do cache`);
+    return keys.length;
+  } catch (error) {
+    console.warn('Erro ao limpar cache de imagens:', error);
+    return 0;
+  }
+};
+
+// Função para verificar espaço usado pelo cache
+export const getImageCacheSize = () => {
+  try {
+    const keys = Object.keys(localStorage).filter(key => key.startsWith('image_cache_'));
+    let totalSize = 0;
+    keys.forEach(key => {
+      const value = localStorage.getItem(key);
+      if (value) {
+        totalSize += value.length * 2; // Aproximadamente 2 bytes por caractere
+      }
+    });
+    return {
+      count: keys.length,
+      sizeKB: Math.round(totalSize / 1024),
+      sizeMB: Math.round(totalSize / (1024 * 1024) * 100) / 100
+    };
+  } catch (error) {
+    console.warn('Erro ao calcular tamanho do cache:', error);
+    return { count: 0, sizeKB: 0, sizeMB: 0 };
+  }
+};

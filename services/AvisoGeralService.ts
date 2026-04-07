@@ -1,7 +1,8 @@
 import { supabase } from '../supabaseClient';
+import LocalStorageFirstService from './LocalStorageFirstService';
 
 export interface AvisoGeral {
-  id: bigint;
+  id: string | number;
   created_at: string;
   id_membro: string | null;
   texto: string | null;
@@ -13,33 +14,26 @@ class AvisoGeralService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    // Primeiro, verificar o perfil do usuário atual
-    const { data: currentUser, error: userError } = await supabase
-      .from('membros')
-      .select('perfil')
-      .eq('id', user.id)
-      .single();
+    // Buscar dados necessários do cache local
+    const membros = LocalStorageFirstService.get<any>('membros');
+    const avisos = LocalStorageFirstService.get<AvisoGeral>('aviso_geral');
 
-    if (userError) throw userError;
-
+    // 1. Verificar o perfil do usuário atual no cache
+    const currentUser = membros.find((m: any) => m.id === user.id);
     const userProfile = currentUser?.perfil?.toLowerCase() || '';
     const isAdminOrLeader = userProfile.includes('admin') || userProfile.includes('lider');
 
-    let query = supabase
-      .from('aviso_geral')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // 2. Filtrar avisos baseado no perfil
+    let result = [...avisos].sort((a, b) => 
+      (b.created_at || '').localeCompare(a.created_at || '')
+    );
 
-    // Aplicar filtro de acesso baseado no perfil
     if (!isAdminOrLeader) {
       // Se não for admin ou líder, só pode ver seus próprios avisos
-      query = query.eq('id_membro', user.id);
+      result = result.filter(a => a.id_membro === user.id);
     }
 
-    const { data, error } = await query;
-
-    if (error) throw error;
-    return data || [];
+    return result;
   }
 
   // Buscar avisos de um membro específico (com verificação de permissão)
@@ -47,32 +41,22 @@ class AvisoGeralService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    // Verificar se o usuário tem permissão para ver os avisos deste membro
-    const { data: currentUser, error: userError } = await supabase
-      .from('membros')
-      .select('perfil')
-      .eq('id', user.id)
-      .single();
+    const membros = LocalStorageFirstService.get<any>('membros');
+    const avisos = LocalStorageFirstService.get<AvisoGeral>('aviso_geral');
 
-    if (userError) throw userError;
-
+    // Verificar permissão
+    const currentUser = membros.find((m: any) => m.id === user.id);
     const userProfile = currentUser?.perfil?.toLowerCase() || '';
-    const isAdminOrLeader = userProfile.includes('admin') || userProfile.includes('leader');
+    const isAdminOrLeader = userProfile.includes('admin') || userProfile.includes('leader') || userProfile.includes('lider');
     const isOwner = user.id === id_membro;
 
-    // Só permite ver os avisos se for o próprio membro, admin ou líder
     if (!isOwner && !isAdminOrLeader) {
       throw new Error('Sem permissão para visualizar estes avisos');
     }
 
-    const { data, error } = await supabase
-      .from('aviso_geral')
-      .select('*')
-      .eq('id_membro', id_membro)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data || [];
+    return avisos
+      .filter(a => a.id_membro === id_membro)
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
   }
 
   // Criar novo aviso geral
@@ -80,43 +64,32 @@ class AvisoGeralService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data, error } = await supabase
-      .from('aviso_geral')
-      .insert([{
-        ...aviso,
-        id_membro: user.id // Sempre associa ao usuário que está criando
-      }])
-      .select()
-      .single();
+    const novoAviso: AvisoGeral = {
+      ...aviso,
+      id: `local-${Date.now()}`,
+      created_at: new Date().toISOString(),
+      id_membro: user.id
+    };
 
-    if (error) throw error;
-    return data;
+    // Salvar via LocalStorageFirstService
+    LocalStorageFirstService.add('aviso_geral', novoAviso);
+    
+    return novoAviso;
   }
 
   // Atualizar aviso geral (só o criador, admin ou líder)
-  static async updateAvisoGeral(id: bigint, aviso: Partial<AvisoGeral>): Promise<AvisoGeral> {
+  static async updateAvisoGeral(id: string | number, aviso: Partial<AvisoGeral>): Promise<AvisoGeral | null> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    // Primeiro, buscar o aviso para verificar permissões
-    const { data: existingAviso, error: fetchError } = await supabase
-      .from('aviso_geral')
-      .select('id_membro')
-      .eq('id', id)
-      .single();
-
-    if (fetchError) throw fetchError;
+    const membros = LocalStorageFirstService.get<any>('membros');
+    const avisos = LocalStorageFirstService.get<AvisoGeral>('aviso_geral');
+    
+    const existingAviso = avisos.find(a => String(a.id) === String(id));
     if (!existingAviso) throw new Error('Aviso não encontrado');
 
-    // Verificar se o usuário tem permissão para editar
-    const { data: currentUser, error: userError } = await supabase
-      .from('membros')
-      .select('perfil')
-      .eq('id', user.id)
-      .single();
-
-    if (userError) throw userError;
-
+    // Verificar permissão
+    const currentUser = membros.find((m: any) => m.id === user.id);
     const userProfile = currentUser?.perfil?.toLowerCase() || '';
     const isAdminOrLeader = userProfile.includes('admin') || userProfile.includes('lider');
     const isOwner = existingAviso.id_membro === user.id;
@@ -125,41 +98,22 @@ class AvisoGeralService {
       throw new Error('Sem permissão para editar este aviso');
     }
 
-    const { data, error } = await supabase
-      .from('aviso_geral')
-      .update(aviso)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    return LocalStorageFirstService.update<AvisoGeral>('aviso_geral', String(id), aviso);
   }
 
   // Deletar aviso geral (só o criador, admin ou líder)
-  static async deleteAvisoGeral(id: bigint): Promise<void> {
+  static async deleteAvisoGeral(id: string | number): Promise<void> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    // Primeiro, buscar o aviso para verificar permissões
-    const { data: existingAviso, error: fetchError } = await supabase
-      .from('aviso_geral')
-      .select('id_membro')
-      .eq('id', id)
-      .single();
-
-    if (fetchError) throw fetchError;
+    const membros = LocalStorageFirstService.get<any>('membros');
+    const avisos = LocalStorageFirstService.get<AvisoGeral>('aviso_geral');
+    
+    const existingAviso = avisos.find(a => String(a.id) === String(id));
     if (!existingAviso) throw new Error('Aviso não encontrado');
 
-    // Verificar se o usuário tem permissão para deletar
-    const { data: currentUser, error: userError } = await supabase
-      .from('membros')
-      .select('perfil')
-      .eq('id', user.id)
-      .single();
-
-    if (userError) throw userError;
-
+    // Verificar permissão
+    const currentUser = membros.find((m: any) => m.id === user.id);
     const userProfile = currentUser?.perfil?.toLowerCase() || '';
     const isAdminOrLeader = userProfile.includes('admin') || userProfile.includes('lider');
     const isOwner = existingAviso.id_membro === user.id;
@@ -168,12 +122,7 @@ class AvisoGeralService {
       throw new Error('Sem permissão para deletar este aviso');
     }
 
-    const { error } = await supabase
-      .from('aviso_geral')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    LocalStorageFirstService.remove('aviso_geral', String(id));
   }
 }
 

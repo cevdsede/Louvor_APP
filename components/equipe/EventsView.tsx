@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { showSuccess, showError } from '../../utils/toast';
 import EventService, { Evento, PresencaEvento } from '../../services/EventService';
+import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 
 interface EventsViewProps {
   onEventClick: (evento: Evento) => void;
 }
 
 const EventsView: React.FC<EventsViewProps> = ({ onEventClick }) => {
-  const [eventos, setEventos] = useState<Evento[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingEvento, setEditingEvento] = useState<Evento | null>(null);
   const [formData, setFormData] = useState({
@@ -17,39 +16,40 @@ const EventsView: React.FC<EventsViewProps> = ({ onEventClick }) => {
     horario_evento: '',
   });
 
-  useEffect(() => {
-    fetchEventos();
-  }, []);
-
-  const fetchEventos = async () => {
-    try {
-      setLoading(true);
-      const data = await EventService.getEventos();
-      setEventos(data);
-    } catch (error) {
-      console.error('Erro ao buscar eventos:', error);
-      showError('Erro ao carregar eventos');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Usar hook localStorage-first para eventos
+  const {
+    data: eventos,
+    loading,
+    error,
+    isOnline,
+    pendingOperations,
+    addItem: addEvento,
+    updateItem: updateEvento,
+    removeItem: deleteEvento,
+    forceSync
+  } = useLocalStorageFirst<Evento>({
+    table: 'eventos',
+    autoRefresh: true,
+    refreshInterval: 30000,
+    enableBackgroundSync: true
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
       if (editingEvento) {
-        await EventService.updateEvento(editingEvento.id_evento, formData);
+        await updateEvento(editingEvento.id_evento, formData);
         showSuccess('Evento atualizado com sucesso!');
       } else {
-        await EventService.createEvento(formData);
+        await addEvento(formData as any);
         showSuccess('Evento criado com sucesso! Lista de presença gerada automaticamente.');
       }
       
       setShowModal(false);
       setEditingEvento(null);
       setFormData({ tema: '', data_evento: '', horario_evento: '' });
-      fetchEventos();
+      await forceSync();
     } catch (error) {
       console.error('Erro ao salvar evento:', error);
       showError('Erro ao salvar evento');
@@ -70,9 +70,9 @@ const EventsView: React.FC<EventsViewProps> = ({ onEventClick }) => {
     if (!confirm(`Tem certeza que deseja excluir o evento "${evento.tema}"?`)) return;
     
     try {
-      await EventService.deleteEvento(evento.id_evento);
+      await deleteEvento(evento.id_evento);
       showSuccess('Evento excluído com sucesso!');
-      fetchEventos();
+      await forceSync();
     } catch (error) {
       console.error('Erro ao excluir evento:', error);
       showError('Erro ao excluir evento');

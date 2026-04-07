@@ -23,7 +23,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
 }) => {
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberFormData, setNewMemberFormData] = useState({ memberId: '', role: '' });
-  const [editingMember, setEditingMember] = useState<{ id: string, currentRole: string } | null>(null);
+  const [editingMember, setEditingMember] = useState<{ id: string, name: string, role?: string, roleId?: number, roleName?: string } | null>(null);
   const [functions, setFunctions] = useState<Funcao[]>([]);
 
   // Buscar funções da tabela ao carregar o componente
@@ -445,7 +445,15 @@ const TeamManager: React.FC<TeamManagerProps> = ({
                 <div className="relative mb-3">
                   <div className="w-16 h-16 bg-gradient-to-br from-brand to-brand-gold rounded-full flex items-center justify-center shadow-lg">
                     {member.avatar ? (
-                      <img src={member.avatar} alt={member.name} className="w-full h-full rounded-full object-cover" />
+                      <img 
+                        src={member.avatar} 
+                        alt={member.name} 
+                        className="w-full h-full rounded-full object-cover" 
+                        onError={(e: any) => {
+                          e.target.onerror = null;
+                          e.target.src = `https://ui-avatars.com/api/?name=${member.name}&background=random`;
+                        }}
+                      />
                     ) : (
                       <i className={`fas ${getRoleIcon(member.roles && member.roles.length > 0 ? member.roles[0] : member.role)} text-white text-xl`}></i>
                     )}

@@ -60,6 +60,8 @@ interface GroupedHistory {
   };
 }
 
+import LocalStorageFirstService from '../../services/LocalStorageFirstService';
+
 const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
   const stylesChartRef = useRef<HTMLCanvasElement>(null);
   const themesChartRef = useRef<HTMLCanvasElement>(null);
@@ -153,78 +155,46 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // 1. Fetch Songs & Themes
-      const { data: songsData, error: songsError } = await supabase
-        .from('musicas')
-        .select(`
-          id,
-          musica,
-          cantor,
-          estilo,
-          id_temas,
-          temas (
-            id,
-            nome_tema
-          )
-        `);
+      // OBTER TUDO DO LOCAL STORAGE (LocalStorage-First)
+      const musicasData = LocalStorageFirstService.get<any>('musicas');
+      const temasData = LocalStorageFirstService.get<any>('temas');
+      const repData = LocalStorageFirstService.get<any>('repertorio');
+      const cultosData = LocalStorageFirstService.get<any>('cultos');
+      const nomeCultosData = LocalStorageFirstService.get<any>('nome_cultos');
+      const membrosData = LocalStorageFirstService.get<any>('membros');
+      const tonsData = LocalStorageFirstService.get<any>('tons');
+      const historicoData = LocalStorageFirstService.get<any>('historico_musicas');
+      const escalasData = LocalStorageFirstService.get<any>('escalas');
+      const funcoesData = LocalStorageFirstService.get<any>('funcao');
 
-      if (songsError) throw songsError;
-
-      const formattedSongs: Music[] = (songsData || []).map((s: any) => ({
-        id: s.id,
-        song: s.musica,
-        singer: s.cantor,
-        minister: s.membros?.nome || '',
-        theme: s.temas?.nome_tema || 'Geral',
-        style: s.estilo
-      }));
-
+      // 1. Format Songs
+      const formattedSongs: Music[] = musicasData.map((s: any) => {
+        const tema = temasData.find((t: any) => t.id === s.id_temas);
+        return {
+          id: s.id,
+          song: s.musica,
+          singer: s.cantor,
+          minister: '', 
+          theme: tema?.nome_tema || 'Geral',
+          style: s.estilo
+        };
+      });
       setSongs(formattedSongs);
+      setAvailableSongs(formattedSongs);
 
-      // Extract unique themes for dropdown
       const themes = Array.from(new Set(formattedSongs.map(s => s.theme)));
       setAvailableThemes(themes);
 
-      // 2. Fetch Repertoire with cult information
-      const { data: repData, error: repError } = await supabase
-        .from('repertorio')
-        .select(`
-          id,
-          id_culto,
-          id_musicas,
-          id_membros,
-          id_tons,
-          cultos (
-            id,
-            data_culto,
-            nome_cultos (
-              id,
-              nome_culto
-            )
-          ),
-          musicas (
-            id,
-            musica,
-            cantor,
-            estilo
-          ),
-          membros (
-            id,
-            nome
-          ),
-          tons (
-            id,
-            nome_tons
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (repError) throw repError;
-
-      // Group repertoire by cult (nome_culto - data_culto)
-      const groupedRepertoire = (repData || []).reduce((acc, item: any) => {
-        const cultName = item.cultos?.nome_cultos?.nome_culto || 'Culto Sem Nome';
-        const cultDate = item.cultos?.data_culto ? new Date(item.cultos.data_culto).toLocaleDateString('pt-BR') : 'Sem Data';
+      // 2. Format Repertoire
+      const groupedRepertoire = repData.reduce((acc: any, item: any) => {
+        const culto = cultosData.find((c: any) => c.id === item.id_culto);
+        const musica = musicasData.find((m: any) => m.id === item.id_musicas);
+        const membro = membrosData.find((m: any) => m.id === item.id_membros);
+        const tom = tonsData.find((t: any) => t.id === item.id_tons);
+        const nomeCultoObj = nomeCultosData.find((n: any) => n.id === culto?.id_nome_cultos);
+        
+        const cultName = nomeCultoObj?.nome_culto || 'Culto Sem Nome';
+        const cultDate = culto?.data_culto ? new Date(culto.data_culto + 'T12:00:00').toLocaleDateString('pt-BR') : 'Sem Data';
         const eventKey = `${cultName}-${cultDate}`;
         
         if (!acc[eventKey]) {
@@ -244,138 +214,78 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
           id_musicas: item.id_musicas,
           id_membros: item.id_membros,
           id_tons: item.id_tons,
-          song: item.musicas?.musica || 'Sem música',
-          singer: item.musicas?.cantor || 'Sem cantor',
-          minister: item.membros?.nome || 'Sem ministro',
-          key: item.tons?.nome_tons || 'Ñ',
-          style: item.musicas?.estilo || 'Adoração'
+          song: musica?.musica || 'Sem música',
+          singer: musica?.cantor || 'Sem cantor',
+          minister: membro?.nome || 'Sem ministro',
+          key: tom?.nome_tons || 'Ñ',
+          style: musica?.estilo || 'Adoração'
         });
         
         return acc;
-      }, {} as Record<string, RepertoireSet>);
-
+      }, {});
       setRepertoires(Object.values(groupedRepertoire));
 
-      // 4. Fetch additional data for repertoire forms
-      const { data: membersData } = await supabase.from('membros').select('id, nome').order('nome');
-      const { data: tonesData } = await supabase.from('tons').select('id, nome_tons').order('nome_tons');
-      const { data: cultsData } = await supabase.from('cultos').select(`
-        id, 
-        data_culto, 
-        nome_cultos (
-          id,
-          nome_culto
-        )
-      `).order('data_culto', { ascending: false });
+      // 3. Format History
+      const historyWithMusicDetails = historicoData
+        .sort((a: any, b: any) => (b.created_at || '').localeCompare(a.created_at || ''))
+        .slice(0, 50)
+        .map((h: any) => {
+          const musica = musicasData.find((m: any) => m.id === h.id_musica || m.musica === h.musica);
+          const tema = temasData.find((t: any) => t.id === musica?.id_temas);
+          const membro = membrosData.find((m: any) => m.id === h.id_membros);
+          const tom = tonsData.find((t: any) => t.id === h.id_tons);
 
-      setAvailableMembers(membersData || []);
-      setAvailableTones(tonesData || []);
-      setAvailableCults(cultsData || []);
-      setAvailableSongs(formattedSongs);
+          return {
+            id: h.id,
+            date: h.created_at ? new Date(h.created_at).toLocaleDateString('pt-BR') : 'Sem data',
+            song: musica?.musica || h.musica || 'Desconhecida',
+            singer: musica?.cantor || '',
+            key: tom?.nome_tons || '',
+            minister: membro?.nome || 'Sem ministro',
+            theme: tema?.nome_tema || 'Geral',
+            style: musica?.estilo || '',
+            keys: []
+          };
+        });
+      setHistory(historyWithMusicDetails);
 
+      // 4. Format Escalas
+      const formattedEscalas = escalasData.map((e: any) => {
+        const culto = cultosData.find((c: any) => c.id === e.id_culto);
+        const nomeCultoObj = nomeCultosData.find((n: any) => n.id === culto?.id_nome_cultos);
+        const membro = membrosData.find((m: any) => m.id === e.id_membros);
+        const funcao = funcoesData.find((f: any) => f.id === e.id_funcao);
 
-      // 3. Fetch History from 'historico_musicas' with complete music info
-      const { data: historyData, error: histError } = await supabase
-        .from('historico_musicas')
-        .select(`
-          *,
-          membros ( nome ),
-          tons ( nome_tons )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(50); // Limit to reduce processing
+        return {
+          id: e.id,
+          id_culto: e.id_culto,
+          id_membros: e.id_membros,
+          id_funcao: e.id_funcao,
+          cultos: [{
+            id: culto?.id,
+            data_culto: culto?.data_culto,
+            horario: culto?.horario,
+            nome_cultos: [{ nome_culto: nomeCultoObj?.nome_culto }]
+          }],
+          membros: [{ id: membro?.id, nome: membro?.nome, foto: membro?.foto, genero: membro?.genero }],
+          funcao: [{ nome_funcao: funcao?.nome_funcao }]
+        };
+      });
+      setEscalas(formattedEscalas);
 
-      if (histError) {
-        logger.warn('Error fetching history:', histError, 'database');
-        setHistory([]);
-      } else if (historyData && historyData.length > 0) {
+      // Setup additional form data
+      setAvailableMembers(membrosData);
+      setAvailableTones(tonsData);
+      setAvailableCults(cultosData.map((c: any) => ({
+        ...c,
+        nome_cultos: { nome_culto: nomeCultosData.find((n: any) => n.id === c.id_nome_cultos)?.nome_culto }
+      })));
 
-        // For each history item, try to find the corresponding music
-        const historyWithMusicDetails = await Promise.all(
-          historyData.map(async (h) => {
-            let musicDetails = null;
-
-            // Try to find music by song name if id_musica exists
-            if (h.id_musica) {
-              const { data: musicData } = await supabase
-                .from('musicas')
-                .select(`
-                  musica,
-                  cantor,
-                  estilo,
-                  temas (
-                    nome_tema
-                  )
-                `)
-                .eq('id', h.id_musica)
-                .single();
-
-              musicDetails = musicData;
-            } else if (h.musica) {
-              // Try to find by song name as fallback
-              const { data: musicData } = await supabase
-                .from('musicas')
-                .select(`
-                  musica,
-                  cantor,
-                  estilo,
-                  temas (
-                    nome_tema
-                  )
-                `)
-                .eq('musica', h.musica)
-                .single();
-
-              musicDetails = musicData;
-            }
-
-            return {
-              id: h.id,
-              date: new Date(h.created_at).toLocaleDateString('pt-BR'),
-              song: musicDetails?.musica || h.musica || 'Desconhecida',
-              singer: musicDetails?.cantor || '',
-              key: (Array.isArray(h.tons) ? h.tons[0]?.nome_tons : h.tons?.nome_tons) || '',
-              minister: h.membros?.nome || 'Sem ministro',
-              theme: musicDetails?.temas?.nome_tema || 'Geral',
-              style: musicDetails?.estilo || '',
-              keys: [] // Adicionar propriedade keys obrigatória
-            };
-          })
-        );
-
-        setHistory(historyWithMusicDetails);
-      } else {
-        setHistory([]);
-      }
-
-      // 4. Fetch Escalas
-      const { data: escalasData, error: escalasError } = await supabase
-        .from('escalas')
-        .select(`
-          id,
-          id_culto,
-          id_membros,
-          id_funcao,
-          cultos (
-            id,
-            data_culto,
-            horario,
-            nome_cultos (nome_culto)
-          ),
-          membros (id, nome, foto, genero),
-          funcao (nome_funcao)
-        `)
-        .order('cultos(data_culto)', { ascending: false });
-
-      if (escalasError) {
-        logger.error('Error fetching escalas:', escalasError, 'database');
-        setEscalas([]);
-      } else {
-        setEscalas(escalasData || []);
-      }
+      // Trigger background sync
+      LocalStorageFirstService.forceSync().catch(() => {});
 
     } catch (error) {
-      logger.error('Error fetching music data:', error, 'database');
+      logger.error('Error processing music data from cache:', error, 'database');
     } finally {
       setLoading(false);
     }
@@ -385,33 +295,22 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
     if (!newSong.song || !newSong.singer || !newSong.theme) return;
 
     try {
-      // First find theme ID
-      const { data: themeData } = await supabase
-        .from('temas')
-        .select('id')
-        .eq('nome_tema', newSong.theme)
-        .single();
-
-      let themeId = themeData?.id;
-
-      // If theme doesn't exist, create it (optional, or force selection)
-      if (!themeId) {
-        // Create new theme logic here if allowed
-      }
+      // Find theme ID in cache
+      const temasData = LocalStorageFirstService.get<any>('temas');
+      const tema = temasData.find((t: any) => t.nome_tema === newSong.theme);
+      let themeId = tema?.id;
 
       if (themeId) {
-        const { error } = await supabase.from('musicas').insert({
+        LocalStorageFirstService.add('musicas', {
           musica: newSong.song,
           cantor: newSong.singer,
           estilo: newSong.style,
           id_temas: themeId
         });
 
-        if (error) throw error;
-
         setIsSongModalOpen(false);
         setNewSong({ song: '', singer: '', theme: '', style: 'Adoração' });
-        fetchData(); // Reload list
+        fetchData(); // Reload list from local cache
       } else {
         showError('Tema não encontrado. Por favor selecione um tema válido.');
       }
@@ -429,14 +328,12 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
         return;
       }
 
-      const { error } = await supabase.from('repertorio').insert({
+      LocalStorageFirstService.add('repertorio', {
         id_culto: newRepertoire.id_culto,
         id_musicas: newRepertoire.id_musicas,
         id_membros: newRepertoire.id_membros,
         id_tons: newRepertoire.id_tons
       });
-
-      if (error) throw error;
 
       setIsRepertoireModalOpen(false);
       setEditingRepertoire(null);
@@ -465,17 +362,12 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
         return;
       }
 
-      const { error } = await supabase
-        .from('repertorio')
-        .update({
-          id_culto: item.id_culto,
-          id_musicas: item.id_musicas,
-          id_membros: item.id_membros,
-          id_tons: item.id_tons
-        })
-        .eq('id', item.id);
-
-      if (error) throw error;
+      LocalStorageFirstService.update('repertorio', item.id, {
+        id_culto: item.id_culto,
+        id_musicas: item.id_musicas,
+        id_membros: item.id_membros,
+        id_tons: item.id_tons
+      });
 
       setEditingRepertoire(null);
       fetchData();
@@ -491,13 +383,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
     }
 
     try {
-      const { error } = await supabase
-        .from('repertorio')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
+      LocalStorageFirstService.remove('repertorio', id);
       fetchData();
     } catch (err) {
       logger.error('Error deleting repertoire:', err, 'database');

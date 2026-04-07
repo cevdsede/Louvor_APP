@@ -28,10 +28,13 @@ const DashboardView: React.FC = () => {
     try {
       setLoading(true);
 
-      // Buscar usuário atual
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setCurrentUser(user);
+      // Se offline, pular busca do usuário
+      if (navigator.onLine) {
+        // Buscar usuário atual
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setCurrentUser(user);
+        }
       }
 
       // Carregar dados em paralelo

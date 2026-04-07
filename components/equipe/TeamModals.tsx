@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Member, ScheduleEvent } from '../../types';
-import { showSuccess, showError } from '../../utils/toast';
+import { ImageCache } from '../ui/ImageCache';
 import { supabase } from '../../supabaseClient';
 import { logger } from '../../utils/logger';
 import AvisoGeralService, { AvisoGeral } from '../../services/AvisoGeralService';
@@ -77,10 +77,10 @@ const TeamModals: React.FC<TeamModalsProps> = ({
       const filePath = `membros/${fileName}`;
 
       // Apagar foto antiga se existir
-      if (editingMember.foto && !editingMember.foto.includes('freepik.com')) {
+      if (editingMember.avatar && !editingMember.avatar.includes('freepik.com')) {
         try {
           // Extrair o path da URL antiga
-          const oldUrl = new URL(editingMember.foto);
+          const oldUrl = new URL(editingMember.avatar);
           const oldPath = oldUrl.pathname.split('/').slice(-2).join('/'); // pega "membros/nome_arquivo.ext"
           
           const { error: deleteError } = await supabase.storage
@@ -113,7 +113,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
       // Atualizar o avatar no estado do modal
       onEditingMemberChange({
         ...editingMember,
-        foto: publicUrl
+        avatar: publicUrl
       });
 
       showSuccess('Foto enviada com sucesso!');
@@ -128,10 +128,10 @@ const TeamModals: React.FC<TeamModalsProps> = ({
 
   // Função para salvar edição do membro
   const handleSaveEditMember = async (updatedMember: Partial<Member> & { 
+    avatar?: string; 
     email?: string; 
     telefone?: string; 
     data_nasc?: string; 
-    foto?: string 
   }) => {
     try {
       if (!editingMember) return;
@@ -140,7 +140,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
       const { error: memberError } = await supabase
         .from('membros')
         .update({
-          foto: updatedMember.foto,
+          foto: updatedMember.avatar,
           telefone: updatedMember.telefone,
           email: updatedMember.email,
           data_nasc: updatedMember.data_nasc
@@ -167,7 +167,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
         m.id === editingMember.id 
           ? { 
               ...m, 
-              foto: updatedMember.foto || m.foto,
+              avatar: updatedMember.avatar || m.avatar,
               telefone: updatedMember.telefone || m.telefone,
               email: updatedMember.email || m.email,
               data_nasc: updatedMember.data_nasc || m.data_nasc
@@ -406,11 +406,12 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                   {/* Preview da foto atual */}
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-slate-200 dark:border-slate-700">
-                      {editingMember.foto ? (
-                        <img 
-                          src={editingMember.foto} 
+                      {editingMember.avatar ? (
+                        <ImageCache
+                          src={editingMember.avatar}
                           alt={editingMember.name}
                           className="w-full h-full object-cover"
+                          disableCompression={true}
                         />
                       ) : (
                         <div className="w-full h-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
@@ -420,7 +421,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                     </div>
                     <div className="flex-1">
                       <div className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-                        {editingMember.foto ? 'Foto atual' : 'Sem foto'}
+                        {editingMember.avatar ? 'Foto atual' : 'Sem foto'}
                       </div>
                       <div className="text-xs text-slate-400">
                         Formato: JPG, PNG (máx. 5MB)

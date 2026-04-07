@@ -1,57 +1,78 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { showSuccess, showError } from '../../utils/toast';
 import EventService, { Evento, PresencaEvento } from '../../services/EventService';
+import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
+import LocalStorageFirstService from '../../services/LocalStorageFirstService';
+import { ImageCache } from '../ui/ImageCache';
 
 interface AttendanceViewProps {
   evento: Evento;
   onBack: () => void;
 }
 
-interface Membro {
-  id: string;
-  nome: string;
-  foto?: string;
-  ativo: boolean;
-}
-
 const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
-  const [presencas, setPresencas] = useState<PresencaEvento[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'todos' | 'presente' | 'ausente' | 'justificado'>('todos');
   const [editingJustificativa, setEditingJustificativa] = useState<string | null>(null);
   const [justificativaText, setJustificativaText] = useState('');
   const [showAddMembro, setShowAddMembro] = useState(false);
-  const [allMembros, setAllMembros] = useState<Membro[]>([]);
-  const [loadingMembros, setLoadingMembros] = useState(false);
 
-  useEffect(() => {
-    fetchPresencas();
-  }, [evento.id_evento]);
+  // Hook localStorage-first para presenças
+  const {
+    data: rawPresencas,
+    loading: loadingPresencas,
+    addItem: addPresenca,
+    updateItem: updatePresencaSync
+  } = useLocalStorageFirst<PresencaEvento>({
+    table: 'presenca_evento',
+    autoRefresh: true
+  });
 
-  const fetchPresencas = async () => {
+  // Hook localStorage-first para membros
+  const {
+    data: allMembros,
+    loading: loadingMembros
+  } = useLocalStorageFirst<any>({
+    table: 'membros'
+  });
+
+  // Realizar o "join" em memória e filtrar pelo evento atual
+  const presencas = (rawPresencas || [])
+    .filter(p => String(p.id_evento) === String(evento.id_evento))
+    .map(p => ({
+      ...p,
+      membros: (allMembros || []).find(m => m.id === p.id_membro) || {
+        id: p.id_membro,
+        nome: 'Membro Desconhecido'
+      }
+    }))
+    .sort((a, b) => (a.membros?.nome || '').localeCompare(b.membros?.nome || ''));
+
+  const loading = loadingPresencas || loadingMembros;
+
+  const updatePresenca = async (id_membro: string, status: 'presente' | 'ausente' | 'justificado', justificativa?: string) => {
     try {
-      setLoading(true);
-      const data = await EventService.getPresencasByEvento(evento.id_evento);
-      setPresencas(data);
-    } catch (error) {
-      console.error('Erro ao buscar presenças:', error);
-      showError('Erro ao carregar lista de presença');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updatePresenca = async (id_membro: string, presenca: 'presente' | 'ausente' | 'justificado', justificativa?: string) => {
-    try {
-      await EventService.updatePresenca(evento.id_evento, id_membro, presenca, justificativa);
+      const existing = presencas.find(p => p.id_membro === id_membro);
       
-      // Atualizar estado local
-      setPresencas(prev => prev.map(p => 
-        p.id_membro === id_membro 
-          ? { ...p, presenca, justificativa: presenca === 'justificado' ? justificativa : null }
-          : p
-      ));
+      const updateData = {
+        id_evento: evento.id_evento,
+        id_membro,
+        presenca: status,
+        justificativa: status === 'justificado' ? justificativa : null,
+        updated_at: new Date().toISOString()
+      };
+
+      if (existing) {
+        await updatePresencaSync(String(existing.id_chamada), updateData);
+      } else {
+        const id_chamada = `local-ch-${Date.now()}`;
+        await addPresenca({
+          ...updateData,
+          id: id_chamada,
+          id_chamada,
+          created_at: new Date().toISOString()
+        } as any);
+      }
       
       showSuccess('Presença atualizada com sucesso!');
     } catch (error) {
@@ -80,42 +101,32 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
   };
 
   // Funções para gerenciar membros
-  const fetchAllMembros = async () => {
-    try {
-      setLoadingMembros(true);
-      const data = await EventService.getAllMembros();
-      setAllMembros(data);
-    } catch (error) {
-      console.error('Erro ao buscar membros:', error);
-      showError('Erro ao carregar lista de membros');
-    } finally {
-      setLoadingMembros(false);
-    }
-  };
-
   const handleAddMembro = async (id_membro: string) => {
     try {
-      await EventService.addMembroToEvento(evento.id_evento, id_membro);
-      showSuccess('Membro adicionado à chamada com sucesso!');
-      fetchPresencas(); // Atualizar lista de presença
+      const id_chamada = `local-ch-${Date.now()}`;
+      await addPresenca({
+        id: id_chamada,
+        id_chamada,
+        id_evento: evento.id_evento,
+        id_membro,
+        presenca: 'ausente',
+        created_at: new Date().toISOString()
+      } as any);
+      
+      showSuccess('Membro adicionado à chamada!');
       setShowAddMembro(false);
     } catch (error: any) {
       console.error('Erro ao adicionar membro:', error);
-      if (error.message === 'Este membro já está na lista de presença deste evento') {
-        showError('Este membro já está participando deste evento');
-      } else {
-        showError('Erro ao adicionar membro à chamada');
-      }
+      showError('Erro ao adicionar membro à chamada');
     }
   };
 
-  const handleRemoveMembro = async (id_chamada: string) => {
+  const handleRemoveMembro = async (id_chamada: string | number) => {
     if (!confirm('Tem certeza que deseja remover este membro da chamada?')) return;
     
     try {
-      await EventService.removeMembroFromEvento(id_chamada);
-      showSuccess('Membro removido da chamada com sucesso!');
-      fetchPresencas(); // Atualizar lista de presença
+      LocalStorageFirstService.remove('presenca_evento', String(id_chamada));
+      showSuccess('Membro removido da chamada!');
     } catch (error) {
       console.error('Erro ao remover membro:', error);
       showError('Erro ao remover membro da chamada');
@@ -123,7 +134,6 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
   };
 
   const openAddMembroModal = () => {
-    fetchAllMembros();
     setShowAddMembro(true);
   };
 
@@ -286,10 +296,11 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
                   className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl"
                 >
                   <div className="flex items-center gap-4">
-                    <img
+                    <ImageCache
                       src={presenca.membros?.foto || `https://ui-avatars.com/api/?name=${presenca.membros?.nome}&background=random`}
                       alt={presenca.membros?.nome}
                       className="w-10 h-10 rounded-full border-2 border-slate-200 dark:border-slate-700"
+                      fallbackSrc={`https://ui-avatars.com/api/?name=${presenca.membros?.nome}&background=random`}
                     />
                     <div>
                       <div className="font-medium text-slate-800 dark:text-white">
@@ -423,10 +434,11 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
                       className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <img
+                        <ImageCache
                           src={membro.foto || `https://ui-avatars.com/api/?name=${membro.nome}&background=random`}
                           alt={membro.nome}
                           className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-700"
+                          fallbackSrc={`https://ui-avatars.com/api/?name=${membro.nome}&background=random`}
                         />
                         <div>
                           <div className="font-medium text-slate-800 dark:text-white text-sm">

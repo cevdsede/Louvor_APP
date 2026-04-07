@@ -1,7 +1,8 @@
 import { supabase } from '../supabaseClient';
-import { SupabaseCulto, SupabaseEscala, SupabaseMembro } from '../types-supabase';
+import LocalStorageFirstService from './LocalStorageFirstService';
 
 export interface ProximaEscala {
+  id_culto: string;
   culto: string;
   data: string;
   horario: string;
@@ -23,12 +24,8 @@ class DashboardService {
   // KIP 1: Total de Cultos
   async getTotalCultos(): Promise<number> {
     try {
-      const { count, error } = await supabase
-        .from('cultos')
-        .select('*', { count: 'exact', head: true });
-
-      if (error) throw error;
-      return count || 0;
+      const cultos = LocalStorageFirstService.get<any>('cultos');
+      return cultos.length;
     } catch (error) {
       console.error('Erro ao buscar total de cultos:', error);
       return 0;
@@ -38,12 +35,8 @@ class DashboardService {
   // Novo KIP: Total de Músicas
   async getTotalMusicas(): Promise<number> {
     try {
-      const { count, error } = await supabase
-        .from('musicas')
-        .select('*', { count: 'exact', head: true });
-
-      if (error) throw error;
-      return count || 0;
+      const musicas = LocalStorageFirstService.get<any>('musicas');
+      return musicas.length;
     } catch (error) {
       console.error('Erro ao buscar total de músicas:', error);
       return 0;
@@ -53,51 +46,50 @@ class DashboardService {
   // KIP 2: Próxima Escala do usuário logado
   async getProximaEscala(userId: string): Promise<ProximaEscala | null> {
     try {
-      // Buscar escalas do usuário com data futura
-      const { data: escalas, error } = await supabase
-        .from('escalas')
-        .select(`
-          id,
-          id_culto,
-          id_funcao,
-          cultos!inner (
-            id,
-            id_nome_cultos,
-            data_culto,
-            horario,
-            nome_cultos!inner (
-              nome_culto
-            )
-          ),
-          funcao!inner (
-            id,
-            nome_funcao
-          )
-        `)
-        .eq('id_membros', userId)
-        .gte('cultos.data_culto', new Date().toISOString().split('T')[0])
-        .order('data_culto', { referencedTable: 'cultos', ascending: true });
+      const escalas = LocalStorageFirstService.get<any>('escalas');
+      const cultos = LocalStorageFirstService.get<any>('cultos');
+      const nomeCultos = LocalStorageFirstService.get<any>('nome_cultos');
+      const funcoes = LocalStorageFirstService.get<any>('funcao');
 
-      if (error) throw error;
+      const todayStr = new Date().toISOString().split('T')[0];
 
-      if (!escalas || escalas.length === 0) {
-        return null;
-      }
+      // 1. Encontrar escalas do usuário
+      const minhasEscalas = escalas.filter((e: any) => e.id_membros === userId);
+      if (minhasEscalas.length === 0) return null;
 
-      // Agrupar por culto e coletar funções
-      const item = escalas[0] as any;
-      const proximoCulto = item.cultos;
-      const nomeCulto = proximoCulto.nome_cultos?.nome_culto || 'Culto sem nome';
+      // 2. Juntar com cultos e filtrar futuros
+      const escalasComCulto = minhasEscalas.map((e: any) => {
+        const culto = cultos.find((c: any) => c.id === e.id_culto);
+        const funcao = funcoes.find((f: any) => f.id === e.id_funcao);
+        const nomeCulto = nomeCultos.find((n: any) => n.id === culto?.id_nome_cultos);
 
-      const funcoes = (escalas as any[])
-        .filter(e => e.cultos.id === proximoCulto.id)
-        .map(e => e.funcao.nome_funcao);
+        return {
+          ...e,
+          cultoData: culto,
+          nomeCulto: nomeCulto?.nome_culto,
+          funcaoNome: funcao?.nome_funcao
+        };
+      }).filter((e: any) => e.cultoData && e.cultoData.data_culto >= todayStr)
+        .sort((a: any, b: any) => a.cultoData.data_culto.localeCompare(b.cultoData.data_culto));
+
+      if (escalasComCulto.length === 0) return null;
+
+      // 3. Pegar o culto mais próximo
+      const primeiraEscala = escalasComCulto[0];
+      const proximoCultoId = primeiraEscala.id_culto;
+
+      // 4. Agrupar funções para esse mesmo culto
+      const minhasFuncoesNesseCulto = escalasComCulto
+        .filter((e: any) => e.id_culto === proximoCultoId)
+        .map((e: any) => e.funcaoNome)
+        .filter((val, index, self) => self.indexOf(val) === index); // Unique
 
       return {
-        culto: nomeCulto,
-        data: proximoCulto.data_culto,
-        horario: proximoCulto.horario,
-        funcoes: funcoes
+        id_culto: proximoCultoId,
+        culto: primeiraEscala.nomeCulto || 'Culto',
+        data: primeiraEscala.cultoData.data_culto,
+        horario: primeiraEscala.cultoData.horario,
+        funcoes: minhasFuncoesNesseCulto
       };
     } catch (error) {
       console.error('Erro ao buscar próxima escala:', error);
@@ -108,37 +100,21 @@ class DashboardService {
   // KIP 3: Frequência por Membro
   async getFrequenciaPorMembro(): Promise<FrequenciaMembro[]> {
     try {
-      const { data, error } = await supabase
-        .from('escalas')
-        .select(`
-          membros!inner (
-            id,
-            nome
-          ),
-          cultos!inner (
-            id
-          )
-        `);
-
-      if (error) throw error;
+      const escalas = LocalStorageFirstService.get<any>('escalas');
+      const membros = LocalStorageFirstService.get<any>('membros');
 
       // Contar cultos diferentes por membro
       const frequenciaMap = new Map<string, Set<string>>();
 
-      data?.forEach(escala => {
-        const m: any = (escala as any).membros;
-        const c: any = (escala as any).cultos;
+      escalas.forEach((escala: any) => {
+        const membro = membros.find((m: any) => m.id === escala.id_membros);
+        if (!membro) return;
 
-        if (!m || !c) return;
-
-        const membroNome = m.nome;
-        const cultoId = c.id;
-
-        if (!frequenciaMap.has(membroNome)) {
-          frequenciaMap.set(membroNome, new Set());
+        if (!frequenciaMap.has(membro.nome)) {
+          frequenciaMap.set(membro.nome, new Set());
         }
 
-        frequenciaMap.get(membroNome)?.add(cultoId);
+        frequenciaMap.get(membro.nome)?.add(escala.id_culto);
       });
 
       // Converter para o formato esperado
@@ -160,24 +136,27 @@ class DashboardService {
   // Novo KIP: Aniversariantes do Mês
   async getAniversariantesDoMes(): Promise<Aniversariante[]> {
     try {
+      const membros = LocalStorageFirstService.get<any>('membros');
       const mesAtual = new Date().getMonth() + 1;
 
-      const { data, error } = await supabase
-        .from('membros')
-        .select('id, nome, data_nasc')
-        .eq('ativo', true)
-        .order('data_nasc', { ascending: true });
+      const aniversariantes = membros
+        .filter((m: any) => {
+          if (!m.ativo || !m.data_nasc) return false;
+          const mesMembro = new Date(m.data_nasc + 'T12:00:00').getMonth() + 1;
+          return mesMembro === mesAtual;
+        })
+        .map((m: any) => ({
+          id: m.id,
+          nome: m.nome,
+          data_nasc: m.data_nasc
+        }))
+        .sort((a: any, b: any) => {
+          const diaA = new Date(a.data_nasc + 'T12:00:00').getDate();
+          const diaB = new Date(b.data_nasc + 'T12:00:00').getDate();
+          return diaA - diaB;
+        });
 
-      if (error) throw error;
-
-      // Filtrar por mês no JS pois o PostgreSQL do Supabase pode ser chato com EXTRACT em queries simples de client
-      const aniversariantes = (data || []).filter(m => {
-        if (!m.data_nasc) return false;
-        const mesMembro = new Date(m.data_nasc + 'T12:00:00').getMonth() + 1;
-        return mesMembro === mesAtual;
-      });
-
-      return aniversariantes as Aniversariante[];
+      return aniversariantes;
     } catch (error) {
       console.error('Erro ao buscar aniversariantes:', error);
       return [];
@@ -185,8 +164,8 @@ class DashboardService {
   }
 
   // Formatar data
-  private formatDate(dateString: string): string {
-    const date = new Date(dateString + 'T00:00:00');
+  formatDate(dateString: string): string {
+    const date = new Date(dateString + 'T12:00:00');
     return date.toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',

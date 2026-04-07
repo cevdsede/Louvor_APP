@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
+import LocalStorageStatus from './LocalStorageStatus';
+import { clearImageCache, getImageCacheSize } from '../../utils/teamUtils';
+import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 
 interface ToolsViewProps {
   subView: 'tools-admin' | 'tools-users' | 'tools-approvals' | 'tools-performance';
@@ -9,30 +12,72 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
   const [editingProfile, setEditingProfile] = useState<string | null>(null);
+  const [showCacheManager, setShowCacheManager] = useState(false);
+  const [cacheInfo, setCacheInfo] = useState<any>(null);
+  const [editingMember, setEditingMember] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
 
   // Funções para os botões de acesso rápido
   const handleEditMember = (member: any) => {
-    console.log('Editar membro:', member);
-    // TODO: Abrir modal de edição do membro
+    setEditingMember(member);
+  };
+
+  const handlePhotoUpload = async (file: File) => {
+    if (!editingMember) return;
+    
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${editingMember.id}_${Date.now()}.${fileExt}`;
+      const filePath = `members/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Atualizar o membro com a nova foto
+      const updatedMember = { ...editingMember, foto: publicUrl };
+      setEditingMember(updatedMember);
+      
+      console.log('Foto enviada com sucesso');
+    } catch (error) {
+      console.error('Erro ao enviar foto:', error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleProfileChange = async (memberId: string, newProfile: string) => {
+    try {
+      // Atualizar usando LocalStorageFirstService
+      LocalStorageFirstService.update('membros', memberId, { perfil: newProfile });
+      
+      // Recarregar dados
+      const membersData = LocalStorageFirstService.get<any>('membros');
+      setData(membersData || []);
+      
+      setEditingProfile(null); // Fechar o dropdown
+      console.log(`Perfil atualizado para ${newProfile} com sucesso`);
+    } catch (error) {
+      console.error('Erro ao atualizar perfil:', error);
+    }
   };
 
   const handleToggleStatus = async (member: any) => {
     try {
       const newStatus = !member.ativo;
-      const { error } = await supabase
-        .from('membros')
-        .update({ ativo: newStatus })
-        .eq('id', member.id);
       
-      if (error) throw error;
+      // Atualizar usando LocalStorageFirstService
+      LocalStorageFirstService.update('membros', member.id, { ativo: newStatus });
       
       // Recarregar dados
-      const { data: membersData, error: membersError } = await supabase
-        .from('membros')
-        .select('*')
-        .order('nome', { ascending: true });
-      
-      if (membersError) throw membersError;
+      const membersData = LocalStorageFirstService.get<any>('membros');
       setData(membersData || []);
       
       console.log(`Membro ${member.nome} ${newStatus ? 'ativado' : 'desativado'} com sucesso`);
@@ -41,28 +86,27 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
     }
   };
 
-  const handleProfileChange = async (memberId: string, newProfile: string) => {
+  const handleSaveMember = async (updatedMember: any) => {
     try {
-      const { error } = await supabase
-        .from('membros')
-        .update({ perfil: newProfile })
-        .eq('id', memberId);
-      
-      if (error) throw error;
+      // Atualizar usando LocalStorageFirstService
+      LocalStorageFirstService.update('membros', updatedMember.id, {
+        nome: updatedMember.nome,
+        email: updatedMember.email,
+        telefone: updatedMember.telefone,
+        data_nasc: updatedMember.data_nasc,
+        ativo: updatedMember.ativo,
+        perfil: updatedMember.perfil,
+        foto: updatedMember.foto
+      });
       
       // Recarregar dados
-      const { data: membersData, error: membersError } = await supabase
-        .from('membros')
-        .select('*')
-        .order('nome', { ascending: true });
-      
-      if (membersError) throw membersError;
+      const membersData = LocalStorageFirstService.get<any>('membros');
       setData(membersData || []);
       
-      setEditingProfile(null); // Fechar o dropdown
-      console.log(`Perfil atualizado para ${newProfile} com sucesso`);
+      setEditingMember(null);
+      console.log('Membro atualizado com sucesso');
     } catch (error) {
-      console.error('Erro ao atualizar perfil:', error);
+      console.error('Erro ao atualizar membro:', error);
     }
   };
 
@@ -87,14 +131,12 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
             });
             break;
           case 'tools-users':
-            // Buscar dados reais da tabela membros
-            const { data: membersData, error: membersError } = await supabase
-              .from('membros')
-              .select('*')
-              .order('nome', { ascending: true });
-            
-            if (membersError) throw membersError;
+            // Buscar dados usando LocalStorageFirstService para consistência
+            const membersData = LocalStorageFirstService.get<any>('membros');
             setData(membersData || []);
+            
+            // Tentar sincronizar em background
+            LocalStorageFirstService.forceSync('membros').catch(() => {});
             break;
           case 'tools-approvals':
             setData([
@@ -200,11 +242,70 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                 <button className="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                   <i className="fas fa-download mr-2"></i> Backup Manual
                 </button>
-                <button className="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-                  <i className="fas fa-broom mr-2"></i> Limpar Cache
+                <button 
+                  onClick={() => {
+                    setShowCacheManager(true);
+                    setCacheInfo(getImageCacheSize());
+                  }}
+                  className="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <i className="fas fa-broom mr-2"></i> Gerenciar Cache
                 </button>
               </div>
             </div>
+
+            {/* Gerenciador de Cache */}
+            {showCacheManager && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6 max-w-md w-full">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-black text-slate-800 dark:text-white">Gerenciador de Cache</h3>
+                    <button 
+                      onClick={() => setShowCacheManager(false)}
+                      className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      <i className="fas fa-times text-slate-500"></i>
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+                      <h4 className="font-black text-slate-700 dark:text-slate-300 mb-2">Status do Cache</h4>
+                      <div className="space-y-1 text-sm">
+                        <p><span className="font-medium">Imagens armazenadas:</span> {cacheInfo?.count || 0}</p>
+                        <p><span className="font-medium">Espaço usado:</span> {cacheInfo?.sizeMB || 0} MB</p>
+                        <p><span className="font-medium">Limite aproximado:</span> 5-10 MB</p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button 
+                        onClick={() => {
+                          const cleared = clearImageCache();
+                          setCacheInfo(getImageCacheSize());
+                          alert(`Cache limpo! ${cleared} imagens removidas.`);
+                        }}
+                        className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-red-600 transition-colors"
+                      >
+                        <i className="fas fa-trash mr-2"></i> Limpar Tudo
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setCacheInfo(getImageCacheSize());
+                        }}
+                        className="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      >
+                        <i className="fas fa-sync mr-2"></i> Atualizar
+                      </button>
+                    </div>
+
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      O cache armazena imagens dos membros para uso offline. Imagens grandes (&gt;500KB) não são armazenadas automaticamente.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
 
@@ -394,7 +495,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                   <i className="fas fa-arrow-up text-emerald-500"></i>
                 </div>
                 <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Total de Requisições</h3>
-                <p className="text-2xl font-black text-brand">{data.totalRequests.toLocaleString()}</p>
+                <p className="text-2xl font-black text-brand">{data?.totalRequests?.toLocaleString() || '0'}</p>
               </div>
 
               <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
@@ -405,7 +506,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                   <i className="fas fa-arrow-down text-red-500"></i>
                 </div>
                 <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Tempo Médio</h3>
-                <p className="text-2xl font-black text-brand">{data.avgResponseTime}</p>
+                <p className="text-2xl font-black text-brand">{data?.avgResponseTime || '0ms'}</p>
               </div>
 
               <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
@@ -416,7 +517,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                   <i className="fas fa-minus text-amber-500"></i>
                 </div>
                 <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Taxa de Erro</h3>
-                <p className="text-2xl font-black text-brand">{data.errorRate}</p>
+                <p className="text-2xl font-black text-brand">{data?.errorRate || '0%'}</p>
               </div>
 
               <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
@@ -427,7 +528,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                   <i className="fas fa-arrow-up text-emerald-500"></i>
                 </div>
                 <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Uptime</h3>
-                <p className="text-2xl font-black text-brand">{data.uptime}</p>
+                <p className="text-2xl font-black text-brand">{data?.uptime || '99.9%'}</p>
               </div>
             </div>
 
@@ -440,6 +541,12 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                 </div>
               </div>
             </div>
+
+            {/* Status do LocalStorage-First */}
+            <div className="mt-6">
+              <h3 className="text-lg font-black text-slate-800 dark:text-white mb-4">Status do Cache Local</h3>
+              <LocalStorageStatus />
+            </div>
           </div>
         );
 
@@ -451,6 +558,139 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
   return (
     <div className="max-w-7xl mx-auto">
       {renderContent()}
+
+      {/* Modal de Edição de Membro */}
+      {editingMember && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-black text-slate-800 dark:text-white">Editar Membro</h3>
+              <button 
+                onClick={() => setEditingMember(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <i className="fas fa-times text-slate-500"></i>
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Foto do Membro */}
+              <div className="flex flex-col items-center">
+                <div className="relative">
+                  <div className="w-24 h-24 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center overflow-hidden">
+                    {editingMember?.foto && editingMember.foto.trim() !== '' ? (
+                      <img src={editingMember.foto} alt={editingMember.nome} className="w-full h-full object-cover" />
+                    ) : (
+                      <i className="fas fa-user text-slate-400 text-2xl"></i>
+                    )}
+                  </div>
+                  <label className="absolute -bottom-2 -right-2 w-8 h-8 bg-brand text-white rounded-full flex items-center justify-center cursor-pointer hover:bg-brand/90 transition-colors">
+                    <i className="fas fa-camera text-xs"></i>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handlePhotoUpload(file);
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                {uploading && (
+                  <p className="text-xs text-slate-500 mt-2">Enviando foto...</p>
+                )}
+              </div>
+
+              {/* Campos de Edição */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Nome</label>
+                  <input
+                    type="text"
+                    value={editingMember.nome || ''}
+                    onChange={(e) => setEditingMember({ ...editingMember, nome: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Email</label>
+                  <input
+                    type="email"
+                    value={editingMember.email || ''}
+                    onChange={(e) => setEditingMember({ ...editingMember, email: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Telefone</label>
+                  <input
+                    type="tel"
+                    value={editingMember.telefone || ''}
+                    onChange={(e) => setEditingMember({ ...editingMember, telefone: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Data de Nascimento</label>
+                  <input
+                    type="date"
+                    value={editingMember.data_nasc ? editingMember.data_nasc.split('T')[0] : ''}
+                    onChange={(e) => setEditingMember({ ...editingMember, data_nasc: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Perfil</label>
+                  <select
+                    value={editingMember.perfil || 'User'}
+                    onChange={(e) => setEditingMember({ ...editingMember, perfil: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                  >
+                    {profileOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Status</label>
+                  <select
+                    value={editingMember.ativo ? 'ativo' : 'inativo'}
+                    onChange={(e) => setEditingMember({ ...editingMember, ativo: e.target.value === 'ativo' })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                  >
+                    <option value="ativo">Ativo</option>
+                    <option value="inativo">Inativo</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Botões de Ação */}
+              <div className="flex gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <button 
+                  onClick={() => handleSaveMember(editingMember)}
+                  className="flex-1 px-4 py-3 bg-brand text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-brand/90 transition-colors"
+                >
+                  <i className="fas fa-save mr-2"></i> Salvar Alterações
+                </button>
+                <button 
+                  onClick={() => setEditingMember(null)}
+                  className="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <i className="fas fa-times mr-2"></i> Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

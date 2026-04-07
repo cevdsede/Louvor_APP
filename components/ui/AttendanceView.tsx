@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '../../supabaseClient';
 import { showSuccess, showError, showWarning } from '../../utils/toast';
 import { logger } from '../../utils/logger';
 import { confirmDelete } from '../../utils/confirmModal';
 import { AttendanceEvent, AttendanceStatus, Member } from '../../types';
+import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 
 const AttendanceView: React.FC = () => {
   const [view, setView] = useState<'list' | 'marking'>('list');
@@ -14,7 +15,7 @@ const AttendanceView: React.FC = () => {
 
   const [events, setEvents] = useState<AttendanceEvent[]>([]);
 
-  const members: Member[] = [];
+  const { data: members } = useLocalStorageFirst<Member>({ table: 'membros' });
 
   const [currentAttendance, setCurrentAttendance] = useState<Record<string, AttendanceStatus>>({});
 

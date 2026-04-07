@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
-import { showSuccess, showError } from '../../utils/toast';
+import { ImageCache } from '../ui/ImageCache';
 import { ViewType } from '../../types';
 
 interface SidebarProps {
@@ -50,6 +50,11 @@ const Sidebar: React.FC<SidebarProps> = ({
   // Carregar dados do usuário logado
   useEffect(() => {
     const loadUserData = async () => {
+      if (!navigator.onLine) {
+        console.log('📶 Offline: Pulando carregamento de dados do usuário.');
+        return;
+      }
+
       try {
         // 1. Buscar usuário autenticado
         const { data: { user } } = await supabase.auth.getUser();
@@ -350,13 +355,14 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div onClick={() => setIsProfileModalOpen(true)} className="flex items-center gap-3 px-3 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group flex-1">
             <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-black text-[10px] shadow-sm group-hover:scale-105 transition-transform overflow-hidden">
               {profileData.foto ? (
-                <img
+                <ImageCache
                   src={profileData.foto}
                   alt={profileData.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover rounded-full"
+                  disableCompression={true}
                 />
               ) : (
-                <div className="w-full h-full bg-brand flex items-center justify-center">
+                <div className="w-full h-full bg-brand flex items-center justify-center rounded-full">
                   {profileData.name.substring(0, 2).toUpperCase()}
                 </div>
               )}

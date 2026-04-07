@@ -8,6 +8,7 @@ import TeamKPIs from './TeamKPIs';
 import TeamGrid from './TeamGrid';
 import TeamModals from './TeamModals';
 import MultiSelect from './MultiSelect';
+import { ImageCache } from '../ui/ImageCache';
 import { useTeamData } from '../../hooks/useTeamData';
 import { sortMembersByRole } from '../../utils/teamUtils';
 import EventService, { Evento } from '../../services/EventService';
@@ -243,10 +244,11 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
                   <div key={solicitacao.id} className="bg-slate-50 dark:bg-slate-800 rounded-xl p-6 border border-slate-100 dark:border-slate-700">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-4">
-                        <img 
-                          src={solicitacao.membros?.foto || `https://ui-avatars.com/api/?name=${solicitacao.membros?.nome}&background=random`} 
+                        <ImageCache
+                          src={solicitacao.membros?.foto || `https://ui-avatars.com/api/?name=${solicitacao.membros?.nome}&background=random`}
                           alt={solicitacao.membros?.nome}
                           className="w-12 h-12 rounded-full border-2 border-slate-200 dark:border-slate-700"
+                          fallbackSrc={`https://ui-avatars.com/api/?name=${solicitacao.membros?.nome}&background=random`}
                         />
                         <div>
                           <h3 className="font-black text-slate-800 dark:text-white">{solicitacao.membros?.nome}</h3>

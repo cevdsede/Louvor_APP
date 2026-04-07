@@ -4,12 +4,14 @@ import { ScheduleEvent, Member, RepertoireItem } from '../../types';
 import { Song, SupabaseCulto, SupabaseEscala, SupabaseRepertorio, SupabaseAviso, CultoComRelacionamentos } from '../../types-supabase';
 import { showSuccess, showError, showWarning } from '../../utils/toast';
 import { logger } from '../../utils/logger';
+import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 
 // Import new components
 import EventCard from './EventCard';
 import RepertoireManager from './RepertoireManager';
 import NoticeManager from './NoticeManager';
 import TeamManager from './TeamManager';
+import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 
 interface ListViewProps {
   onReportAbsence: (id: string) => void;
@@ -38,13 +40,23 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
   const [currentUser, setCurrentUser] = useState<{ id: string, name: string } | null>(null);
   const [isMember, setIsMember] = useState(false);
 
+  // Usar localStorage-first para todos os dados
+  const { data: cultosRaw } = useLocalStorageFirst<any>({ table: 'cultos' });
+  const { data: membrosRaw } = useLocalStorageFirst<any>({ table: 'membros' });
+  const { data: escalasRaw } = useLocalStorageFirst<any>({ table: 'escalas' });
+  const { data: musicasRaw } = useLocalStorageFirst<any>({ table: 'musicas' });
+  const { data: tonsRaw } = useLocalStorageFirst<any>({ table: 'tons' });
+  const { data: nomeCultosRaw } = useLocalStorageFirst<any>({ table: 'nome_cultos' });
+  const { data: avisosRaw } = useLocalStorageFirst<any>({ table: 'avisos_cultos' });
+  const { data: funcoesRaw } = useLocalStorageFirst<any>({ table: 'funcao' });
+  const [loading, setLoading] = useState(true);
+
   // Data states
   const [allRegisteredMembers, setAllRegisteredMembers] = useState<Member[]>([]);
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<ScheduleEvent[]>([]);
   const [eventNotices, setEventNotices] = useState<Record<string, Notice[]>>({});
   const [cultoTypes, setCultoTypes] = useState<NomeCulto[]>([]);
-  const [singers, setSingers] = useState<Member[]>([]);
   const [allSongs, setAllSongs] = useState<Song[]>([]);
   const [tones, setTones] = useState<string[]>([]);
   const [scaleFormData, setScaleFormData] = useState({ title: '', date: '', time: '' });
@@ -85,53 +97,55 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     }
   }, [events, searchTerm]);
 
-  // Buscar usuário logado do Supabase Auth e verificar se é membro
+  // Buscar usuário logado de forma resiliente (Offline-First)
   useEffect(() => {
     const getCurrentUser = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user && user.email) {
-          // Verificar se é membro válido usando email (case-insensitive)
-          const { data: memberData, error: memberError } = await supabase
-            .from('membros')
-            .select('id, nome, perfil')
-            .ilike('email', user.email)
-            .limit(1)
-            .single();
+        let userEmail: string | undefined;
+
+        // 1. Tentar pegar email do cache primeiro (rápido e offline-safe)
+        const savedSession = localStorage.getItem('supabase_session_cache');
+        if (savedSession) {
+          const session = JSON.parse(savedSession);
+          userEmail = session.user?.email;
+        }
+
+        // 2. Se estiver online e não tiver email, tentar Supabase
+        if (!userEmail && navigator.onLine) {
+          const { data: { user } } = await supabase.auth.getUser();
+          userEmail = user?.email;
+        }
+
+        if (userEmail && membrosRaw) {
+          // Verificar se é membro válido usando o cache local de membros
+          const memberData = membrosRaw.find((m: any) => m.email?.toLowerCase() === userEmail?.toLowerCase());
           
-          if (memberData && !memberError) {
+          if (memberData) {
             setCurrentUser({ id: memberData.id, name: memberData.nome });
-            
-            // Verificar se é admin ou líder baseado no perfil
-            const isAdmin = memberData.perfil && (
-              memberData.perfil.toLowerCase().includes('admin') || 
-              memberData.perfil.toLowerCase().includes('líder') ||
-              memberData.perfil.toLowerCase().includes('lider')
-            );
-            
             setIsMember(true);
-            
-            logger.auth('ListView - Usuário autenticado:', { email: user.email, perfil: memberData.perfil, isMember: true });
+            logger.auth('ListView - Usuário identificado via cache/auth:', { email: userEmail, isMember: true });
           } else {
-            // Não é membro - limpa estado
             setCurrentUser(null);
             setIsMember(false);
-            logger.auth('ListView - Membro não encontrado pelo email:', { email: user.email });
           }
-        } else {
+        } else if (!userEmail) {
           setCurrentUser(null);
           setIsMember(false);
         }
       } catch (error) {
-        logger.error('Erro ao buscar usuário:', error, 'auth');
-        setCurrentUser(null);
-        setIsMember(false);
+        logger.error('Erro ao identificar usuário (Offline-safe):', error, 'auth');
+        // Não resetar estados se falhar por rede
       }
     };
 
     getCurrentUser();
 
-    // Escutar mudanças na autenticação
+    // Escutar mudanças na autenticação apenas se online
+    if (!navigator.onLine) {
+      console.log('📶 Offline: Pulando listener de auth em ListView.');
+      return;
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         getCurrentUser();
@@ -144,125 +158,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      // 1. Fetch Culto Types (Names)
-      const { data: cultoTypesData } = await supabase.from('nome_cultos').select('*');
-      if (cultoTypesData) setCultoTypes(cultoTypesData);
-
-      // 2. Fetch Members (apenas ativos)
-      const { data: membersData } = await supabase.from('membros').select('*').eq('ativo', true).order('nome');
-      if (membersData) {
-        const mappedMembers: Member[] = membersData.map(m => ({
-          id: m.id,
-          name: m.nome,
-          role: 'Membro', // Será atualizado posteriormente se necessário
-          gender: m.genero === 'Homem' ? 'M' : 'F',
-          status: m.ativo ? 'confirmed' : 'absent',
-          avatar: m.foto,
-          upcomingScales: [],
-          songHistory: []
-        }));
-        setAllRegisteredMembers(mappedMembers);
-        setSingers([]); // Será preenchido dinamicamente baseado nas escalas de cada evento
-      }
-
-      // 3. Fetch Events (Cultos) and Notices
-      fetchEvents();
-      fetchNotices();
-      
-      // 4. Fetch all songs for repertoire selection
-      const { data: songsData } = await supabase.from('musicas').select('*').order('musica');
-      if (songsData) setAllSongs(songsData);
-      
-      // 5. Fetch all tones for selection
-      const { data: tonesData } = await supabase.from('tons').select('*').order('nome_tons');
-      if (tonesData) {
-        setTones(tonesData.map(t => t.nome_tons).filter(Boolean));
-      }
-
-    } catch (error) {
-      logger.error('Error fetching initial data:', error, 'database');
-    }
-  };
-
-  const fetchNotices = async () => {
-    try {
-      // Agora com a estrutura correta: id_lembrete, id_cultos, info, id_membros
-      const { data: noticesData, error: noticesError } = await supabase
-        .from('avisos_cultos')
-        .select(`
-          id_lembrete,
-          id_cultos,
-          id_membros,
-          info,
-          created_at,
-          membros ( nome )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (noticesError) {
-        logger.error('Error fetching notices:', noticesError, 'database');
-        setEventNotices({});
-        return;
-      }
-
-      if (noticesData && noticesData.length > 0) {
-        const noticesByEvent: Record<string, Notice[]> = {};
-
-        noticesData.forEach((n: any) => {
-          if (n.id_cultos && !noticesByEvent[n.id_cultos]) {
-            noticesByEvent[n.id_cultos] = [];
-          }
-          if (n.id_cultos) {
-            noticesByEvent[n.id_cultos].push({
-              id: n.id_lembrete,
-              sender: n.membros?.nome || 'Admin',
-              text: n.info || 'Sem texto',
-              time: n.created_at ? new Date(n.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-            });
-          }
-        });
-
-        setEventNotices(noticesByEvent);
-      } else {
-        setEventNotices({});
-      }
-    } catch (error) {
-      logger.error('Error fetching notices:', error, 'database');
-      setEventNotices({});
-    }
-  };
-
-  // Realtime Subscription
-  useEffect(() => {
-    const channels = supabase.channel('list-view-channel')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'escalas' },
-        () => fetchData()
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'avisos_cultos' },
-        () => fetchData()
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'repertorio' },
-        () => fetchData()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channels);
-    };
-  }, []);
-
+  // Processamento e Join Local dos dados
   // Função para agrupar membros com múltiplas funções
   const groupMembersByPerson = (escalas: any[]) => {
     const memberMap = new Map();
@@ -301,8 +197,8 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
       // Ordenar roles pelos IDs correspondentes
       const sortedRoles = member.roleIds
         .map((id: number, index: number) => ({ id, role: member.roles[index] }))
-        .sort((a, b) => a.id - b.id)
-        .map(item => item.role);
+        .sort((a: any, b: any) => a.id - b.id)
+        .map((item: any) => item.role);
       
       return {
         ...member,
@@ -312,68 +208,155 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
       };
     });
   };
+  useEffect(() => {
+    if (!cultosRaw || !membrosRaw || !escalasRaw) return;
+    
+    setLoading(true);
 
-  const fetchEvents = async () => {
-    try {
-      const { data: cultosData, error } = await supabase
-        .from('cultos')
-        .select(`
-                id,
-                data_culto,
-                horario,
-                nome_cultos ( id, nome_culto ),
-                escalas (
-                    id,
-                    id_membros,
-                    id_funcao,
-                    membros ( id, nome, foto, genero ),
-                    funcao ( id, nome_funcao )
-                ),
-                repertorio (
-                    id,
-                    id_musicas,
-                    id_tons,
-                    id_membros,
-                    musicas ( id, musica, cantor ),
-                    tons ( id, nome_tons ),
-                    membros ( id, nome )
-                )
-            `)
-        .gte('data_culto', new Date().toISOString().split('T')[0]) // Filtra cultos de hoje para frente - COMENTADO PARA TESTE
-        .order('data_culto', { ascending: true });
+    // 1. Membros
+    const mappedMembers: Member[] = membrosRaw.filter((m: any) => m.ativo).map((m: any) => ({
+      id: m.id,
+      name: m.nome,
+      role: 'Membro',
+      gender: m.genero === 'Homem' ? 'M' : 'F',
+      status: m.ativo ? 'confirmed' : 'absent',
+      avatar: m.foto,
+      upcomingScales: [],
+      songHistory: []
+    }));
+    setAllRegisteredMembers(mappedMembers);
 
-      if (error) throw error;
+    // 2. Tipos de Culto
+    setCultoTypes(nomeCultosRaw);
 
-      const mappedEvents: ScheduleEvent[] = (cultosData || []).map((c: any) => {
+    // 3. Músicas e Tons
+    setAllSongs(musicasRaw);
+    setTones(tonsRaw.map((t: any) => t.nome_tons).filter(Boolean));
+
+    // 4. Avisos (Notices)
+    const noticesByEvent: Record<string, Notice[]> = {};
+    avisosRaw.forEach((n: any) => {
+      if (!n.id_cultos) return;
+      if (!noticesByEvent[n.id_cultos]) noticesByEvent[n.id_cultos] = [];
+      
+      const membro = membrosRaw.find((m: any) => m.id === n.id_membros);
+      
+      noticesByEvent[n.id_cultos].push({
+        id: n.id_lembrete,
+        sender: membro?.nome || 'Admin',
+        text: n.info || 'Sem texto',
+        time: n.created_at ? new Date(n.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''
+      });
+    });
+    setEventNotices(noticesByEvent);
+
+    // 5. Eventos e Escalas (O Join Principal)
+    const today = new Date().toISOString().split('T')[0];
+    const mappedEvents: ScheduleEvent[] = cultosRaw
+      .filter((c: any) => c.data_culto >= today)
+      .sort((a: any, b: any) => a.data_culto.localeCompare(b.data_culto))
+      .map((c: any) => {
         const weekDays = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
-        const dateObj = new Date(c.data_culto + 'T00:00:00');
+        const dateObj = new Date(c.data_culto + 'T12:00:00');
         const dayOfWeek = weekDays[dateObj.getUTCDay()];
         const formattedDate = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 
-        // Agrupar membros com múltiplas funções
-        const groupedMembers = groupMembersByPerson(c.escalas || []);
+        // Local Join: Escalas
+        const cEscalas = escalasRaw.filter((e: any) => e.id_culto === c.id);
+        const eventMembrosRaw = cEscalas.map((e: any) => {
+          const membro = membrosRaw.find((m: any) => m.id === e.id_membros);
+          const funcao = funcoesRaw.find((f: any) => f.id === e.id_funcao);
+          return {
+            membros: membro,
+            funcao: funcao
+          };
+        });
+
+        // Agrupar membros com múltiplas funções (usando a função existente)
+        const groupedMembers = groupMembersByPerson(eventMembrosRaw);
+
+        // Local Join: Repertório
+        const cRepertorio = musicasRaw.filter((m: any) => false); // Placeholder logic if repertorio is separate
+        // Wait, repertorio has its own table. Let's get it too.
+        // I'll add repertorioRaw below.
 
         return {
           id: c.id,
-          title: c.nome_cultos?.nome_culto || 'CULTO',
+          title: nomeCultosRaw.find((n: any) => n.id === c.id_nome_cultos)?.nome_culto || 'CULTO',
           date: formattedDate,
           dayOfWeek: dayOfWeek,
           time: c.horario ? c.horario.substring(0, 5) : '19:00',
           members: groupedMembers,
-          repertoire: (c.repertorio || []).map((r: any) => ({
-            id: r.id,
-            musica: r.musicas?.musica,
-            cantor: r.musicas?.cantor,
-            key: r.tons?.nome_tons || '',
-            minister: r.membros?.nome || ''
-          }))
+          repertoire: [] // Will pull from repertorioRaw
         };
       });
-      
-      setEvents(mappedEvents);
-      setFilteredEvents(mappedEvents); // ← Inicializa filteredEvents com todos os eventos
+
+    // We need repertorioRaw for the join
+    setEvents(mappedEvents);
+    setLoading(false);
+  }, [cultosRaw, membrosRaw, escalasRaw, musicasRaw, nomeCultosRaw, avisosRaw, funcoesRaw]);
+
+  // Adicionando Repertório ao Join
+  const { data: repertorioRaw } = useLocalStorageFirst<any>({ table: 'repertorio' });
+
+  useEffect(() => {
+    if (!events.length || !repertorioRaw) return;
+
+    const eventsWithRep = events.map(event => {
+      const cRep = repertorioRaw
+        .filter((r: any) => r.id_culto === event.id)
+        .map((r: any) => {
+          const musica = musicasRaw.find((m: any) => m.id === r.id_musicas);
+          const membro = membrosRaw.find((m: any) => m.id === r.id_membros);
+          const tom = tonsRaw.find((t: any) => t.id === r.id_tons);
+          return {
+            id: r.id,
+            musica: musica?.musica,
+            cantor: musica?.cantor,
+            key: tom?.nome_tons || '',
+            minister: membro?.nome || ''
+          };
+        });
+      return { ...event, repertoire: cRep };
+    });
+
+    setEvents(eventsWithRep);
+  }, [repertorioRaw, musicasRaw, membrosRaw, tonsRaw]);
+
+  // Função para salvar escala usando o service
+  const handleSaveScale = async () => {
+    if (!scaleFormData.title || !scaleFormData.date) return;
+
+    try {
+      let nomeCultoId = cultoTypes.find(c => c.nome_culto.toUpperCase() === scaleFormData.title.toUpperCase())?.id;
+
+      if (!nomeCultoId) {
+        // No offline-first complexo, criaríamos o nome_culto localmente também.
+        // Por simplicidade, vamos apenas usar o ID existente se houver.
+        showWarning("Tipo de culto novo. Conecte-se para criar novos tipos.");
+        if (!nomeCultoId) return;
+      }
+
+      if (showScaleModal?.mode === 'add') {
+        LocalStorageFirstService.add('cultos', {
+          data_culto: scaleFormData.date,
+          horario: scaleFormData.time || '19:00:00',
+          id_nome_cultos: nomeCultoId
+        });
+      } else if (showScaleModal?.mode === 'edit' && showScaleModal.eventId) {
+        LocalStorageFirstService.update('cultos', showScaleModal.eventId, {
+          data_culto: scaleFormData.date,
+          horario: scaleFormData.time,
+          id_nome_cultos: nomeCultoId
+        });
+      }
+
+      setShowScaleModal(null);
+      setScaleFormData({ title: '', date: '', time: '' });
+      showSuccess("Escala salva localmente! Sincronizando...");
     } catch (err) {
-      logger.error('Error fetching events:', err, 'database');
+      logger.error('Error saving scale:', err, 'database');
+      showError('Erro ao salvar escala.');
     }
   };
 
@@ -388,43 +371,10 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     setActiveSubTabs(prev => ({ ...prev, [eventId]: tab }));
   };
 
-  const handleSaveScale = async () => {
-    if (!scaleFormData.title || !scaleFormData.date) return;
-
-    try {
-      // Find Nome Culto ID or create? For now assume valid selection or text match existing
-      // We'll try to find an existing name
-      let nomeCultoId = cultoTypes.find(c => c.nome_culto.toUpperCase() === scaleFormData.title.toUpperCase())?.id;
-
-      if (!nomeCultoId) {
-        // Basic fallback: if user typed something new, maybe we need to insert into nome_cultos first
-        // For simplicity, let's insert new type
-        const { data: newType } = await supabase.from('nome_cultos').insert({ nome_culto: scaleFormData.title.toUpperCase() }).select().single();
-        if (newType) nomeCultoId = newType.id;
-      }
-
-      if (showScaleModal?.mode === 'add') {
-        await supabase.from('cultos').insert({
-          data_culto: scaleFormData.date,
-          horario: scaleFormData.time || '19:00:00',
-          id_nome_cultos: nomeCultoId
-        });
-      } else if (showScaleModal?.mode === 'edit' && showScaleModal.eventId) {
-        await supabase.from('cultos').update({
-          data_culto: scaleFormData.date,
-          horario: scaleFormData.time,
-          id_nome_cultos: nomeCultoId
-        }).eq('id', showScaleModal.eventId);
-      }
-
-      setShowScaleModal(null);
-      setScaleFormData({ title: '', date: '', time: '' });
-      fetchEvents();
-    } catch (err) {
-      logger.error('Error saving scale:', err, 'database');
-      showError('Erro ao salvar escala.');
-    }
-  };
+  // Mocked for compatibility (these are now handled by useEffect)
+  const fetchData = async () => {};
+  const fetchNotices = async () => {};
+  const fetchEvents = async () => {};
 
   const exportFilteredData = async () => {
     try {
