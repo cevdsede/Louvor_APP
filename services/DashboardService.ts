@@ -1,4 +1,3 @@
-import { supabase } from '../supabaseClient';
 import LocalStorageFirstService from './LocalStorageFirstService';
 
 export interface ProximaEscala {
@@ -99,21 +98,7 @@ class DashboardService {
 
   // KIP 4: Versículo Diário Automático
   async getVersiculoDiario(): Promise<string> {
-    try {
-      // Tentar buscar de uma API pública de versículos
-      const response = await fetch('https://www.biblegateway.com/votd/get/?format=json&version=NVI');
-      
-      if (response.ok) {
-        const data = await response.json();
-        return data.votd?.verse?.text || this.getVersiculoPadrao();
-      }
-      
-      // Fallback para versículos pré-cadastrados se a API falhar
-      return this.getVersiculoPadrao();
-    } catch (error) {
-      console.error('Erro ao buscar versículo diário:', error);
-      return this.getVersiculoPadrao();
-    }
+    return this.getVersiculoPadrao();
   }
 
   // Versículos pré-cadastrados como fallback
@@ -183,13 +168,8 @@ class DashboardService {
   // KIP 3: Total de Membros Ativos
   async getTotalMembrosAtivos(): Promise<number> {
     try {
-      const { count, error } = await supabase
-        .from('membros')
-        .select('*', { count: 'exact', head: true })
-        .eq('ativo', true);
-
-      if (error) throw error;
-      return count || 0;
+      const membros = LocalStorageFirstService.get<any>('membros');
+      return membros.filter((m: any) => m.ativo).length;
     } catch (error) {
       console.error('Erro ao buscar total de membros ativos:', error);
       return 0;

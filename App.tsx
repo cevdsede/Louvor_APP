@@ -16,6 +16,7 @@ import SplashScreen from './components/auth/SplashScreen';
 import LoginScreen from './components/auth/LoginScreen';
 import { LocalStorageFirstInitializer } from './components/LocalStorageFirstInitializer';
 import { ViewType } from './types';
+import LocalStorageFirstService from './services/LocalStorageFirstService';
 
 type AppState = 'splash' | 'login' | 'main';
 
@@ -111,9 +112,15 @@ const App: React.FC = () => {
     document.documentElement.style.setProperty('--brand-accent', accentColor);
   }, [brandColor]);
 
-  const handleSync = () => {
+  const handleSync = async () => {
     setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 1200);
+    try {
+      await LocalStorageFirstService.forceSync();
+    } catch (error) {
+      console.error('Erro ao sincronizar dados manualmente:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const openAviso = (eventId: string) => {
@@ -185,7 +192,9 @@ const App: React.FC = () => {
       if (session) {
         localStorage.setItem('supabase_session_cache', JSON.stringify(session));
         setSessionCached(session);
-        setAppState('main');
+        if (appState === 'splash') {
+          setAppState('main');
+        }
       } else {
         if (appState !== 'splash') {
           // Se não houver sessão e não estiver em splash, ir para login

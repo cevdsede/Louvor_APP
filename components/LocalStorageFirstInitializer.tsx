@@ -35,19 +35,22 @@ export function LocalStorageFirstInitializer({
         // Verificar se há dados locais
         const status = LocalStorageFirstService.getStatus();
         const hasLocalData = Object.keys(status.cacheStats).length > 0;
+        const shouldForceFullSync = LocalStorageFirstService.shouldForceFullSync();
         
-        if (!hasLocalData) {
-          setStatus('Buscando dados iniciais do servidor...');
+        if (!hasLocalData || shouldForceFullSync) {
+          setStatus('Sincronizando todos os dados e imagens...');
           
-          // Se não há dados locais, buscar do servidor
-          await LocalStorageFirstService.forceSync();
+          await LocalStorageFirstService.bootstrapApplication({
+            force: shouldForceFullSync,
+            preloadImages: true
+          });
         } else {
           setStatus('Dados locais encontrados, pronto para uso!');
           
           // Se há dados locais, iniciar sincronização em background
           if (navigator.onLine && config?.enableBackgroundSync !== false) {
             setTimeout(() => {
-              LocalStorageFirstService.forceSync().catch(console.error);
+              LocalStorageFirstService.bootstrapApplication({ preloadImages: true }).catch(console.error);
             }, 2000); // Aguardar 2 segundos para não bloquear UI
           }
         }

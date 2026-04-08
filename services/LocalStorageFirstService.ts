@@ -1,5 +1,6 @@
 import { supabase } from '../supabaseClient';
 import LocalStorageService from './LocalStorageService';
+import CacheService from './CacheService';
 
 interface LocalStorageConfig {
   syncInterval?: number; // Intervalo de sincronização em ms
@@ -8,6 +9,27 @@ interface LocalStorageConfig {
 }
 
 class LocalStorageFirstService {
+  private static readonly MANAGED_TABLES = [
+    'membros',
+    'cultos',
+    'eventos',
+    'musicas',
+    'escalas',
+    'avisos_cultos',
+    'repertorio',
+    'funcao',
+    'temas',
+    'tons',
+    'nome_cultos',
+    'membros_funcoes',
+    'historico_musicas',
+    'limpeza',
+    'solicitacoes_membro',
+    'aviso_geral',
+    'presenca_evento'
+  ] as const;
+  private static readonly FULL_SYNC_REQUEST_KEY = 'louvor_force_full_sync';
+  private static readonly LAST_FULL_SYNC_KEY = 'louvor_last_full_sync';
   private static config: LocalStorageConfig = {
     syncInterval: 2 * 60 * 1000, // 2 minutos
     enableBackgroundSync: true,
@@ -22,6 +44,7 @@ class LocalStorageFirstService {
     if (this.isInitialized) return;
 
     this.config = { ...this.config, ...config };
+    LocalStorageService.init();
     this.isInitialized = true;
 
     // Iniciar sincronização em background
@@ -30,6 +53,49 @@ class LocalStorageFirstService {
     }
 
     console.log('LocalStorageFirstService inicializado');
+  }
+
+  static requestFullSync(): void {
+    localStorage.setItem(this.FULL_SYNC_REQUEST_KEY, 'true');
+  }
+
+  static shouldForceFullSync(): boolean {
+    return localStorage.getItem(this.FULL_SYNC_REQUEST_KEY) === 'true';
+  }
+
+  static clearFullSyncRequest(): void {
+    localStorage.removeItem(this.FULL_SYNC_REQUEST_KEY);
+  }
+
+  static getManagedTables(): string[] {
+    return [...this.MANAGED_TABLES];
+  }
+
+  static async bootstrapApplication(options?: {
+    force?: boolean;
+    preloadImages?: boolean;
+  }): Promise<void> {
+    const { force = false, preloadImages = true } = options || {};
+
+    if (!this.isInitialized) {
+      this.init();
+    }
+
+    if (!navigator.onLine) {
+      console.log('Bootstrap ignorado: dispositivo offline, usando dados locais');
+      return;
+    }
+
+    await this.syncAllTables();
+
+    if (preloadImages) {
+      await CacheService.downloadMemberImages();
+    }
+
+    localStorage.setItem(this.LAST_FULL_SYNC_KEY, Date.now().toString());
+    if (force) {
+      this.clearFullSyncRequest();
+    }
   }
 
   // Obter dados - SEMPRE do localStorage primeiro
@@ -148,8 +214,11 @@ class LocalStorageFirstService {
       
       if (table) {
         await this.syncTable(table);
+        if (table === 'membros') {
+          await CacheService.downloadMemberImages();
+        }
       } else {
-        await this.syncAllTables();
+        await this.bootstrapApplication({ force: true, preloadImages: true });
       }
       
       console.log('Sincronização forçada concluída');
@@ -177,7 +246,7 @@ class LocalStorageFirstService {
         const localData = LocalStorageService.get<any[]>(table) || [];
         
         // Merge inteligente - prioriza dados locais se config.priorityLocal
-        const mergedData = this.mergeData(localData, serverData);
+        const mergedData = this.mergeData(table, localData, serverData);
         
         LocalStorageService.set(table, mergedData);
         this.updateLastSyncTime(table); // Atualizar tempo de sync
@@ -190,44 +259,26 @@ class LocalStorageFirstService {
 
   // Sincronizar todas as tabelas
   private static async syncAllTables(): Promise<void> {
-    const tables = [
-      'membros',
-      'cultos',
-      'eventos',
-      'musicas',
-      'escalas',
-      'avisos_cultos',
-      'repertorio',
-      'funcao',
-      'temas',
-      'tons',
-      'nome_cultos',
-      'membros_funcoes',
-      'historico_musicas',
-      'limpeza',
-      'solicitacoes_membro',
-      'aviso_geral',
-      'presenca_evento'
-    ];
-
     await Promise.allSettled(
-      tables.map(table => this.syncTable(table))
+      this.MANAGED_TABLES.map(table => this.syncTable(table))
     );
   }
 
   // Buscar dados do servidor
   private static async fetchFromServer<T>(table: string): Promise<T | null> {
     try {
-      let query = supabase.from(table).select('*');
+      const baseQuery = supabase.from(table).select('*');
+      const orderedQuery = table === 'cultos'
+        ? baseQuery.order('data_culto', { ascending: false })
+        : baseQuery.order('created_at', { ascending: false });
       
-      // Ajustar query para tabelas que não têm created_at
-      if (table === 'cultos') {
-        query = query.order('data_culto', { ascending: false });
-      } else {
-        query = query.order('created_at', { ascending: false });
+      let { data, error } = await orderedQuery;
+
+      if (error) {
+        const fallback = await supabase.from(table).select('*');
+        data = fallback.data as T;
+        error = fallback.error;
       }
-      
-      const { data, error } = await query;
 
       if (error) throw error;
       
@@ -252,19 +303,37 @@ class LocalStorageFirstService {
   }
 
   // Merge inteligente de dados
-  private static mergeData(localData: any[], serverData: any[]): any[] {
+  private static mergeData(table: string, localData: any[], serverData: any[]): any[] {
     if (!this.config.priorityLocal) {
       // Se não priorizar local, retornar dados do servidor
       return serverData;
     }
 
-    // Priorizar dados locais, mas adicionar novos do servidor
-    const merged = [...localData];
-    const localIds = new Set(localData.map(item => item.id));
+    const serverKeys = new Set(serverData.map(item => this.getItemKey(item)));
+    const merged = localData.filter(localItem => {
+      const key = this.getItemKey(localItem);
+      return serverKeys.has(key) || this.hasPendingLocalChange(table, key);
+    });
 
     serverData.forEach(serverItem => {
-      if (!localIds.has(serverItem.id)) {
+      const key = this.getItemKey(serverItem);
+      const localIndex = merged.findIndex(localItem => this.getItemKey(localItem) === key);
+
+      if (localIndex === -1) {
         merged.push(serverItem);
+        return;
+      }
+
+      if (this.hasPendingLocalChange(table, key)) {
+        return;
+      }
+
+      const localItem = merged[localIndex];
+      const localTimestamp = this.getItemTimestamp(localItem);
+      const serverTimestamp = this.getItemTimestamp(serverItem);
+
+      if (serverTimestamp >= localTimestamp) {
+        merged[localIndex] = serverItem;
       }
     });
 
@@ -279,7 +348,7 @@ class LocalStorageFirstService {
 
     this.syncTimer = setInterval(() => {
       if (navigator.onLine) {
-        this.syncAllTables();
+        this.bootstrapApplication({ preloadImages: true }).catch(console.error);
       }
     }, this.config.syncInterval!);
 
@@ -366,6 +435,8 @@ class LocalStorageFirstService {
   // Limpar todos os dados
   static clearAll(): void {
     LocalStorageService.clear();
+    localStorage.removeItem(this.FULL_SYNC_REQUEST_KEY);
+    localStorage.removeItem(this.LAST_FULL_SYNC_KEY);
     console.log('Todos os dados locais foram limpos');
   }
 
@@ -373,6 +444,33 @@ class LocalStorageFirstService {
   static clearTable(table: string): void {
     LocalStorageService.remove(table);
     console.log(`Tabela ${table} limpa do localStorage`);
+  }
+
+  private static getItemKey(item: any): string {
+    return String(
+      item?.id ??
+      item?.id_lembrete ??
+      item?.id_evento ??
+      item?.id_chamada ??
+      item?.id_culto ??
+      JSON.stringify(item)
+    );
+  }
+
+  private static getItemTimestamp(item: any): number {
+    const rawTimestamp = item?.updated_at || item?.created_at || item?.data_culto || 0;
+    const parsed = new Date(rawTimestamp).getTime();
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  private static hasPendingLocalChange(table: string, key: string): boolean {
+    return LocalStorageService.getSyncQueue().some(queueItem => {
+      if (queueItem.table !== table) {
+        return false;
+      }
+
+      return this.getItemKey(queueItem.data) === key;
+    });
   }
 }
 

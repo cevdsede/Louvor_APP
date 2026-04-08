@@ -13,6 +13,7 @@ class CacheService {
     enableAutoSync: true,
     syncInterval: 5 * 60 * 1000 // 5 minutos
   };
+  private static readonly IMAGE_CACHE_PREFIX = 'image_cache_';
 
   // Obter dados com cache
   static async get<T>(
@@ -243,31 +244,29 @@ class CacheService {
       
       for (const membro of membros) {
         if (membro.foto && membro.foto.startsWith('http')) {
-          const cacheKey = `image_cache_${btoa(membro.foto)}`;
+          const cacheKeyBase = `${this.IMAGE_CACHE_PREFIX}${btoa(membro.foto)}`;
           
           // Verificar se já está em cache
-          if (!localStorage.getItem(cacheKey)) {
+          const alreadyCached = Object.keys(localStorage).some(key => key.startsWith(cacheKeyBase));
+          if (!alreadyCached) {
             try {
               const response = await fetch(membro.foto);
+              if (!response.ok) {
+                continue;
+              }
               const blob = await response.blob();
               
-              // Verificar tamanho (limite de 500KB)
-              if (blob.size <= 500 * 1024) {
-                const reader = new FileReader();
-                await new Promise<void>((resolve, reject) => {
-                  reader.onload = () => {
-                    try {
-                      localStorage.setItem(cacheKey, reader.result as string);
-                      downloaded++;
-                      resolve();
-                    } catch (error) {
-                      console.warn('Erro ao salvar imagem no cache:', error);
-                      resolve(); // Não falhar por causa de quota
-                    }
-                  };
-                  reader.onerror = () => reject(reader.error);
-                  reader.readAsDataURL(blob);
-                });
+              const serializedImage = await this.serializeImageBlob(blob);
+              if (!serializedImage) {
+                continue;
+              }
+
+              const cacheKey = `${cacheKeyBase}_${Date.now()}`;
+              try {
+                localStorage.setItem(cacheKey, serializedImage);
+                downloaded++;
+              } catch (error) {
+                console.warn('Erro ao salvar imagem no cache:', error);
               }
             } catch (error) {
               console.warn('Erro ao baixar imagem do membro:', membro.foto, error);
@@ -280,6 +279,65 @@ class CacheService {
     } catch (error) {
       console.error('Erro ao baixar imagens dos membros:', error);
     }
+  }
+
+  private static async serializeImageBlob(blob: Blob): Promise<string | null> {
+    try {
+      if (!blob.type.startsWith('image/')) {
+        return await this.blobToDataUrl(blob);
+      }
+
+      if (blob.size <= 120 * 1024) {
+        return await this.blobToDataUrl(blob);
+      }
+
+      return await this.compressBlobToDataUrl(blob, 280, 0.72);
+    } catch (error) {
+      console.warn('Erro ao serializar imagem para o cache:', error);
+      return null;
+    }
+  }
+
+  private static async blobToDataUrl(blob: Blob): Promise<string> {
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  private static async compressBlobToDataUrl(blob: Blob, maxWidth: number, quality: number): Promise<string> {
+    return await new Promise((resolve, reject) => {
+      const image = new Image();
+      const objectUrl = URL.createObjectURL(blob);
+
+      image.onload = () => {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+
+        if (!context) {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error('Não foi possível criar contexto para compressão da imagem'));
+          return;
+        }
+
+        const ratio = Math.min(1, maxWidth / image.width);
+        canvas.width = Math.max(1, Math.round(image.width * ratio));
+        canvas.height = Math.max(1, Math.round(image.height * ratio));
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+        URL.revokeObjectURL(objectUrl);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+
+      image.onerror = (error) => {
+        URL.revokeObjectURL(objectUrl);
+        reject(error);
+      };
+
+      image.src = objectUrl;
+    });
   }
 
   // Sincronizar todas as tabelas em cache

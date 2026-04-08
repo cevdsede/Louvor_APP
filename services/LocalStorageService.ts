@@ -97,7 +97,7 @@ class LocalStorageService {
     try {
       const keys = Object.keys(localStorage);
       keys.forEach(key => {
-        if (key.startsWith(this.CACHE_PREFIX)) {
+        if (key.startsWith(this.CACHE_PREFIX) || key.startsWith('image_cache_')) {
           localStorage.removeItem(key);
         }
       });

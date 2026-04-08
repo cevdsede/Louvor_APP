@@ -7,7 +7,7 @@ interface ImageCacheProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   disableCompression?: boolean;
 }
 
-export const ImageCache: React.FC<ImageCacheProps> = ({ src, fallbackSrc, disableCompression = false, onError, ...props }) => {
+const ImageCacheComponent: React.FC<ImageCacheProps> = ({ src, fallbackSrc, disableCompression = false, onError, ...props }) => {
   const { imageSrc, loading } = useImageCache(src, fallbackSrc, disableCompression);
   const [hasError, setHasError] = useState(false);
 
@@ -31,3 +31,5 @@ export const ImageCache: React.FC<ImageCacheProps> = ({ src, fallbackSrc, disabl
     />
   );
 };
+
+export const ImageCache = React.memo(ImageCacheComponent);

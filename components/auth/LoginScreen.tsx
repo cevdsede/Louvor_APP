@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { supabase } from '../../supabaseClient';
 import { logger } from '../../utils/logger';
 import CreateProfileScreen from './CreateProfileScreen';
+import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 
 interface LoginScreenProps {
   onLogin: () => void;
@@ -14,10 +15,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   const [showCreateProfile, setShowCreateProfile] = useState(false);
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
+  const [loadingMessage, setLoadingMessage] = useState('Entrando...');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setLoadingMessage('Autenticando...');
 
     setError('');
 
@@ -34,6 +37,23 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
           setError('Erro ao fazer login: ' + error.message);
         }
       } else {
+        LocalStorageFirstService.requestFullSync();
+        setLoadingMessage('Sincronizando dados e imagens...');
+
+        try {
+          LocalStorageFirstService.init({
+            syncInterval: 2 * 60 * 1000,
+            enableBackgroundSync: true,
+            priorityLocal: true
+          });
+          await LocalStorageFirstService.bootstrapApplication({
+            force: true,
+            preloadImages: true
+          });
+        } catch (syncError) {
+          logger.warn('Login concluído, mas o bootstrap local falhou. O app continuará com os dados já salvos.', syncError, 'database');
+        }
+
         onLogin();
       }
     } catch (err) {
@@ -162,6 +182,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
               <>Acessar Painel <i className="fas fa-arrow-right text-[10px]"></i></>
             )}
           </button>
+          {isLoading && (
+            <p className="text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+              {loadingMessage}
+            </p>
+          )}
         </form>
 
         <div className="mt-10 pt-8 border-t border-slate-50 dark:border-slate-800 text-center">
