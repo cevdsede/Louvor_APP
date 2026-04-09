@@ -276,6 +276,48 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
     );
   }
 
+  const adminCards = [
+    {
+      title: 'Status do Sistema',
+      value: data?.systemStatus || 'Carregando...',
+      icon: 'fas fa-server',
+      iconWrapClass: 'bg-emerald-100 dark:bg-emerald-900/30',
+      iconClass: 'text-emerald-600 dark:text-emerald-400',
+      metaType: 'pulse' as const,
+      metaClass: 'w-3 h-3 bg-emerald-500 rounded-full animate-pulse'
+    },
+    {
+      title: 'Tamanho do BD',
+      value: data?.databaseSize || 'Carregando...',
+      icon: 'fas fa-database',
+      iconWrapClass: 'bg-blue-100 dark:bg-blue-900/30',
+      iconClass: 'text-blue-600 dark:text-blue-400',
+      metaType: 'icon' as const,
+      metaIcon: 'fas fa-chart-line',
+      metaClass: 'text-blue-500'
+    },
+    {
+      title: 'Usuários Ativos',
+      value: data?.activeUsers || 'Carregando...',
+      icon: 'fas fa-users',
+      iconWrapClass: 'bg-purple-100 dark:bg-purple-900/30',
+      iconClass: 'text-purple-600 dark:text-purple-400',
+      metaType: 'icon' as const,
+      metaIcon: 'fas fa-user-check',
+      metaClass: 'text-purple-500'
+    },
+    {
+      title: 'Último Backup',
+      value: data?.lastBackup || 'Carregando...',
+      icon: 'fas fa-clock',
+      iconWrapClass: 'bg-amber-100 dark:bg-amber-900/30',
+      iconClass: 'text-amber-600 dark:text-amber-400',
+      metaType: 'icon' as const,
+      metaIcon: 'fas fa-history',
+      metaClass: 'text-amber-500'
+    }
+  ];
+
   const renderContent = () => {
     switch (subView) {
       case 'tools-admin':
@@ -283,7 +325,40 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
           <div className="space-y-6">
             <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter">Painel Administrativo</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+              {adminCards.map((card) => (
+                <div
+                  key={card.title}
+                  className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 group aspect-square"
+                >
+                  <div className="flex h-full flex-col">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center shadow-sm ${card.iconWrapClass}`}>
+                        <i className={`${card.icon} ${card.iconClass} text-base sm:text-xl`}></i>
+                      </div>
+
+                      {card.metaType === 'pulse' ? (
+                        <div className={`mt-1 shrink-0 ${card.metaClass}`}></div>
+                      ) : (
+                        <i className={`${card.metaIcon} ${card.metaClass} text-sm sm:text-base shrink-0`}></i>
+                      )}
+                    </div>
+
+                    <div className="mt-auto pt-4">
+                      <p className="text-[10px] sm:text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-normal sm:tracking-wider leading-tight mb-1.5">
+                        {card.title}
+                      </p>
+                      <p className="text-sm sm:text-lg font-black text-slate-800 dark:text-white leading-tight break-words group-hover:text-brand transition-colors">
+                        {card.value}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/*
+              <>
               <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center">
@@ -327,7 +402,8 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                 <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Último Backup</h3>
                 <p className="text-sm text-slate-600 dark:text-slate-400">{data?.lastBackup || 'Carregando...'}</p>
               </div>
-            </div>
+              </>
+            */}
 
             <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
               <h3 className="text-lg font-black text-slate-800 dark:text-white mb-4">Ações Rápidas</h3>
