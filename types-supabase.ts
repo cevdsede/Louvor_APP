@@ -113,6 +113,7 @@ export interface CultoComRelacionamentos {
 export interface ChartInstance {
   destroy(): void;
   update(): void;
+  resize?(): void;
   // Outros métodos do Chart.js...
 }
 

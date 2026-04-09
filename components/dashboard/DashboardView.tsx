@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../../supabaseClient';
-import { ChartInstance, MemberStat } from '../../types-supabase';
+import { ChartInstance } from '../../types-supabase';
 import DashboardService, { ProximaEscala, FrequenciaMembro } from '../../services/DashboardService';
 
 const DashboardView: React.FC = () => {
   const escalaChartRef = useRef<HTMLCanvasElement>(null);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<ChartInstance | null>(null);
   const [isDevocionalModalOpen, setIsDevocionalModalOpen] = useState(false);
   const [devocionalInput, setDevocionalInput] = useState('');
@@ -18,7 +19,6 @@ const DashboardView: React.FC = () => {
   const [frequenciaMembros, setFrequenciaMembros] = useState<FrequenciaMembro[]>([]);
   const [aniversariantes, setAniversariantes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<any>(null);
 
   // Carregar dados do dashboard apenas uma vez ao montar
   useEffect(() => {
@@ -29,14 +29,15 @@ const DashboardView: React.FC = () => {
     try {
       setLoading(true);
       let userId: string | null = null;
+      const { data: { session } } = await supabase.auth.getSession();
+      userId = session?.user?.id ?? null;
 
       // Se offline, pular busca do usuário
-      if (navigator.onLine) {
+      if (!userId && navigator.onLine) {
         // Buscar usuário atual
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          userId = user.id;
-          setCurrentUser(user);
+          userId = user?.id ?? null;
         }
       }
 
@@ -89,14 +90,25 @@ const DashboardView: React.FC = () => {
   };
 
   // Função isolada para atualizar o gráfico
-  const updateChart = () => {
-    if (!escalaChartRef.current || frequenciaMembros.length === 0) return;
+  const updateChart = useCallback(() => {
+    if (!escalaChartRef.current || frequenciaMembros.length === 0) {
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+        chartInstance.current = null;
+      }
+      return;
+    }
+
+    if (!chartContainerRef.current || chartContainerRef.current.clientWidth === 0 || chartContainerRef.current.clientHeight === 0) {
+      return;
+    }
 
     const isDark = document.documentElement.classList.contains('dark');
     const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--brand-primary').trim() || '#1e3a8a';
 
     if (chartInstance.current) {
       chartInstance.current.destroy();
+      chartInstance.current = null;
     }
 
     // Função helper para converter hexa em rgba
@@ -327,7 +339,7 @@ const DashboardView: React.FC = () => {
         }
       }
     });
-  };
+  }, [frequenciaMembros]);
 
   // Hook separado para observar mudanças no tema (sem refresh e sem afetar dados)
   useEffect(() => {
@@ -342,27 +354,52 @@ const DashboardView: React.FC = () => {
     });
 
     return () => observer.disconnect();
-  }, [frequenciaMembros]); // Atualiza quando os dados estiverem prontos ou o tema mudar
+  }, [updateChart]); // Atualiza quando os dados estiverem prontos ou o tema mudar
 
   useEffect(() => {
     updateChart();
-  }, [frequenciaMembros]);
+  }, [updateChart]);
 
   // Hook adicional para observar mudanças na cor do tema
   useEffect(() => {
-    const checkColorChange = () => {
-      const currentColor = getComputedStyle(document.documentElement).getPropertyValue('--brand-primary').trim();
+    const handleResize = () => {
+      const chart = chartInstance.current;
       // Sempre atualiza quando há dados para garantir sincronização
-      if (frequenciaMembros.length > 0) {
-        updateChart(); // Atualiza gráfico quando a cor mudar
+      if (chart?.resize) {
+        chart.resize();
+        chart.update();
+        return;
       }
+
+      updateChart();
     };
 
-    // Verificar a cada segundo se a cor mudou
-    const interval = setInterval(checkColorChange, 1000);
-    
-    return () => clearInterval(interval);
-  }, [frequenciaMembros]);
+    const resizeObserver = typeof ResizeObserver !== 'undefined' && chartContainerRef.current
+      ? new ResizeObserver(handleResize)
+      : null;
+
+    if (chartContainerRef.current && resizeObserver) {
+      resizeObserver.observe(chartContainerRef.current);
+    }
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, [updateChart]);
+
+  useEffect(() => {
+    return () => {
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+        chartInstance.current = null;
+      }
+    };
+  }, []);
 
   const handleSaveDevocional = () => {
     if (devocionalInput.trim()) {
@@ -499,7 +536,7 @@ const DashboardView: React.FC = () => {
                 </div>
               </div>
               
-              <div className="h-[320px] w-full">
+              <div ref={chartContainerRef} className="h-[320px] w-full">
                 {loading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
