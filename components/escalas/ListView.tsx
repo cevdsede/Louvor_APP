@@ -600,23 +600,23 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     <div className="max-w-[1200px] mx-auto pb-20">
       {/* Header com campo de pesquisa */}
       <div className="flex flex-col gap-4 mb-10">
-        <div>
+        <div className="text-center sm:text-left">
           <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tighter">Lista de <span className="text-brand">Cultos</span></h2>
           <p className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest text-[11px] mt-1">Próximos eventos e escalas</p>
         </div>
         
         {/* Campo de pesquisa e botões na mesma linha - centralizado no desktop */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
           {/* Campo de pesquisa */}
-          <div className="relative w-full sm:w-auto">
+          <div className="relative w-full max-w-[240px] sm:max-w-none sm:w-auto">
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Pesquisar cultos, membros, músicas..."
-              className="w-full sm:w-64 md:w-80 px-4 py-2.5 pl-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
+              className="w-full sm:w-64 md:w-80 px-3 py-2 pl-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
             />
-            <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm"></i>
+            <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-xs sm:text-sm"></i>
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
@@ -628,11 +628,11 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
           </div>
           
           {/* Botões */}
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="contents sm:flex sm:items-center sm:gap-3 sm:w-auto">
             {/* Botão de exportação */}
             <button
               onClick={() => exportFilteredData()}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-brand hover:border-brand transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm"
+              className="shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-brand hover:border-brand transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm"
               title="Exportar lista filtrada"
             >
               <i className="fas fa-camera text-[8px]"></i>
@@ -643,7 +643,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
             {isAdminOrLeader && (
               <button
                 onClick={() => setShowScaleModal({ mode: 'add' })}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-brand hover:border-brand transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm"
+                className="w-full max-w-sm sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-brand hover:border-brand transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm"
               >
                 <i className="fas fa-plus text-[8px]"></i>
                 Nova Escala

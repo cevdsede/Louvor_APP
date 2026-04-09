@@ -24,17 +24,17 @@ const Toolbar: React.FC<ToolbarProps> = ({ currentView, onViewChange }) => {
 
   return (
     <div className="flex flex-col gap-6 pt-4 animate-fade-in mb-8">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-100 dark:border-slate-800">
-        <div>
+      <div className="flex flex-col items-center gap-6 pb-6 border-b border-slate-100 dark:border-slate-800">
+        <div className="w-full text-center">
           <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter uppercase leading-none">
             {getTitle()}
           </h2>
         </div>
 
-        <div className="flex items-center">
+        <div className="flex w-full items-center justify-center">
           {/* Scale Selectors */}
           {isScaleMode && (
-            <div className="bg-white dark:bg-slate-800 p-1.5 rounded-2xl flex items-center shadow-sm border border-slate-100 dark:border-slate-700 overflow-x-auto no-scrollbar">
+            <div className="mx-auto bg-white dark:bg-slate-800 p-1.5 rounded-2xl flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700 overflow-x-auto no-scrollbar">
               <button 
                 onClick={() => onViewChange('list')}
                 className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${currentView === 'list' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
@@ -58,22 +58,22 @@ const Toolbar: React.FC<ToolbarProps> = ({ currentView, onViewChange }) => {
 
           {/* Music Selectors */}
           {isMusicMode && (
-            <div className="bg-white dark:bg-slate-800 p-1 lg:p-1.5 rounded-2xl flex items-center shadow-sm border border-slate-100 dark:border-slate-700 overflow-x-auto no-scrollbar w-full max-w-full">
+            <div className="mx-auto bg-white dark:bg-slate-800 p-1.5 rounded-2xl flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700 overflow-x-auto no-scrollbar">
               <button 
                 onClick={() => onViewChange('music-list')}
-                className={`px-2 lg:px-6 py-1.5 lg:py-2.5 rounded-xl text-[8px] lg:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex-1 text-center ${currentView === 'music-list' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${currentView === 'music-list' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 Lista
               </button>
               <button 
                 onClick={() => onViewChange('music-repertoire')}
-                className={`px-2 lg:px-6 py-1.5 lg:py-2.5 rounded-xl text-[8px] lg:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex-1 text-center ${currentView === 'music-repertoire' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${currentView === 'music-repertoire' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 Repertórios
               </button>
               <button 
                 onClick={() => onViewChange('music-history')}
-                className={`px-2 lg:px-6 py-1.5 lg:py-2.5 rounded-xl text-[8px] lg:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex-1 text-center ${currentView === 'music-history' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${currentView === 'music-history' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 Histórico
               </button>

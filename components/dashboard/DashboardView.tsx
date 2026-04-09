@@ -417,9 +417,9 @@ const DashboardView: React.FC = () => {
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-[100px]"></div>
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-brand/20 rounded-full blur-[100px]"></div>
         
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8">
           <div className="text-center">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-2 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white mb-2 tracking-tight">
               Bem-vindo ao <span className="relative">
                 <span className="relative z-10 text-brand-accent font-black">Louvor</span>
                 <span className="absolute inset-0 bg-brand-accent/20 blur-xl scale-110"></span>
@@ -430,7 +430,7 @@ const DashboardView: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-4 h-[calc(100vh-8rem)] overflow-y-auto lg:overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-2 sm:-mt-4 h-[calc(100vh-8rem)] overflow-y-auto lg:overflow-hidden">
         {/* Próximo Culto Card - Compacto em Uma Linha */}
         <div className="mb-6">
           <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-xl border border-white/10 dark:border-slate-700 p-4">
@@ -477,45 +477,46 @@ const DashboardView: React.FC = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl p-4 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 group">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Total de Cultos</p>
-                <p className="text-2xl font-black text-slate-800 dark:text-white group-hover:text-brand transition-colors">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-5 sm:mb-6">
+          <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 group aspect-square sm:aspect-auto">
+            <div className="flex h-full flex-col items-center justify-center text-center gap-2 sm:flex-row sm:items-center sm:justify-between sm:text-left sm:gap-0">
+              <div className="order-1 w-8 h-8 sm:order-2 sm:w-12 sm:h-12 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg sm:rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                <i className="fas fa-church text-sm sm:text-lg"></i>
+              </div>
+              <div className="order-2 sm:order-1">
+                <p className="text-[9px] sm:text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-normal sm:tracking-wider leading-tight mb-1">Total de Cultos</p>
+                <p className="text-lg sm:text-2xl font-black text-slate-800 dark:text-white group-hover:text-brand transition-colors">
                   {loading ? '...' : totalCultos}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <i className="fas fa-church text-lg"></i>
-              </div>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl p-4 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 group">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Membros Ativos</p>
-                <p className="text-2xl font-black text-slate-800 dark:text-white group-hover:text-brand transition-colors">
+          <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 group aspect-square sm:aspect-auto">
+            <div className="flex h-full flex-col items-center justify-center text-center gap-2 sm:flex-row sm:items-center sm:justify-between sm:text-left sm:gap-0">
+              <div className="order-1 w-8 h-8 sm:order-2 sm:w-12 sm:h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg sm:rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                <i className="fas fa-users text-sm sm:text-lg"></i>
+              </div>
+              <div className="order-2 sm:order-1">
+                <p className="text-[9px] sm:text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-normal sm:tracking-wider leading-tight mb-1">Membros Ativos</p>
+                <p className="text-lg sm:text-2xl font-black text-slate-800 dark:text-white group-hover:text-brand transition-colors">
                   {loading ? '...' : totalMembrosAtivos}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <i className="fas fa-users text-lg"></i>
-              </div>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl p-4 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 group">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Aniversariantes</p>
-                <p className="text-sm font-black text-slate-800 dark:text-white group-hover:text-brand transition-colors">
-                  {loading ? '...' : renderBirthdayNames()}
-                </p>
+          <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 group aspect-square sm:aspect-auto">
+            <div className="flex h-full flex-col items-center justify-center text-center gap-2 sm:flex-row sm:items-center sm:justify-between sm:text-left sm:gap-0">
+              <div className="order-1 w-8 h-8 sm:order-2 sm:w-12 sm:h-12 bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 rounded-lg sm:rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                <i className="fas fa-birthday-cake text-sm sm:text-lg"></i>
               </div>
-              <div className="w-12 h-12 bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <i className="fas fa-birthday-cake text-lg"></i>
+              <div className="order-2 sm:order-1">
+                <p className="text-[9px] sm:text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-normal sm:tracking-wider leading-tight mb-1">Aniversariantes</p>
+                <p className="text-base sm:text-sm font-black text-slate-800 dark:text-white group-hover:text-brand transition-colors leading-tight">
+                  <span className="sm:hidden">{loading ? '...' : aniversariantes.length}</span>
+                  <span className="hidden sm:inline">{loading ? '...' : renderBirthdayNames()}</span>
+                </p>
               </div>
             </div>
           </div>

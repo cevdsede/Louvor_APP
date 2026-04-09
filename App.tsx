@@ -239,7 +239,7 @@ const App: React.FC = () => {
               setIsProfileModalOpen={setIsProfileModalOpen}
             />
             
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden pt-16 lg:pt-0 lg:ml-[280px]">
               <Header 
                 onSync={handleSync}
                 onOpenProfile={() => setIsProfileModalOpen(true)}

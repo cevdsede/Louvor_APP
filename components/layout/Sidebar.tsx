@@ -294,7 +294,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 w-full h-16 lg:h-full lg:w-[280px] bg-white dark:bg-[#0f172a] border-t lg:border-t-0 lg:border-r border-slate-100 dark:border-slate-800 flex lg:flex-col z-[100] transition-all">
+    <nav className="fixed bottom-2 left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] max-w-md h-16 rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-100 dark:border-slate-800 shadow-xl flex lg:flex-col lg:bottom-0 lg:left-0 lg:translate-x-0 lg:w-[280px] lg:max-w-none lg:h-full lg:rounded-none lg:border-t-0 lg:border-l-0 lg:border-b-0 lg:border-r lg:shadow-none z-[100] transition-all">
       {/* LOGO DESKTOP - Restaurada */}
       <div className="hidden lg:flex flex-col items-center py-10 px-6">
         <div className="flex flex-col items-center gap-2">
@@ -313,13 +313,13 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* MENU ITEMS - Scrollable area */}
-      <div className="flex lg:flex-col flex-1 items-center lg:items-stretch lg:px-4 lg:py-2 gap-1 lg:gap-1.5 justify-around lg:justify-start lg:overflow-y-auto no-scrollbar">
+      <div className="flex w-full lg:w-auto lg:flex-col flex-1 items-center lg:items-stretch px-2 lg:px-4 lg:py-2 gap-1.5 lg:gap-1.5 justify-center lg:justify-start lg:overflow-y-auto no-scrollbar">
         {menuItems.map((item) => (
           <button
             key={item.id}
             onClick={() => onViewChange(item.default as ViewType)}
             className={`
-              flex flex-col lg:flex-row items-center gap-1 lg:gap-4 px-3 lg:px-5 py-2 lg:py-4 rounded-xl lg:rounded-2xl transition-all
+              flex flex-1 max-w-[72px] lg:flex-none lg:max-w-none flex-col lg:flex-row items-center justify-center lg:justify-start gap-1 lg:gap-4 px-2 lg:px-5 py-2 lg:py-4 rounded-xl lg:rounded-2xl transition-all
               ${isActive(item.id)
                 ? 'bg-brand text-white shadow-xl shadow-brand/20'
                 : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 lg:hover:bg-slate-50 lg:dark:hover:bg-slate-800/50'}
