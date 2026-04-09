@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { ImageCache } from '../ui/ImageCache';
+import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import { ViewType } from '../../types';
 
 interface SidebarProps {
@@ -50,53 +51,55 @@ const Sidebar: React.FC<SidebarProps> = ({
   // Carregar dados do usuário logado
   useEffect(() => {
     const loadUserData = async () => {
-      if (!navigator.onLine) {
-        console.log('📶 Offline: Pulando carregamento de dados do usuário.');
-        return;
-      }
-
       try {
-        // 1. Buscar usuário autenticado
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        let user = session?.user || null;
+
+        if (!user && navigator.onLine) {
+          const { data } = await supabase.auth.getUser();
+          user = data.user;
+        }
 
         if (user) {
           setCurrentUser(user);
 
-          // Buscar dados do membro na tabela membros
-          const { data: memberData } = await supabase
-            .from('membros')
-            .select('nome, email, foto, telefone, data_nasc, perfil')
-            .eq('id', user.id)
-            .single();
+          const membros = LocalStorageFirstService.get<any>('membros') || [];
+          let memberData = membros.find(member => member.id === user.id);
 
-          // 3. Atualizar perfil com dados reais
-          if (memberData) {
-            const newProfileData = {
-              name: user.user_metadata?.display_name || user.user_metadata?.full_name || user.user_metadata?.name || 'Administrador do Sistema',
-              email: user.email || '',
-              password: '',
-              perfil: memberData.perfil || 'Administrador',
-              foto: memberData.foto
-            };
-            setProfileData(newProfileData);
-            setOriginalProfileData(newProfileData); // Salvar dados originais
-          } else {
-            // Se não encontrar na tabela membros, usa dados do auth
-            const newProfileData = {
-              name: user.user_metadata?.display_name || user.user_metadata?.full_name || user.user_metadata?.name || 'Administrador do Sistema',
-              email: user.email || '',
-              password: '',
-              perfil: 'Administrador',
-              foto: null
-            };
-            setProfileData(newProfileData);
-            setOriginalProfileData(newProfileData); // Salvar dados originais
+          if (!memberData && user.email) {
+            const userEmail = user.email.toLowerCase();
+            memberData = membros.find(member => member.email?.toLowerCase() === userEmail);
+          }
+
+          if (!memberData && navigator.onLine) {
+            const { data: onlineMemberData } = await supabase
+              .from('membros')
+              .select('nome, email, foto, telefone, data_nasc, perfil')
+              .eq('id', user.id)
+              .single();
+
+            memberData = onlineMemberData;
+          }
+
+          const newProfileData = {
+            name: memberData?.nome || user.user_metadata?.display_name || user.user_metadata?.full_name || user.user_metadata?.name || 'Administrador do Sistema',
+            email: memberData?.email || user.email || '',
+            password: '',
+            perfil: memberData?.perfil || 'Administrador',
+            foto: memberData?.foto || null
+          };
+
+          setProfileData(newProfileData);
+          setOriginalProfileData(newProfileData);
+
+          if (navigator.onLine) {
+            LocalStorageFirstService.forceSync('membros').catch(() => {});
           }
         }
       } catch (error) {
         console.error('Erro ao carregar dados do usuário:', error);
-        // Em caso de erro, manter os dados padrão
       }
+
     };
 
     loadUserData();
@@ -359,7 +362,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                   src={profileData.foto}
                   alt={profileData.name}
                   className="w-full h-full object-cover rounded-full"
-                  disableCompression={true}
                 />
               ) : (
                 <div className="w-full h-full bg-brand flex items-center justify-center rounded-full">
@@ -405,7 +407,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               <div className="relative mb-2">
                 <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center border-4 border-slate-50 dark:border-slate-800 shadow-xl overflow-hidden">
                   {profileData.foto ? (
-                    <img
+                    <ImageCache
                       src={profileData.foto}
                       alt={profileData.name}
                       className="w-full h-full object-cover"

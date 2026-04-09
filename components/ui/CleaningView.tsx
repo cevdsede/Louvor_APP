@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../supabaseClient';
+import LocalStorageFirstService from '../../services/LocalStorageFirstService';
+import { ImageCache } from './ImageCache';
 
 const CleaningView: React.FC = () => {
   const [isZoomed, setIsZoomed] = useState(false);
@@ -7,31 +8,27 @@ const CleaningView: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadCleaningImage = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('limpeza')
-          .select('foto')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
+    const loadFromLocalCache = () => {
+      const limpeza = LocalStorageFirstService.get<any>('limpeza') || [];
+      const latestImage = [...limpeza]
+        .filter(item => typeof item?.foto === 'string' && item.foto.trim() !== '')
+        .sort((a, b) => {
+          const dateA = new Date(a?.created_at || 0).getTime();
+          const dateB = new Date(b?.created_at || 0).getTime();
+          return dateB - dateA;
+        })[0];
 
-        if (error) {
-          console.error('Erro ao carregar imagem de limpeza:', error);
-          return;
-        }
-
-        if (data?.foto) {
-          setCleaningImage(data.foto);
-        }
-      } catch (error) {
-        console.error('Erro ao carregar imagem de limpeza:', error);
-      } finally {
-        setLoading(false);
-      }
+      setCleaningImage(latestImage?.foto || '');
     };
 
-    loadCleaningImage();
+    loadFromLocalCache();
+    setLoading(false);
+
+    if (navigator.onLine) {
+      LocalStorageFirstService.forceSync('limpeza')
+        .then(loadFromLocalCache)
+        .catch(error => console.warn('Erro ao sincronizar imagem de limpeza:', error));
+    }
   }, []);
 
   const renderCleaningIllustration = (className = 'w-full h-auto transition-transform duration-1000 group-hover:scale-105') => {
@@ -70,25 +67,14 @@ const CleaningView: React.FC = () => {
     }
 
     return (
-      <img
+      <ImageCache
         src={cleaningImage}
         alt="Escala de Limpeza"
         className={className}
-        onError={(e) => {
-          console.error('Erro ao carregar imagem:', cleaningImage);
-          // Fallback para SVG se a imagem falhar
-          e.currentTarget.style.display = 'none';
-          const fallback = document.createElement('div');
-          fallback.innerHTML = `
-            <svg width="800" height="1000" viewBox="0 0 800 1000" fill="none" xmlns="http://www.w3.org/2000/svg" class="${className}">
-              <rect width="800" height="1000" fill="#f3f4f6" />
-              <text x="400" y="500" text-anchor="middle" fill="#9ca3af" font-size="24" font-family="sans-serif" font-weight="600">
-                Erro ao carregar imagem
-              </text>
-            </svg>
-          `;
-          e.currentTarget.parentNode?.appendChild(fallback.firstElementChild!);
-        }}
+        cacheVariant="limpeza-hq"
+        cacheMaxWidth={1200}
+        cacheQuality={0.88}
+        maxCacheSize={5 * 1024 * 1024}
       />
     );
   };

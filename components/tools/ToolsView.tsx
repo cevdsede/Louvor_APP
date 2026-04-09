@@ -5,6 +5,8 @@ import { clearImageCache, getImageCacheSize } from '../../utils/teamUtils';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import { showSuccess, showError } from '../../utils/toast';
 import MultiSelect from '../equipe/MultiSelect';
+import { ImageCache } from '../ui/ImageCache';
+import { compressImageFile } from '../../utils/imageCompression';
 import { ChartInstance, SolicitacaoAprovacao, Funcao } from '../../types-supabase';
 
 interface ToolsViewProps {
@@ -36,13 +38,17 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
     
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
+      const compressedFile = await compressImageFile(file, { maxWidth: 640, quality: 0.74 });
+      const fileExt = compressedFile.name.split('.').pop() || 'jpg';
       const fileName = `${editingMember.id}_${Date.now()}.${fileExt}`;
       const filePath = `members/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file);
+        .upload(filePath, compressedFile, {
+          contentType: compressedFile.type || 'image/jpeg',
+          upsert: true
+        });
 
       if (uploadError) throw uploadError;
 
@@ -428,7 +434,11 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                           <div className="flex items-center">
                             <div className="w-10 h-10 bg-brand text-white rounded-full flex items-center justify-center font-black text-sm mr-3 shrink-0">
                               {member.foto ? (
-                                <img src={member.foto} alt={member.nome} className="w-full h-full object-cover rounded-full" />
+                                <ImageCache
+                                  src={member.foto}
+                                  alt={member.nome}
+                                  className="w-full h-full object-cover rounded-full"
+                                />
                               ) : (
                                 member.nome?.charAt(0)?.toUpperCase() || 'M'
                               )}
@@ -563,9 +573,9 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                     <div key={solicitacao.id} className="bg-slate-50 dark:bg-slate-800 rounded-xl p-6 border border-slate-100 dark:border-slate-700">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-4">
-                          <img 
-                            src={solicitacao.membros?.foto || `https://ui-avatars.com/api/?name=${solicitacao.membros?.nome}&background=random`} 
-                            alt={solicitacao.membros?.nome}
+                          <ImageCache
+                            src={solicitacao.membros?.foto || `https://ui-avatars.com/api/?name=${solicitacao.membros?.nome}&background=random`}
+                            alt={solicitacao.membros?.nome || 'Solicitante'}
                             className="w-12 h-12 rounded-full border-2 border-slate-200 dark:border-slate-700"
                           />
                           <div>
@@ -703,7 +713,11 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                 <div className="relative">
                   <div className="w-24 h-24 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center overflow-hidden">
                     {editingMember?.foto && editingMember.foto.trim() !== '' ? (
-                      <img src={editingMember.foto} alt={editingMember.nome} className="w-full h-full object-cover" />
+                      <ImageCache
+                        src={editingMember.foto}
+                        alt={editingMember.nome}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       <i className="fas fa-user text-slate-400 text-2xl"></i>
                     )}

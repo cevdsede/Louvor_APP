@@ -7,6 +7,13 @@ interface CacheConfig {
   syncInterval?: number;
 }
 
+interface ImageCacheEntry {
+  url: string;
+  maxWidth?: number;
+  quality?: number;
+  variant?: string;
+}
+
 class CacheService {
   private static defaultConfig: CacheConfig = {
     ttl: 30 * 60 * 1000, // 30 minutos
@@ -234,8 +241,98 @@ class CacheService {
     }
   }
 
+  // Baixar imagens do sistema para cache local
+  static async downloadAppImages(tables: string[] = ['membros', 'limpeza']): Promise<void> {
+    try {
+      console.log('Baixando imagens do sistema para cache...');
+
+      const imageEntries = this.collectImageEntries(tables);
+      console.log(`${imageEntries.length} URLs de imagem encontradas para cache`);
+      let downloaded = 0;
+
+      if (!navigator.onLine) {
+        console.log('Download de imagens ignorado: dispositivo offline');
+        return;
+      }
+
+      for (const imageEntry of imageEntries) {
+        const cacheKeyBase = this.getImageCacheKeyBase(imageEntry.url, imageEntry.variant);
+
+        const alreadyCached = Object.keys(localStorage).some(key => key.startsWith(cacheKeyBase));
+        if (alreadyCached) {
+          continue;
+        }
+
+        try {
+          const response = await fetch(imageEntry.url);
+          if (!response.ok) {
+            continue;
+          }
+
+          const blob = await response.blob();
+          const serializedImage = await this.serializeImageBlob(blob, imageEntry.maxWidth, imageEntry.quality);
+          if (!serializedImage) {
+            continue;
+          }
+
+          const cacheKey = `${cacheKeyBase}_${Date.now()}`;
+          try {
+            localStorage.setItem(cacheKey, serializedImage);
+            downloaded++;
+          } catch (error) {
+            console.warn('Erro ao salvar imagem no cache:', error);
+          }
+        } catch (error) {
+          console.warn('Erro ao baixar imagem para cache:', imageEntry.url, error);
+        }
+      }
+
+      console.log(`${downloaded} imagens do sistema baixadas para cache`);
+    } catch (error) {
+      console.error('Erro ao baixar imagens do sistema:', error);
+    }
+  }
+
+  private static getImageCacheKeyBase(url: string, variant?: string): string {
+    const cacheIdentity = variant ? `${variant}:${url}` : url;
+    return `${this.IMAGE_CACHE_PREFIX}${btoa(cacheIdentity)}`;
+  }
+
+  private static collectImageEntries(tables: string[]): ImageCacheEntry[] {
+    const entries = new Map<string, ImageCacheEntry>();
+
+    if (tables.includes('membros')) {
+      const membros = LocalStorageService.get<any[]>('membros') || [];
+      membros.forEach(membro => {
+        if (membro?.foto && typeof membro.foto === 'string' && membro.foto.startsWith('http')) {
+          entries.set(membro.foto, { url: membro.foto });
+        }
+      });
+    }
+
+    if (tables.includes('limpeza')) {
+      const limpezas = LocalStorageService.get<any[]>('limpeza') || [];
+      limpezas.forEach(item => {
+        if (item?.foto && typeof item.foto === 'string' && item.foto.startsWith('http')) {
+          entries.set(`limpeza-hq:${item.foto}`, {
+            url: item.foto,
+            maxWidth: 1200,
+            quality: 0.88,
+            variant: 'limpeza-hq'
+          });
+        }
+      });
+    }
+
+    return [...entries.values()];
+  }
+
   // Baixar imagens dos membros para cache local
   static async downloadMemberImages(): Promise<void> {
+    await this.downloadAppImages();
+  }
+
+  private static async downloadMemberImagesLegacy(): Promise<void> {
     try {
       console.log('Baixando imagens dos membros para cache...');
       
@@ -281,7 +378,7 @@ class CacheService {
     }
   }
 
-  private static async serializeImageBlob(blob: Blob): Promise<string | null> {
+  private static async serializeImageBlob(blob: Blob, maxWidth = 280, quality = 0.72): Promise<string | null> {
     try {
       if (!blob.type.startsWith('image/')) {
         return await this.blobToDataUrl(blob);
@@ -291,7 +388,7 @@ class CacheService {
         return await this.blobToDataUrl(blob);
       }
 
-      return await this.compressBlobToDataUrl(blob, 280, 0.72);
+      return await this.compressBlobToDataUrl(blob, maxWidth, quality);
     } catch (error) {
       console.warn('Erro ao serializar imagem para o cache:', error);
       return null;
@@ -351,8 +448,8 @@ class CacheService {
       tables.map(table => this.forceSync(table))
     );
 
-    // Após sincronizar, baixar imagens dos membros
-    await this.downloadMemberImages();
+    // Após sincronizar, baixar imagens do sistema
+    await this.downloadAppImages();
 
     console.log('Sincronização de todas as tabelas concluída');
   }

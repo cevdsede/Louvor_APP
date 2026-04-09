@@ -38,6 +38,9 @@ class LocalStorageFirstService {
 
   private static syncTimer: NodeJS.Timeout | null = null;
   private static isInitialized = false;
+  private static initializedAt = 0;
+  private static scheduledTables = new Set<string>();
+  private static readonly INITIAL_SYNC_GRACE_MS = 8000;
 
   // Inicializar o serviço
   static init(config?: LocalStorageConfig): void {
@@ -46,6 +49,7 @@ class LocalStorageFirstService {
     this.config = { ...this.config, ...config };
     LocalStorageService.init();
     this.isInitialized = true;
+    this.initializedAt = Date.now();
 
     // Iniciar sincronização em background
     if (this.config.enableBackgroundSync) {
@@ -89,7 +93,7 @@ class LocalStorageFirstService {
     await this.syncAllTables();
 
     if (preloadImages) {
-      await CacheService.downloadMemberImages();
+      await CacheService.downloadAppImages();
     }
 
     localStorage.setItem(this.LAST_FULL_SYNC_KEY, Date.now().toString());
@@ -131,7 +135,7 @@ class LocalStorageFirstService {
       console.log(`Dados salvos localmente: ${table} (${data.length} itens)`);
       
       // Agendar sincronização com servidor
-      this.scheduleSync(table);
+      this.scheduleSync(table, this.getStartupSyncDelay());
     } catch (error) {
       console.error(`Erro ao salvar dados da tabela ${table}:`, error);
     }
@@ -213,9 +217,15 @@ class LocalStorageFirstService {
       console.log(`Forçando sincronização${table ? ` da tabela ${table}` : ' de todas as tabelas'}...`);
       
       if (table) {
+        if (this.isWithinStartupGracePeriod()) {
+          this.scheduleSync(table, this.getStartupSyncDelay());
+          console.log(`Sincronizacao da tabela ${table} adiada para preservar a primeira renderizacao`);
+          return;
+        }
+
         await this.syncTable(table);
-        if (table === 'membros') {
-          await CacheService.downloadMemberImages();
+        if (['membros', 'limpeza'].includes(table)) {
+          await CacheService.downloadAppImages([table]);
         }
       } else {
         await this.bootstrapApplication({ force: true, preloadImages: true });
@@ -376,12 +386,31 @@ class LocalStorageFirstService {
   }
 
   // Agendar sincronização
-  private static scheduleSync(table: string): void {
+  private static scheduleSync(table: string, delay = 1000): void {
+    if (this.scheduledTables.has(table)) {
+      return;
+    }
+
+    this.scheduledTables.add(table);
+
     setTimeout(() => {
+      this.scheduledTables.delete(table);
       if (navigator.onLine) {
         this.syncTable(table);
       }
-    }, 1000); // Aguardar 1 segundo para sincronizar
+    }, delay);
+  }
+
+  private static isWithinStartupGracePeriod(): boolean {
+    return Date.now() - this.initializedAt < this.INITIAL_SYNC_GRACE_MS;
+  }
+
+  private static getStartupSyncDelay(): number {
+    if (!this.isWithinStartupGracePeriod()) {
+      return 1000;
+    }
+
+    return this.INITIAL_SYNC_GRACE_MS - (Date.now() - this.initializedAt) + 1000;
   }
 
   // Obter tempo da última sincronização

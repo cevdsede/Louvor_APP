@@ -5,10 +5,29 @@ interface ImageCacheProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
   fallbackSrc?: string;
   disableCompression?: boolean;
+  cacheMaxWidth?: number;
+  cacheQuality?: number;
+  maxCacheSize?: number;
+  cacheVariant?: string;
 }
 
-const ImageCacheComponent: React.FC<ImageCacheProps> = ({ src, fallbackSrc, disableCompression = false, onError, ...props }) => {
-  const { imageSrc, loading } = useImageCache(src, fallbackSrc, disableCompression);
+const ImageCacheComponent: React.FC<ImageCacheProps> = ({
+  src,
+  fallbackSrc,
+  disableCompression = false,
+  cacheMaxWidth,
+  cacheQuality,
+  maxCacheSize,
+  cacheVariant,
+  onError,
+  ...props
+}) => {
+  const { imageSrc, loading } = useImageCache(src, fallbackSrc, disableCompression, {
+    maxWidth: cacheMaxWidth,
+    quality: cacheQuality,
+    maxBlobSize: maxCacheSize,
+    cacheVariant
+  });
   const [hasError, setHasError] = useState(false);
 
   const handleError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {

@@ -41,7 +41,17 @@ const compressImage = (file: File, maxWidth: number = 300, quality: number = 0.9
   });
 };
 
-const getCacheKeyBase = (url: string) => `image_cache_${btoa(url)}`;
+interface ImageCacheOptions {
+  maxWidth?: number;
+  quality?: number;
+  maxBlobSize?: number;
+  cacheVariant?: string;
+}
+
+const getCacheKeyBase = (url: string, variant?: string) => {
+  const cacheIdentity = variant ? `${variant}:${url}` : url;
+  return `image_cache_${btoa(cacheIdentity)}`;
+};
 
 const getLatestCacheKey = (cacheKeyBase: string) => {
   const cachedKeys = Object.keys(localStorage).filter(key => key.startsWith(cacheKeyBase));
@@ -113,7 +123,18 @@ const trySaveToCache = (cacheKey: string, data: string) => {
   }
 };
 
-export const useImageCache = (url: string, fallbackUrl?: string, disableCompression = false) => {
+export const useImageCache = (
+  url: string,
+  fallbackUrl?: string,
+  disableCompression = false,
+  options: ImageCacheOptions = {}
+) => {
+  const {
+    maxWidth = 300,
+    quality = 0.9,
+    maxBlobSize = 2048 * 1024,
+    cacheVariant
+  } = options;
   const [imageSrc, setImageSrc] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
@@ -132,7 +153,7 @@ export const useImageCache = (url: string, fallbackUrl?: string, disableCompress
         return;
       }
 
-      const cacheKeyBase = getCacheKeyBase(url);
+      const cacheKeyBase = getCacheKeyBase(url, cacheVariant);
       const latestKey = getLatestCacheKey(cacheKeyBase);
       if (latestKey) {
         const cached = localStorage.getItem(latestKey);
@@ -168,7 +189,7 @@ export const useImageCache = (url: string, fallbackUrl?: string, disableCompress
         const response = await fetch(url);
         const blob = await response.blob();
 
-        if (blob.size > 2048 * 1024) {
+        if (blob.size > maxBlobSize) {
           console.warn('Imagem muito grande, pulando cache:', url, blob.size);
           setState(url);
           return;
@@ -179,7 +200,7 @@ export const useImageCache = (url: string, fallbackUrl?: string, disableCompress
         let finalBase64: string;
         if (blob.size > 100 * 1024) {
           try {
-            finalBase64 = await compressImage(new File([blob], 'temp.jpg', { type: 'image/jpeg' }));
+            finalBase64 = await compressImage(new File([blob], 'temp.jpg', { type: 'image/jpeg' }), maxWidth, quality);
           } catch (compressError) {
             console.warn('Erro ao comprimir imagem, usando original:', compressError);
             finalBase64 = await new Promise((resolve, reject) => {
@@ -216,7 +237,7 @@ export const useImageCache = (url: string, fallbackUrl?: string, disableCompress
     return () => {
       active = false;
     };
-  }, [url, fallbackUrl, disableCompression]);
+  }, [url, fallbackUrl, disableCompression, maxWidth, quality, maxBlobSize, cacheVariant]);
 
   return { imageSrc, loading };
 };

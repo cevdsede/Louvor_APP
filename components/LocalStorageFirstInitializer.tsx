@@ -20,9 +20,55 @@ export function LocalStorageFirstInitializer({
 }: LocalStorageFirstInitializerProps) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<string>('Inicializando sistema localStorage-first...');
+  const [status, setStatus] = useState<string>('Preparando dados locais...');
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [showSyncComplete, setShowSyncComplete] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+    let syncTimeout: ReturnType<typeof setTimeout> | null = null;
+    let completeTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const runBackgroundSync = async (force = false) => {
+      if (!navigator.onLine) {
+        return;
+      }
+
+      try {
+        if (isMounted) {
+          setStatus('Atualizando dados e imagens offline...');
+          setIsSyncing(true);
+          setShowSyncComplete(false);
+        }
+
+        await LocalStorageFirstService.bootstrapApplication({
+          force,
+          preloadImages: true
+        });
+
+        if (isMounted) {
+          setStatus('Dados offline atualizados');
+          setShowSyncComplete(true);
+          completeTimeout = setTimeout(() => {
+            if (isMounted) {
+              setShowSyncComplete(false);
+            }
+          }, 3500);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setStatus('Nao foi possivel atualizar agora. Usando dados locais.');
+        }
+
+        console.error('Erro ao sincronizar dados em background:', err);
+        onError?.(err instanceof Error ? err : new Error('Erro desconhecido'));
+      } finally {
+        if (isMounted) {
+          setIsSyncing(false);
+        }
+      }
+    };
+
     const initializeServices = async () => {
       try {
         setStatus('Inicializando serviço localStorage-first...');
@@ -37,22 +83,13 @@ export function LocalStorageFirstInitializer({
         const hasLocalData = Object.keys(status.cacheStats).length > 0;
         const shouldForceFullSync = LocalStorageFirstService.shouldForceFullSync();
         
-        if (!hasLocalData || shouldForceFullSync) {
-          setStatus('Sincronizando todos os dados e imagens...');
-          
-          await LocalStorageFirstService.bootstrapApplication({
-            force: shouldForceFullSync,
-            preloadImages: true
-          });
-        } else {
-          setStatus('Dados locais encontrados, pronto para uso!');
-          
-          // Se há dados locais, iniciar sincronização em background
-          if (navigator.onLine && config?.enableBackgroundSync !== false) {
-            setTimeout(() => {
-              LocalStorageFirstService.bootstrapApplication({ preloadImages: true }).catch(console.error);
-            }, 2000); // Aguardar 2 segundos para não bloquear UI
-          }
+        setStatus(hasLocalData ? 'Dados locais prontos!' : 'Carregando dados locais iniciais...');
+
+        // Se ha conexao, atualizar em background sem bloquear a UI.
+        if (navigator.onLine && config?.enableBackgroundSync !== false) {
+          syncTimeout = setTimeout(() => {
+            runBackgroundSync(shouldForceFullSync);
+          }, hasLocalData && !shouldForceFullSync ? 10000 : 5000);
         }
         
         setStatus('Sistema localStorage-first inicializado com sucesso!');
@@ -63,6 +100,7 @@ export function LocalStorageFirstInitializer({
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
         setError(errorMessage);
+        setIsInitialized(true);
         console.error('Erro ao inicializar sistema localStorage-first:', err);
         
         onError?.(err instanceof Error ? err : new Error(errorMessage));
@@ -70,7 +108,19 @@ export function LocalStorageFirstInitializer({
     };
 
     initializeServices();
-  }, [config, onReady, onError]);
+
+    return () => {
+      isMounted = false;
+
+      if (syncTimeout) {
+        clearTimeout(syncTimeout);
+      }
+
+      if (completeTimeout) {
+        clearTimeout(completeTimeout);
+      }
+    };
+  }, []);
 
   // Componente de loading
   if (!isInitialized) {
@@ -126,7 +176,35 @@ export function LocalStorageFirstInitializer({
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+
+      {(isSyncing || showSyncComplete || error) && (
+        <div className="fixed bottom-20 lg:bottom-6 right-4 z-[700] max-w-[calc(100vw-2rem)]">
+          <div className={`flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-2xl backdrop-blur-md ${
+            error
+              ? 'bg-red-50/95 border-red-100 text-red-700 dark:bg-red-950/90 dark:border-red-900 dark:text-red-200'
+              : showSyncComplete
+              ? 'bg-emerald-50/95 border-emerald-100 text-emerald-700 dark:bg-emerald-950/90 dark:border-emerald-900 dark:text-emerald-200'
+              : 'bg-white/95 border-slate-100 text-slate-700 dark:bg-slate-900/95 dark:border-slate-800 dark:text-slate-200'
+          }`}>
+            {isSyncing ? (
+              <div className="w-4 h-4 border-2 border-brand border-t-transparent rounded-full animate-spin shrink-0"></div>
+            ) : (
+              <i className={`fas ${error ? 'fa-exclamation-triangle' : 'fa-check-circle'} text-sm shrink-0`}></i>
+            )}
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest">
+                {isSyncing ? 'Atualizando app' : error ? 'Atualizacao pendente' : 'Atualizado'}
+              </p>
+              <p className="text-xs font-semibold opacity-80">{error || status}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
 
 // Componente para mostrar status localStorage-first
