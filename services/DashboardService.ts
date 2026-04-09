@@ -181,12 +181,28 @@ class DashboardService {
     try {
       const escalas = LocalStorageFirstService.get<any>('escalas');
       const membros = LocalStorageFirstService.get<any>('membros');
+      const cultos = LocalStorageFirstService.get<any>('cultos');
+      const hoje = new Date();
+      const inicioPeriodo = new Date(hoje);
+
+      inicioPeriodo.setHours(0, 0, 0, 0);
+      inicioPeriodo.setMonth(inicioPeriodo.getMonth() - 10);
+      hoje.setHours(23, 59, 59, 999);
+      
+      const cultoPorId = new Map(cultos.map((culto: any) => [culto.id, culto]));
+      const membroPorId = new Map(membros.map((membro: any) => [membro.id, membro]));
 
       // Contar cultos diferentes por membro
       const frequenciaMap = new Map<string, Set<string>>();
 
       escalas.forEach((escala: any) => {
-        const membro = membros.find((m: any) => m.id === escala.id_membros);
+        const culto = cultoPorId.get(escala.id_culto);
+        const dataCultoBase = culto?.data_culto?.split('T')[0];
+        const dataCulto = dataCultoBase ? new Date(`${dataCultoBase}T12:00:00`) : null;
+
+        if (!dataCulto || Number.isNaN(dataCulto.getTime()) || dataCulto < inicioPeriodo || dataCulto > hoje) return;
+
+        const membro = membroPorId.get(escala.id_membros);
         if (!membro) return;
 
         if (!frequenciaMap.has(membro.nome)) {

@@ -28,12 +28,14 @@ const DashboardView: React.FC = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      let userId: string | null = null;
 
       // Se offline, pular busca do usuário
       if (navigator.onLine) {
         // Buscar usuário atual
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          userId = user.id;
           setCurrentUser(user);
         }
       }
@@ -43,7 +45,7 @@ const DashboardView: React.FC = () => {
         DashboardService.getTotalCultos(),
         DashboardService.getTotalMusicas(),
         DashboardService.getTotalMembrosAtivos(),
-        user ? DashboardService.getProximaEscala(user.id) : Promise.resolve(null),
+        userId ? DashboardService.getProximaEscala(userId) : Promise.resolve(null),
         DashboardService.getFrequenciaPorMembro(),
         DashboardService.getAniversariantesDoMes(),
         DashboardService.getVersiculoDiario() // Buscar versículo automático
@@ -493,7 +495,7 @@ const DashboardView: React.FC = () => {
                   <h3 className="text-lg font-black text-slate-800 dark:text-white">Frequência por Membro</h3>
                 </div>
                 <div className="text-xs text-slate-600 dark:text-slate-400">
-                  Últimos 30 dias
+                  Últimos 10 meses
                 </div>
               </div>
               
