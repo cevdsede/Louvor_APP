@@ -319,14 +319,16 @@ const Sidebar: React.FC<SidebarProps> = ({
             key={item.id}
             onClick={() => onViewChange(item.default as ViewType)}
             className={`
-              flex flex-1 max-w-[72px] lg:flex-none lg:max-w-none flex-col lg:flex-row items-center justify-center lg:justify-start gap-1 lg:gap-4 px-2 lg:px-5 py-2 lg:py-4 rounded-xl lg:rounded-2xl transition-all
+              flex flex-1 max-w-[68px] lg:flex-none lg:max-w-none flex-col lg:flex-row items-center justify-center lg:justify-start gap-0.5 lg:gap-4 px-1.5 lg:px-5 py-1.5 lg:py-4 rounded-xl lg:rounded-2xl transition-all
               ${isActive(item.id)
                 ? 'bg-brand text-white shadow-xl shadow-brand/20'
                 : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 lg:hover:bg-slate-50 lg:dark:hover:bg-slate-800/50'}
             `}
           >
-            <i className={`${item.icon} text-lg w-6 text-center`}></i>
-            <span className="text-[9px] lg:text-sm font-bold uppercase lg:capitalize tracking-widest lg:tracking-normal">{item.label}</span>
+            <i className={`${item.icon} text-base lg:text-lg w-5 lg:w-6 text-center`}></i>
+            <span className="w-full max-w-full whitespace-normal break-words text-[8px] leading-[1.05] lg:w-auto lg:break-normal lg:text-sm font-bold uppercase lg:capitalize tracking-normal text-center">
+              {item.label}
+            </span>
           </button>
         ))}
       </div>
