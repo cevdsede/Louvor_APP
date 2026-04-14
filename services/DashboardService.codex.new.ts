@@ -30,10 +30,6 @@ class DashboardService {
     return new Set(scope?.memberIds || []);
   }
 
-  private hasExplicitMemberScope(scope?: DashboardScope) {
-    return Array.isArray(scope?.memberIds);
-  }
-
   private getCultoIdsByMinisterio(cultos: any[], escalas: any[], avisos: any[], ministerioId?: string | null) {
     if (!ministerioId) {
       return new Set(cultos.map((culto: any) => culto.id));
@@ -48,6 +44,10 @@ class DashboardService {
     avisos
       .filter((aviso: any) => aviso.ministerio_id === ministerioId)
       .forEach((aviso: any) => ids.add(aviso.id_cultos));
+
+    if (ids.size === 0) {
+      cultos.forEach((culto: any) => ids.add(culto.id));
+    }
 
     return ids;
   }
@@ -163,11 +163,10 @@ class DashboardService {
     try {
       const membros = LocalStorageFirstService.get<any>('membros');
       const memberIds = this.getMemberIdSet(scope);
-      const shouldFilterByMembers = this.hasExplicitMemberScope(scope);
 
       return membros.filter((membro: any) => {
         if (!membro.ativo) return false;
-        if (!shouldFilterByMembers) return true;
+        if (memberIds.size === 0) return true;
         return memberIds.has(membro.id);
       }).length;
     } catch (error) {
@@ -182,7 +181,6 @@ class DashboardService {
       const membros = LocalStorageFirstService.get<any>('membros');
       const cultos = LocalStorageFirstService.get<any>('cultos');
       const memberIds = this.getMemberIdSet(scope);
-      const shouldFilterByMembers = this.hasExplicitMemberScope(scope);
       const hoje = new Date();
       const inicioPeriodo = new Date(hoje);
 
@@ -199,7 +197,7 @@ class DashboardService {
           return;
         }
 
-        if (shouldFilterByMembers && !memberIds.has(escala.id_membros)) {
+        if (memberIds.size > 0 && !memberIds.has(escala.id_membros)) {
           return;
         }
 
@@ -237,13 +235,12 @@ class DashboardService {
     try {
       const membros = LocalStorageFirstService.get<any>('membros');
       const memberIds = this.getMemberIdSet(scope);
-      const shouldFilterByMembers = this.hasExplicitMemberScope(scope);
       const mesAtual = new Date().getMonth() + 1;
 
       return membros
         .filter((membro: any) => {
           if (!membro.ativo || !membro.data_nasc) return false;
-          if (shouldFilterByMembers && !memberIds.has(membro.id)) return false;
+          if (memberIds.size > 0 && !memberIds.has(membro.id)) return false;
 
           const mesMembro = new Date(`${membro.data_nasc}T12:00:00`).getMonth() + 1;
           return mesMembro === mesAtual;

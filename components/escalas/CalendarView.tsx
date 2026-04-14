@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
+import { useMinistryContext } from '../../contexts/MinistryContext';
 import { ScheduleEvent, Member, Notice } from '../../types';
 import { sortMembersByRole, getRoleIcon } from '../../utils/teamUtils';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import EventCard from './EventCard';
 
 const CalendarView: React.FC = () => {
+  const { activeMinisterioId, activeModules } = useMinistryContext();
   const [selectedDateEvents, setSelectedDateEvents] = useState<ScheduleEvent[] | null>(null);
   const [currentBaseDate, setCurrentBaseDate] = useState(new Date());
 
@@ -77,19 +79,37 @@ const CalendarView: React.FC = () => {
   const { data: cultosRaw } = useLocalStorageFirst<any>({ table: 'cultos' });
   const { data: nomeCultosRaw } = useLocalStorageFirst<any>({ table: 'nome_cultos' });
   const { data: membrosRaw } = useLocalStorageFirst<any>({ table: 'membros' });
+  const { data: membrosMinisteriosRaw } = useLocalStorageFirst<any>({ table: 'membros_ministerios' });
   const { data: escalasRaw } = useLocalStorageFirst<any>({ table: 'escalas' });
   const { data: repertorioRaw } = useLocalStorageFirst<any>({ table: 'repertorio' });
   const { data: musicasRaw } = useLocalStorageFirst<any>({ table: 'musicas' });
   const { data: tonsRaw } = useLocalStorageFirst<any>({ table: 'tons' });
   const { data: avisosRaw } = useLocalStorageFirst<any>({ table: 'avisos_cultos' });
   const { data: funcoesRaw } = useLocalStorageFirst<any>({ table: 'funcao' });
+  const memberIdsInMinisterio = new Set(
+    (membrosMinisteriosRaw || [])
+      .filter((membership: any) => membership.ministerio_id === activeMinisterioId && membership.ativo !== false)
+      .map((membership: any) => membership.membro_id)
+  );
+  const scopedMembros = activeMinisterioId
+    ? (membrosRaw || []).filter((member: any) => memberIdsInMinisterio.has(member.id))
+    : membrosRaw;
+  const scopedEscalas = activeMinisterioId
+    ? (escalasRaw || []).filter((escala: any) => escala.ministerio_id === activeMinisterioId)
+    : escalasRaw;
+  const scopedAvisos = activeMinisterioId
+    ? (avisosRaw || []).filter((aviso: any) => aviso.ministerio_id === activeMinisterioId)
+    : avisosRaw;
+  const scopedFuncoes = activeMinisterioId
+    ? (funcoesRaw || []).filter((funcao: any) => funcao.ministerio_id === activeMinisterioId)
+    : funcoesRaw;
 
   // JOIN LOCAL DOS DADOS
   useEffect(() => {
     if (!cultosRaw || !membrosRaw || !escalasRaw) return;
 
     // 1. Membros Ativos
-    const mappedMembers: Member[] = membrosRaw.filter((m: any) => m.ativo).map((m: any) => ({
+    const mappedMembers: Member[] = (scopedMembros || []).filter((m: any) => m.ativo).map((m: any) => ({
       id: m.id,
       name: m.nome,
       role: 'Membro',
@@ -102,15 +122,15 @@ const CalendarView: React.FC = () => {
     setAllRegisteredMembers(mappedMembers);
 
     // 2. Músicas e Tons
-    setAllSongs(musicasRaw);
+    setAllSongs(activeModules.includes('music') ? musicasRaw : []);
     setTones(tonsRaw);
 
     // 3. Avisos por Evento
     const noticesByEvent: Record<string, Notice[]> = {};
-    avisosRaw.forEach((n: any) => {
+    (scopedAvisos || []).forEach((n: any) => {
       if (!n.id_cultos) return;
       if (!noticesByEvent[n.id_cultos]) noticesByEvent[n.id_cultos] = [];
-      const membro = membrosRaw.find((m: any) => m.id === n.id_membros);
+      const membro = (scopedMembros || []).find((m: any) => m.id === n.id_membros);
       noticesByEvent[n.id_cultos].push({
         id: n.id_lembrete,
         text: n.info,
@@ -126,21 +146,21 @@ const CalendarView: React.FC = () => {
       const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
       // Local Join: Escalas
-      const cEscalas = escalasRaw.filter((e: any) => e.id_culto === c.id);
+      const cEscalas = (scopedEscalas || []).filter((e: any) => e.id_culto === c.id);
       const eventMembrosRaw = cEscalas.map((e: any) => ({
-        membros: membrosRaw.find((m: any) => m.id === e.id_membros),
-        funcao: funcoesRaw.find((f: any) => f.id === e.id_funcao)
+        membros: (scopedMembros || []).find((m: any) => m.id === e.id_membros),
+        funcao: (scopedFuncoes || []).find((f: any) => f.id === e.id_funcao)
       }));
 
       const groupedMembers = groupMembersByPerson(eventMembrosRaw);
 
       // Local Join: Repertório
-      const cRepertorio = (repertorioRaw || [])
+      const cRepertorio = (activeModules.includes('music') ? (repertorioRaw || []) : [])
         .filter((r: any) => r.id_culto === c.id)
         .map((r: any) => {
           const musica = musicasRaw.find((m: any) => m.id === r.id_musicas);
           const tom = tonsRaw.find((t: any) => t.id === r.id_tons);
-          const membro = membrosRaw.find((m: any) => m.id === r.id_membros);
+          const membro = (scopedMembros || []).find((m: any) => m.id === r.id_membros);
           return {
             id: r.id,
             musica: musica?.musica || 'Sem música',
@@ -161,7 +181,7 @@ const CalendarView: React.FC = () => {
       };
     });
     setEvents(mapped);
-  }, [cultosRaw, membrosRaw, escalasRaw, repertorioRaw, musicasRaw, tonsRaw, nomeCultosRaw, avisosRaw, funcoesRaw]);
+  }, [activeModules, cultosRaw, musicasRaw, nomeCultosRaw, repertorioRaw, scopedAvisos, scopedEscalas, scopedFuncoes, scopedMembros, tonsRaw]);
 
   // Auth check
   useEffect(() => {
@@ -330,6 +350,7 @@ const CalendarView: React.FC = () => {
                     onToggle={() => toggleExpand(event.id)}
                     activeSubTab={activeSubTabs[event.id] || 'team'}
                     onSubTabChange={(tab) => setSubTab(event.id, tab)}
+                    showRepertoire={activeModules.includes('music')}
                   >
                     {activeSubTabs[event.id] === 'team' && (
                       <div className="p-6">

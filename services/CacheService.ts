@@ -21,6 +21,7 @@ class CacheService {
     syncInterval: 5 * 60 * 1000 // 5 minutos
   };
   private static readonly IMAGE_CACHE_PREFIX = 'image_cache_';
+  private static readonly IMAGE_CACHE_MAX_SIZE = 5 * 1024 * 1024; // 5MB em bytes
 
   // Obter dados com cache
   static async get<T>(
@@ -280,7 +281,22 @@ class CacheService {
             localStorage.setItem(cacheKey, serializedImage);
             downloaded++;
           } catch (error) {
-            console.warn('Erro ao salvar imagem no cache:', error);
+            // Se for erro de quota, tentar limpar cache antigo
+            if (error instanceof Error && error.name === 'QuotaExceededError') {
+              console.warn('LocalStorage cheio, limpando cache antigo...');
+              this.clearOldestImages(Math.floor(this.IMAGE_CACHE_MAX_SIZE * 0.3)); // Limpa 30% do mais antigo
+              
+              // Tentar novamente após limpar
+              try {
+                localStorage.setItem(cacheKey, serializedImage);
+                downloaded++;
+                console.log('Imagem salva após limpeza do cache');
+              } catch (retryError) {
+                console.warn('Erro ao salvar imagem mesmo após limpeza:', retryError);
+              }
+            } else {
+              console.warn('Erro ao salvar imagem no cache:', error);
+            }
           }
         } catch (error) {
           console.warn('Erro ao baixar imagem para cache:', imageEntry.url, error);
@@ -573,6 +589,47 @@ class CacheService {
         nome
       )
     `);
+  }
+
+  // Limpar imagens mais antigas para liberar espaço
+  private static clearOldestImages(targetSize: number): void {
+    try {
+      const imageKeys = Object.keys(localStorage).filter(key => key.startsWith(this.IMAGE_CACHE_PREFIX));
+      
+      if (imageKeys.length === 0) return;
+
+      // Ordenar por timestamp (mais antigas primeiro)
+      const sortedKeys = imageKeys.sort((a, b) => {
+        const timestampA = parseInt(a.split('_').pop() || '0');
+        const timestampB = parseInt(b.split('_').pop() || '0');
+        return timestampA - timestampB;
+      });
+
+      let clearedSize = 0;
+      const keysToRemove: string[] = [];
+
+      // Calcular tamanho total das imagens
+      for (const key of sortedKeys) {
+        const value = localStorage.getItem(key);
+        if (value) {
+          const size = value.length * 2; // Aproximadamente 2 bytes por caractere
+          keysToRemove.push(key);
+          clearedSize += size;
+          
+          // Parar quando atingir o tamanho alvo
+          if (clearedSize >= targetSize) break;
+        }
+      }
+
+      // Remover as imagens mais antigas
+      keysToRemove.forEach((key) => {
+        localStorage.removeItem(key);
+      });
+
+      console.log(`Cache limpo: ${keysToRemove.length} imagens removidas, ${(clearedSize / 1024 / 1024).toFixed(2)} MB liberados`);
+    } catch (error) {
+      console.error('Erro ao limpar cache antigo:', error);
+    }
   }
 }
 

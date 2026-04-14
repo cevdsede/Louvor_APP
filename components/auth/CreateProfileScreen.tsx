@@ -12,13 +12,12 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [lastSubmitTime, setLastSubmitTime] = useState(0);
-  const [showCreateProfile, setShowCreateProfile] = useState(false);
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
     senha: '',
     confirmarSenha: '',
-    genero: 'Masculino',
+    genero: 'Homem',
     telefone: '',
     foto: null as File | null
   });
@@ -48,7 +47,8 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
         options: {
           data: {
             nome: formData.nome,
-            genero: formData.genero
+            genero: formData.genero,
+            telefone: formData.telefone
           }
         }
       });
@@ -69,6 +69,49 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
 
       // 2. Criar solicitação de membro com a estrutura correta
       if (authData.user) {
+        {
+          let nextFotoUrl = '';
+
+          if (formData.foto) {
+            const fileExt = formData.foto.name.split('.').pop() || 'jpg';
+            const filePath = `membros/${authData.user.id}.${fileExt}`;
+
+            const { error: uploadError } = await supabase.storage
+              .from('public-assets')
+              .upload(filePath, formData.foto, { upsert: true });
+
+            if (uploadError) {
+              logger.warn('Erro ao fazer upload da foto:', uploadError, 'database');
+            } else {
+              const { data: { publicUrl } } = supabase.storage
+                .from('public-assets')
+                .getPublicUrl(filePath);
+              nextFotoUrl = publicUrl;
+            }
+          }
+
+          const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.nome)}&background=random`;
+          const { error: membroError } = await supabase
+            .from('membros')
+            .update({
+              nome: formData.nome,
+              email: formData.email.toLowerCase(),
+              genero: formData.genero,
+              telefone: formData.telefone,
+              foto: nextFotoUrl || defaultAvatar,
+              ativo: false
+            })
+            .eq('id', authData.user.id);
+
+          if (membroError) {
+            logger.warn('Cadastro criado, mas nao foi possivel complementar o perfil imediatamente:', membroError, 'database');
+          }
+
+          setStep(3);
+          setLastSubmitTime(0);
+          return;
+        }
+
         const { error: solicitacaoError } = await supabase
           .from('solicitacoes_membro')
           .insert({
@@ -330,9 +373,9 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => setFormData({ ...formData, genero: 'Masculino' })}
+                    onClick={() => setFormData({ ...formData, genero: 'Homem' })}
                     className={`py-3 rounded-xl border-2 transition-all font-black text-[10px] uppercase tracking-widest ${
-                      formData.genero === 'Masculino'
+                      formData.genero === 'Homem'
                         ? 'border-brand bg-brand text-white'
                         : 'border-slate-100 dark:border-slate-700 text-slate-400 hover:border-brand/40'
                     }`}
@@ -341,9 +384,9 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
                   </button>
                   <button
                     type="button"
-                    onClick={() => setFormData({ ...formData, genero: 'Feminino' })}
+                    onClick={() => setFormData({ ...formData, genero: 'Mulher' })}
                     className={`py-3 rounded-xl border-2 transition-all font-black text-[10px] uppercase tracking-widest ${
-                      formData.genero === 'Feminino'
+                      formData.genero === 'Mulher'
                         ? 'border-brand bg-brand text-white'
                         : 'border-slate-100 dark:border-slate-700 text-slate-400 hover:border-brand/40'
                     }`}

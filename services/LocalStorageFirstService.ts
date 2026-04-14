@@ -11,6 +11,8 @@ interface LocalStorageConfig {
 class LocalStorageFirstService {
   private static readonly MANAGED_TABLES = [
     'membros',
+    'ministerios',
+    'membros_ministerios',
     'cultos',
     'eventos',
     'musicas',
@@ -31,15 +33,16 @@ class LocalStorageFirstService {
   private static readonly FULL_SYNC_REQUEST_KEY = 'louvor_force_full_sync';
   private static readonly LAST_FULL_SYNC_KEY = 'louvor_last_full_sync';
   private static config: LocalStorageConfig = {
-    syncInterval: 2 * 60 * 1000, // 2 minutos
-    enableBackgroundSync: true,
-    priorityLocal: true
+    ttl: 30 * 60 * 1000, // 30 minutos
+    enableAutoSync: true,
+    syncInterval: 5 * 60 * 1000 // 5 minutos
   };
-
   private static syncTimer: NodeJS.Timeout | null = null;
-  private static isInitialized = false;
-  private static initializedAt = 0;
-  private static scheduledTables = new Set<string>();
+  private static isOnline = navigator.onLine;
+  private static startupTime = Date.now();
+  private static syncQueue: Array<{ table: string; timestamp: number; retryCount: number }> = [];
+  private static syncingTables = new Set<string>(); // Evita sincronizações duplicadas
+  private static globalSyncInProgress = false; // Evita sync global simultâneo
   private static readonly INITIAL_SYNC_GRACE_MS = 8000;
 
   // Inicializar o serviço
@@ -99,6 +102,36 @@ class LocalStorageFirstService {
     localStorage.setItem(this.LAST_FULL_SYNC_KEY, Date.now().toString());
     if (force) {
       this.clearFullSyncRequest();
+    }
+  }
+
+  static async syncPriorityTables(
+    tables: string[],
+    options?: {
+      preloadImages?: boolean;
+    }
+  ): Promise<void> {
+    const { preloadImages = false } = options || {};
+
+    if (!this.isInitialized) {
+      this.init();
+    }
+
+    if (!navigator.onLine || tables.length === 0) {
+      return;
+    }
+
+    const uniqueTables = [...new Set(tables)].filter((table) =>
+      this.MANAGED_TABLES.includes(table as (typeof this.MANAGED_TABLES)[number])
+    );
+
+    await Promise.allSettled(uniqueTables.map((table) => this.syncTable(table)));
+
+    if (preloadImages) {
+      const imageTables = uniqueTables.filter((table) => ['membros', 'limpeza'].includes(table));
+      if (imageTables.length > 0) {
+        await CacheService.downloadAppImages(imageTables);
+      }
     }
   }
 
@@ -214,6 +247,18 @@ class LocalStorageFirstService {
   // Forçar sincronização com servidor
   static async forceSync(table?: string): Promise<void> {
     try {
+      // Evitar sincronizações duplicadas
+      const syncKey = table ? `sync_${table}` : 'sync_all';
+      const lastSyncTime = parseInt(localStorage.getItem(`last_${syncKey}`) || '0');
+      const now = Date.now();
+      
+      // Se sincronizou nos últimos 2 segundos, ignorar
+      if (now - lastSyncTime < 2000) {
+        console.log(`Sincronização recente detectada, ignorando: ${table || 'todas as tabelas'}`);
+        return;
+      }
+      
+      localStorage.setItem(`last_${syncKey}`, now.toString());
       console.log(`Forçando sincronização${table ? ` da tabela ${table}` : ' de todas as tabelas'}...`);
       
       if (table) {

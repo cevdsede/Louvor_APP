@@ -18,12 +18,14 @@ export interface SupabaseMembro {
   genero: 'Homem' | 'Mulher';
   foto?: string;
   perfil?: string;
+  ativo?: boolean;
   created_at: string;
 }
 
 export interface SupabaseFuncao {
   id: string;
   nome_funcao: string;
+  ministerio_id: string;
   created_at: string;
 }
 
@@ -32,10 +34,31 @@ export interface SupabaseEscala {
   id_culto: string;
   id_membros: string;
   id_funcao: string;
+  ministerio_id: string;
   created_at: string;
   cultos?: SupabaseCulto;
   membros?: SupabaseMembro;
   funcao?: SupabaseFuncao;
+}
+
+export interface SupabaseMinisterio {
+  id: string;
+  nome: string;
+  slug: string;
+  descricao?: string | null;
+  ativo?: boolean;
+  modulos?: string[] | Record<string, boolean> | null;
+  created_at?: string;
+}
+
+export interface SupabaseMembroMinisterio {
+  id: string;
+  membro_id: string;
+  ministerio_id: string;
+  principal?: boolean;
+  ativo?: boolean;
+  papel?: string | null;
+  created_at?: string;
 }
 
 export interface SupabaseMusica {
@@ -180,20 +203,21 @@ export interface RepertorioMusicView {
 // Tipos para aprovações de membros
 export interface SolicitacaoAprovacao {
   id: string;
-  memberId: string;
-  memberName: string;
-  memberEmail: string;
-  requestedRole: string;
-  status: 'pending' | 'approved' | 'rejected';
+  nome: string;
+  email: string;
+  aprovado?: boolean;
+  status: 'pendente' | 'aprovado' | 'rejeitado';
   createdAt: string;
   processedAt?: string;
   processedBy?: string;
+  membro?: SupabaseMembro;
 }
 
 // Tipos para funções/cargos
 export interface Funcao {
   id: string;
   nome_funcao: string;
+  ministerio_id?: string;
   created_at: string;
 }
 
@@ -340,16 +364,4 @@ export interface ProcessedRepertorio {
   minister?: string;
   cultDate: string;
   cultName: string;
-}
-
-export interface SolicitacaoAprovacao {
-  id: string;
-  memberId: string;
-  memberName: string;
-  memberEmail: string;
-  requestedRole: string;
-  status: 'pending' | 'approved' | 'rejected';
-  createdAt: string;
-  processedAt?: string;
-  processedBy?: string;
 }

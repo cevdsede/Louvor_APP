@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Select from 'react-select';
 import { supabase } from '../../supabaseClient';
+import { useMinistryContext } from '../../contexts/MinistryContext';
 import { showError } from '../../utils/toast';
 import { logger } from '../../utils/logger';
 import { ChartInstances, EscalaMusicView, RepertorioMusicView, EscalaEvent, EscalaItem } from '../../types-supabase';
@@ -63,6 +64,7 @@ interface GroupedHistory {
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 
 const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
+  const { activeMinisterioId, activeModules } = useMinistryContext();
   const stylesChartRef = useRef<HTMLCanvasElement>(null);
   const themesChartRef = useRef<HTMLCanvasElement>(null);
   const rankingChartRef = useRef<HTMLCanvasElement>(null);
@@ -120,7 +122,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
 
   useEffect(() => {
     fetchData();
-  }, [subView]);
+  }, [activeMinisterioId, subView]);
 
   // Filtrar músicas baseado na busca
   useEffect(() => {
@@ -142,7 +144,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
       const fetchMinistrosForCulto = async () => {
         setLoadingMinisters(true);
         try {
-          const { data: escalaData, error: escalaError } = await supabase
+          let escalaQuery = supabase
             .from('escalas')
             .select(`
               id_membros,
@@ -156,6 +158,12 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
               )
             `)
             .eq('id_culto', newRepertoire.id_culto);
+
+          if (activeMinisterioId) {
+            escalaQuery = escalaQuery.eq('ministerio_id', activeMinisterioId);
+          }
+
+          const { data: escalaData, error: escalaError } = await escalaQuery;
 
           if (escalaError) throw escalaError;
 
@@ -184,7 +192,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
       setFilteredMembers([]);
       setLoadingMinisters(false);
     }
-  }, [newRepertoire.id_culto]);
+  }, [activeMinisterioId, newRepertoire.id_culto]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -196,10 +204,23 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
       const cultosData = LocalStorageFirstService.get<any>('cultos');
       const nomeCultosData = LocalStorageFirstService.get<any>('nome_cultos');
       const membrosData = LocalStorageFirstService.get<any>('membros');
+      const membrosMinisteriosData = LocalStorageFirstService.get<any>('membros_ministerios');
       const tonsData = LocalStorageFirstService.get<any>('tons');
       const historicoData = LocalStorageFirstService.get<any>('historico_musicas');
       const escalasData = LocalStorageFirstService.get<any>('escalas');
       const funcoesData = LocalStorageFirstService.get<any>('funcao');
+      const memberIdsInMinisterio = new Set(
+        (membrosMinisteriosData || [])
+          .filter((membership: any) => membership.ministerio_id === activeMinisterioId && membership.ativo !== false)
+          .map((membership: any) => membership.membro_id)
+      );
+      const scopedMembersData = activeMinisterioId
+        ? (membrosData || []).filter((member: any) => memberIdsInMinisterio.has(member.id))
+        : membrosData;
+      const scopedEscalasData = activeMinisterioId
+        ? (escalasData || []).filter((escala: any) => escala.ministerio_id === activeMinisterioId)
+        : escalasData;
+      const scopedCultoIds = new Set((scopedEscalasData || []).map((escala: any) => escala.id_culto));
 
       // 1. Format Songs
       const formattedSongs: Music[] = musicasData.map((s: any) => {
@@ -220,10 +241,13 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
       setAvailableThemes(themes);
 
       // 2. Format Repertoire
-      const groupedRepertoire = repData.reduce((acc: any, item: any) => {
+      const groupedRepertoire = (activeModules.includes('music')
+        ? (repData || []).filter((item: any) => scopedCultoIds.size === 0 || scopedCultoIds.has(item.id_culto))
+        : []
+      ).reduce((acc: any, item: any) => {
         const culto = cultosData.find((c: any) => c.id === item.id_culto);
         const musica = musicasData.find((m: any) => m.id === item.id_musicas);
-        const membro = membrosData.find((m: any) => m.id === item.id_membros);
+        const membro = scopedMembersData.find((m: any) => m.id === item.id_membros);
         const tom = tonsData.find((t: any) => t.id === item.id_tons);
         const nomeCultoObj = nomeCultosData.find((n: any) => n.id === culto?.id_nome_cultos);
         
@@ -260,13 +284,14 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
       setRepertoires(Object.values(groupedRepertoire));
 
       // 3. Format History
-      const historyWithMusicDetails = historicoData
+      const historyWithMusicDetails = (activeModules.includes('music') ? historicoData : [])
+        .filter((h: any) => memberIdsInMinisterio.size === 0 || memberIdsInMinisterio.has(h.id_membros))
         .sort((a: any, b: any) => (b.created_at || '').localeCompare(a.created_at || ''))
         .slice(0, 50)
         .map((h: any) => {
           const musica = musicasData.find((m: any) => m.id === h.id_musica || m.musica === h.musica);
           const tema = temasData.find((t: any) => t.id === musica?.id_temas);
-          const membro = membrosData.find((m: any) => m.id === h.id_membros);
+          const membro = scopedMembersData.find((m: any) => m.id === h.id_membros);
           const tom = tonsData.find((t: any) => t.id === h.id_tons);
 
           return {
@@ -284,10 +309,10 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
       setHistory(historyWithMusicDetails);
 
       // 4. Format Escalas
-      const formattedEscalas = escalasData.map((e: any) => {
+      const formattedEscalas = (scopedEscalasData || []).map((e: any) => {
         const culto = cultosData.find((c: any) => c.id === e.id_culto);
         const nomeCultoObj = nomeCultosData.find((n: any) => n.id === culto?.id_nome_cultos);
-        const membro = membrosData.find((m: any) => m.id === e.id_membros);
+        const membro = scopedMembersData.find((m: any) => m.id === e.id_membros);
         const funcao = funcoesData.find((f: any) => f.id === e.id_funcao);
 
         return {
@@ -308,7 +333,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
       setEscalas(formattedEscalas);
 
       // Setup additional form data
-      setAvailableMembers(membrosData);
+      setAvailableMembers(scopedMembersData);
       setAvailableTones(tonsData);
       setAvailableCults(cultosData.map((c: any) => ({
         ...c,
@@ -446,10 +471,16 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
     if (!deletingEscala) return;
 
     try {
-      const { error } = await supabase
+      let query = supabase
         .from('escalas')
         .delete()
         .eq('id', deletingEscala.id);
+
+      if (activeMinisterioId) {
+        query = query.eq('ministerio_id', activeMinisterioId);
+      }
+
+      const { error } = await query;
 
       if (error) throw error;
 
@@ -610,6 +641,19 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
     if (type === 'chords') return `https://www.cifraclub.com.br/?q=${query}`;
     return '#';
   };
+
+  if (!activeModules.includes('music')) {
+    return (
+      <div className="py-20 text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+          <i className="fas fa-music-slash text-slate-400" />
+        </div>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+          Este ministerio nao possui o modulo de musicas ativo
+        </p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

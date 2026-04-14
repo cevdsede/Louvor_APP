@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
+import { getImageCacheSize } from '../../utils/teamUtils';
 
 const LocalStorageStatus: React.FC = () => {
   const [status, setStatus] = useState({
@@ -36,6 +37,15 @@ const LocalStorageStatus: React.FC = () => {
     return Object.keys(status.cacheStats).length;
   };
 
+  const [imageCacheInfo, setImageCacheInfo] = useState(() => getImageCacheSize());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setImageCacheInfo(getImageCacheSize());
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleForceSync = async () => {
     try {
       await LocalStorageFirstService.forceSync();
@@ -55,69 +65,121 @@ const LocalStorageStatus: React.FC = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-lg shadow-lg p-4 border border-slate-100 dark:border-slate-800">
-      <h3 className="font-semibold text-sm mb-2 flex items-center">
-        🏠 LocalStorage-First
-        <span className={`ml-2 w-2 h-2 rounded-full ${status.isOnline ? 'bg-green-500' : 'bg-red-500'}`}></span>
-      </h3>
-      
-      <div className="space-y-1 text-xs">
-        <div className="flex justify-between">
-          <span>Status:</span>
-          <span className={`font-medium ${status.isOnline ? 'text-green-600' : 'text-red-600'}`}>
+    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-100 dark:border-slate-800 overflow-hidden">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+              <i className="fas fa-database text-white text-lg"></i>
+            </div>
+            <div>
+              <h3 className="font-black text-white text-sm uppercase tracking-wider">Cache Local</h3>
+              <p className="text-white/80 text-xs">LocalStorage-First</p>
+            </div>
+          </div>
+          <div className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+            status.isOnline 
+              ? 'bg-emerald-500 text-white' 
+              : 'bg-red-500 text-white'
+          }`}>
             {status.isOnline ? 'Online' : 'Offline'}
-          </span>
+          </div>
         </div>
-        
-        <div className="flex justify-between">
-          <span>Tabelas em cache:</span>
-          <span className="font-medium">{getTableCount()}</span>
+      </div>
+
+      {/* Status Cards */}
+      <div className="p-4 space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <i className="fas fa-table text-blue-500 text-xs"></i>
+              <span className="text-xs text-slate-600 dark:text-slate-400">Tabelas</span>
+            </div>
+            <p className="text-lg font-black text-slate-800 dark:text-white">{getTableCount()}</p>
+          </div>
+          
+          <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <i className="fas fa-image text-amber-500 text-xs"></i>
+              <span className="text-xs text-slate-600 dark:text-slate-400">Imagens</span>
+            </div>
+            <p className="text-lg font-black text-slate-800 dark:text-white">{imageCacheInfo.count}</p>
+          </div>
         </div>
-        
-        <div className="flex justify-between">
-          <span>Tamanho do cache:</span>
-          <span>{(getTotalCacheSize() / 1024).toFixed(1)} KB</span>
+
+        {/* Cache Size Details */}
+        <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <i className="fas fa-hdd text-purple-500 text-xs"></i>
+            <span className="text-xs text-slate-600 dark:text-slate-400">Uso de Cache</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <p className="text-slate-500 dark:text-slate-400">Dados:</p>
+              <p className="font-bold text-slate-800 dark:text-white">
+                {(getTotalCacheSize() / 1024).toFixed(1)} KB
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-500 dark:text-slate-400">Imagens:</p>
+              <p className="font-bold text-slate-800 dark:text-white">
+                {imageCacheInfo.sizeMB} MB
+              </p>
+            </div>
+          </div>
         </div>
-        
-        <div className="flex justify-between">
-          <span>Operações pendentes:</span>
-          <span className={`font-medium ${status.queueStats.pending > 0 ? 'text-orange-600' : 'text-gray-600'}`}>
-            {status.queueStats.pending + status.queueStats.retrying}
-          </span>
+
+        {/* Pending Operations */}
+        <div className={`rounded-lg p-3 border ${
+          status.queueStats.pending > 0 
+            ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800' 
+            : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <i className={`fas fa-clock text-xs ${
+                status.queueStats.pending > 0 ? 'text-orange-500' : 'text-slate-400'
+              }`}></i>
+              <span className="text-xs text-slate-600 dark:text-slate-400">Operações Pendentes</span>
+            </div>
+            <span className={`font-bold text-sm ${
+              status.queueStats.pending > 0 ? 'text-orange-600' : 'text-slate-600'
+            }`}>
+              {status.queueStats.pending + status.queueStats.retrying}
+            </span>
+          </div>
         </div>
-        
+
+        {/* Recent Syncs */}
         {Object.keys(status.lastSyncTimes).length > 0 && (
-          <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-            <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Últimas sincronizações:</div>
-            {Object.entries(status.lastSyncTimes).slice(0, 3).map(([table, time]) => (
-              <div key={table} className="flex justify-between text-xs">
-                <span className="text-gray-600 dark:text-gray-400">{table}:</span>
-                <span>{formatTime(time)}</span>
-              </div>
-            ))}
+          <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <i className="fas fa-sync text-green-500 text-xs"></i>
+              <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                Últimas Sincronizações
+              </span>
+            </div>
+            <div className="space-y-1">
+              {Object.entries(status.lastSyncTimes).slice(0, 3).map(([table, time]) => (
+                <div key={table} className="flex items-center justify-between text-xs">
+                  <span className="text-slate-600 dark:text-slate-400 capitalize">{table}</span>
+                  <span className="text-slate-500 dark:text-slate-500 font-medium">
+                    {formatTime(time)}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
-      </div>
-      
-      <div className="mt-3 flex gap-2">
-        <button
-          onClick={handleForceSync}
-          disabled={!status.isOnline}
-          className="flex-1 px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-        >
-          Sync Agora
-        </button>
-        
-        <button
-          onClick={handleClearAll}
-          className="flex-1 px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
-        >
-          Limpar Tudo
-        </button>
-      </div>
-      
-      <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
-        Dados sempre do localStorage 🏠
+
+        {/* Footer */}
+        <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <i className="fas fa-home"></i>
+            <span>Dados sempre disponíveis offline</span>
+          </div>
+        </div>
       </div>
     </div>
   );

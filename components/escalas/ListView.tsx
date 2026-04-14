@@ -4,6 +4,7 @@ import { ScheduleEvent, Member, RepertoireItem } from '../../types';
 import { Song, SupabaseCulto, SupabaseEscala, SupabaseRepertorio, SupabaseAviso, CultoComRelacionamentos } from '../../types-supabase';
 import { showSuccess, showError, showWarning } from '../../utils/toast';
 import { logger } from '../../utils/logger';
+import { useMinistryContext } from '../../contexts/MinistryContext';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import ModalUtils from '../../utils/modalUtils';
 
@@ -34,6 +35,14 @@ interface NomeCulto {
 
 
 const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
+  const {
+    activeMinisterioId,
+    activeModules,
+    canManageCurrentMinisterio,
+    currentMember,
+    isGlobalAdminOrLeader,
+    memberships
+  } = useMinistryContext();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeSubTabs, setActiveSubTabs] = useState<Record<string, SubTab>>({});
   const [showScaleModal, setShowScaleModal] = useState<{ mode: 'add' | 'edit', eventId?: string } | null>(null);
@@ -46,6 +55,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
   // Usar localStorage-first para todos os dados
   const { data: cultosRaw } = useLocalStorageFirst<any>({ table: 'cultos' });
   const { data: membrosRaw } = useLocalStorageFirst<any>({ table: 'membros' });
+  const { data: membrosMinisteriosRaw } = useLocalStorageFirst<any>({ table: 'membros_ministerios' });
   const { data: escalasRaw } = useLocalStorageFirst<any>({ table: 'escalas' });
   const { data: musicasRaw } = useLocalStorageFirst<any>({ table: 'musicas' });
   const { data: tonsRaw } = useLocalStorageFirst<any>({ table: 'tons' });
@@ -53,6 +63,23 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
   const { data: avisosRaw } = useLocalStorageFirst<any>({ table: 'avisos_cultos' });
   const { data: funcoesRaw } = useLocalStorageFirst<any>({ table: 'funcao' });
   const [loading, setLoading] = useState(true);
+  const memberIdsInMinisterio = new Set(
+    (membrosMinisteriosRaw || [])
+      .filter((membership: any) => membership.ministerio_id === activeMinisterioId && membership.ativo !== false)
+      .map((membership: any) => membership.membro_id)
+  );
+  const scopedMembros = activeMinisterioId
+    ? (membrosRaw || []).filter((member: any) => memberIdsInMinisterio.has(member.id))
+    : membrosRaw;
+  const scopedEscalas = activeMinisterioId
+    ? (escalasRaw || []).filter((escala: any) => escala.ministerio_id === activeMinisterioId)
+    : escalasRaw;
+  const scopedAvisos = activeMinisterioId
+    ? (avisosRaw || []).filter((aviso: any) => aviso.ministerio_id === activeMinisterioId)
+    : avisosRaw;
+  const scopedFuncoes = activeMinisterioId
+    ? (funcoesRaw || []).filter((funcao: any) => funcao.ministerio_id === activeMinisterioId)
+    : funcoesRaw;
 
   // Data states
   const [allRegisteredMembers, setAllRegisteredMembers] = useState<Member[]>([]);
@@ -173,6 +200,21 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const canAccessCurrentMinisterio =
+      Boolean(currentMember) &&
+      (isGlobalAdminOrLeader || memberships.some((membership) => membership.ministerio_id === activeMinisterioId));
+
+    if (currentMember) {
+      setCurrentUser({ id: currentMember.id, name: currentMember.nome });
+    } else {
+      setCurrentUser(null);
+    }
+
+    setIsMember(canAccessCurrentMinisterio);
+    setIsAdminOrLeader(isGlobalAdminOrLeader || canManageCurrentMinisterio);
+  }, [activeMinisterioId, canManageCurrentMinisterio, currentMember, isGlobalAdminOrLeader, memberships]);
+
   // Processamento e Join Local dos dados
   // Função para agrupar membros com múltiplas funções
   const groupMembersByPerson = (escalas: any[]) => {
@@ -229,7 +271,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     setLoading(true);
 
     // 1. Membros
-    const mappedMembers: Member[] = membrosRaw.filter((m: any) => m.ativo).map((m: any) => ({
+    const mappedMembers: Member[] = (scopedMembros || []).filter((m: any) => m.ativo).map((m: any) => ({
       id: m.id,
       name: m.nome,
       role: 'Membro',
@@ -245,16 +287,16 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     setCultoTypes(nomeCultosRaw);
 
     // 3. Músicas e Tons
-    setAllSongs(musicasRaw);
+    setAllSongs(activeModules.includes('music') ? musicasRaw : []);
     setTones(tonsRaw.map((t: any) => t.nome_tons).filter(Boolean));
 
     // 4. Avisos (Notices)
     const noticesByEvent: Record<string, Notice[]> = {};
-    avisosRaw.forEach((n: any) => {
+    (scopedAvisos || []).forEach((n: any) => {
       if (!n.id_cultos) return;
       if (!noticesByEvent[n.id_cultos]) noticesByEvent[n.id_cultos] = [];
       
-      const membro = membrosRaw.find((m: any) => m.id === n.id_membros);
+      const membro = (scopedMembros || []).find((m: any) => m.id === n.id_membros);
       
       noticesByEvent[n.id_cultos].push({
         id: n.id_lembrete,
@@ -277,10 +319,10 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
         const formattedDate = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 
         // Local Join: Escalas
-        const cEscalas = escalasRaw.filter((e: any) => e.id_culto === c.id);
+        const cEscalas = (scopedEscalas || []).filter((e: any) => e.id_culto === c.id);
         const eventMembrosRaw = cEscalas.map((e: any) => {
-          const membro = membrosRaw.find((m: any) => m.id === e.id_membros);
-          const funcao = funcoesRaw.find((f: any) => f.id === e.id_funcao);
+          const membro = (scopedMembros || []).find((m: any) => m.id === e.id_membros);
+          const funcao = (scopedFuncoes || []).find((f: any) => f.id === e.id_funcao);
           return {
             membros: membro,
             funcao: funcao
@@ -309,34 +351,39 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     // We need repertorioRaw for the join
     setEvents(mappedEvents);
     setLoading(false);
-  }, [cultosRaw, membrosRaw, escalasRaw, musicasRaw, nomeCultosRaw, avisosRaw, funcoesRaw]);
+  }, [activeModules, cultosRaw, scopedAvisos, scopedEscalas, scopedFuncoes, scopedMembros, musicasRaw, nomeCultosRaw, tonsRaw, activeMinisterioId]);
 
   // Adicionando Repertório ao Join
   const { data: repertorioRaw } = useLocalStorageFirst<any>({ table: 'repertorio' });
 
   useEffect(() => {
-    if (!events.length || !repertorioRaw) return;
+    if (!repertorioRaw) return;
 
-    const eventsWithRep = events.map(event => {
-      const cRep = repertorioRaw
-        .filter((r: any) => r.id_culto === event.id)
-        .map((r: any) => {
-          const musica = musicasRaw.find((m: any) => m.id === r.id_musicas);
-          const membro = membrosRaw.find((m: any) => m.id === r.id_membros);
-          const tom = tonsRaw.find((t: any) => t.id === r.id_tons);
-          return {
-            id: r.id,
-            musica: musica?.musica,
-            cantor: musica?.cantor,
-            key: tom?.nome_tons || '',
-            minister: membro?.nome || ''
-          };
-        });
-      return { ...event, repertoire: cRep };
-    });
+    setEvents((currentEvents) =>
+      currentEvents.map((event) => {
+        if (!activeModules.includes('music')) {
+          return { ...event, repertoire: [] };
+        }
 
-    setEvents(eventsWithRep);
-  }, [repertorioRaw, musicasRaw, membrosRaw, tonsRaw]);
+        const cRep = repertorioRaw
+          .filter((r: any) => r.id_culto === event.id)
+          .map((r: any) => {
+            const musica = musicasRaw.find((m: any) => m.id === r.id_musicas);
+            const membro = (scopedMembros || []).find((m: any) => m.id === r.id_membros);
+            const tom = tonsRaw.find((t: any) => t.id === r.id_tons);
+            return {
+              id: r.id,
+              musica: musica?.musica,
+              cantor: musica?.cantor,
+              key: tom?.nome_tons || '',
+              minister: membro?.nome || ''
+            };
+          });
+
+        return { ...event, repertoire: cRep };
+      })
+    );
+  }, [activeModules, musicasRaw, repertorioRaw, scopedMembros, tonsRaw, activeMinisterioId]);
 
   // Função para salvar escala usando o service
   const handleSaveScale = async () => {
@@ -387,9 +434,15 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
   };
 
   // Mocked for compatibility (these are now handled by useEffect)
-  const fetchData = async () => {};
-  const fetchNotices = async () => {};
-  const fetchEvents = async () => {};
+  const fetchData = async () => {
+    await LocalStorageFirstService.forceSync();
+  };
+  const fetchNotices = async () => {
+    await LocalStorageFirstService.forceSync('avisos_cultos');
+  };
+  const fetchEvents = async () => {
+    await LocalStorageFirstService.forceSync();
+  };
 
   const handleDeleteScale = async (eventId: string, eventTitle: string) => {
     const userWantsToDelete = await ModalUtils.confirmDelete(
@@ -440,6 +493,56 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     } catch (err) {
       logger.error('Error deleting scale:', err, 'database');
       showError('Erro ao excluir escala. Tente novamente.');
+    }
+  };
+
+  const handleDeleteScaleByMinisterio = async (eventId: string, eventTitle: string) => {
+    const confirmed = await ModalUtils.confirmDelete(
+      eventTitle,
+      'Esta acao ira limpar apenas os dados deste ministerio neste culto. Os outros ministerios nao serao afetados.'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      if (activeModules.includes('music')) {
+        const { error: repertorioError } = await supabase
+          .from('repertorio')
+          .delete()
+          .eq('id_culto', eventId);
+
+        if (repertorioError) {
+          throw repertorioError;
+        }
+      }
+
+      let escalaDelete = supabase.from('escalas').delete().eq('id_culto', eventId);
+      if (activeMinisterioId) {
+        escalaDelete = escalaDelete.eq('ministerio_id', activeMinisterioId);
+      }
+
+      const { error: escalaError } = await escalaDelete;
+      if (escalaError) {
+        throw escalaError;
+      }
+
+      let avisoDelete = supabase.from('avisos_cultos').delete().eq('id_cultos', eventId);
+      if (activeMinisterioId) {
+        avisoDelete = avisoDelete.eq('ministerio_id', activeMinisterioId);
+      }
+
+      const { error: avisoError } = await avisoDelete;
+      if (avisoError) {
+        throw avisoError;
+      }
+
+      showSuccess(`Escala do ministerio em "${eventTitle}" excluida com sucesso!`);
+      fetchEvents();
+    } catch (error) {
+      logger.error('Error deleting ministry scale:', error, 'database');
+      showError('Erro ao excluir a escala deste ministerio.');
     }
   };
 
@@ -663,20 +766,22 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
               onToggle={() => toggleExpand(event.id)}
               activeSubTab={activeSubTabs[event.id] || 'team'}
               onSubTabChange={(tab) => setSubTab(event.id, tab)}
-              onDelete={handleDeleteScale}
+              onDelete={handleDeleteScaleByMinisterio}
               isAdminOrLeader={isAdminOrLeader}
+              showRepertoire={activeModules.includes('music')}
             >
               {activeSubTabs[event.id] === 'team' && (
                 <TeamManager
                   eventId={event.id}
                   members={event.members}
                   allRegisteredMembers={allRegisteredMembers}
-                  isMember={isMember}
+                  isMember={isAdminOrLeader}
+                  ministerioId={activeMinisterioId}
                   onTeamUpdated={fetchEvents}
                 />
               )}
               
-              {activeSubTabs[event.id] === 'repertoire' && (
+              {activeModules.includes('music') && activeSubTabs[event.id] === 'repertoire' && (
                 <RepertoireManager
                   eventId={event.id}
                   repertoire={event.repertoire}
@@ -698,6 +803,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
                   notices={eventNotices[event.id] || []}
                   currentUser={currentUser}
                   isMember={isMember}
+                  ministerioId={activeMinisterioId}
                   onNoticesUpdated={fetchNotices}
                 />
               )}

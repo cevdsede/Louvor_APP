@@ -6,6 +6,12 @@ export type ViewType =
   | 'music-stats' | 'music-list' | 'music-repertoire' | 'music-create' | 'music-history' | 'music-escalas'
   | 'tools-admin' | 'tools-users' | 'tools-approvals' | 'tools-performance';
 
+export interface MinistrySummary {
+  id: string;
+  nome: string;
+  slug: string;
+}
+
 export interface RepertoireItem {
   id: string;
   musica: string;
@@ -52,6 +58,8 @@ export interface Member {
   role: string;
   roles?: string[];
   roleIds?: number[];
+  ministryIds?: string[];
+  ministries?: MinistrySummary[];
   gender: 'M' | 'F';
   status: 'confirmed' | 'pending' | 'absent';
   avatar: string;
@@ -79,5 +87,7 @@ export interface ScheduleEvent {
   time: string;
   members: Member[];
   repertoire: RepertoireItem[];
+  ministryId?: string;
+  ministryName?: string;
 }
 

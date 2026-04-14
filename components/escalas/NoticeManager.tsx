@@ -15,6 +15,7 @@ interface NoticeManagerProps {
   notices: Notice[];
   currentUser: { id: string, name: string } | null;
   isMember: boolean;
+  ministerioId?: string | null;
   onNoticesUpdated: () => void;
 }
 
@@ -23,6 +24,7 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
   notices,
   currentUser,
   isMember,
+  ministerioId,
   onNoticesUpdated
 }) => {
   const [showAddNotice, setShowAddNotice] = useState(false);
@@ -42,7 +44,8 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
       const noticeData = {
         id_cultos: eventId,
         info: noticeText.trim(),
-        id_membros: currentUser.id
+        id_membros: currentUser.id,
+        ministerio_id: ministerioId
       };
 
       if (editingNoticeId) {

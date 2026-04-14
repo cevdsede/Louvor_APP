@@ -115,25 +115,19 @@ class SyncService {
     try {
       console.log(`Sincronizando tabela: ${table}`);
 
-      // Verificar se há dados mais recentes no servidor
-      const lastSync = this.getLastSyncTime(table);
-      
-      let query = supabase.from(table).select('*');
-      
-      // Se houver última sincronização, buscar apenas dados atualizados
-      if (lastSync) {
-        query = query.gte('updated_at', new Date(lastSync).toISOString());
+      // Buscar sempre todos os dados para evitar problemas com colunas de timestamp
+      console.log(`Buscando todos os dados da tabela: ${table}`);
+      const { data, error } = await supabase.from(table).select('*');
+
+      if (error) {
+        console.error(`Erro ao buscar dados da tabela ${table}:`, error);
+        throw error;
       }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
 
       if (data && data.length > 0) {
         // Atualizar cache com os novos dados
         const existingCache = LocalStorageService.get<any[]>(table) || [];
         
-        // Merge dos dados (prioridade para dados mais recentes)
         const mergedData = this.mergeData(existingCache, data);
         
         LocalStorageService.set(table, mergedData);

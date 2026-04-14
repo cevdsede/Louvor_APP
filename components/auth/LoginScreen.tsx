@@ -37,8 +37,25 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
           setError('Erro ao fazer login: ' + error.message);
         }
       } else {
+        const { data: memberData, error: memberError } = await supabase
+          .from('membros')
+          .select('id, ativo, nome')
+          .eq('id', data.user.id)
+          .maybeSingle();
+
+        if (memberError) {
+          logger.warn('Login autenticado, mas nao foi possivel validar o status do membro:', memberError, 'database');
+        }
+
+        if (memberData && memberData.ativo === false) {
+          await supabase.auth.signOut();
+          setError('Seu cadastro ainda esta pendente de aprovacao. Aguarde a liberacao de um administrador.');
+          setIsLoading(false);
+          return;
+        }
+
         LocalStorageFirstService.requestFullSync();
-        setLoadingMessage('Sincronizando dados e imagens...');
+        setLoadingMessage('Preparando acesso...');
 
         try {
           LocalStorageFirstService.init({
@@ -46,15 +63,27 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
             enableBackgroundSync: true,
             priorityLocal: true
           });
-          await LocalStorageFirstService.bootstrapApplication({
-            force: true,
-            preloadImages: true
-          });
+          await LocalStorageFirstService.syncPriorityTables([
+            'membros',
+            'ministerios',
+            'membros_ministerios',
+            'cultos',
+            'escalas',
+            'avisos_cultos',
+            'nome_cultos',
+            'funcao'
+          ]);
         } catch (syncError) {
           logger.warn('Login concluído, mas o bootstrap local falhou. O app continuará com os dados já salvos.', syncError, 'database');
         }
 
         onLogin();
+        void LocalStorageFirstService.bootstrapApplication({
+          force: true,
+          preloadImages: true
+        }).catch((syncError) => {
+          logger.warn('Sincronizacao completa em segundo plano falhou apos o login.', syncError, 'database');
+        });
       }
     } catch (err) {
       setError('Ocorreu um erro inesperado.');

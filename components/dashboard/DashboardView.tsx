@@ -1,9 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../../supabaseClient';
+import { useMinistryContext } from '../../contexts/MinistryContext';
+import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import { ChartInstance } from '../../types-supabase';
 import DashboardService, { ProximaEscala, FrequenciaMembro } from '../../services/DashboardService';
 
 const DashboardView: React.FC = () => {
+  const { activeMinisterio, activeMinisterioId, activeModules } = useMinistryContext();
+  const { data: membrosMinisteriosRaw } = useLocalStorageFirst<any>({ table: 'membros_ministerios' });
   const escalaChartRef = useRef<HTMLCanvasElement>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<ChartInstance | null>(null);
@@ -19,15 +23,23 @@ const DashboardView: React.FC = () => {
   const [frequenciaMembros, setFrequenciaMembros] = useState<FrequenciaMembro[]>([]);
   const [aniversariantes, setAniversariantes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const memberIds = (membrosMinisteriosRaw || [])
+    .filter((membership: any) => membership.ministerio_id === activeMinisterioId && membership.ativo !== false)
+    .map((membership: any) => membership.membro_id);
 
   // Carregar dados do dashboard apenas uma vez ao montar
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [activeMinisterioId, activeModules, membrosMinisteriosRaw]);
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      const scope = {
+        ministerioId: activeMinisterioId,
+        memberIds,
+        canAccessMusic: activeModules.includes('music')
+      };
       let userId: string | null = null;
       const { data: { session } } = await supabase.auth.getSession();
       userId = session?.user?.id ?? null;
@@ -43,12 +55,12 @@ const DashboardView: React.FC = () => {
 
       // Carregar dados em paralelo incluindo versículo diário
       const [totalCultosData, totalMusicasData, totalMembrosData, proximaEscalaData, frequenciaData, niverData, versiculoData] = await Promise.all([
-        DashboardService.getTotalCultos(),
-        DashboardService.getTotalMusicas(),
-        DashboardService.getTotalMembrosAtivos(),
-        userId ? DashboardService.getProximaEscala(userId) : Promise.resolve(null),
-        DashboardService.getFrequenciaPorMembro(),
-        DashboardService.getAniversariantesDoMes(),
+        DashboardService.getTotalCultos(scope),
+        DashboardService.getTotalMusicas(scope),
+        DashboardService.getTotalMembrosAtivos(scope),
+        userId ? DashboardService.getProximaEscala(userId, scope) : Promise.resolve(null),
+        DashboardService.getFrequenciaPorMembro(scope),
+        DashboardService.getAniversariantesDoMes(scope),
         DashboardService.getVersiculoDiario() // Buscar versículo automático
       ]);
 
@@ -421,7 +433,7 @@ const DashboardView: React.FC = () => {
           <div className="text-center">
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white mb-2 tracking-tight">
               Bem-vindo ao <span className="relative">
-                <span className="relative z-10 text-brand-accent font-black">Louvor</span>
+                <span className="relative z-10 text-brand-accent font-black">{activeMinisterio?.nome || 'Ministerio'}</span>
                 <span className="absolute inset-0 bg-brand-accent/20 blur-xl scale-110"></span>
                 <span className="absolute inset-0 bg-brand-accent/10 blur-2xl scale-125"></span>
               </span>
@@ -530,7 +542,12 @@ const DashboardView: React.FC = () => {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-6 bg-brand rounded-full"></div>
-                  <h3 className="text-lg font-black text-slate-800 dark:text-white">Frequência por Membro</h3>
+                  <div>
+                    <h3 className="text-lg font-black text-slate-800 dark:text-white">Frequência por Membro</h3>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      {activeMinisterio?.nome || 'Ministério selecionado'}
+                    </p>
+                  </div>
                 </div>
                 <div className="text-xs text-slate-600 dark:text-slate-400">
                   Últimos 10 meses

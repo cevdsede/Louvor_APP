@@ -1,17 +1,46 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import LocalStorageStatus from './LocalStorageStatus';
-import { clearImageCache, getImageCacheSize } from '../../utils/teamUtils';
+import { clearImageCache, getImageCacheSize, cleanupOrphanedImages } from '../../utils/teamUtils';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
+import SyncService from '../../services/SyncService';
 import { showSuccess, showError } from '../../utils/toast';
 import MultiSelect from '../equipe/MultiSelect';
 import { ImageCache } from '../ui/ImageCache';
 import { compressImageFile } from '../../utils/imageCompression';
-import { ChartInstance, SolicitacaoAprovacao, Funcao } from '../../types-supabase';
+import {
+  ChartInstance,
+  SolicitacaoAprovacao,
+  Funcao,
+  SupabaseMinisterio,
+  SupabaseMembroMinisterio
+} from '../../types-supabase';
+import ApprovalsPanel from './ApprovalsPanel';
+import MinisterioManager from './MinisterioManager';
+import NomeCultosManager from './NomeCultosManager';
+import TemasManager from './TemasManager';
+
+type ToolsSubView = 'tools-admin' | 'tools-users' | 'tools-approvals' | 'tools-performance';
 
 interface ToolsViewProps {
-  subView: 'tools-admin' | 'tools-users' | 'tools-approvals' | 'tools-performance';
+  subView: ToolsSubView;
 }
+
+interface EditingMemberState {
+  id: string;
+  nome?: string;
+  email?: string;
+  telefone?: string;
+  data_nasc?: string;
+  ativo?: boolean;
+  perfil?: string;
+  foto?: string;
+  ministerioIds: string[];
+  principalMinisterioId: string | null;
+}
+
+const isActiveMembership = (membership?: { ativo?: boolean | null } | null) => membership?.ativo !== false;
+const uniqueIds = (ids: string[]) => [...new Set(ids.filter(Boolean))];
 
 const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
   const [loading, setLoading] = useState(true);
@@ -19,8 +48,12 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
   const [editingProfile, setEditingProfile] = useState<string | null>(null);
   const [showCacheManager, setShowCacheManager] = useState(false);
   const [cacheInfo, setCacheInfo] = useState<any>(null);
-  const [editingMember, setEditingMember] = useState<any>(null);
+  const [editingMember, setEditingMember] = useState<EditingMemberState | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [savingMember, setSavingMember] = useState(false);
+  const [ministerios, setMinisterios] = useState<SupabaseMinisterio[]>([]);
+  const [adminSubView, setAdminSubView] = useState<'members' | 'nome-cultos' | 'temas'>('members');
+  const [membrosMinisterios, setMembrosMinisterios] = useState<SupabaseMembroMinisterio[]>([]);
 
   // Estados para Aprovações
   const [solicitacoes, setSolicitacoes] = useState<SolicitacaoAprovacao[]>([]);
@@ -29,8 +62,52 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
   const [funcoesSelecionadas, setFuncoesSelecionadas] = useState<Record<string, string[]>>({});
 
   // Funções para os botões de acesso rápido
+  const hydrateUserManagementState = () => {
+    const membersData = LocalStorageFirstService.get<any>('membros');
+    const ministeriosData = LocalStorageFirstService.get<SupabaseMinisterio>('ministerios');
+    const membrosMinisteriosData = LocalStorageFirstService.get<SupabaseMembroMinisterio>('membros_ministerios');
+
+    setData(Array.isArray(membersData) ? membersData : []);
+    setMinisterios(Array.isArray(ministeriosData) ? ministeriosData : []);
+    setMembrosMinisterios(Array.isArray(membrosMinisteriosData) ? membrosMinisteriosData : []);
+  };
+
+  const syncUserManagementState = async () => {
+    if (!navigator.onLine) {
+      hydrateUserManagementState();
+      return;
+    }
+
+    await Promise.allSettled([
+      LocalStorageFirstService.forceSync('membros'),
+      LocalStorageFirstService.forceSync('ministerios'),
+      LocalStorageFirstService.forceSync('membros_ministerios')
+    ]);
+
+    hydrateUserManagementState();
+  };
+
+  const getMemberMemberships = (memberId: string) =>
+    membrosMinisterios.filter(
+      (membership) => membership.membro_id === memberId && isActiveMembership(membership)
+    );
+
+  const getMemberMinisterios = (memberId: string) => {
+    const memberMinisterioIds = new Set(getMemberMemberships(memberId).map((membership) => membership.ministerio_id));
+    return ministerios.filter((ministerio) => memberMinisterioIds.has(ministerio.id));
+  };
+
   const handleEditMember = (member: any) => {
-    setEditingMember(member);
+    const memberships = getMemberMemberships(member.id);
+    const ministerioIds = uniqueIds(memberships.map((membership) => membership.ministerio_id));
+    const principalMinisterioId =
+      memberships.find((membership) => membership.principal)?.ministerio_id || ministerioIds[0] || null;
+
+    setEditingMember({
+      ...member,
+      ministerioIds,
+      principalMinisterioId
+    });
   };
 
   const handlePhotoUpload = async (file: File) => {
@@ -74,8 +151,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
       LocalStorageFirstService.update('membros', memberId, { perfil: newProfile });
       
       // Recarregar dados
-      const membersData = LocalStorageFirstService.get<any>('membros');
-      setData(membersData || []);
+      hydrateUserManagementState();
       
       setEditingProfile(null); // Fechar o dropdown
       console.log(`Perfil atualizado para ${newProfile} com sucesso`);
@@ -92,8 +168,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
       LocalStorageFirstService.update('membros', member.id, { ativo: newStatus });
       
       // Recarregar dados
-      const membersData = LocalStorageFirstService.get<any>('membros');
-      setData(membersData || []);
+      hydrateUserManagementState();
       
       console.log(`Membro ${member.nome} ${newStatus ? 'ativado' : 'desativado'} com sucesso`);
     } catch (error) {
@@ -101,27 +176,104 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
     }
   };
 
-  const handleSaveMember = async (updatedMember: any) => {
+  const handleEditingMemberMinisteriosChange = (ministerioIds: string[]) => {
+    if (!editingMember) return;
+
+    const nextMinisterioIds = uniqueIds(ministerioIds);
+    const nextPrincipalId =
+      editingMember.principalMinisterioId && nextMinisterioIds.includes(editingMember.principalMinisterioId)
+        ? editingMember.principalMinisterioId
+        : nextMinisterioIds[0] || null;
+
+    setEditingMember({
+      ...editingMember,
+      ministerioIds: nextMinisterioIds,
+      principalMinisterioId: nextPrincipalId
+    });
+  };
+
+  const handleSaveMember = async (updatedMember: EditingMemberState) => {
     try {
-      // Atualizar usando LocalStorageFirstService
-      LocalStorageFirstService.update('membros', updatedMember.id, {
-        nome: updatedMember.nome,
-        email: updatedMember.email,
-        telefone: updatedMember.telefone,
-        data_nasc: updatedMember.data_nasc,
-        ativo: updatedMember.ativo,
-        perfil: updatedMember.perfil,
-        foto: updatedMember.foto
-      });
-      
-      // Recarregar dados
-      const membersData = LocalStorageFirstService.get<any>('membros');
-      setData(membersData || []);
-      
+      setSavingMember(true);
+
+      const desiredMinisterioIds = uniqueIds(updatedMember.ministerioIds || []);
+      const principalMinisterioId =
+        updatedMember.principalMinisterioId && desiredMinisterioIds.includes(updatedMember.principalMinisterioId)
+          ? updatedMember.principalMinisterioId
+          : desiredMinisterioIds[0] || null;
+
+      const currentMemberships = membrosMinisterios.filter(
+        (membership) => membership.membro_id === updatedMember.id
+      );
+
+      const { error: memberError } = await supabase
+        .from('membros')
+        .update({
+          nome: updatedMember.nome,
+          email: updatedMember.email,
+          telefone: updatedMember.telefone,
+          data_nasc: updatedMember.data_nasc,
+          ativo: updatedMember.ativo,
+          perfil: updatedMember.perfil,
+          foto: updatedMember.foto
+        })
+        .eq('id', updatedMember.id);
+
+      if (memberError) throw memberError;
+
+      const membershipsToDelete = currentMemberships.filter(
+        (membership) => !desiredMinisterioIds.includes(membership.ministerio_id)
+      );
+
+      if (membershipsToDelete.length > 0) {
+        const membershipIds = membershipsToDelete.map((membership) => membership.id).filter(Boolean);
+
+        if (membershipIds.length > 0) {
+          const { error: deleteError } = await supabase
+            .from('membros_ministerios')
+            .delete()
+            .in('id', membershipIds);
+
+          if (deleteError) throw deleteError;
+        }
+      }
+
+      for (const ministerioId of desiredMinisterioIds) {
+        const existingMembership = currentMemberships.find(
+          (membership) => membership.ministerio_id === ministerioId
+        );
+        const payload = {
+          membro_id: updatedMember.id,
+          ministerio_id: ministerioId,
+          principal: ministerioId === principalMinisterioId,
+          ativo: true
+        };
+
+        if (existingMembership?.id) {
+          const { error: updateMembershipError } = await supabase
+            .from('membros_ministerios')
+            .update(payload)
+            .eq('id', existingMembership.id);
+
+          if (updateMembershipError) throw updateMembershipError;
+        } else {
+          const { error: insertMembershipError } = await supabase
+            .from('membros_ministerios')
+            .insert(payload);
+
+          if (insertMembershipError) throw insertMembershipError;
+        }
+      }
+
+      await syncUserManagementState();
+
       setEditingMember(null);
-      console.log('Membro atualizado com sucesso');
+      showSuccess('Membro atualizado com sucesso.');
     } catch (error) {
       console.error('Erro ao atualizar membro:', error);
+      showError('Nao foi possivel atualizar o membro.');
+    } finally {
+      setSavingMember(false);
     }
   };
 
@@ -137,11 +289,11 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
     try {
       const { data, error } = await supabase
         .from('funcao')
-        .select('id, nome_funcao')
+        .select('id, nome_funcao, created_at')
         .order('nome_funcao');
 
       if (error) throw error;
-      setFuncoes(data || []);
+      setFuncoes(data?.map(f => ({ id: f.id.toString(), nome_funcao: f.nome_funcao, created_at: f.created_at })) || []);
     } catch (error) {
       console.error('Erro ao buscar funções:', error);
     }
@@ -157,13 +309,21 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
           user_id,
           status,
           created_at,
-          membros(id, nome, email, foto, genero)
+          nome,
+          email,
+          aprovado
         `)
         .eq('status', 'pendente')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setSolicitacoes(data || []);
+      setSolicitacoes(data?.map(s => ({
+        id: s.id,
+        nome: s.nome || '',
+        email: s.email || '',
+        status: s.status,
+        createdAt: s.created_at
+      })) || []);
       
       // Inicializar funções selecionadas para cada solicitação
       const inicialFuncoes: Record<string, string[]> = {};
@@ -191,7 +351,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
       await supabase
         .from('solicitacoes_membro')
         .update({ status: 'aprovado' })
-        .eq('user_id', userId);
+        .eq('id', userId);
 
       // Recarregar solicitações
       await fetchSolicitacoes();
@@ -227,12 +387,8 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
             });
             break;
           case 'tools-users':
-            // Buscar dados usando LocalStorageFirstService para consistência
-            const membersData = LocalStorageFirstService.get<any>('membros');
-            setData(membersData || []);
-            
-            // Tentar sincronizar em background
-            LocalStorageFirstService.forceSync('membros').catch(() => {});
+            hydrateUserManagementState();
+            syncUserManagementState().catch(() => {});
             break;
           case 'tools-approvals':
             // Carregar dados reais de aprovações
@@ -242,6 +398,12 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
             break;
           case 'tools-performance':
             setData({
+              // Dados administrativos
+              systemStatus: 'online',
+              lastBackup: '2024-02-06 14:30',
+              databaseSize: '2.4 GB',
+              activeUsers: 12,
+              // Dados de desempenho
               totalRequests: 15420,
               avgResponseTime: '120ms',
               errorRate: '0.2%',
@@ -276,10 +438,15 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
     );
   }
 
+  if (subView === 'tools-approvals') {
+    return <ApprovalsPanel />;
+  }
+
   const adminCards = [
     {
       title: 'Status do Sistema',
       value: data?.systemStatus || 'Carregando...',
+      detail: 'Servicos essenciais respondendo',
       icon: 'fas fa-server',
       iconWrapClass: 'bg-emerald-100 dark:bg-emerald-900/30',
       iconClass: 'text-emerald-600 dark:text-emerald-400',
@@ -289,6 +456,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
     {
       title: 'Tamanho do BD',
       value: data?.databaseSize || 'Carregando...',
+      detail: 'Monitoramento do armazenamento',
       icon: 'fas fa-database',
       iconWrapClass: 'bg-blue-100 dark:bg-blue-900/30',
       iconClass: 'text-blue-600 dark:text-blue-400',
@@ -299,6 +467,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
     {
       title: 'Usuários Ativos',
       value: data?.activeUsers || 'Carregando...',
+      detail: 'Base pronta para gerenciamento',
       icon: 'fas fa-users',
       iconWrapClass: 'bg-purple-100 dark:bg-purple-900/30',
       iconClass: 'text-purple-600 dark:text-purple-400',
@@ -309,6 +478,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
     {
       title: 'Último Backup',
       value: data?.lastBackup || 'Carregando...',
+      detail: 'Historico recente protegido',
       icon: 'fas fa-clock',
       iconWrapClass: 'bg-amber-100 dark:bg-amber-900/30',
       iconClass: 'text-amber-600 dark:text-amber-400',
@@ -318,177 +488,110 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
     }
   ];
 
+  const membersData = Array.isArray(data) ? data : [];
+  const activeUsersCount = membersData.filter((member: any) => member.ativo).length;
+  const usersWithoutMinisterio = membersData.filter((member: any) => getMemberMinisterios(member.id).length === 0).length;
+  const usersInMultipleMinisterios = membersData.filter((member: any) => getMemberMinisterios(member.id).length > 1).length;
+
   const renderContent = () => {
-    switch (subView) {
+    switch (subView as ToolsSubView) {
       case 'tools-admin':
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter">Painel Administrativo</h2>
             
-            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
-              {adminCards.map((card) => (
-                <div
-                  key={card.title}
-                  className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 group aspect-square"
+            {/* Navegação entre sub-views de administração */}
+            <div className="border-b border-slate-200 dark:border-slate-700 mb-6">
+              {/* Desktop: Navegação horizontal completa */}
+              <div className="hidden md:flex gap-2 overflow-x-auto">
+                <button
+                  onClick={() => setAdminSubView('members')}
+                  className={`px-4 py-2 font-black text-sm uppercase tracking-widest transition-colors border-b-2 whitespace-nowrap ${
+                    adminSubView === 'members'
+                      ? 'text-brand border-brand'
+                      : 'text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
                 >
-                  <div className="flex h-full flex-col">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center shadow-sm ${card.iconWrapClass}`}>
-                        <i className={`${card.icon} ${card.iconClass} text-base sm:text-xl`}></i>
-                      </div>
-
-                      {card.metaType === 'pulse' ? (
-                        <div className={`mt-1 shrink-0 ${card.metaClass}`}></div>
-                      ) : (
-                        <i className={`${card.metaIcon} ${card.metaClass} text-sm sm:text-base shrink-0`}></i>
-                      )}
-                    </div>
-
-                    <div className="mt-auto pt-4">
-                      <p className="text-[10px] sm:text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-normal sm:tracking-wider leading-tight mb-1.5">
-                        {card.title}
-                      </p>
-                      <p className="text-sm sm:text-lg font-black text-slate-800 dark:text-white leading-tight break-words group-hover:text-brand transition-colors">
-                        {card.value}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/*
-              <>
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center">
-                    <i className="fas fa-server text-emerald-600 dark:text-emerald-400 text-xl"></i>
-                  </div>
-                  <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
-                </div>
-                <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Status do Sistema</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">{data?.systemStatus || 'Carregando...'}</p>
-              </div>
-
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-xl flex items-center justify-center">
-                    <i className="fas fa-database text-blue-600 dark:text-blue-400 text-xl"></i>
-                  </div>
-                  <i className="fas fa-chart-line text-blue-500"></i>
-                </div>
-                <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Tamanho do BD</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">{data?.databaseSize || 'Carregando...'}</p>
-              </div>
-
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-xl flex items-center justify-center">
-                    <i className="fas fa-users text-purple-600 dark:text-purple-400 text-xl"></i>
-                  </div>
-                  <i className="fas fa-user-check text-purple-500"></i>
-                </div>
-                <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Usuários Ativos</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">{data?.activeUsers || 'Carregando...'}</p>
-              </div>
-
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/20 rounded-xl flex items-center justify-center">
-                    <i className="fas fa-clock text-amber-600 dark:text-amber-400 text-xl"></i>
-                  </div>
-                  <i className="fas fa-history text-amber-500"></i>
-                </div>
-                <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Último Backup</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">{data?.lastBackup || 'Carregando...'}</p>
-              </div>
-              </>
-            */}
-
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
-              <h3 className="text-lg font-black text-slate-800 dark:text-white mb-4">Ações Rápidas</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button className="px-4 py-3 bg-brand text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-brand/90 transition-colors">
-                  <i className="fas fa-sync-alt mr-2"></i> Sincronizar Dados
+                  <i className="fas fa-users mr-2"></i> Membros
                 </button>
-                <button className="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-                  <i className="fas fa-download mr-2"></i> Backup Manual
-                </button>
-                <button 
-                  onClick={() => {
-                    setShowCacheManager(true);
-                    setCacheInfo(getImageCacheSize());
-                  }}
-                  className="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                <button
+                  onClick={() => setAdminSubView('nome-cultos')}
+                  className={`px-4 py-2 font-black text-sm uppercase tracking-widest transition-colors border-b-2 whitespace-nowrap ${
+                    adminSubView === 'nome-cultos'
+                      ? 'text-brand border-brand'
+                      : 'text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
                 >
-                  <i className="fas fa-broom mr-2"></i> Gerenciar Cache
+                  <i className="fas fa-church mr-2"></i> Nomes de Cultos
                 </button>
+                <button
+                  onClick={() => setAdminSubView('temas')}
+                  className={`px-4 py-2 font-black text-sm uppercase tracking-widest transition-colors border-b-2 whitespace-nowrap ${
+                    adminSubView === 'temas'
+                      ? 'text-brand border-brand'
+                      : 'text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                >
+                  <i className="fas fa-music mr-2"></i> Temas
+                </button>
+              </div>
+
+              {/* Mobile: Navegação vertical compacta */}
+              <div className="md:hidden">
+                <select
+                  value={adminSubView}
+                  onChange={(e) => setAdminSubView(e.target.value as any)}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-black text-sm focus:ring-2 focus:ring-brand focus:border-transparent"
+                >
+                  <option value="members">
+                    👥 Membros
+                  </option>
+                  <option value="nome-cultos">
+                    ⛪ Nomes de Cultos
+                  </option>
+                  <option value="temas">
+                    🎵 Temas
+                  </option>
+                </select>
               </div>
             </div>
 
-            {/* Gerenciador de Cache */}
-            {showCacheManager && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6 max-w-md w-full">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-black text-slate-800 dark:text-white">Gerenciador de Cache</h3>
-                    <button 
-                      onClick={() => setShowCacheManager(false)}
-                      className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    >
-                      <i className="fas fa-times text-slate-500"></i>
-                    </button>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
-                      <h4 className="font-black text-slate-700 dark:text-slate-300 mb-2">Status do Cache</h4>
-                      <div className="space-y-1 text-sm">
-                        <p><span className="font-medium">Imagens armazenadas:</span> {cacheInfo?.count || 0}</p>
-                        <p><span className="font-medium">Espaço usado:</span> {cacheInfo?.sizeMB || 0} MB</p>
-                        <p><span className="font-medium">Limite aproximado:</span> 5-10 MB</p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button 
-                        onClick={() => {
-                          const cleared = clearImageCache();
-                          setCacheInfo(getImageCacheSize());
-                          alert(`Cache limpo! ${cleared} imagens removidas.`);
-                        }}
-                        className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-red-600 transition-colors"
-                      >
-                        <i className="fas fa-trash mr-2"></i> Limpar Tudo
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setCacheInfo(getImageCacheSize());
-                        }}
-                        className="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                      >
-                        <i className="fas fa-sync mr-2"></i> Atualizar
-                      </button>
-                    </div>
-
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      O cache armazena imagens dos membros para uso offline. Imagens grandes (&gt;500KB) não são armazenadas automaticamente.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Renderizar o componente correspondente */}
+            {adminSubView === 'members' && <MinisterioManager />}
+            {adminSubView === 'nome-cultos' && <NomeCultosManager />}
+            {adminSubView === 'temas' && <TemasManager />}
           </div>
         );
 
       case 'tools-users':
         return (
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
               <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter">Gerenciamento de Usuários</h2>
-              <button className="px-4 py-2 bg-brand text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-brand/90 transition-colors">
-                <i className="fas fa-plus mr-2"></i> Novo Usuário
+              <button
+                onClick={() => syncUserManagementState().catch(() => showError('Nao foi possivel atualizar a lista.'))}
+                className="px-4 py-2 bg-brand text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-brand/90 transition-colors"
+              >
+                <i className="fas fa-rotate mr-2"></i> Atualizar Lista
               </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Usuarios Ativos</p>
+                <p className="text-2xl font-black text-slate-800 dark:text-white">{activeUsersCount}</p>
+                <p className="text-xs text-slate-500 mt-1">Membros liberados para usar o app.</p>
+              </div>
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Sem Ministerio</p>
+                <p className="text-2xl font-black text-slate-800 dark:text-white">{usersWithoutMinisterio}</p>
+                <p className="text-xs text-slate-500 mt-1">Membros que ainda precisam ser vinculados.</p>
+              </div>
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Multiministerio</p>
+                <p className="text-2xl font-black text-slate-800 dark:text-white">{usersInMultipleMinisterios}</p>
+                <p className="text-xs text-slate-500 mt-1">Pessoas participando de mais de um time.</p>
+              </div>
             </div>
 
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
@@ -497,14 +600,19 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                   <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Nome</th>
-                      <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Ministerios</th>
                       <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Perfil</th>
+                      <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Status</th>
                       <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Contato</th>
                       <th className="px-6 py-3 text-center text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {Array.isArray(data) && data.map((member: any) => (
+                    {membersData.map((member: any) => {
+                      const memberMinisterios = getMemberMinisterios(member.id);
+                      const principalMinisterioId = getMemberMemberships(member.id).find((membership) => membership.principal)?.ministerio_id;
+
+                      return (
                       <tr key={member.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex items-center">
@@ -530,13 +638,29 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`px-2 py-1 text-xs font-black rounded-full ${
-                            member.ativo 
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400' 
-                              : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                          }`}>
-                            {member.ativo ? 'Ativo' : 'Inativo'}
-                          </span>
+                          <div className="flex flex-wrap gap-2 max-w-sm">
+                            {memberMinisterios.length > 0 ? (
+                              memberMinisterios.map((ministerio) => (
+                                <span
+                                  key={ministerio.id}
+                                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black ${
+                                    ministerio.id === principalMinisterioId
+                                      ? 'bg-brand text-white'
+                                      : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                  }`}
+                                >
+                                  {ministerio.nome}
+                                  {ministerio.id === principalMinisterioId && (
+                                    <span className="text-[9px] uppercase tracking-wider opacity-80">Principal</span>
+                                  )}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+                                Sem ministerio
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           {editingProfile === member.id ? (
@@ -574,6 +698,15 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                               </div>
                             </div>
                           )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-1 text-xs font-black rounded-full ${
+                            member.ativo
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400'
+                              : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                          }`}>
+                            {member.ativo ? 'Ativo' : 'Inativo'}
+                          </span>
                         </td>
                         <td className="px-6 py-4">
                           <div className="space-y-1">
@@ -614,7 +747,8 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -623,79 +757,50 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
         );
 
       case 'tools-approvals':
-        return (
-          <div className="space-y-6 pb-20">
-            <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-sm border border-slate-100 dark:border-slate-800">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter uppercase">Aprovações</h2>
-                <div className="text-sm text-slate-500">
-                  {solicitacoes.length} solicitação{solicitacoes.length !== 1 ? 's' : ''} pendente{solicitacoes.length !== 1 ? 's' : ''}
-                </div>
-              </div>
-
-              {loadingAprovacoes ? (
-                <div className="flex flex-col items-center justify-center py-20">
-                  <div className="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
-                  <p className="mt-4 text-slate-400 font-bold uppercase tracking-widest text-[9px]">Carregando solicitações...</p>
-                </div>
-              ) : solicitacoes.length === 0 ? (
-                <div className="text-center py-20">
-                  <i className="fas fa-check-circle text-4xl text-green-500 mb-4"></i>
-                  <p className="text-slate-400 font-bold uppercase tracking-widest text-[9px]">Nenhuma solicitação pendente</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {solicitacoes.map(solicitacao => (
-                    <div key={solicitacao.id} className="bg-slate-50 dark:bg-slate-800 rounded-xl p-6 border border-slate-100 dark:border-slate-700">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-4">
-                          <ImageCache
-                            src={solicitacao.membros?.foto || `https://ui-avatars.com/api/?name=${solicitacao.membros?.nome}&background=random`}
-                            alt={solicitacao.membros?.nome || 'Solicitante'}
-                            className="w-12 h-12 rounded-full border-2 border-slate-200 dark:border-slate-700"
-                          />
-                          <div>
-                            <h3 className="font-black text-slate-800 dark:text-white">{solicitacao.membros?.nome}</h3>
-                            <p className="text-sm text-slate-500">{solicitacao.membros?.email}</p>
-                          </div>
-                        </div>
-                        <span className="text-xs text-slate-400">
-                          {new Date(solicitacao.created_at).toLocaleDateString('pt-BR')}
-                        </span>
-                      </div>
-                      
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                          Selecionar funções:
-                        </label>
-                        <MultiSelect
-                          options={funcoes.map(f => ({ id: f.id, label: f.nome_funcao }))}
-                          value={funcoesSelecionadas[solicitacao.id] || []}
-                          onChange={(value) => handleFuncoesChange(solicitacao.id, value)}
-                        />
-                      </div>
-                      
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => aprovarMembro(solicitacao.user_id, funcoesSelecionadas[solicitacao.id] || [])}
-                          className="flex-1 py-2 bg-brand text-white rounded-lg font-medium hover:bg-brand/600 transition-colors"
-                        >
-                          Aprovar
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        );
+        return <ApprovalsPanel />;
 
       case 'tools-performance':
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter">Desempenho do Sistema</h2>
 
+            {/* Cards do Painel Administrativo */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+              {adminCards.map((card) => (
+                <div
+                  key={card.title}
+                  className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 group"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-sm shrink-0 ${card.iconWrapClass}`}>
+                        <i className={`${card.icon} ${card.iconClass} text-lg`}></i>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider leading-tight mb-1">
+                          {card.title}
+                        </p>
+                        <p className="text-base sm:text-lg font-black text-slate-800 dark:text-white leading-tight break-words group-hover:text-brand transition-colors">
+                          {card.value}
+                        </p>
+                      </div>
+                    </div>
+
+                    {card.metaType === 'pulse' ? (
+                      <div className={`mt-1 shrink-0 ${card.metaClass}`}></div>
+                    ) : (
+                      <i className={`${card.metaIcon} ${card.metaClass} text-sm sm:text-base shrink-0`}></i>
+                    )}
+                  </div>
+
+                  <p className="mt-3 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    {card.detail}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between mb-4">
@@ -752,11 +857,220 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
               </div>
             </div>
 
-            {/* Status do LocalStorage-First */}
-            <div className="mt-6">
-              <h3 className="text-lg font-black text-slate-800 dark:text-white mb-4">Status do Cache Local</h3>
-              <LocalStorageStatus />
+            {/* Ações e Cache */}
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
+              <h3 className="text-lg font-black text-slate-800 dark:text-white mb-4">Ações e Cache</h3>
+              
+              {/* Ações Rápidas */}
+              <div className="mb-6">
+                <h4 className="text-sm font-black text-slate-700 dark:text-slate-300 mb-3">Ações Rápidas</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <button 
+                    onClick={() => {
+                      // Implementar sincronização de dados
+                      SyncService.forceSync().then(() => {
+                        showSuccess('Dados sincronizados com sucesso!');
+                      }).catch(() => {
+                        showError('Erro ao sincronizar dados.');
+                      });
+                    }}
+                    className="px-4 py-3 bg-brand text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-brand/90 transition-colors"
+                  >
+                    <i className="fas fa-sync-alt mr-2"></i> Sincronizar Dados
+                  </button>
+                  <button 
+                    onClick={() => {
+                      // Verificar localStorage primeiro
+                      console.log('🔍 Verificando localStorage...');
+                      const allKeys = Object.keys(localStorage);
+                      console.log('📋 Chaves encontradas:', allKeys);
+                      allKeys.forEach(key => {
+                        const value = localStorage.getItem(key);
+                        console.log(`📁 ${key}:`, value ? `${value.substring(0, 100)}${value.length > 100 ? '...' : ''}` : 'vazio');
+                      });
+                      
+                      // Implementar backup manual
+                      try {
+                        const allData: any = {
+                          timestamp: new Date().toISOString(),
+                          data: {},
+                          localStorageKeys: [],
+                          totalKeys: 0
+                        };
+
+                        // Coletar TODOS os dados do localStorage
+                        const allKeys = Object.keys(localStorage);
+                        allData.totalKeys = allKeys.length;
+                        allData.localStorageKeys = allKeys;
+
+                        // Tabelas principais para organizar
+                        const mainTables = [
+                          'membros', 'cultos', 'eventos', 'musicas', 
+                          'escalas', 'avisos_cultos', 'repertorio', 
+                          'funcao', 'temas', 'tons', 'nome_cultos',
+                          'ministerios', 'membros_ministerios', 'membros_funcoes',
+                          'historico_musicas', 'limpeza', 'solicitacoes_membro',
+                          'aviso_geral', 'presenca_consagracao'
+                        ];
+
+                        // Coletar dados das tabelas principais
+                        mainTables.forEach(table => {
+                          const data = localStorage.getItem(table);
+                          if (data) {
+                            try {
+                              const parsedData = JSON.parse(data);
+                              allData.data[table] = parsedData;
+                              console.log(`✅ Encontrados ${parsedData.length || 0} registros na tabela: ${table}`);
+                            } catch (parseError) {
+                              console.warn(`⚠️ Erro ao parsear tabela ${table}:`, parseError);
+                              allData.data[table] = null;
+                            }
+                          } else {
+                            console.log(`❌ Tabela não encontrada no localStorage: ${table}`);
+                          }
+                        });
+
+                        // Adicionar outras chaves encontradas
+                        const otherKeys = allKeys.filter(key => !mainTables.includes(key));
+                        if (otherKeys.length > 0) {
+                          allData.data.outras_chaves = {};
+                          otherKeys.forEach(key => {
+                            const value = localStorage.getItem(key);
+                            if (value) {
+                              try {
+                                allData.data.outras_chaves[key] = JSON.parse(value);
+                              } catch {
+                                allData.data.outras_chaves[key] = value;
+                              }
+                            }
+                          });
+                        }
+
+                        console.log('📊 Resumo do backup:', {
+                          tabelasEncontradas: Object.keys(allData.data).length,
+                          totalKeys: allKeys.length,
+                          outrasChaves: otherKeys.length
+                        });
+
+                        // Criar e baixar arquivo JSON
+                        const blob = new Blob([JSON.stringify(allData, null, 2)], {
+                          type: 'application/json'
+                        });
+                        
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `louvor_backup_${new Date().toISOString().split('T')[0]}.json`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+
+                        showSuccess('Backup realizado com sucesso!');
+                      } catch (error) {
+                        console.error('Erro ao realizar backup:', error);
+                        showError('Erro ao realizar backup. Tente novamente.');
+                      }
+                    }}
+                    className="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <i className="fas fa-download mr-2"></i> Backup Manual (Ver Console)
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowCacheManager(true);
+                      setCacheInfo(getImageCacheSize());
+                    }}
+                    className="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <i className="fas fa-broom mr-2"></i> Gerenciar Cache
+                  </button>
+                </div>
+              </div>
+              
+              {/* Status do Cache Local */}
+              <div>
+                <h4 className="text-sm font-black text-slate-700 dark:text-slate-300 mb-3">Status do Cache Local</h4>
+                <LocalStorageStatus />
+              </div>
             </div>
+
+            {/* Gerenciador de Cache */}
+            {showCacheManager && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6 max-w-md w-full">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-black text-slate-800 dark:text-white">Gerenciador de Cache</h3>
+                    <button 
+                      onClick={() => setShowCacheManager(false)}
+                      className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      <i className="fas fa-times text-slate-500"></i>
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+                      <h4 className="font-black text-slate-700 dark:text-slate-300 mb-2">Status do Cache</h4>
+                      <div className="space-y-1 text-sm">
+                        <p><span className="font-medium">Imagens armazenadas:</span> {cacheInfo?.count || 0}</p>
+                        <p><span className="font-medium">Espaço usado:</span> {cacheInfo?.sizeMB || 0} MB</p>
+                        <p><span className="font-medium">Limite aproximado:</span> 5-10 MB</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex gap-3">
+                        <button 
+                          onClick={() => {
+                            const cleared = clearImageCache();
+                            setCacheInfo(getImageCacheSize());
+                            alert(`Cache limpo! ${cleared} imagens removidas.`);
+                          }}
+                          className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-red-600 transition-colors"
+                        >
+                          <i className="fas fa-trash mr-2"></i> Limpar Tudo
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setCacheInfo(getImageCacheSize());
+                          }}
+                          className="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                        >
+                          <i className="fas fa-sync mr-2"></i> Atualizar
+                        </button>
+                      </div>
+                      
+                      <button 
+                        onClick={() => {
+                          try {
+                            // Obter URLs atuais dos membros
+                            const membros = JSON.parse(localStorage.getItem('membros') || '[]');
+                            const memberUrls = membros
+                              .filter((m: any) => m.foto && m.foto.startsWith('http'))
+                              .map((m: any) => m.foto);
+                            
+                            const cleared = cleanupOrphanedImages(memberUrls);
+                            setCacheInfo(getImageCacheSize());
+                            showSuccess(`${cleared} imagens órfãs removidas!`);
+                          } catch (error) {
+                            console.error('Erro ao limpar imagens órfãs:', error);
+                            showError('Erro ao limpar imagens órfãs.');
+                          }
+                        }}
+                        className="w-full px-4 py-3 bg-orange-500 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-orange-600 transition-colors"
+                      >
+                        <i className="fas fa-broom mr-2"></i> Limpar Órfãs
+                      </button>
+                    </div>
+
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      O cache armazena imagens dos membros para uso offline. Imagens grandes (&gt;500KB) não são armazenadas automaticamente.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
 
@@ -884,13 +1198,63 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                     <option value="inativo">Inativo</option>
                   </select>
                 </div>
+                <div className="md:col-span-2">
+                  <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/40 p-4">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div>
+                        <label className="block text-sm font-black text-slate-700 dark:text-slate-300">Ministerios</label>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                          Adicione ou remova os ministerios em que este membro pode atuar.
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+                        {(editingMember.ministerioIds || []).length} selecionado(s)
+                      </span>
+                    </div>
+
+                    <MultiSelect
+                      options={ministerios.map((ministerio) => ({
+                        id: ministerio.id,
+                        label: ministerio.nome
+                      }))}
+                      value={editingMember.ministerioIds || []}
+                      onChange={handleEditingMemberMinisteriosChange}
+                      placeholder="Selecione os ministerios..."
+                    />
+                  </div>
+                </div>
+
+                {(editingMember.ministerioIds || []).length > 0 && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Ministerio principal</label>
+                    <select
+                      value={editingMember.principalMinisterioId || ''}
+                      onChange={(e) => setEditingMember({ ...editingMember, principalMinisterioId: e.target.value || null })}
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                    >
+                      {(editingMember.ministerioIds || []).map((ministerioId) => {
+                        const ministerio = ministerios.find((item) => item.id === ministerioId);
+
+                        return (
+                          <option key={ministerioId} value={ministerioId}>
+                            {ministerio?.nome || 'Ministerio'}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                      Este ministerio sera usado como contexto inicial do membro no app.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Botões de Ação */}
               <div className="flex gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
                 <button 
                   onClick={() => handleSaveMember(editingMember)}
-                  className="flex-1 px-4 py-3 bg-brand text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-brand/90 transition-colors"
+                  disabled={savingMember}
+                  className="flex-1 px-4 py-3 bg-brand text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-brand/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <i className="fas fa-save mr-2"></i> Salvar Alterações
                 </button>
@@ -910,3 +1274,4 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
 };
 
 export default ToolsView;
+

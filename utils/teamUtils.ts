@@ -53,6 +53,39 @@ export const clearImageCache = () => {
   }
 };
 
+// Função para limpar imagens órfãs do cache
+export const cleanupOrphanedImages = (currentMemberUrls: string[]) => {
+  try {
+    const allCacheKeys = Object.keys(localStorage).filter(key => key.startsWith('image_cache_'));
+    const validKeys = new Set<string>();
+    
+    // Gerar chaves válidas baseadas nas URLs atuais dos membros
+    currentMemberUrls.forEach(url => {
+      if (url && url.startsWith('http')) {
+        const keyBase = `image_cache_${btoa(url)}`;
+        // Encontrar todas as variações dessa URL (com timestamps diferentes)
+        const variations = allCacheKeys.filter(key => key.startsWith(keyBase));
+        variations.forEach(key => validKeys.add(key));
+      }
+    });
+    
+    // Remover chaves órfãs
+    const orphanedKeys = allCacheKeys.filter(key => !validKeys.has(key));
+    let removedCount = 0;
+    
+    orphanedKeys.forEach(key => {
+      localStorage.removeItem(key);
+      removedCount++;
+    });
+    
+    console.log(`Limpeza de cache: ${removedCount} imagens órfãs removidas`);
+    return removedCount;
+  } catch (error) {
+    console.warn('Erro ao limpar imagens órfãs:', error);
+    return 0;
+  }
+};
+
 // Função para verificar espaço usado pelo cache
 export const getImageCacheSize = () => {
   try {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { ImageCache } from '../ui/ImageCache';
+import { useMinistryContext } from '../../contexts/MinistryContext';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import { ViewType } from '../../types';
 
@@ -25,6 +26,13 @@ const Sidebar: React.FC<SidebarProps> = ({
   isProfileModalOpen,
   setIsProfileModalOpen
 }) => {
+  const {
+    activeMinisterioId,
+    activeModules,
+    isGlobalAdminOrLeader,
+    setActiveMinisterioId,
+    userMinisterios
+  } = useMinistryContext();
   const [isThemeExpanded, setIsThemeExpanded] = useState(false);
   const [profileData, setProfileData] = useState({
     name: 'Usuário',
@@ -284,6 +292,15 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const themeColors = ['#1e3a8a', '#ef4444', '#f59e0b', '#10b981', '#ec4899', '#6366f1'];
 
+  const visibleMenuItems = menuItems.filter((item) => {
+    if (item.id === 'dashboard') return activeModules.includes('dashboard');
+    if (item.id === 'scales') return activeModules.includes('scales');
+    if (item.id === 'music') return activeModules.includes('music');
+    if (item.id === 'team') return activeModules.includes('team');
+    if (item.id === 'tools') return isGlobalAdminOrLeader;
+    return true;
+  });
+
   const isActive = (id: string) => {
     if (id === 'dashboard') return currentView === 'dashboard';
     if (id === 'scales') return ['list', 'calendar', 'cleaning'].includes(currentView);
@@ -314,7 +331,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* MENU ITEMS - Scrollable area */}
       <div className="flex w-full lg:w-auto lg:flex-col flex-1 items-center lg:items-stretch px-2 lg:px-4 lg:py-2 gap-1.5 lg:gap-1.5 justify-center lg:justify-start lg:overflow-y-auto no-scrollbar">
-        {menuItems.map((item) => (
+        {visibleMenuItems.map((item) => (
           <button
             key={item.id}
             onClick={() => onViewChange(item.default as ViewType)}
@@ -335,6 +352,27 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* FOOTER DESKTOP */}
       <div className="hidden lg:flex flex-col px-4 pb-6 gap-3 mt-auto border-t border-slate-50 dark:border-slate-800 pt-4">
+        {userMinisterios.length > 1 && (
+          <div className="flex flex-col rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 overflow-hidden">
+            <div className="px-4 py-2.5">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Ministerio ativo</span>
+            </div>
+            <div className="px-4 pb-4">
+              <select
+                value={activeMinisterioId || ''}
+                onChange={(e) => setActiveMinisterioId(e.target.value)}
+                className="w-full rounded-xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-200 outline-none focus:ring-1 focus:ring-brand"
+              >
+                {userMinisterios.map((ministerio) => (
+                  <option key={ministerio.id} value={ministerio.id}>
+                    {ministerio.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
         {/* Color Selectors */}
         <div className="flex flex-col rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 overflow-hidden">
           <button onClick={() => setIsThemeExpanded(!isThemeExpanded)} className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors">
@@ -450,6 +488,23 @@ const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               <div className="lg:hidden space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                {userMinisterios.length > 1 && (
+                  <div>
+                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest block ml-1 mb-2">Ministerio ativo</label>
+                    <select
+                      value={activeMinisterioId || ''}
+                      onChange={(e) => setActiveMinisterioId(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand"
+                    >
+                      {userMinisterios.map((ministerio) => (
+                        <option key={ministerio.id} value={ministerio.id}>
+                          {ministerio.nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest block ml-1">Temas</label>
                 <div className="flex justify-between">
                   {themeColors.map(color => (
