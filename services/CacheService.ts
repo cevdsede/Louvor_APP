@@ -22,6 +22,9 @@ class CacheService {
   };
   private static readonly IMAGE_CACHE_PREFIX = 'image_cache_';
   private static readonly IMAGE_CACHE_MAX_SIZE = 5 * 1024 * 1024; // 5MB em bytes
+  private static readonly IMAGE_DOWNLOAD_COOLDOWN_MS = 60000;
+  private static lastImageDownloadSignature = '';
+  private static lastImageDownloadAt = 0;
 
   // Obter dados com cache
   static async get<T>(
@@ -245,16 +248,30 @@ class CacheService {
   // Baixar imagens do sistema para cache local
   static async downloadAppImages(tables: string[] = ['membros', 'limpeza']): Promise<void> {
     try {
-      console.log('Baixando imagens do sistema para cache...');
-
       const imageEntries = this.collectImageEntries(tables);
-      console.log(`${imageEntries.length} URLs de imagem encontradas para cache`);
-      let downloaded = 0;
 
       if (!navigator.onLine) {
-        console.log('Download de imagens ignorado: dispositivo offline');
         return;
       }
+
+      const signature = imageEntries
+        .map((entry) => `${entry.variant || 'default'}:${entry.url}`)
+        .sort()
+        .join('|');
+
+      if (
+        signature === this.lastImageDownloadSignature &&
+        Date.now() - this.lastImageDownloadAt < this.IMAGE_DOWNLOAD_COOLDOWN_MS
+      ) {
+        return;
+      }
+
+      this.lastImageDownloadSignature = signature;
+      this.lastImageDownloadAt = Date.now();
+
+      console.log('Baixando imagens do sistema para cache...');
+      console.log(`${imageEntries.length} URLs de imagem encontradas para cache`);
+      let downloaded = 0;
 
       for (const imageEntry of imageEntries) {
         const cacheKeyBase = this.getImageCacheKeyBase(imageEntry.url, imageEntry.variant);

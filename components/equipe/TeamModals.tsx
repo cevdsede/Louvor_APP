@@ -3,7 +3,9 @@ import { Member, ScheduleEvent } from '../../types';
 import { ImageCache } from '../ui/ImageCache';
 import { supabase } from '../../supabaseClient';
 import { logger } from '../../utils/logger';
+import { showError, showSuccess } from '../../utils/toast';
 import AvisoGeralService, { AvisoGeral } from '../../services/AvisoGeralService';
+import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 
 interface TeamModalsProps {
   selectedMember: Member | null;
@@ -148,6 +150,22 @@ const TeamModals: React.FC<TeamModalsProps> = ({
         .eq('id', editingMember.id);
 
       if (memberError) throw memberError;
+
+      const cachedMembers = LocalStorageFirstService.get<any>('membros');
+      LocalStorageFirstService.set(
+        'membros',
+        cachedMembers.map((member) =>
+          member.id === editingMember.id
+            ? {
+                ...member,
+                foto: updatedMember.avatar ?? member.foto,
+                telefone: updatedMember.telefone ?? member.telefone,
+                email: updatedMember.email ?? member.email,
+                data_nasc: updatedMember.data_nasc ?? member.data_nasc
+              }
+            : member
+        )
+      );
 
       // Atualiza email na tabela auth.users se fornecido
       if (updatedMember.email && updatedMember.email !== editingMember.email) {

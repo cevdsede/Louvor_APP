@@ -1,4 +1,3 @@
-import { supabase } from '../supabaseClient';
 import LocalStorageFirstService from './LocalStorageFirstService';
 
 export interface Evento {
@@ -42,37 +41,6 @@ class EventService {
   }
 
   static async createEvento(evento: Omit<Evento, 'id_evento' | 'created_at'>): Promise<Evento> {
-    if (navigator.onLine) {
-      const { data, error } = await supabase
-        .from('eventos')
-        .insert({
-          tema: evento.tema,
-          data_evento: evento.data_evento,
-          horario_evento: evento.horario_evento
-        })
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      const savedEvento = {
-        ...(data as Evento),
-        id: (data as any).id_evento
-      } as Evento;
-
-      const currentEventos = LocalStorageFirstService.get<any>('eventos');
-      LocalStorageFirstService.set(
-        'eventos',
-        [savedEvento, ...currentEventos.filter((item) => String(item.id_evento) !== String(savedEvento.id_evento))]
-      );
-
-      await this.criarListaPresenca(savedEvento.id_evento);
-      void LocalStorageFirstService.forceSync('presenca_evento');
-      return savedEvento;
-    }
-
     const id_evento = generateUuid();
     const eventoData = {
       ...evento,
@@ -87,7 +55,10 @@ class EventService {
   }
 
   static async updateEvento(id_evento: string | number, evento: Partial<Evento>): Promise<Evento | null> {
-    return LocalStorageFirstService.update<Evento>('eventos', String(id_evento), evento as Partial<Evento>);
+    return LocalStorageFirstService.update<Evento>('eventos', String(id_evento), {
+      ...evento,
+      updated_at: new Date().toISOString()
+    } as Partial<Evento>);
   }
 
   static async deleteEvento(id_evento: string | number): Promise<void> {
@@ -133,7 +104,8 @@ class EventService {
       id_evento,
       id_membro,
       presenca,
-      justificativa: presenca === 'justificado' ? justificativa : null
+      justificativa: presenca === 'justificado' ? justificativa : null,
+      updated_at: new Date().toISOString()
     };
 
     if (existing) {
@@ -155,16 +127,8 @@ class EventService {
 
   private static async criarListaPresenca(id_evento: string | number): Promise<void> {
     const membros = LocalStorageFirstService.get<any>('membros');
-    const presencasExistentes = new Set(
-      LocalStorageFirstService.get<PresencaEvento>('presenca_evento')
-        .filter((presenca) => String(presenca.id_evento) === String(id_evento))
-        .map((presenca) => presenca.id_membro)
-    );
     const ativos = membros.filter(
-      (membro: any) =>
-        membro.ativo === true &&
-        !(membro.nome || '').toLowerCase().includes('convidado') &&
-        !presencasExistentes.has(membro.id)
+      (membro: any) => membro.ativo === true && !(membro.nome || '').toLowerCase().includes('convidado')
     );
 
     ativos.forEach((membro: any) => {

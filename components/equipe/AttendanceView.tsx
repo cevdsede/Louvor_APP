@@ -37,16 +37,24 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
   });
 
   // Realizar o "join" em memória e filtrar pelo evento atual
-  const presencas = (rawPresencas || [])
-    .filter(p => String(p.id_evento) === String(evento.id_evento))
-    .map(p => ({
-      ...p,
-      membros: (allMembros || []).find(m => m.id === p.id_membro) || {
-        id: p.id_membro,
-        nome: 'Membro Desconhecido'
-      }
-    }))
-    .sort((a, b) => (a.membros?.nome || '').localeCompare(b.membros?.nome || ''));
+  const presencas = Array.from(
+    (rawPresencas || [])
+      .filter((p) => String(p.id_evento) === String(evento.id_evento))
+      .reduce((map, presenca) => {
+        if (!map.has(presenca.id_membro)) {
+          map.set(presenca.id_membro, {
+            ...presenca,
+            membros: (allMembros || []).find((m) => m.id === presenca.id_membro) || {
+              id: presenca.id_membro,
+              nome: 'Membro Desconhecido'
+            }
+          });
+        }
+
+        return map;
+      }, new Map<string, PresencaEvento & { membros: { id: string; nome: string; foto?: string } }>())
+      .values()
+  ).sort((a, b) => (a.membros?.nome || '').localeCompare(b.membros?.nome || ''));
 
   const loading = loadingPresencas || loadingMembros;
 
@@ -58,8 +66,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
         id_evento: evento.id_evento,
         id_membro,
         presenca: status,
-        justificativa: status === 'justificado' ? justificativa : null,
-        updated_at: new Date().toISOString()
+        justificativa: status === 'justificado' ? justificativa : null
       };
 
       if (existing) {
@@ -139,7 +146,12 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
 
   // Membros disponíveis para adicionar (não estão na chamada atual)
   const membrosNaChamada = presencas.map(p => p.id_membro);
-  const membrosDisponiveis = allMembros.filter(m => !membrosNaChamada.includes(m.id));
+  const membrosDisponiveis = allMembros.filter(
+    (m) =>
+      !membrosNaChamada.includes(m.id) &&
+      m.ativo !== false &&
+      !(m.nome || '').toLowerCase().includes('convidado')
+  );
 
   const filteredPresencas = presencas.filter(p => {
     const matchesSearch = p.membros?.nome.toLowerCase().includes(searchTerm.toLowerCase());
@@ -292,7 +304,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
             <div className="space-y-3">
               {filteredPresencas.map((presenca) => (
                 <div
-                  key={presenca.id_membro}
+                  key={String(presenca.id_chamada)}
                   className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl"
                 >
                   <div className="flex items-center gap-4">

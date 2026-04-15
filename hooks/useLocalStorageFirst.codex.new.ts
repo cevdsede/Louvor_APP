@@ -24,10 +24,6 @@ export function useLocalStorageFirst<T>({
   refreshInterval = 30000,
   enableBackgroundSync = true
 }: LocalStorageFirstOptions) {
-  const getItemId = useCallback((item: any) => {
-    return item?.id ?? item?.id_chamada ?? item?.id_evento ?? item?.id_lembrete;
-  }, []);
-
   const [state, setState] = useState<LocalStorageFirstState<T>>({
     data: [],
     loading: false,
@@ -85,7 +81,7 @@ export function useLocalStorageFirst<T>({
 
         setState((prev) => ({
           ...prev,
-          data: [result, ...prev.data.filter((existing) => getItemId(existing) !== getItemId(result))],
+          data: [result, ...prev.data.filter((existing) => (existing as any).id !== (result as any).id)],
           pendingOperations: prev.pendingOperations + 1
         }));
 
@@ -99,7 +95,7 @@ export function useLocalStorageFirst<T>({
         throw error;
       }
     },
-    [getItemId, table]
+    [table]
   );
 
   const updateItem = useCallback(
@@ -110,7 +106,7 @@ export function useLocalStorageFirst<T>({
         if (result) {
           setState((prev) => ({
             ...prev,
-            data: prev.data.map((item) => (String(getItemId(item)) === id ? result : item)),
+            data: prev.data.map((item) => ((item as any).id === id ? result : item)),
             pendingOperations: prev.pendingOperations + 1
           }));
         }
@@ -125,7 +121,7 @@ export function useLocalStorageFirst<T>({
         throw error;
       }
     },
-    [getItemId, table]
+    [table]
   );
 
   const removeItem = useCallback(
@@ -136,7 +132,7 @@ export function useLocalStorageFirst<T>({
         if (success) {
           setState((prev) => ({
             ...prev,
-            data: prev.data.filter((item) => String(getItemId(item)) !== id),
+            data: prev.data.filter((item) => (item as any).id !== id),
             pendingOperations: prev.pendingOperations + 1
           }));
         }
@@ -151,7 +147,7 @@ export function useLocalStorageFirst<T>({
         throw error;
       }
     },
-    [getItemId, table]
+    [table]
   );
 
   const forceSync = useCallback(async () => {

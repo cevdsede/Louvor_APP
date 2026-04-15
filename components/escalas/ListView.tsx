@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../supabaseClient';
 import { ScheduleEvent, Member, RepertoireItem } from '../../types';
 import { Song, SupabaseCulto, SupabaseEscala, SupabaseRepertorio, SupabaseAviso, CultoComRelacionamentos } from '../../types-supabase';
@@ -63,28 +63,47 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
   const { data: avisosRaw } = useLocalStorageFirst<any>({ table: 'avisos_cultos' });
   const { data: funcoesRaw } = useLocalStorageFirst<any>({ table: 'funcao' });
   const [loading, setLoading] = useState(true);
-  const memberIdsInMinisterio = new Set(
-    (membrosMinisteriosRaw || [])
-      .filter((membership: any) => membership.ministerio_id === activeMinisterioId && membership.ativo !== false)
-      .map((membership: any) => membership.membro_id)
+  const memberIdsInMinisterio = useMemo(
+    () =>
+      new Set(
+        (membrosMinisteriosRaw || [])
+          .filter((membership: any) => membership.ministerio_id === activeMinisterioId && membership.ativo !== false)
+          .map((membership: any) => membership.membro_id)
+      ),
+    [activeMinisterioId, membrosMinisteriosRaw]
   );
-  const scopedMembros = activeMinisterioId
-    ? (membrosRaw || []).filter((member: any) => memberIdsInMinisterio.has(member.id))
-    : membrosRaw;
-  const scopedEscalas = activeMinisterioId
-    ? (escalasRaw || []).filter((escala: any) => escala.ministerio_id === activeMinisterioId)
-    : escalasRaw;
-  const scopedAvisos = activeMinisterioId
-    ? (avisosRaw || []).filter((aviso: any) => aviso.ministerio_id === activeMinisterioId)
-    : avisosRaw;
-  const scopedFuncoes = activeMinisterioId
-    ? (funcoesRaw || []).filter((funcao: any) => funcao.ministerio_id === activeMinisterioId)
-    : funcoesRaw;
+  const scopedMembros = useMemo(
+    () =>
+      activeMinisterioId
+        ? (membrosRaw || []).filter((member: any) => memberIdsInMinisterio.has(member.id))
+        : membrosRaw,
+    [activeMinisterioId, memberIdsInMinisterio, membrosRaw]
+  );
+  const scopedEscalas = useMemo(
+    () =>
+      activeMinisterioId
+        ? (escalasRaw || []).filter((escala: any) => escala.ministerio_id === activeMinisterioId)
+        : escalasRaw,
+    [activeMinisterioId, escalasRaw]
+  );
+  const scopedAvisos = useMemo(
+    () =>
+      activeMinisterioId
+        ? (avisosRaw || []).filter((aviso: any) => aviso.ministerio_id === activeMinisterioId)
+        : avisosRaw,
+    [activeMinisterioId, avisosRaw]
+  );
+  const scopedFuncoes = useMemo(
+    () =>
+      activeMinisterioId
+        ? (funcoesRaw || []).filter((funcao: any) => funcao.ministerio_id === activeMinisterioId)
+        : funcoesRaw,
+    [activeMinisterioId, funcoesRaw]
+  );
 
   // Data states
   const [allRegisteredMembers, setAllRegisteredMembers] = useState<Member[]>([]);
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<ScheduleEvent[]>([]);
   const [eventNotices, setEventNotices] = useState<Record<string, Notice[]>>({});
   const [cultoTypes, setCultoTypes] = useState<NomeCulto[]>([]);
   const [allSongs, setAllSongs] = useState<Song[]>([]);
@@ -101,30 +120,28 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     }
   }, [showScaleModal]);
 
-  // Filtrar eventos baseado no termo de pesquisa
-  useEffect(() => {
+  const filteredEvents = useMemo(() => {
     if (!searchTerm.trim()) {
-      setFilteredEvents(events);
-    } else {
-      const filtered = events.filter(event => {
-        const searchLower = searchTerm.toLowerCase();
-        return (
-          event.title.toLowerCase().includes(searchLower) ||
-          event.date.toLowerCase().includes(searchLower) ||
-          event.dayOfWeek.toLowerCase().includes(searchLower) ||
-          event.time.toLowerCase().includes(searchLower) ||
-          event.members.some(member => 
-            member.name.toLowerCase().includes(searchLower) ||
-            member.role.toLowerCase().includes(searchLower)
-          ) ||
-          event.repertoire.some(song => 
-            song.musica?.toLowerCase().includes(searchLower) ||
-            song.cantor?.toLowerCase().includes(searchLower)
-          )
-        );
-      });
-      setFilteredEvents(filtered);
+      return events;
     }
+
+    const searchLower = searchTerm.toLowerCase();
+    return events.filter((event) => {
+      return (
+        event.title.toLowerCase().includes(searchLower) ||
+        event.date.toLowerCase().includes(searchLower) ||
+        event.dayOfWeek.toLowerCase().includes(searchLower) ||
+        event.time.toLowerCase().includes(searchLower) ||
+        event.members.some(
+          (member) =>
+            member.name.toLowerCase().includes(searchLower) || member.role.toLowerCase().includes(searchLower)
+        ) ||
+        event.repertoire.some(
+          (song) =>
+            song.musica?.toLowerCase().includes(searchLower) || song.cantor?.toLowerCase().includes(searchLower)
+        )
+      );
+    });
   }, [events, searchTerm]);
 
   // Buscar usuário logado de forma resiliente (Offline-First)

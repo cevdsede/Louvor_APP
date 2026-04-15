@@ -26,10 +26,6 @@ class LocalStorageService {
     eventos: 'id_evento',
     presenca_evento: 'id_chamada'
   };
-  private static readonly UNSUPPORTED_UPDATE_COLUMNS: Record<string, string[]> = {
-    eventos: ['updated_at'],
-    presenca_evento: ['updated_at']
-  };
 
   private static syncTimer: NodeJS.Timeout | null = null;
   private static isOnline = navigator.onLine;
@@ -314,7 +310,6 @@ class LocalStorageService {
   private static normalizeCreatePayload(table: string, data: any): Record<string, any> {
     const payload = { ...(data || {}) };
     const primaryKey = this.getPrimaryKey(table);
-    const unsupportedUpdateColumns = this.UNSUPPORTED_UPDATE_COLUMNS[table] || [];
 
     if (table === 'avisos_cultos') {
       if (payload.id_culto && !payload.id_cultos) {
@@ -349,10 +344,6 @@ class LocalStorageService {
 
       delete payload.id;
     }
-
-    unsupportedUpdateColumns.forEach((column) => {
-      delete payload[column];
-    });
 
     const recordId = payload[primaryKey];
     if (this.isTemporaryId(recordId)) {

@@ -62,10 +62,6 @@ class LocalStorageFirstService {
     presenca_evento: 'id_chamada'
   };
   private static readonly NUMERIC_ID_TABLES = new Set(['aviso_geral', 'funcao', 'limpeza', 'tons']);
-  private static readonly UNSUPPORTED_UPDATE_COLUMNS: Record<string, string[]> = {
-    eventos: ['updated_at'],
-    presenca_evento: ['updated_at']
-  };
 
   private static config: LocalStorageConfig = {
     syncInterval: 2 * 60 * 1000,
@@ -370,6 +366,8 @@ class LocalStorageFirstService {
 
     this.scheduledTables.add(table);
 
+    const normalizedDelay = this.isWithinStartupGracePeriod() && delay < 1000 ? this.getStartupSyncDelay() : delay;
+
     window.setTimeout(() => {
       this.scheduledTables.delete(table);
       if (!navigator.onLine) {
@@ -379,7 +377,7 @@ class LocalStorageFirstService {
       void this.syncTable(table).catch((error) => {
         console.error(`Erro ao sincronizar tabela ${table}:`, error);
       });
-    }, delay);
+    }, normalizedDelay);
   }
 
   private static async syncTable(
@@ -570,11 +568,6 @@ class LocalStorageFirstService {
 
     const primaryKey = this.getPrimaryKey(table);
     const recordId = payload[primaryKey] ?? payload.id;
-    const unsupportedUpdateColumns = this.UNSUPPORTED_UPDATE_COLUMNS[table] || [];
-
-    unsupportedUpdateColumns.forEach((column) => {
-      delete payload[column];
-    });
 
     if (table === 'avisos_cultos') {
       delete payload.id_culto;
