@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { showSuccess, showError } from '../../utils/toast';
 import EventService, { Evento, PresencaEvento } from '../../services/EventService';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
-import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import { ImageCache } from '../ui/ImageCache';
+import { showConfirmModal } from '../../utils/confirmModal';
+import { useMinistryContext } from '../../contexts/MinistryContext';
+import { getMemberIdsForMinisterio } from '../../utils/memberMinistry';
 
 interface AttendanceViewProps {
   evento: Evento;
@@ -11,6 +13,7 @@ interface AttendanceViewProps {
 }
 
 const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
+  const { activeMinisterioId } = useMinistryContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'todos' | 'presente' | 'ausente' | 'justificado'>('todos');
   const [editingJustificativa, setEditingJustificativa] = useState<string | null>(null);
@@ -22,7 +25,8 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
     data: rawPresencas,
     loading: loadingPresencas,
     addItem: addPresenca,
-    updateItem: updatePresencaSync
+    updateItem: updatePresencaSync,
+    removeItem: removePresenca
   } = useLocalStorageFirst<PresencaEvento>({
     table: 'presenca_evento',
     autoRefresh: true
@@ -34,6 +38,12 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
     loading: loadingMembros
   } = useLocalStorageFirst<any>({
     table: 'membros'
+  });
+  const {
+    data: membrosMinisterios,
+    loading: loadingMembrosMinisterios
+  } = useLocalStorageFirst<any>({
+    table: 'membros_ministerios'
   });
 
   // Realizar o "join" em memória e filtrar pelo evento atual
@@ -56,7 +66,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
       .values()
   ).sort((a, b) => (a.membros?.nome || '').localeCompare(b.membros?.nome || ''));
 
-  const loading = loadingPresencas || loadingMembros;
+  const loading = loadingPresencas || loadingMembros || loadingMembrosMinisterios;
 
   const updatePresenca = async (id_membro: string, status: 'presente' | 'ausente' | 'justificado', justificativa?: string) => {
     try {
@@ -128,11 +138,22 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
     }
   };
 
-  const handleRemoveMembro = async (id_chamada: string | number) => {
-    if (!confirm('Tem certeza que deseja remover este membro da chamada?')) return;
-    
+  const handleRemoveMembro = async (presenca: (typeof presencas)[number]) => {
+    const confirmed = await showConfirmModal({
+      title: 'Remover Da Chamada',
+      message:
+        `Deseja remover ${presenca.membros?.nome || 'este membro'} da chamada de "${evento.tema}"?\n\n` +
+        'Essa acao remove apenas desta chamada. Voce podera adicionar o membro novamente depois, se quiser.',
+      confirmText: 'Remover',
+      cancelText: 'Cancelar',
+      type: 'danger',
+      icon: 'fa-user-minus'
+    });
+
+    if (!confirmed) return;
+
     try {
-      LocalStorageFirstService.remove('presenca_evento', String(id_chamada));
+      await removePresenca(String(presenca.id_chamada));
       showSuccess('Membro removido da chamada!');
     } catch (error) {
       console.error('Erro ao remover membro:', error);
@@ -146,10 +167,16 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
 
   // Membros disponíveis para adicionar (não estão na chamada atual)
   const membrosNaChamada = presencas.map(p => p.id_membro);
+  const activeMemberIdsInMinisterio = getMemberIdsForMinisterio(
+    membrosMinisterios,
+    activeMinisterioId,
+    false
+  );
   const membrosDisponiveis = allMembros.filter(
     (m) =>
       !membrosNaChamada.includes(m.id) &&
       m.ativo !== false &&
+      (!activeMinisterioId || activeMemberIdsInMinisterio.has(m.id)) &&
       !(m.nome || '').toLowerCase().includes('convidado')
   );
 
@@ -396,7 +423,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
                         </button>
                       </div>
                       <button
-                        onClick={() => handleRemoveMembro(presenca.id_chamada)}
+                        onClick={() => handleRemoveMembro(presenca)}
                         className="w-6 h-6 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors group"
                         title="Remover da chamada"
                       >

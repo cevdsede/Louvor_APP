@@ -5,6 +5,7 @@ import { ScheduleEvent, Member, Notice } from '../../types';
 import { sortMembersByRole, getRoleIcon } from '../../utils/teamUtils';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import EventCard from './EventCard';
+import { getMemberIdsForMinisterio } from '../../utils/memberMinistry';
 
 const CalendarView: React.FC = () => {
   const { activeMinisterioId, activeModules } = useMinistryContext();
@@ -86,14 +87,16 @@ const CalendarView: React.FC = () => {
   const { data: tonsRaw } = useLocalStorageFirst<any>({ table: 'tons' });
   const { data: avisosRaw } = useLocalStorageFirst<any>({ table: 'avisos_cultos' });
   const { data: funcoesRaw } = useLocalStorageFirst<any>({ table: 'funcao' });
-  const memberIdsInMinisterio = new Set(
-    (membrosMinisteriosRaw || [])
-      .filter((membership: any) => membership.ministerio_id === activeMinisterioId && membership.ativo !== false)
-      .map((membership: any) => membership.membro_id)
-  );
+  const linkedMemberIdsInMinisterio = getMemberIdsForMinisterio(membrosMinisteriosRaw, activeMinisterioId, true);
+  const activeMemberIdsInMinisterio = getMemberIdsForMinisterio(membrosMinisteriosRaw, activeMinisterioId, false);
   const scopedMembros = activeMinisterioId
-    ? (membrosRaw || []).filter((member: any) => memberIdsInMinisterio.has(member.id))
+    ? (membrosRaw || []).filter((member: any) => linkedMemberIdsInMinisterio.has(member.id))
     : membrosRaw;
+  const scopedActiveMembros = activeMinisterioId
+    ? (membrosRaw || []).filter(
+        (member: any) => activeMemberIdsInMinisterio.has(member.id) && member.ativo !== false
+      )
+    : (membrosRaw || []).filter((member: any) => member.ativo !== false);
   const scopedEscalas = activeMinisterioId
     ? (escalasRaw || []).filter((escala: any) => escala.ministerio_id === activeMinisterioId)
     : escalasRaw;
@@ -109,7 +112,7 @@ const CalendarView: React.FC = () => {
     if (!cultosRaw || !membrosRaw || !escalasRaw) return;
 
     // 1. Membros Ativos
-    const mappedMembers: Member[] = (scopedMembros || []).filter((m: any) => m.ativo).map((m: any) => ({
+    const mappedMembers: Member[] = (scopedActiveMembros || []).map((m: any) => ({
       id: m.id,
       name: m.nome,
       role: 'Membro',
@@ -181,7 +184,7 @@ const CalendarView: React.FC = () => {
       };
     });
     setEvents(mapped);
-  }, [activeModules, cultosRaw, musicasRaw, nomeCultosRaw, repertorioRaw, scopedAvisos, scopedEscalas, scopedFuncoes, scopedMembros, tonsRaw]);
+  }, [activeModules, cultosRaw, musicasRaw, nomeCultosRaw, repertorioRaw, scopedActiveMembros, scopedAvisos, scopedEscalas, scopedFuncoes, scopedMembros, tonsRaw]);
 
   // Auth check
   useEffect(() => {

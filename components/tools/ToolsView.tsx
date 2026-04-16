@@ -8,6 +8,7 @@ import { showSuccess, showError } from '../../utils/toast';
 import MultiSelect from '../equipe/MultiSelect';
 import { ImageCache } from '../ui/ImageCache';
 import { compressImageFile } from '../../utils/imageCompression';
+import { getMemberMemberships as getMemberMinistryMemberships } from '../../utils/memberMinistry';
 import {
   ChartInstance,
   SolicitacaoAprovacao,
@@ -32,14 +33,15 @@ interface EditingMemberState {
   email?: string;
   telefone?: string;
   data_nasc?: string;
+  genero?: 'Homem' | 'Mulher';
   ativo?: boolean;
   perfil?: string;
   foto?: string;
   ministerioIds: string[];
+  ministerioStatusById: Record<string, boolean>;
   principalMinisterioId: string | null;
 }
 
-const isActiveMembership = (membership?: { ativo?: boolean | null } | null) => membership?.ativo !== false;
 const uniqueIds = (ids: string[]) => [...new Set(ids.filter(Boolean))];
 
 const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
@@ -88,24 +90,49 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
   };
 
   const getMemberMemberships = (memberId: string) =>
-    membrosMinisterios.filter(
-      (membership) => membership.membro_id === memberId && isActiveMembership(membership)
-    );
+    getMemberMinistryMemberships(membrosMinisterios, memberId, { includeInactive: true });
 
-  const getMemberMinisterios = (memberId: string) => {
-    const memberMinisterioIds = new Set(getMemberMemberships(memberId).map((membership) => membership.ministerio_id));
-    return ministerios.filter((ministerio) => memberMinisterioIds.has(ministerio.id));
-  };
+  const getMemberMinisterios = (memberId: string) =>
+    getMemberMemberships(memberId)
+      .map((membership) => {
+        const ministerio = ministerios.find((item) => item.id === membership.ministerio_id);
+
+        if (!ministerio) {
+          return null;
+        }
+
+        return {
+          ...ministerio,
+          membership
+        };
+      })
+      .filter(Boolean)
+      .sort((a: any, b: any) => {
+        if (a.membership?.principal && !b.membership?.principal) return -1;
+        if (!a.membership?.principal && b.membership?.principal) return 1;
+        if (a.membership?.ativo !== false && b.membership?.ativo === false) return -1;
+        if (a.membership?.ativo === false && b.membership?.ativo !== false) return 1;
+        return (a.nome || '').localeCompare(b.nome || '');
+      });
 
   const handleEditMember = (member: any) => {
     const memberships = getMemberMemberships(member.id);
     const ministerioIds = uniqueIds(memberships.map((membership) => membership.ministerio_id));
+    const ministerioStatusById = memberships.reduce<Record<string, boolean>>((accumulator, membership) => {
+      accumulator[membership.ministerio_id] = membership.ativo !== false;
+      return accumulator;
+    }, {});
+    const activeMinisterioIds = ministerioIds.filter((ministerioId) => ministerioStatusById[ministerioId] !== false);
     const principalMinisterioId =
-      memberships.find((membership) => membership.principal)?.ministerio_id || ministerioIds[0] || null;
+      memberships.find((membership) => membership.principal && membership.ativo !== false)?.ministerio_id ||
+      activeMinisterioIds[0] ||
+      null;
 
     setEditingMember({
       ...member,
+      genero: member.genero || 'Homem',
       ministerioIds,
+      ministerioStatusById,
       principalMinisterioId
     });
   };
@@ -180,14 +207,42 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
     if (!editingMember) return;
 
     const nextMinisterioIds = uniqueIds(ministerioIds);
+    const nextStatusById = nextMinisterioIds.reduce<Record<string, boolean>>((accumulator, ministerioId) => {
+      accumulator[ministerioId] = editingMember.ministerioStatusById?.[ministerioId] !== false;
+      return accumulator;
+    }, {});
+    const nextActiveMinisterioIds = nextMinisterioIds.filter((ministerioId) => nextStatusById[ministerioId] !== false);
     const nextPrincipalId =
-      editingMember.principalMinisterioId && nextMinisterioIds.includes(editingMember.principalMinisterioId)
+      editingMember.principalMinisterioId && nextActiveMinisterioIds.includes(editingMember.principalMinisterioId)
         ? editingMember.principalMinisterioId
-        : nextMinisterioIds[0] || null;
+        : nextActiveMinisterioIds[0] || null;
 
     setEditingMember({
       ...editingMember,
       ministerioIds: nextMinisterioIds,
+      ministerioStatusById: nextStatusById,
+      principalMinisterioId: nextPrincipalId
+    });
+  };
+
+  const handleEditingMemberMinisterioStatusChange = (ministerioId: string, ativo: boolean) => {
+    if (!editingMember) return;
+
+    const nextStatusById = {
+      ...editingMember.ministerioStatusById,
+      [ministerioId]: ativo
+    };
+    const nextActiveMinisterioIds = (editingMember.ministerioIds || []).filter(
+      (itemId) => nextStatusById[itemId] !== false
+    );
+    const nextPrincipalId =
+      editingMember.principalMinisterioId && nextActiveMinisterioIds.includes(editingMember.principalMinisterioId)
+        ? editingMember.principalMinisterioId
+        : nextActiveMinisterioIds[0] || null;
+
+    setEditingMember({
+      ...editingMember,
+      ministerioStatusById: nextStatusById,
       principalMinisterioId: nextPrincipalId
     });
   };
@@ -197,10 +252,17 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
       setSavingMember(true);
 
       const desiredMinisterioIds = uniqueIds(updatedMember.ministerioIds || []);
+      const ministerioStatusById = desiredMinisterioIds.reduce<Record<string, boolean>>((accumulator, ministerioId) => {
+        accumulator[ministerioId] = updatedMember.ministerioStatusById?.[ministerioId] !== false;
+        return accumulator;
+      }, {});
+      const activeMinisterioIds = desiredMinisterioIds.filter(
+        (ministerioId) => ministerioStatusById[ministerioId] !== false
+      );
       const principalMinisterioId =
-        updatedMember.principalMinisterioId && desiredMinisterioIds.includes(updatedMember.principalMinisterioId)
+        updatedMember.principalMinisterioId && activeMinisterioIds.includes(updatedMember.principalMinisterioId)
           ? updatedMember.principalMinisterioId
-          : desiredMinisterioIds[0] || null;
+          : activeMinisterioIds[0] || null;
 
       const currentMemberships = membrosMinisterios.filter(
         (membership) => membership.membro_id === updatedMember.id
@@ -213,6 +275,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
           email: updatedMember.email,
           telefone: updatedMember.telefone,
           data_nasc: updatedMember.data_nasc,
+          genero: updatedMember.genero || 'Homem',
           ativo: updatedMember.ativo,
           perfil: updatedMember.perfil,
           foto: updatedMember.foto
@@ -220,6 +283,17 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
         .eq('id', updatedMember.id);
 
       if (memberError) throw memberError;
+
+      const currentMembershipIds = currentMemberships.map((membership) => membership.id).filter(Boolean);
+
+      if (currentMembershipIds.length > 0) {
+        const { error: resetPrincipalError } = await supabase
+          .from('membros_ministerios')
+          .update({ principal: false })
+          .in('id', currentMembershipIds);
+
+        if (resetPrincipalError) throw resetPrincipalError;
+      }
 
       const membershipsToDelete = currentMemberships.filter(
         (membership) => !desiredMinisterioIds.includes(membership.ministerio_id)
@@ -246,7 +320,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
           membro_id: updatedMember.id,
           ministerio_id: ministerioId,
           principal: ministerioId === principalMinisterioId,
-          ativo: true
+          ativo: ministerioStatusById[ministerioId] !== false
         };
 
         if (existingMembership?.id) {
@@ -271,7 +345,11 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
       showSuccess('Membro atualizado com sucesso.');
     } catch (error) {
       console.error('Erro ao atualizar membro:', error);
-      showError('Nao foi possivel atualizar o membro.');
+      if ((error as any)?.code === '23505') {
+        showError('Nao foi possivel salvar os ministerios porque houve conflito no ministerio principal. Tente novamente.');
+      } else {
+        showError('Nao foi possivel atualizar o membro.');
+      }
     } finally {
       setSavingMember(false);
     }
@@ -490,8 +568,8 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
 
   const membersData = Array.isArray(data) ? data : [];
   const activeUsersCount = membersData.filter((member: any) => member.ativo).length;
-  const usersWithoutMinisterio = membersData.filter((member: any) => getMemberMinisterios(member.id).length === 0).length;
-  const usersInMultipleMinisterios = membersData.filter((member: any) => getMemberMinisterios(member.id).length > 1).length;
+  const usersWithoutMinisterio = membersData.filter((member: any) => getMemberMemberships(member.id).length === 0).length;
+  const usersInMultipleMinisterios = membersData.filter((member: any) => getMemberMemberships(member.id).length > 1).length;
 
   const renderContent = () => {
     switch (subView as ToolsSubView) {
@@ -600,10 +678,11 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                   <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Nome</th>
-                      <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Ministerios</th>
+                      <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Ministerio</th>
                       <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Perfil</th>
+                      <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Sexo</th>
+                      <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Data de Nascimento</th>
                       <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Contato</th>
                       <th className="px-6 py-3 text-center text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Ações</th>
                     </tr>
                   </thead>
@@ -629,29 +708,29 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                             </div>
                             <div>
                               <span className="text-sm font-medium text-slate-900 dark:text-white block">{member.nome || 'Sem nome'}</span>
-                              {member.data_nasc && (
-                                <span className="text-xs text-slate-500 dark:text-slate-400">
-                                  {new Date(member.data_nasc).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                                </span>
-                              )}
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-wrap gap-2 max-w-sm">
                             {memberMinisterios.length > 0 ? (
-                              memberMinisterios.map((ministerio) => (
+                              memberMinisterios.map((ministerio: any) => (
                                 <span
                                   key={ministerio.id}
                                   className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black ${
-                                    ministerio.id === principalMinisterioId
-                                      ? 'bg-brand text-white'
-                                      : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                    ministerio.membership?.ativo !== false
+                                      ? ministerio.id === principalMinisterioId
+                                        ? 'bg-brand text-white'
+                                        : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                      : 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300'
                                   }`}
                                 >
                                   {ministerio.nome}
                                   {ministerio.id === principalMinisterioId && (
                                     <span className="text-[9px] uppercase tracking-wider opacity-80">Principal</span>
+                                  )}
+                                  {ministerio.membership?.ativo === false && (
+                                    <span className="text-[9px] uppercase tracking-wider opacity-80">Inativo</span>
                                   )}
                                 </span>
                               ))
@@ -700,6 +779,26 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                           )}
                         </td>
                         <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black ${
+                            member.genero === 'Mulher'
+                              ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/20 dark:text-pink-300'
+                              : 'bg-sky-100 text-sky-700 dark:bg-sky-900/20 dark:text-sky-300'
+                          }`}>
+                            {member.genero || 'Homem'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm text-slate-700 dark:text-slate-300">
+                            {member.data_nasc
+                              ? new Date(member.data_nasc).toLocaleDateString('pt-BR', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric'
+                                })
+                              : 'Nao informado'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
                           <span className={`px-2 py-1 text-xs font-black rounded-full ${
                             member.ativo
                               ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400'
@@ -707,22 +806,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                           }`}>
                             {member.ativo ? 'Ativo' : 'Inativo'}
                           </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="space-y-1">
-                            {member.email && (
-                              <div className="flex items-center text-xs text-slate-600 dark:text-slate-400">
-                                <i className="fas fa-envelope mr-2 text-slate-400"></i>
-                                {member.email}
-                              </div>
-                            )}
-                            {member.telefone && (
-                              <div className="flex items-center text-xs text-slate-600 dark:text-slate-400">
-                                <i className="fas fa-phone mr-2 text-slate-400"></i>
-                                {member.telefone}
-                              </div>
-                            )}
-                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-center gap-2">
@@ -1173,6 +1256,18 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                 </div>
 
                 <div>
+                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Sexo</label>
+                  <select
+                    value={editingMember.genero || 'Homem'}
+                    onChange={(e) => setEditingMember({ ...editingMember, genero: e.target.value as 'Homem' | 'Mulher' })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                  >
+                    <option value="Homem">Homem</option>
+                    <option value="Mulher">Mulher</option>
+                  </select>
+                </div>
+
+                <div>
                   <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Perfil</label>
                   <select
                     value={editingMember.perfil || 'User'}
@@ -1221,10 +1316,59 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                       onChange={handleEditingMemberMinisteriosChange}
                       placeholder="Selecione os ministerios..."
                     />
+
+                    {(editingMember.ministerioIds || []).length > 0 && (
+                      <div className="mt-4 space-y-3">
+                        {(editingMember.ministerioIds || []).map((ministerioId) => {
+                          const ministerio = ministerios.find((item) => item.id === ministerioId);
+                          const ministerioAtivo = editingMember.ministerioStatusById?.[ministerioId] !== false;
+
+                          return (
+                            <div
+                              key={ministerioId}
+                              className="flex flex-col gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/40 p-3 sm:flex-row sm:items-center sm:justify-between"
+                            >
+                              <div>
+                                <p className="text-sm font-black text-slate-800 dark:text-white">
+                                  {ministerio?.nome || 'Ministerio'}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                  {ministerioAtivo ? 'Ativo neste ministerio' : 'Inativo neste ministerio'}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleEditingMemberMinisterioStatusChange(ministerioId, true)}
+                                  className={`px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-colors ${
+                                    ministerioAtivo
+                                      ? 'bg-emerald-500 text-white'
+                                      : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                                  }`}
+                                >
+                                  Ativo
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleEditingMemberMinisterioStatusChange(ministerioId, false)}
+                                  className={`px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-colors ${
+                                    !ministerioAtivo
+                                      ? 'bg-red-500 text-white'
+                                      : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                                  }`}
+                                >
+                                  Inativo
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {(editingMember.ministerioIds || []).length > 0 && (
+                {(editingMember.ministerioIds || []).filter((ministerioId) => editingMember.ministerioStatusById?.[ministerioId] !== false).length > 0 && (
                   <div className="md:col-span-2">
                     <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Ministerio principal</label>
                     <select
@@ -1232,7 +1376,9 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                       onChange={(e) => setEditingMember({ ...editingMember, principalMinisterioId: e.target.value || null })}
                       className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
                     >
-                      {(editingMember.ministerioIds || []).map((ministerioId) => {
+                      {(editingMember.ministerioIds || [])
+                        .filter((ministerioId) => editingMember.ministerioStatusById?.[ministerioId] !== false)
+                        .map((ministerioId) => {
                         const ministerio = ministerios.find((item) => item.id === ministerioId);
 
                         return (
@@ -1247,6 +1393,14 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                     </p>
                   </div>
                 )}
+                {(editingMember.ministerioIds || []).length > 0 &&
+                  (editingMember.ministerioIds || []).every(
+                    (ministerioId) => editingMember.ministerioStatusById?.[ministerioId] === false
+                  ) && (
+                    <div className="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-300">
+                      Este membro continuara vinculado aos ministerios selecionados, mas ficara inativo em todos eles.
+                    </div>
+                  )}
               </div>
 
               {/* Botões de Ação */}

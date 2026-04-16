@@ -5,6 +5,11 @@ import { logger } from '../utils/logger';
 import { Member, ViewType, ScheduleEvent } from '../types';
 import { ChartInstance } from '../types-supabase';
 import LocalStorageFirstService from '../services/LocalStorageFirstService';
+import {
+  getMemberIdsForMinisterio,
+  getMembershipForMemberInMinisterio,
+  isMemberActiveInMinisterio
+} from '../utils/memberMinistry';
 
 interface UseTeamDataProps {
   currentView: ViewType;
@@ -46,14 +51,14 @@ export const useTeamData = ({ currentView }: UseTeamDataProps) => {
       const musicasData = LocalStorageFirstService.get<any>('musicas') || [];
       const tonsData = LocalStorageFirstService.get<any>('tons') || [];
 
-      const memberIdsInMinisterio = new Set(
-        membrosMinisteriosData
-          .filter((membership: any) => membership.ministerio_id === activeMinisterioId && membership.ativo !== false)
-          .map((membership: any) => membership.membro_id)
+      const linkedMemberIdsInMinisterio = getMemberIdsForMinisterio(
+        membrosMinisteriosData,
+        activeMinisterioId,
+        true
       );
 
       const scopedMembersData = activeMinisterioId
-        ? membrosData.filter((member: any) => memberIdsInMinisterio.has(member.id))
+        ? membrosData.filter((member: any) => linkedMemberIdsInMinisterio.has(member.id))
         : membrosData;
 
       const scopedFuncoesData = activeMinisterioId
@@ -142,13 +147,19 @@ export const useTeamData = ({ currentView }: UseTeamDataProps) => {
           user && member.id === user.id
             ? user.user_metadata?.display_name || user.email?.split('@')[0] || member.nome
             : member.nome;
+        const memberMembership = activeMinisterioId
+          ? getMembershipForMemberInMinisterio(membrosMinisteriosData, member.id, activeMinisterioId, true)
+          : null;
+        const isActiveInCurrentMinisterio = activeMinisterioId
+          ? isMemberActiveInMinisterio(member, memberMembership)
+          : member.ativo !== false;
 
         return {
           id: member.id,
           name: displayName,
           role: memberFuncoes.length > 0 ? memberFuncoes.join(', ') : 'Sem funcao',
           gender: member.genero === 'Homem' ? 'M' : 'F',
-          status: member.ativo ? 'confirmed' : 'absent',
+          status: isActiveInCurrentMinisterio ? 'confirmed' : 'absent',
           avatar: member.foto || '',
           telefone: member.telefone,
           email: member.email,

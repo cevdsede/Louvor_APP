@@ -5,6 +5,7 @@ import { useMinistryContext } from '../../contexts/MinistryContext';
 import { showError } from '../../utils/toast';
 import { logger } from '../../utils/logger';
 import { ChartInstances, EscalaMusicView, RepertorioMusicView, EscalaEvent, EscalaItem } from '../../types-supabase';
+import { getMemberIdsForMinisterio } from '../../utils/memberMinistry';
 
 interface Music {
   id: string;
@@ -209,14 +210,24 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
       const historicoData = LocalStorageFirstService.get<any>('historico_musicas');
       const escalasData = LocalStorageFirstService.get<any>('escalas');
       const funcoesData = LocalStorageFirstService.get<any>('funcao');
-      const memberIdsInMinisterio = new Set(
-        (membrosMinisteriosData || [])
-          .filter((membership: any) => membership.ministerio_id === activeMinisterioId && membership.ativo !== false)
-          .map((membership: any) => membership.membro_id)
+      const linkedMemberIdsInMinisterio = getMemberIdsForMinisterio(
+        membrosMinisteriosData,
+        activeMinisterioId,
+        true
+      );
+      const activeMemberIdsInMinisterio = getMemberIdsForMinisterio(
+        membrosMinisteriosData,
+        activeMinisterioId,
+        false
       );
       const scopedMembersData = activeMinisterioId
-        ? (membrosData || []).filter((member: any) => memberIdsInMinisterio.has(member.id))
+        ? (membrosData || []).filter((member: any) => linkedMemberIdsInMinisterio.has(member.id))
         : membrosData;
+      const scopedActiveMembersData = activeMinisterioId
+        ? (membrosData || []).filter(
+            (member: any) => activeMemberIdsInMinisterio.has(member.id) && member.ativo !== false
+          )
+        : (membrosData || []).filter((member: any) => member.ativo !== false);
       const scopedEscalasData = activeMinisterioId
         ? (escalasData || []).filter((escala: any) => escala.ministerio_id === activeMinisterioId)
         : escalasData;
@@ -285,7 +296,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
 
       // 3. Format History
       const historyWithMusicDetails = (activeModules.includes('music') ? historicoData : [])
-        .filter((h: any) => memberIdsInMinisterio.size === 0 || memberIdsInMinisterio.has(h.id_membros))
+        .filter((h: any) => linkedMemberIdsInMinisterio.size === 0 || linkedMemberIdsInMinisterio.has(h.id_membros))
         .sort((a: any, b: any) => (b.created_at || '').localeCompare(a.created_at || ''))
         .slice(0, 50)
         .map((h: any) => {
@@ -333,7 +344,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
       setEscalas(formattedEscalas);
 
       // Setup additional form data
-      setAvailableMembers(scopedMembersData);
+      setAvailableMembers(scopedActiveMembersData);
       setAvailableTones(tonsData);
       setAvailableCults(cultosData.map((c: any) => ({
         ...c,

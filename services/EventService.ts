@@ -1,5 +1,6 @@
 import { supabase } from '../supabaseClient';
 import LocalStorageFirstService from './LocalStorageFirstService';
+import { getMemberIdsForMinisterio } from '../utils/memberMinistry';
 
 export interface Evento {
   id_evento: string | number;
@@ -41,7 +42,10 @@ class EventService {
     return LocalStorageFirstService.get<Evento>('eventos');
   }
 
-  static async createEvento(evento: Omit<Evento, 'id_evento' | 'created_at'>): Promise<Evento> {
+  static async createEvento(
+    evento: Omit<Evento, 'id_evento' | 'created_at'>,
+    ministerioId?: string | null
+  ): Promise<Evento> {
     if (navigator.onLine) {
       const { data, error } = await supabase
         .from('eventos')
@@ -68,7 +72,7 @@ class EventService {
         [savedEvento, ...currentEventos.filter((item) => String(item.id_evento) !== String(savedEvento.id_evento))]
       );
 
-      await this.criarListaPresenca(savedEvento.id_evento);
+      await this.criarListaPresenca(savedEvento.id_evento, ministerioId);
       void LocalStorageFirstService.forceSync('presenca_evento');
       return savedEvento;
     }
@@ -82,7 +86,7 @@ class EventService {
     };
 
     const result = await LocalStorageFirstService.add<Evento>('eventos', eventoData);
-    await this.criarListaPresenca(id_evento);
+    await this.criarListaPresenca(id_evento, ministerioId);
     return result;
   }
 
@@ -153,16 +157,26 @@ class EventService {
     });
   }
 
-  private static async criarListaPresenca(id_evento: string | number): Promise<void> {
+  private static async criarListaPresenca(
+    id_evento: string | number,
+    ministerioId?: string | null
+  ): Promise<void> {
     const membros = LocalStorageFirstService.get<any>('membros');
+    const membrosMinisterios = LocalStorageFirstService.get<any>('membros_ministerios');
     const presencasExistentes = new Set(
       LocalStorageFirstService.get<PresencaEvento>('presenca_evento')
         .filter((presenca) => String(presenca.id_evento) === String(id_evento))
         .map((presenca) => presenca.id_membro)
     );
+    const activeMemberIdsInMinisterio = getMemberIdsForMinisterio(
+      membrosMinisterios,
+      ministerioId,
+      false
+    );
     const ativos = membros.filter(
       (membro: any) =>
         membro.ativo === true &&
+        (!ministerioId || activeMemberIdsInMinisterio.has(membro.id)) &&
         !(membro.nome || '').toLowerCase().includes('convidado') &&
         !presencasExistentes.has(membro.id)
     );
@@ -205,14 +219,25 @@ class EventService {
     LocalStorageFirstService.remove('presenca_evento', String(id_chamada));
   }
 
-  static async getAllMembros(): Promise<Array<{ id: string; nome: string; foto?: string; ativo: boolean }>> {
+  static async getAllMembros(
+    ministerioId?: string | null
+  ): Promise<Array<{ id: string; nome: string; foto?: string; ativo: boolean }>> {
     const membros = LocalStorageFirstService.get<any>('membros');
-    return membros.map((membro: any) => ({
+    const membrosMinisterios = LocalStorageFirstService.get<any>('membros_ministerios');
+    const activeMemberIdsInMinisterio = getMemberIdsForMinisterio(
+      membrosMinisterios,
+      ministerioId,
+      false
+    );
+
+    return membros
+      .filter((membro: any) => !ministerioId || activeMemberIdsInMinisterio.has(membro.id))
+      .map((membro: any) => ({
       id: membro.id,
       nome: membro.nome,
       foto: membro.foto,
       ativo: membro.ativo
-    }));
+      }));
   }
 }
 

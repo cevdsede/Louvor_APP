@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { showSuccess, showError } from '../../utils/toast';
 import EventService, { Evento } from '../../services/EventService';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
+import { useMinistryContext } from '../../contexts/MinistryContext';
 
 interface EventsViewProps {
   onEventClick: (evento: Evento) => void;
 }
 
 const EventsView: React.FC<EventsViewProps> = ({ onEventClick }) => {
+  const { activeMinisterioId } = useMinistryContext();
   const [showModal, setShowModal] = useState(false);
   const [editingEvento, setEditingEvento] = useState<Evento | null>(null);
   const [formData, setFormData] = useState({
@@ -37,7 +39,7 @@ const EventsView: React.FC<EventsViewProps> = ({ onEventClick }) => {
         await EventService.updateEvento(editingEvento.id_evento, formData);
         showSuccess('Evento atualizado com sucesso!');
       } else {
-        await EventService.createEvento(formData as any);
+        await EventService.createEvento(formData as any, activeMinisterioId);
         showSuccess('Evento criado com sucesso! Lista de presenca gerada automaticamente.');
       }
 

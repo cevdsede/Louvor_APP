@@ -14,6 +14,7 @@ import RepertoireManager from './RepertoireManager';
 import NoticeManager from './NoticeManager';
 import TeamManager from './TeamManager';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
+import { getMemberIdsForMinisterio } from '../../utils/memberMinistry';
 
 interface ListViewProps {
   onReportAbsence: (id: string) => void;
@@ -63,21 +64,30 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
   const { data: avisosRaw } = useLocalStorageFirst<any>({ table: 'avisos_cultos' });
   const { data: funcoesRaw } = useLocalStorageFirst<any>({ table: 'funcao' });
   const [loading, setLoading] = useState(true);
-  const memberIdsInMinisterio = useMemo(
+  const linkedMemberIdsInMinisterio = useMemo(
     () =>
-      new Set(
-        (membrosMinisteriosRaw || [])
-          .filter((membership: any) => membership.ministerio_id === activeMinisterioId && membership.ativo !== false)
-          .map((membership: any) => membership.membro_id)
-      ),
+      getMemberIdsForMinisterio(membrosMinisteriosRaw, activeMinisterioId, true),
+    [activeMinisterioId, membrosMinisteriosRaw]
+  );
+  const activeMemberIdsInMinisterio = useMemo(
+    () => getMemberIdsForMinisterio(membrosMinisteriosRaw, activeMinisterioId, false),
     [activeMinisterioId, membrosMinisteriosRaw]
   );
   const scopedMembros = useMemo(
     () =>
       activeMinisterioId
-        ? (membrosRaw || []).filter((member: any) => memberIdsInMinisterio.has(member.id))
+        ? (membrosRaw || []).filter((member: any) => linkedMemberIdsInMinisterio.has(member.id))
         : membrosRaw,
-    [activeMinisterioId, memberIdsInMinisterio, membrosRaw]
+    [activeMinisterioId, linkedMemberIdsInMinisterio, membrosRaw]
+  );
+  const scopedActiveMembros = useMemo(
+    () =>
+      activeMinisterioId
+        ? (membrosRaw || []).filter(
+            (member: any) => activeMemberIdsInMinisterio.has(member.id) && member.ativo !== false
+          )
+        : (membrosRaw || []).filter((member: any) => member.ativo !== false),
+    [activeMemberIdsInMinisterio, activeMinisterioId, membrosRaw]
   );
   const scopedEscalas = useMemo(
     () =>
@@ -288,12 +298,12 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     setLoading(true);
 
     // 1. Membros
-    const mappedMembers: Member[] = (scopedMembros || []).filter((m: any) => m.ativo).map((m: any) => ({
+    const mappedMembers: Member[] = (scopedActiveMembros || []).map((m: any) => ({
       id: m.id,
       name: m.nome,
       role: 'Membro',
       gender: m.genero === 'Homem' ? 'M' : 'F',
-      status: m.ativo ? 'confirmed' : 'absent',
+      status: 'confirmed',
       avatar: m.foto,
       upcomingScales: [],
       songHistory: []
@@ -368,7 +378,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     // We need repertorioRaw for the join
     setEvents(mappedEvents);
     setLoading(false);
-  }, [activeModules, cultosRaw, scopedAvisos, scopedEscalas, scopedFuncoes, scopedMembros, musicasRaw, nomeCultosRaw, tonsRaw, activeMinisterioId]);
+  }, [activeModules, cultosRaw, scopedActiveMembros, scopedAvisos, scopedEscalas, scopedFuncoes, scopedMembros, musicasRaw, nomeCultosRaw, tonsRaw, activeMinisterioId]);
 
   // Adicionando Repertório ao Join
   const { data: repertorioRaw } = useLocalStorageFirst<any>({ table: 'repertorio' });
