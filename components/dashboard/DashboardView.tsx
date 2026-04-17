@@ -116,7 +116,7 @@ const DashboardView: React.FC = () => {
     }
 
     const isDark = document.documentElement.classList.contains('dark');
-    const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--brand-primary').trim() || '#1e3a8a';
+    const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--brand-primary').trim() || '#3b82f6';
 
     if (chartInstance.current) {
       chartInstance.current.destroy();
@@ -131,7 +131,7 @@ const DashboardView: React.FC = () => {
         g = parseInt(hex.slice(3, 5), 16);
         b = parseInt(hex.slice(5, 7), 16);
       } else {
-        return `rgba(30, 58, 138, ${alpha})`;
+        return `rgba(59, 130, 246, ${alpha})`;
       }
       return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     };
@@ -442,11 +442,11 @@ const DashboardView: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-2 sm:-mt-4 h-[calc(100vh-8rem)] overflow-y-auto lg:overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-2 sm:-mt-4">
         {/* Próximo Culto Card - Compacto em Uma Linha */}
         <div className="mb-6">
           <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-xl border border-white/10 dark:border-slate-700 p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               {/* Ícone e Título */}
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-brand text-white rounded-xl flex items-center justify-center shadow-lg">
@@ -535,11 +535,11 @@ const DashboardView: React.FC = () => {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Gráfico de Frequência - Maior e Principal */}
           <div className="lg:col-span-2">
-            <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-6 h-[400px]">
-              <div className="flex items-center justify-between mb-6">
+            <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-5 sm:p-6 min-h-[360px] sm:h-[400px]">
+              <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-6 bg-brand rounded-full"></div>
                   <div>
@@ -554,7 +554,7 @@ const DashboardView: React.FC = () => {
                 </div>
               </div>
               
-              <div ref={chartContainerRef} className="h-[320px] w-full">
+              <div ref={chartContainerRef} className="h-[260px] w-full sm:h-[320px]">
                 {loading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
@@ -579,7 +579,7 @@ const DashboardView: React.FC = () => {
 
           {/* Card Devocional */}
           <div className="lg:col-span-1">
-            <div className="bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 rounded-2xl shadow-xl p-6 h-[420px] relative overflow-hidden group border border-gray-100 dark:border-gray-700">
+            <div className="bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 rounded-2xl shadow-xl p-5 sm:p-6 min-h-[380px] sm:h-[420px] relative overflow-hidden group border border-gray-100 dark:border-gray-700">
               {/* Efeitos de Fundo - Modo Claro (Modelo 5) / Modo Escuro (Modelo 4) */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-brand/20 dark:bg-brand/30 rounded-full blur-3xl"></div>
               <div className="absolute bottom-0 left-0 w-40 h-40 bg-brand-accent/20 dark:bg-brand-accent/30 rounded-full blur-3xl"></div>

@@ -43,6 +43,12 @@ interface EditingMemberState {
 }
 
 const uniqueIds = (ids: string[]) => [...new Set(ids.filter(Boolean))];
+const NO_MINISTERIO_FILTER = '__without_ministerio__';
+const normalizeSearchValue = (value?: string | null) =>
+  (value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
 
 const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
   const [loading, setLoading] = useState(true);
@@ -56,6 +62,9 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
   const [ministerios, setMinisterios] = useState<SupabaseMinisterio[]>([]);
   const [adminSubView, setAdminSubView] = useState<'members' | 'nome-cultos' | 'temas'>('members');
   const [membrosMinisterios, setMembrosMinisterios] = useState<SupabaseMembroMinisterio[]>([]);
+  const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [userMinisterioFilter, setUserMinisterioFilter] = useState('all');
+  const [userPerfilFilter, setUserPerfilFilter] = useState('all');
 
   // Estados para Aprovações
   const [solicitacoes, setSolicitacoes] = useState<SolicitacaoAprovacao[]>([]);
@@ -184,22 +193,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
       console.log(`Perfil atualizado para ${newProfile} com sucesso`);
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);
-    }
-  };
-
-  const handleToggleStatus = async (member: any) => {
-    try {
-      const newStatus = !member.ativo;
-      
-      // Atualizar usando LocalStorageFirstService
-      LocalStorageFirstService.update('membros', member.id, { ativo: newStatus });
-      
-      // Recarregar dados
-      hydrateUserManagementState();
-      
-      console.log(`Membro ${member.nome} ${newStatus ? 'ativado' : 'desativado'} com sucesso`);
-    } catch (error) {
-      console.error('Erro ao alterar status do membro:', error);
     }
   };
 
@@ -565,11 +558,91 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
       metaClass: 'text-amber-500'
     }
   ];
+  const performanceKpis = [
+    {
+      title: 'Total de Requisicoes',
+      value: data?.totalRequests?.toLocaleString() || '0',
+      detail: 'Volume monitorado',
+      icon: 'fas fa-chart-line',
+      iconWrapClass: 'bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
+      trendIcon: 'fas fa-arrow-up',
+      trendClass: 'text-emerald-500'
+    },
+    {
+      title: 'Tempo Medio',
+      value: data?.avgResponseTime || '0ms',
+      detail: 'Resposta media',
+      icon: 'fas fa-tachometer-alt',
+      iconWrapClass: 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400',
+      trendIcon: 'fas fa-wave-square',
+      trendClass: 'text-emerald-500'
+    },
+    {
+      title: 'Taxa de Erro',
+      value: data?.errorRate || '0%',
+      detail: 'Saude das rotas',
+      icon: 'fas fa-exclamation-triangle',
+      iconWrapClass: 'bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400',
+      trendIcon: 'fas fa-minus',
+      trendClass: 'text-amber-500'
+    },
+    {
+      title: 'Uptime',
+      value: data?.uptime || '99.9%',
+      detail: 'Disponibilidade',
+      icon: 'fas fa-heartbeat',
+      iconWrapClass: 'bg-rose-100 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400',
+      trendIcon: 'fas fa-arrow-up',
+      trendClass: 'text-emerald-500'
+    }
+  ];
 
   const membersData = Array.isArray(data) ? data : [];
+  const ministerioFilterOptions = [...ministerios].sort((a, b) =>
+    (a.nome || '').localeCompare(b.nome || '', 'pt-BR', { sensitivity: 'base' })
+  );
+  const membersTableData = membersData.map((member: any) => {
+    const memberMinisterios = getMemberMinisterios(member.id);
+    const principalMinisterioId =
+      getMemberMemberships(member.id).find((membership) => membership.principal)?.ministerio_id || null;
+
+    return {
+      member,
+      memberMinisterios,
+      principalMinisterioId
+    };
+  });
+  const normalizedUserSearchTerm = normalizeSearchValue(userSearchTerm.trim());
+  const filteredMembersTableData = membersTableData
+    .filter(({ member, memberMinisterios }) => {
+      const matchesSearch =
+        !normalizedUserSearchTerm ||
+        normalizeSearchValue(
+          [
+            member.nome,
+            member.email,
+            member.perfil,
+            ...memberMinisterios.map((ministerio: any) => ministerio.nome)
+          ].join(' ')
+        ).includes(normalizedUserSearchTerm);
+      const matchesMinisterio =
+        userMinisterioFilter === 'all'
+          ? true
+          : userMinisterioFilter === NO_MINISTERIO_FILTER
+            ? memberMinisterios.length === 0
+            : memberMinisterios.some((ministerio: any) => ministerio.id === userMinisterioFilter);
+      const matchesPerfil = userPerfilFilter === 'all' ? true : (member.perfil || 'User') === userPerfilFilter;
+
+      return matchesSearch && matchesMinisterio && matchesPerfil;
+    })
+    .sort((firstEntry, secondEntry) =>
+      (firstEntry.member.nome || '').localeCompare(secondEntry.member.nome || '', 'pt-BR', {
+        sensitivity: 'base'
+      })
+    );
   const activeUsersCount = membersData.filter((member: any) => member.ativo).length;
-  const usersWithoutMinisterio = membersData.filter((member: any) => getMemberMemberships(member.id).length === 0).length;
-  const usersInMultipleMinisterios = membersData.filter((member: any) => getMemberMemberships(member.id).length > 1).length;
+  const usersWithoutMinisterio = membersTableData.filter(({ memberMinisterios }) => memberMinisterios.length === 0).length;
+  const usersInMultipleMinisterios = membersTableData.filter(({ memberMinisterios }) => memberMinisterios.length > 1).length;
 
   const renderContent = () => {
     switch (subView as ToolsSubView) {
@@ -672,28 +745,104 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
               </div>
             </div>
 
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
+              <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.8fr)_minmax(180px,1fr)_minmax(160px,1fr)_auto] gap-3">
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">
+                    Buscar
+                  </label>
+                  <div className="relative">
+                    <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input
+                      type="text"
+                      value={userSearchTerm}
+                      onChange={(e) => setUserSearchTerm(e.target.value)}
+                      placeholder="Nome, email ou ministerio"
+                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">
+                    Ministerio
+                  </label>
+                  <select
+                    value={userMinisterioFilter}
+                    onChange={(e) => setUserMinisterioFilter(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                  >
+                    <option value="all">Todos os ministerios</option>
+                    <option value={NO_MINISTERIO_FILTER}>Sem ministerio</option>
+                    {ministerioFilterOptions.map((ministerio) => (
+                      <option key={ministerio.id} value={ministerio.id}>
+                        {ministerio.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">
+                    Perfil
+                  </label>
+                  <select
+                    value={userPerfilFilter}
+                    onChange={(e) => setUserPerfilFilter(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                  >
+                    <option value="all">Todos os perfis</option>
+                    {profileOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUserSearchTerm('');
+                    setUserMinisterioFilter('all');
+                    setUserPerfilFilter('all');
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors self-end"
+                >
+                  Limpar
+                </button>
+              </div>
+              <div className="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <span>
+                  {filteredMembersTableData.length} {filteredMembersTableData.length === 1 ? 'usuario encontrado' : 'usuarios encontrados'}
+                </span>
+                <span>Listagem em ordem alfabetica.</span>
+              </div>
+            </div>
+
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Nome</th>
-                      <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Ministerio</th>
-                      <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Perfil</th>
-                      <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Sexo</th>
-                      <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Data de Nascimento</th>
-                      <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Status</th>
-                      <th className="px-6 py-3 text-center text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Ações</th>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Nome</th>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Ministerio</th>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Perfil</th>
+                      <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Sexo</th>
+                      <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Data de Nascimento</th>
+                      <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Status</th>
+                      <th className="px-4 sm:px-6 py-3 text-center text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Acoes</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {membersData.map((member: any) => {
-                      const memberMinisterios = getMemberMinisterios(member.id);
-                      const principalMinisterioId = getMemberMemberships(member.id).find((membership) => membership.principal)?.ministerio_id;
-
+                    {filteredMembersTableData.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="px-4 sm:px-6 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                          Nenhum usuario encontrado com os filtros atuais.
+                        </td>
+                      </tr>
+                    )}
+                    {filteredMembersTableData.map(({ member, memberMinisterios, principalMinisterioId }) => {
                       return (
                       <tr key={member.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                        <td className="px-6 py-4">
+                        <td className="px-4 sm:px-6 py-4">
                           <div className="flex items-center">
                             <div className="w-10 h-10 bg-brand text-white rounded-full flex items-center justify-center font-black text-sm mr-3 shrink-0">
                               {member.foto ? (
@@ -708,10 +857,13 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                             </div>
                             <div>
                               <span className="text-sm font-medium text-slate-900 dark:text-white block">{member.nome || 'Sem nome'}</span>
+                              <span className="md:hidden text-xs text-slate-500 dark:text-slate-400 block mt-0.5">
+                                {member.email || 'Sem email'}
+                              </span>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 sm:px-6 py-4">
                           <div className="flex flex-wrap gap-2 max-w-sm">
                             {memberMinisterios.length > 0 ? (
                               memberMinisterios.map((ministerio: any) => (
@@ -741,7 +893,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 sm:px-6 py-4">
                           {editingProfile === member.id ? (
                             <div className="relative">
                               <select
@@ -778,7 +930,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                             </div>
                           )}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="hidden md:table-cell px-6 py-4">
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black ${
                             member.genero === 'Mulher'
                               ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/20 dark:text-pink-300'
@@ -787,7 +939,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                             {member.genero || 'Homem'}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="hidden md:table-cell px-6 py-4">
                           <span className="text-sm text-slate-700 dark:text-slate-300">
                             {member.data_nasc
                               ? new Date(member.data_nasc).toLocaleDateString('pt-BR', {
@@ -798,7 +950,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                               : 'Nao informado'}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="hidden md:table-cell px-6 py-4">
                           <span className={`px-2 py-1 text-xs font-black rounded-full ${
                             member.ativo
                               ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400'
@@ -807,7 +959,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                             {member.ativo ? 'Ativo' : 'Inativo'}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 sm:px-6 py-4">
                           <div className="flex items-center justify-center gap-2">
                             <button 
                               onClick={() => handleEditMember(member)}
@@ -815,17 +967,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                               title="Editar"
                             >
                               <i className="fas fa-edit text-xs"></i>
-                            </button>
-                            <button 
-                              onClick={() => handleToggleStatus(member)}
-                              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-                                member.ativo 
-                                  ? 'bg-red-500 text-white hover:bg-red-600' 
-                                  : 'bg-emerald-500 text-white hover:bg-emerald-600'
-                              }`}
-                              title={member.ativo ? 'Desativar' : 'Ativar'}
-                            >
-                              <i className={`fas ${member.ativo ? 'fa-ban' : 'fa-check'} text-xs`}></i>
                             </button>
                           </div>
                         </td>
@@ -848,13 +989,14 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
             <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter">Desempenho do Sistema</h2>
 
             {/* Cards do Painel Administrativo */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
               {adminCards.map((card) => (
                 <div
                   key={card.title}
-                  className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 group"
+                  className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 group aspect-square sm:aspect-auto"
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex h-full flex-col justify-between gap-4">
+                    <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0">
                       <div className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-sm shrink-0 ${card.iconWrapClass}`}>
                         <i className={`${card.icon} ${card.iconClass} text-lg`}></i>
@@ -876,58 +1018,42 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                     )}
                   </div>
 
-                  <p className="mt-3 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                    {card.detail}
-                  </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                      {card.detail}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
 
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-xl flex items-center justify-center">
-                    <i className="fas fa-chart-line text-blue-600 dark:text-blue-400 text-xl"></i>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+              {performanceKpis.map((kpi) => (
+                <div
+                  key={kpi.title}
+                  className="aspect-square bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${kpi.iconWrapClass}`}>
+                      <i className={`${kpi.icon} text-lg`}></i>
+                    </div>
+                    <i className={`${kpi.trendIcon} ${kpi.trendClass} text-sm sm:text-base`}></i>
                   </div>
-                  <i className="fas fa-arrow-up text-emerald-500"></i>
-                </div>
-                <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Total de Requisições</h3>
-                <p className="text-2xl font-black text-brand">{data?.totalRequests?.toLocaleString() || '0'}</p>
-              </div>
 
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center">
-                    <i className="fas fa-tachometer-alt text-emerald-600 dark:text-emerald-400 text-xl"></i>
+                  <div>
+                    <p className="text-[10px] sm:text-xs font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 mb-2 leading-tight">
+                      {kpi.title}
+                    </p>
+                    <p className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white leading-tight break-words">
+                      {kpi.value}
+                    </p>
                   </div>
-                  <i className="fas fa-arrow-down text-red-500"></i>
-                </div>
-                <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Tempo Médio</h3>
-                <p className="text-2xl font-black text-brand">{data?.avgResponseTime || '0ms'}</p>
-              </div>
 
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/20 rounded-xl flex items-center justify-center">
-                    <i className="fas fa-exclamation-triangle text-amber-600 dark:text-amber-400 text-xl"></i>
-                  </div>
-                  <i className="fas fa-minus text-amber-500"></i>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {kpi.detail}
+                  </p>
                 </div>
-                <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Taxa de Erro</h3>
-                <p className="text-2xl font-black text-brand">{data?.errorRate || '0%'}</p>
-              </div>
-
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-xl flex items-center justify-center">
-                    <i className="fas fa-heartbeat text-purple-600 dark:text-purple-400 text-xl"></i>
-                  </div>
-                  <i className="fas fa-arrow-up text-emerald-500"></i>
-                </div>
-                <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Uptime</h3>
-                <p className="text-2xl font-black text-brand">{data?.uptime || '99.9%'}</p>
-              </div>
+              ))}
             </div>
 
             <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">

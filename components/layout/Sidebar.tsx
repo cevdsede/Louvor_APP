@@ -290,7 +290,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'tools', default: 'tools-admin', label: 'Ferramentas', icon: 'fas fa-tools' },
   ];
 
-  const themeColors = ['#1e3a8a', '#ef4444', '#f59e0b', '#10b981', '#ec4899', '#6366f1'];
+  const themeColors = ['#3b82f6', '#ef4444', '#f59e0b', '#10b981', '#ec4899', '#6366f1'];
 
   const visibleMenuItems = menuItems.filter((item) => {
     if (item.id === 'dashboard') return activeModules.includes('dashboard');
@@ -311,7 +311,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <nav className="fixed bottom-2 left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] max-w-md h-16 rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-100 dark:border-slate-800 shadow-xl flex lg:flex-col lg:bottom-0 lg:left-0 lg:translate-x-0 lg:w-[280px] lg:max-w-none lg:h-full lg:rounded-none lg:border-t-0 lg:border-l-0 lg:border-b-0 lg:border-r lg:shadow-none z-[100] transition-all">
+    <nav className="fixed inset-x-0 bottom-2 z-[100] mx-auto flex min-h-16 w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] rounded-2xl border border-slate-100 bg-white shadow-xl transition-all dark:border-slate-800 dark:bg-[#0f172a] sm:bottom-3 sm:w-[calc(100%-1.5rem)] sm:max-w-[720px] lg:inset-x-auto lg:bottom-0 lg:left-0 lg:mx-0 lg:h-full lg:w-[280px] lg:max-w-none lg:flex-col lg:rounded-none lg:border-r lg:border-b-0 lg:border-l-0 lg:border-t-0 lg:shadow-none">
       {/* LOGO DESKTOP - Restaurada */}
       <div className="hidden lg:flex flex-col items-center py-10 px-6">
         <div className="flex flex-col items-center gap-2">
@@ -330,13 +330,13 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* MENU ITEMS - Scrollable area */}
-      <div className="flex w-full lg:w-auto lg:flex-col flex-1 items-center lg:items-stretch px-2 lg:px-4 lg:py-2 gap-1.5 lg:gap-1.5 justify-center lg:justify-start lg:overflow-y-auto no-scrollbar">
+      <div className="flex w-full flex-1 items-center justify-center gap-1 px-1.5 lg:w-auto lg:flex-col lg:items-stretch lg:justify-start lg:gap-1.5 lg:overflow-y-auto lg:px-4 lg:py-2 no-scrollbar">
         {visibleMenuItems.map((item) => (
           <button
             key={item.id}
             onClick={() => onViewChange(item.default as ViewType)}
             className={`
-              flex flex-1 max-w-[68px] lg:flex-none lg:max-w-none flex-col lg:flex-row items-center justify-center lg:justify-start gap-0.5 lg:gap-4 px-1.5 lg:px-5 py-1.5 lg:py-4 rounded-xl lg:rounded-2xl transition-all
+              flex min-w-0 flex-1 max-w-none flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 transition-all lg:flex-none lg:flex-row lg:justify-start lg:gap-4 lg:rounded-2xl lg:px-5 lg:py-4
               ${isActive(item.id)
                 ? 'bg-brand text-white shadow-xl shadow-brand/20'
                 : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 lg:hover:bg-slate-50 lg:dark:hover:bg-slate-800/50'}
@@ -435,9 +435,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* MOBILE MODAL */}
       {isProfileModalOpen && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[500] overflow-y-auto px-3 py-4 pb-24 sm:p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsProfileModalOpen(false)}></div>
-          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 lg:p-8 shadow-2xl animate-fade-in border border-slate-100 dark:border-slate-800 max-h-[90vh] overflow-y-auto no-scrollbar">
+          <div className="flex min-h-full items-start justify-center sm:items-center">
+          <div className="relative mx-auto mt-2 w-full max-w-md bg-white dark:bg-slate-900 rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-6 lg:p-8 shadow-2xl animate-fade-in border border-slate-100 dark:border-slate-800 max-h-[calc(100dvh-7rem)] sm:max-h-[90vh] overflow-y-auto no-scrollbar">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter">Configurações</h3>
               <button onClick={() => setIsProfileModalOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors"><i className="fas fa-times text-lg"></i></button>
@@ -523,20 +524,22 @@ const Sidebar: React.FC<SidebarProps> = ({
               </div>
             </div>
 
-            <div className="flex gap-4 mt-8">
+            <div className="flex flex-col-reverse gap-3 mt-8 sm:flex-row sm:gap-4">
               <button onClick={() => setIsProfileModalOpen(false)} className="flex-1 py-3.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-xl font-black uppercase tracking-widest text-[9px]">Fechar</button>
               <button onClick={handleSaveProfile} disabled={isSaving} className="flex-1 py-3.5 bg-brand text-white rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-brand/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                 {isSaving ? 'Salvando...' : 'Salvar'}
               </button>
             </div>
           </div>
+          </div>
         </div>
       )}
       {/* Modal de Alteração de Senha */}
       {isPasswordModalOpen && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 lg:p-8">
+        <div className="fixed inset-0 z-[600] overflow-y-auto px-3 py-4 pb-24 sm:p-4 lg:p-8">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsPasswordModalOpen(false)}></div>
-          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 lg:p-8 shadow-2xl animate-fade-in border border-slate-100 dark:border-slate-800 max-h-[90vh] overflow-y-auto no-scrollbar">
+          <div className="flex min-h-full items-start justify-center sm:items-center">
+          <div className="relative mx-auto mt-2 w-full max-w-md bg-white dark:bg-slate-900 rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-6 lg:p-8 shadow-2xl animate-fade-in border border-slate-100 dark:border-slate-800 max-h-[calc(100dvh-7rem)] sm:max-h-[90vh] overflow-y-auto no-scrollbar">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter">Alterar Senha</h3>
               <button onClick={() => setIsPasswordModalOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors"><i className="fas fa-times text-lg"></i></button>
@@ -565,7 +568,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               </div>
             </div>
 
-            <div className="flex gap-3 mt-6">
+            <div className="flex flex-col-reverse gap-3 mt-6 sm:flex-row">
               <button
                 onClick={() => setIsPasswordModalOpen(false)}
                 disabled={isSaving}
@@ -581,6 +584,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {isSaving ? 'Salvando...' : 'Salvar'}
               </button>
             </div>
+          </div>
           </div>
         </div>
       )}

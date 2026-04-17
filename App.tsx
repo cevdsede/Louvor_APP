@@ -135,7 +135,7 @@ const AppContent: React.FC<AppContentProps> = ({
           <Toolbar currentView={currentView} onViewChange={setCurrentView} />
 
           <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 dark:bg-slate-800">
-            <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
+            <div className="container mx-auto px-4 py-6 pb-28 sm:px-6 sm:pb-32 lg:px-8 lg:pb-8">
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-40">
                   <div className="h-12 w-12 animate-spin rounded-full border-[6px] border-brand border-t-transparent" />
@@ -174,8 +174,8 @@ const App: React.FC = () => {
   });
 
   const [brandColor, setBrandColor] = useState(() => {
-    if (typeof window === 'undefined') return '#1e3a8a';
-    return localStorage.getItem('brandColor') || '#1e3a8a';
+    if (typeof window === 'undefined') return '#3b82f6';
+    return localStorage.getItem('brandColor') || '#3b82f6';
   });
 
   const [appState, setAppState] = useState<AppState>('splash');
