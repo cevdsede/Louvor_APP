@@ -28,6 +28,7 @@ interface ImportRequest {
   ministerio_slug?: string;
   dry_run?: boolean;
   replace_existing?: boolean;
+  skip_empty_events?: boolean;
   member_aliases?: Record<string, string>;
   funcao_aliases?: Record<string, string>;
   eventos?: ImportEventInput[];
@@ -477,6 +478,7 @@ Deno.serve(async (req: Request) => {
     const issues: ImportIssue[] = [];
     const dryRun = requestBody.dry_run === true;
     const replaceExisting = requestBody.replace_existing !== false;
+    const skipEmptyEvents = requestBody.skip_empty_events === true;
     const inputEvents = Array.isArray(requestBody.eventos)
       ? requestBody.eventos
       : [];
@@ -668,6 +670,11 @@ Deno.serve(async (req: Request) => {
       }
 
       const dedupedAssignments = dedupeAssignments(assignments);
+
+      if (skipEmptyEvents && dedupedAssignments.length === 0) {
+        continue;
+      }
+
       const nomeCultoNormalized = normalizeKey(nomeCultoDisplay);
       const cultoKey = toCultoKey(dataCulto, horarioCulto);
       const matchingCultos = cultoMap.get(cultoKey) ?? [];
@@ -838,8 +845,12 @@ Deno.serve(async (req: Request) => {
     }
 
     for (const plannedEvent of plannedEvents) {
-      const cultoId = plannedEvent.existing_culto_id ??
+      let cultoId = plannedEvent.existing_culto_id ??
         cultoIdByKey.get(plannedEvent.key);
+
+      if (!cultoId && dryRun && !plannedEvent.existing_culto_id) {
+        cultoId = `dry-run:${plannedEvent.key}`;
+      }
 
       if (!cultoId) {
         throw new Error(

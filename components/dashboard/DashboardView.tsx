@@ -200,9 +200,25 @@ const DashboardView: React.FC = () => {
       return `#${toHex(newR)}${toHex(newG)}${toHex(newB)}`;
     };
 
-    // Gradientes mais bonitos e variados - baseados na cor do tema
+    // Gradientes baseados na cor do tema
     const backgroundColors = frequenciaMembros.map((_, index) => {
-      // Gerar cores complementares baseadas na cor primária
+      // Se for o tema azul, usar uma paleta de azuis variados
+      const isBlueTheme = primaryColor.toLowerCase() === '#3b82f6' || 
+                         primaryColor.toLowerCase().includes('59, 130, 246');
+
+      if (isBlueTheme) {
+        const bluePalette = [
+          'rgba(59, 130, 246, 0.8)', // Blue 500
+          'rgba(37, 99, 235, 0.8)',  // Blue 600
+          'rgba(29, 78, 216, 0.8)',  // Blue 700
+          'rgba(96, 165, 250, 0.8)', // Blue 400
+          'rgba(147, 197, 253, 0.8)', // Blue 300
+          'rgba(30, 64, 175, 0.8)',  // Blue 800
+        ];
+        return bluePalette[index % bluePalette.length];
+      }
+
+      // Gerar cores complementares baseadas na cor primária para outros temas
       const baseColors = [
         hexToRgba(primaryColor, 0.8), // Cor primária do tema
         hexToRgba(adjustColor(primaryColor, 120), 0.8), // Complementar 1
@@ -218,6 +234,21 @@ const DashboardView: React.FC = () => {
 
     // Gradientes mais suaves para as bordas - baseados na cor do tema
     const borderColors = frequenciaMembros.map((_, index) => {
+      const isBlueTheme = primaryColor.toLowerCase() === '#3b82f6' || 
+                         primaryColor.toLowerCase().includes('59, 130, 246');
+
+      if (isBlueTheme) {
+        const blueBorderPalette = [
+          'rgba(59, 130, 246, 1)',
+          'rgba(37, 99, 235, 1)',
+          'rgba(29, 78, 216, 1)',
+          'rgba(96, 165, 250, 1)',
+          'rgba(147, 197, 253, 1)',
+          'rgba(30, 64, 175, 1)',
+        ];
+        return blueBorderPalette[index % blueBorderPalette.length];
+      }
+
       const baseColors = [
         hexToRgba(primaryColor, 1), // Cor primária do tema
         hexToRgba(adjustColor(primaryColor, 120), 1), // Complementar 1

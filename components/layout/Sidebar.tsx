@@ -251,7 +251,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         }));
       }
 
-      showSuccess('Perfil atualizado com sucesso!');
+      showSuccess('Perfil updated com sucesso!');
       setIsProfileModalOpen(false);
       setProfileData(prev => ({ ...prev, password: '' }));
     } catch (error: any) {
@@ -489,23 +489,6 @@ const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               <div className="lg:hidden space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                {userMinisterios.length > 1 && (
-                  <div>
-                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest block ml-1 mb-2">Ministerio ativo</label>
-                    <select
-                      value={activeMinisterioId || ''}
-                      onChange={(e) => setActiveMinisterioId(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand"
-                    >
-                      {userMinisterios.map((ministerio) => (
-                        <option key={ministerio.id} value={ministerio.id}>
-                          {ministerio.nome}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
                 <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest block ml-1">Temas</label>
                 <div className="flex justify-between">
                   {themeColors.map(color => (
@@ -520,6 +503,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <button onClick={onToggleTheme} className="w-full py-3 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-black uppercase tracking-widest text-[8px] border border-slate-100 dark:border-slate-700 flex items-center justify-center gap-2">
                   <i className={`fas ${isDarkMode ? 'fa-sun text-brand-gold' : 'fa-moon text-brand'}`}></i>
                   Alternar Modo
+                </button>
+                <button 
+                  onClick={handleLogout} 
+                  className="w-full py-3 bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400 rounded-xl font-black uppercase tracking-widest text-[8px] border border-red-100 dark:border-red-500/20 flex items-center justify-center gap-2"
+                >
+                  <i className="fas fa-sign-out-alt"></i>
+                  Sair do Sistema
                 </button>
               </div>
             </div>

@@ -2,7 +2,8 @@
 
 Arquivos desta pasta:
 
-- `import-escala.gs`: script modelo para importar a planilha do Google Sheets
+- `import-escala.gs`: script modelo para o Louvor
+- `import-escala-midia.gs`: script modelo para a Midia
 
 ## O que essa integração faz
 

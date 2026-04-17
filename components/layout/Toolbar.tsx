@@ -48,12 +48,9 @@ const isToolsMode = (view: ViewType) =>
 const Toolbar: React.FC<ToolbarProps> = ({ currentView, onViewChange }) => {
   const {
     activeMinisterio,
-    activeMinisterioId,
     canAccessModule,
     isGlobalAdminOrLeader,
-    loading,
-    setActiveMinisterioId,
-    userMinisterios
+    loading
   } = useMinistryContext();
 
   if (loading || currentView === 'dashboard') {
@@ -97,40 +94,6 @@ const Toolbar: React.FC<ToolbarProps> = ({ currentView, onViewChange }) => {
             {getTitle()}
           </h2>
         </div>
-
-        {userMinisterios.length > 1 && (
-          <div className="w-full lg:hidden">
-            <div className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-              <div className="mb-2 flex items-center gap-2">
-                <i className="fas fa-random text-[10px] text-brand"></i>
-                <p className="text-[9px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                  Trocar Ministerio
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                {userMinisterios.map((ministerio) => {
-                  const isActiveMinisterio = ministerio.id === activeMinisterioId;
-
-                  return (
-                    <button
-                      key={ministerio.id}
-                      type="button"
-                      onClick={() => setActiveMinisterioId(ministerio.id)}
-                      className={`rounded-xl px-3 py-3 text-center text-[10px] font-black uppercase tracking-[0.16em] transition-all ${
-                        isActiveMinisterio
-                          ? 'bg-brand text-white shadow-lg shadow-brand/20'
-                          : 'bg-slate-50 text-slate-600 dark:bg-slate-900 dark:text-slate-300'
-                      }`}
-                    >
-                      <span className="block leading-tight break-words">{ministerio.nome}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="flex w-full items-center justify-center">
           <div className={`w-full pb-1 sm:w-auto sm:pb-0 ${isToolsToolbar ? '' : 'flex justify-center'} ${isToolsToolbar ? '' : 'sm:no-scrollbar'}`}>

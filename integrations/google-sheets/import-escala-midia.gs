@@ -1,41 +1,34 @@
 const IMPORT_CONFIG = {
-  sheetName: 'Escala',
-  ministerioSlug: 'louvor',
+  sheetName: 'Escala Planilha',
+  ministerioSlug: 'midia',
   defaultYear: '2026',
   dataStartRow: 2,
   columns: {
     dataCulto: 1,
     horarioCulto: 3,
     nomeCulto: 4,
-    dataEnsaio: 15,
-    horarioEnsaio: 16,
   },
   roleColumns: [
-    { column: 5, funcao: 'Ministro' },
-    { column: 6, funcao: 'Ministro' },
-    { column: 7, funcao: 'Vocal' },
-    { column: 8, funcao: 'Vocal' },
-    { column: 9, funcao: 'Vocal' },
-    { column: 10, funcao: 'Violão' },
-    { column: 11, funcao: 'Teclado' },
-    { column: 12, funcao: 'Guitarra' },
-    { column: 13, funcao: 'Baixo' },
-    { column: 14, funcao: 'Bateria' },
+    { column: 5, funcao: 'Data Show' },
+    { column: 6, funcao: 'Apoio' },
+    { column: 7, funcao: 'Celular' },
+    { column: 8, funcao: 'Camera' },
+    { column: 9, funcao: 'Social Midias' },
   ],
   memberAliases: {
-    'Convidado': 'Convidado',
-    'V. Mesquita': 'V. Mesquita',
+    'Anne': 'Anne Gabrielly',
   },
+  ignoredCellValues: ['', '-', '--', 'x', 'X', 'folga', 'Folga'],
 };
 
 function onOpen() {
   SpreadsheetApp.getUi()
-    .createMenu('Supabase')
-    .addItem('Testar importação (dry-run)', 'testImportDryRun')
+    .createMenu('Supabase Midia')
+    .addItem('Testar importacao (dry-run)', 'testImportDryRun')
     .addItem('Importar escalas agora', 'runImportNow')
     .addSeparator()
-    .addItem('Salvar config padrão', 'saveImportProperties')
-    .addItem('Criar gatilho diário', 'createDailyImportTrigger')
+    .addItem('Salvar URL e segredo', 'saveImportProperties')
+    .addItem('Criar gatilho diario (06h)', 'createDailyImportTrigger')
     .addToUi();
 }
 
@@ -49,7 +42,7 @@ function saveImportProperties() {
   });
 
   SpreadsheetApp.getActive().toast(
-    'As propriedades básicas foram salvas. Agora troque o segredo real.',
+    'Configuracoes salvas. Agora troque o segredo real.',
     'Supabase',
     5,
   );
@@ -78,7 +71,7 @@ function createDailyImportTrigger() {
   }
 
   SpreadsheetApp.getActive().toast(
-    'Gatilho diário criado para executar a importação.',
+    'Gatilho diario configurado.',
     'Supabase',
     5,
   );
@@ -90,9 +83,7 @@ function syncScaleSheet_(dryRun) {
   const importSecret = properties.getProperty('GOOGLE_SHEETS_IMPORT_SECRET');
 
   if (!functionUrl || !importSecret) {
-    throw new Error(
-      'Configure SUPABASE_FUNCTION_URL e GOOGLE_SHEETS_IMPORT_SECRET nas Script Properties.',
-    );
+    throw new Error('Configure a URL e o segredo antes de importar.');
   }
 
   if (importSecret === 'TROCAR_PELO_SEGREDO_REAL') {
@@ -129,24 +120,24 @@ function syncScaleSheet_(dryRun) {
 
   Logger.log(JSON.stringify(data, null, 2));
 
-  const title = dryRun ? 'Dry-run Supabase' : 'Importação Supabase';
+  const title = dryRun ? 'Dry-run Supabase' : 'Importacao Supabase';
 
   if (statusCode >= 200 && statusCode < 300 && data.success) {
     SpreadsheetApp.getActive().toast(
-      `${title}: ${data.stats.eventos_processados} eventos, ${data.stats.escalas_inseridas} escalas.`,
-      'Supabase',
+      `${title}: ${data.stats.eventos_processados} eventos e ${data.stats.escalas_inseridas} escalas.`,
+      'Sucesso',
       8,
     );
     return;
   }
 
   const issueLines = (data.issues || [])
-    .slice(0, 5)
+    .slice(0, 8)
     .map((issue) => `${issue.event_ref || 'Geral'}: ${issue.message}`);
 
   throw new Error(
     [
-      `${title} falhou com status ${statusCode}.`,
+      `${title} falhou (${statusCode}).`,
       data.message || '',
       issueLines.join('\n'),
     ]
@@ -160,21 +151,20 @@ function buildImportPayload_() {
   const sheet = spreadsheet.getSheetByName(IMPORT_CONFIG.sheetName);
 
   if (!sheet) {
-    throw new Error(`A aba "${IMPORT_CONFIG.sheetName}" não foi encontrada.`);
+    throw new Error(`A aba "${IMPORT_CONFIG.sheetName}" nao foi encontrada.`);
   }
 
   const lastRow = sheet.getLastRow();
-  const lastColumn = sheet.getLastColumn();
-
   if (lastRow < IMPORT_CONFIG.dataStartRow) {
-    throw new Error('A planilha não possui linhas para importar.');
+    throw new Error('A planilha nao possui linhas para importar.');
   }
 
+  const lastConfiguredColumn = getLastConfiguredColumn_();
   const range = sheet.getRange(
     IMPORT_CONFIG.dataStartRow,
     1,
     lastRow - IMPORT_CONFIG.dataStartRow + 1,
-    lastColumn,
+    lastConfiguredColumn,
   );
   const values = range.getValues();
   const displayValues = range.getDisplayValues();
@@ -184,50 +174,52 @@ function buildImportPayload_() {
   values.forEach((row, index) => {
     const displayRow = displayValues[index] || [];
     const rowNumber = IMPORT_CONFIG.dataStartRow + index;
-    const rawNomeCulto = displayRow[IMPORT_CONFIG.columns.nomeCulto - 1] ||
-      row[IMPORT_CONFIG.columns.nomeCulto - 1];
     const rawDataCulto = displayRow[IMPORT_CONFIG.columns.dataCulto - 1] ||
       row[IMPORT_CONFIG.columns.dataCulto - 1];
     const rawHorarioCulto = displayRow[IMPORT_CONFIG.columns.horarioCulto - 1] ||
       row[IMPORT_CONFIG.columns.horarioCulto - 1];
-    const rawDataEnsaio = displayRow[IMPORT_CONFIG.columns.dataEnsaio - 1] ||
-      row[IMPORT_CONFIG.columns.dataEnsaio - 1];
-    const rawHorarioEnsaio = displayRow[IMPORT_CONFIG.columns.horarioEnsaio - 1] ||
-      row[IMPORT_CONFIG.columns.horarioEnsaio - 1];
-
-    const nomeCulto = normalizeText_(rawNomeCulto);
+    const rawNomeCulto = displayRow[IMPORT_CONFIG.columns.nomeCulto - 1] ||
+      row[IMPORT_CONFIG.columns.nomeCulto - 1];
     const dataCulto = formatDateCell_(rawDataCulto);
     const horarioCulto = formatTimeCell_(rawHorarioCulto);
-    const dataEnsaio = formatOptionalDateCell_(rawDataEnsaio);
-    const horarioEnsaio = formatOptionalTimeCell_(rawHorarioEnsaio);
+    const nomeCulto = normalizeText_(rawNomeCulto);
 
-    const escalados = IMPORT_CONFIG.roleColumns
-      .map(({ column, funcao }) => {
-        const originalName = normalizeText_(displayRow[column - 1] || row[column - 1]);
-        const resolvedName = IMPORT_CONFIG.memberAliases[originalName] || originalName;
+    const escalados = [];
 
-        if (!resolvedName) return null;
+    IMPORT_CONFIG.roleColumns.forEach(({ column, funcao }) => {
+      const rawValue = displayRow[column - 1] || row[column - 1];
+      const memberNames = splitMemberCell_(rawValue);
 
-        return {
-          membro_nome: resolvedName,
+      memberNames.forEach((memberName) => {
+        escalados.push({
+          membro_nome: resolveMemberAlias_(memberName),
           funcao_nome: funcao,
-        };
-      })
-      .filter(Boolean);
+        });
+      });
+    });
 
-    const isEmptyRow = !nomeCulto && !dataCulto && !horarioCulto &&
+    const isCompletelyEmpty = !dataCulto && !horarioCulto && !nomeCulto &&
       escalados.length === 0;
-    if (isEmptyRow) return;
+
+    if (isCompletelyEmpty) {
+      return;
+    }
+
+    if (isHeaderLikeRow_(rawDataCulto, rawHorarioCulto, rawNomeCulto)) {
+      return;
+    }
 
     const isPlaceholderWithoutCulto = !nomeCulto && escalados.length === 0;
-    if (isPlaceholderWithoutCulto) return;
+    if (isPlaceholderWithoutCulto) {
+      return;
+    }
 
     if (!dataCulto) {
-      throw new Error(`Linha ${rowNumber}: data do culto vazia ou inválida.`);
+      throw new Error(`Linha ${rowNumber}: data do culto vazia ou invalida.`);
     }
 
     if (!horarioCulto) {
-      throw new Error(`Linha ${rowNumber}: horário do culto vazio ou inválido.`);
+      throw new Error(`Linha ${rowNumber}: horario do culto vazio ou invalido.`);
     }
 
     if (!nomeCulto) {
@@ -243,8 +235,6 @@ function buildImportPayload_() {
       data_culto: dataCulto,
       horario: horarioCulto,
       nome_culto: nomeCulto,
-      data_ensaio: dataEnsaio,
-      horario_ensaio: horarioEnsaio,
       escalados,
     });
   });
@@ -267,19 +257,78 @@ function buildImportPayload_() {
   };
 }
 
+function getLastConfiguredColumn_() {
+  const configuredColumns = [
+    IMPORT_CONFIG.columns.dataCulto,
+    IMPORT_CONFIG.columns.horarioCulto,
+    IMPORT_CONFIG.columns.nomeCulto,
+  ].concat(IMPORT_CONFIG.roleColumns.map((item) => item.column));
+
+  return Math.max.apply(null, configuredColumns);
+}
+
 function normalizeText_(value) {
   return String(value || '').trim();
+}
+
+function normalizeLookupKey_(value) {
+  return normalizeText_(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function resolveMemberAlias_(value) {
+  const normalized = normalizeLookupKey_(value);
+  const aliasEntries = Object.keys(IMPORT_CONFIG.memberAliases || {});
+
+  for (let i = 0; i < aliasEntries.length; i += 1) {
+    const alias = aliasEntries[i];
+    if (normalizeLookupKey_(alias) === normalized) {
+      return IMPORT_CONFIG.memberAliases[alias];
+    }
+  }
+
+  return normalizeText_(value);
+}
+
+function splitMemberCell_(value) {
+  const text = normalizeText_(value);
+
+  if (!text) return [];
+  if (IMPORT_CONFIG.ignoredCellValues.indexOf(text) >= 0) return [];
+
+  return text
+    .split(/[\n\r,;/]+/)
+    .map((item) => normalizeText_(item))
+    .filter((item) => item && IMPORT_CONFIG.ignoredCellValues.indexOf(item) === -1);
+}
+
+function isHeaderLikeRow_(dataValue, horarioValue, nomeValue) {
+  const headerWords = [
+    'data',
+    'dia',
+    'horario',
+    'hora',
+    'culto',
+    'evento',
+    'escala',
+    'nome',
+  ];
+
+  const values = [dataValue, horarioValue, nomeValue]
+    .map((item) => normalizeLookupKey_(item))
+    .filter(Boolean);
+
+  const matches = values.filter((item) => headerWords.indexOf(item) >= 0);
+  return matches.length >= 2;
 }
 
 function formatDateCell_(value) {
   if (!value) return '';
 
   if (Object.prototype.toString.call(value) === '[object Date]' && !isNaN(value)) {
-    return Utilities.formatDate(
-      value,
-      Session.getScriptTimeZone(),
-      'yyyy-MM-dd',
-    );
+    return Utilities.formatDate(value, Session.getScriptTimeZone(), 'yyyy-MM-dd');
   }
 
   const text = normalizeText_(value);
@@ -296,27 +345,16 @@ function formatDateCell_(value) {
   return '';
 }
 
-function formatOptionalDateCell_(value) {
-  return formatDateCell_(value) || null;
-}
-
 function formatTimeCell_(value) {
   if (!value && value !== 0) return '';
 
   if (Object.prototype.toString.call(value) === '[object Date]' && !isNaN(value)) {
-    return Utilities.formatDate(value, Session.getScriptTimeZone(), 'HH:mm');
+    return Utilities.formatDate(value, Session.getScriptTimeZone(), 'HH:mm:00');
   }
 
   const text = normalizeText_(value);
   const hhmm = text.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
   if (!hhmm) return '';
 
-  const hour = hhmm[1].padStart(2, '0');
-  const minute = hhmm[2];
-
-  return `${hour}:${minute}`;
-}
-
-function formatOptionalTimeCell_(value) {
-  return formatTimeCell_(value) || null;
+  return `${hhmm[1].padStart(2, '0')}:${hhmm[2]}:00`;
 }
