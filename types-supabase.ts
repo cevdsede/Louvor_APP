@@ -61,6 +61,13 @@ export interface SupabaseMembroMinisterio {
   created_at?: string;
 }
 
+export interface SupabaseMembroFuncao {
+  id: string;
+  id_membro: string;
+  id_funcao: string | number;
+  created_at?: string;
+}
+
 export interface SupabaseMusica {
   id: string;
   musica: string;

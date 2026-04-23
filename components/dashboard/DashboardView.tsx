@@ -3,7 +3,7 @@ import { supabase } from '../../supabaseClient';
 import { useMinistryContext } from '../../contexts/MinistryContext';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import { ChartInstance } from '../../types-supabase';
-import DashboardService, { ProximaEscala, FrequenciaMembro } from '../../services/DashboardService';
+import DashboardService, { EscalaSemanaResumo, FrequenciaMembro } from '../../services/DashboardService';
 
 const DashboardView: React.FC = () => {
   const { activeMinisterio, activeMinisterioId, activeModules } = useMinistryContext();
@@ -19,7 +19,7 @@ const DashboardView: React.FC = () => {
   const [totalCultos, setTotalCultos] = useState<number>(0);
   const [totalMusicas, setTotalMusicas] = useState<number>(0);
   const [totalMembrosAtivos, setTotalMembrosAtivos] = useState<number>(0);
-  const [proximaEscalaData, setProximaEscalaData] = useState<ProximaEscala | null>(null);
+  const [escalaSemana, setEscalaSemana] = useState<EscalaSemanaResumo | null>(null);
   const [frequenciaMembros, setFrequenciaMembros] = useState<FrequenciaMembro[]>([]);
   const [aniversariantes, setAniversariantes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,11 +54,11 @@ const DashboardView: React.FC = () => {
       }
 
       // Carregar dados em paralelo incluindo versículo diário
-      const [totalCultosData, totalMusicasData, totalMembrosData, proximaEscalaData, frequenciaData, niverData, versiculoData] = await Promise.all([
+      const [totalCultosData, totalMusicasData, totalMembrosData, escalaSemanaData, frequenciaData, niverData, versiculoData] = await Promise.all([
         DashboardService.getTotalCultos(scope),
         DashboardService.getTotalMusicas(scope),
         DashboardService.getTotalMembrosAtivos(scope),
-        userId ? DashboardService.getProximaEscala(userId, scope) : Promise.resolve(null),
+        DashboardService.getEscalasDaSemana(userId || '', scope),
         DashboardService.getFrequenciaPorMembro(scope),
         DashboardService.getAniversariantesDoMes(scope),
         DashboardService.getVersiculoDiario() // Buscar versículo automático
@@ -68,11 +68,7 @@ const DashboardView: React.FC = () => {
       setTotalMusicas(totalMusicasData);
       setTotalMembrosAtivos(totalMembrosData);
 
-      if (proximaEscalaData) {
-        setProximaEscalaData(proximaEscalaData);
-      } else {
-        setProximaEscalaData(null);
-      }
+      setEscalaSemana(escalaSemanaData);
 
       // Ordenar frequencia por quantidade
       const sortedFrequencia = [...frequenciaData].sort((a, b) => b.quantidade - a.quantidade);
@@ -89,6 +85,38 @@ const DashboardView: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const formatCompactDate = (dateString?: string | null) => {
+    if (!dateString) return '--/--';
+
+    return new Date(`${dateString}T12:00:00`).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit'
+    });
+  };
+
+  const formatWeekday = (dateString?: string | null) => {
+    if (!dateString) return '--';
+
+    return new Date(`${dateString}T12:00:00`)
+      .toLocaleDateString('pt-BR', { weekday: 'short' })
+      .replace('.', '')
+      .slice(0, 3)
+      .toUpperCase();
+  };
+
+  const formatHour = (value?: string | null) => {
+    if (!value) return '';
+    return value.slice(0, 5);
+  };
+
+  const proximaEscalaData = escalaSemana?.items?.[0]
+    ? {
+        culto: escalaSemana.items[0].culto,
+        data: escalaSemana.items[0].data,
+        funcoes: escalaSemana.items[0].funcoes
+      }
+    : null;
 
   // Helper para renderizar os nomes dos aniversariantes
   const renderBirthdayNames = () => {
@@ -474,14 +502,93 @@ const DashboardView: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-2 sm:-mt-4">
+        <div className="mb-6">
+          <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-xl border border-white/10 dark:border-slate-700 p-4">
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-brand text-white rounded-xl flex items-center justify-center shadow-lg">
+                    <i className="fas fa-calendar-week text-lg"></i>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-slate-800 dark:text-white">Escala da Semana</h2>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      {loading ? 'Carregando...' : `Seg a Dom - ${formatCompactDate(escalaSemana?.startDate)} a ${formatCompactDate(escalaSemana?.endDate)}`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="inline-flex items-center rounded-full bg-brand/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-brand">
+                  {loading ? '...' : `${escalaSemana?.items.length || 0} escala${(escalaSemana?.items.length || 0) === 1 ? '' : 's'}`}
+                </div>
+              </div>
+
+              {loading ? (
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {[0, 1].map((item) => (
+                    <div
+                      key={item}
+                      className="h-24 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/40 animate-pulse"
+                    />
+                  ))}
+                </div>
+              ) : escalaSemana?.items.length ? (
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {escalaSemana.items.map((item) => (
+                    <div
+                      key={item.idCulto}
+                      className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/40 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[11px] font-black uppercase tracking-[0.24em] text-brand">
+                            {formatWeekday(item.data)} - {formatCompactDate(item.data)}
+                          </p>
+                          <h3 className="mt-1 text-sm font-black text-slate-800 dark:text-white">
+                            {item.culto}
+                          </h3>
+                        </div>
+                        {item.horario && (
+                          <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-300">
+                            {formatHour(item.horario)}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {item.funcoes.length ? (
+                          item.funcoes.map((funcao) => (
+                            <span
+                              key={`${item.idCulto}-${funcao}`}
+                              className="px-2.5 py-1 bg-brand/10 text-brand text-xs font-semibold rounded-lg"
+                            >
+                              {funcao}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-slate-500 dark:text-slate-400 italic">Sem funcao definida</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/30 px-4 py-5 text-sm text-slate-500 dark:text-slate-400">
+                  Nenhuma escala encontrada nesta semana para o ministerio atual.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="hidden">
         {/* Próximo Culto Card - Compacto em Uma Linha */}
         <div className="mb-6">
           <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-xl border border-white/10 dark:border-slate-700 p-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-5">
               {/* Ícone e Título */}
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-brand text-white rounded-xl flex items-center justify-center shadow-lg">
-                  <i className="fas fa-calendar-star text-lg"></i>
+                  <i className="fas fa-calendar-week text-lg"></i>
                 </div>
                 <div>
                   <h2 className="text-lg font-black text-slate-800 dark:text-white">Próximo Culto</h2>
@@ -517,6 +624,7 @@ const DashboardView: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
         </div>
 
         {/* Stats Grid */}

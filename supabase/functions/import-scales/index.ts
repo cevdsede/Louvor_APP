@@ -87,7 +87,12 @@ interface CultoRecord {
 }
 
 interface EscalaRecord {
+  id: string;
   id_culto: string;
+  id_membros: string | null;
+  id_funcao: number | null;
+  data_ensaio: string | null;
+  horario_ensaio: string | null;
 }
 
 interface PlannedAssignment {
@@ -284,6 +289,27 @@ function dedupeAssignments(assignments: PlannedAssignment[]) {
   return deduped;
 }
 
+function toAssignmentKey(
+  memberId: string | null | undefined,
+  functionId: number | null | undefined,
+) {
+  return `${memberId ?? ""}__${functionId ?? ""}`;
+}
+
+function sameOptionalDate(
+  left: string | null | undefined,
+  right: string | null | undefined,
+) {
+  return (left ?? null) === (right ?? null);
+}
+
+function sameOptionalTime(
+  left: string | null | undefined,
+  right: string | null | undefined,
+) {
+  return (left ?? null) === (right ?? null);
+}
+
 async function loadData(
   supabaseAdmin: SupabaseClient,
   ministerio: MinisterioRecord,
@@ -315,7 +341,7 @@ async function loadData(
       .select("id, data_culto, horario, id_nome_cultos"),
     supabaseAdmin
       .from("escalas")
-      .select("id_culto")
+      .select("id, id_culto, id_membros, id_funcao, data_ensaio, horario_ensaio")
       .eq("ministerio_id", ministerio.id),
   ]);
 
@@ -533,6 +559,10 @@ Deno.serve(async (req: Request) => {
       (item) => toCultoKey(item.data_culto, item.horario),
     );
     const ministryCultIds = new Set(loaded.escalas.map((item) => item.id_culto));
+    const escalasByCultId = buildGroupedMap(
+      loaded.escalas,
+      (item) => item.id_culto,
+    );
     const activeMemberships = new Set(
       loaded.membrosMinisterios
         .filter((item) => item.ativo !== false)
@@ -866,18 +896,42 @@ Deno.serve(async (req: Request) => {
         action = "updated";
       }
 
-      if (!dryRun && replaceExisting) {
-        const { error } = await supabaseAdmin
-          .from("escalas")
-          .delete()
-          .eq("id_culto", cultoId)
-          .eq("ministerio_id", ministerio.id);
+      const existingAssignments = escalasByCultId.get(cultoId) ?? [];
+      const existingByKey = new Map<string, EscalaRecord[]>();
 
-        if (error) throw error;
+      for (const existingAssignment of existingAssignments) {
+        const key = toAssignmentKey(
+          existingAssignment.id_membros,
+          existingAssignment.id_funcao,
+        );
+        const bucket = existingByKey.get(key) ?? [];
+        bucket.push(existingAssignment);
+        existingByKey.set(key, bucket);
       }
 
-      if (!dryRun && plannedEvent.assignments.length > 0) {
-        const rows = plannedEvent.assignments.map((assignment) => ({
+      const plannedByKey = new Map<string, PlannedAssignment>();
+      for (const plannedAssignment of plannedEvent.assignments) {
+        plannedByKey.set(
+          toAssignmentKey(plannedAssignment.id_membros, plannedAssignment.id_funcao),
+          plannedAssignment,
+        );
+      }
+
+      const escalaIdsToDelete: string[] = [];
+      const escalaRowsToUpdate: Array<{
+        id: string;
+        data_ensaio: string | null;
+        horario_ensaio: string | null;
+      }> = [];
+      const escalaRowsToInsert = plannedEvent.assignments
+        .filter((plannedAssignment) => {
+          const key = toAssignmentKey(
+            plannedAssignment.id_membros,
+            plannedAssignment.id_funcao,
+          );
+          return !existingByKey.has(key);
+        })
+        .map((assignment) => ({
           id_culto: cultoId,
           id_membros: assignment.id_membros,
           id_funcao: assignment.id_funcao,
@@ -886,13 +940,86 @@ Deno.serve(async (req: Request) => {
           horario_ensaio: plannedEvent.horario_ensaio,
         }));
 
-        const { error } = await supabaseAdmin
-          .from("escalas")
-          .insert(rows);
+      for (const [key, matchingExistingAssignments] of existingByKey.entries()) {
+        const plannedAssignment = plannedByKey.get(key);
 
-        if (error) throw error;
-        insertedScalesCount += rows.length;
-      } else if (dryRun) {
+        if (!plannedAssignment) {
+          if (replaceExisting) {
+            escalaIdsToDelete.push(
+              ...matchingExistingAssignments.map((assignment) => assignment.id),
+            );
+          }
+          continue;
+        }
+
+        const [primaryAssignment, ...duplicateAssignments] = matchingExistingAssignments;
+
+        if (replaceExisting && duplicateAssignments.length > 0) {
+          escalaIdsToDelete.push(
+            ...duplicateAssignments.map((assignment) => assignment.id),
+          );
+        }
+
+        if (
+          !sameOptionalDate(primaryAssignment.data_ensaio, plannedEvent.data_ensaio) ||
+          !sameOptionalTime(primaryAssignment.horario_ensaio, plannedEvent.horario_ensaio)
+        ) {
+          escalaRowsToUpdate.push({
+            id: primaryAssignment.id,
+            data_ensaio: plannedEvent.data_ensaio,
+            horario_ensaio: plannedEvent.horario_ensaio,
+          });
+        }
+      }
+
+      if (!dryRun) {
+        if (escalaIdsToDelete.length > 0) {
+          const { error } = await supabaseAdmin
+            .from("escalas")
+            .delete()
+            .in("id", escalaIdsToDelete);
+
+          if (error) throw error;
+        }
+
+        for (const updateRow of escalaRowsToUpdate) {
+          const { error } = await supabaseAdmin
+            .from("escalas")
+            .update({
+              data_ensaio: updateRow.data_ensaio,
+              horario_ensaio: updateRow.horario_ensaio,
+            })
+            .eq("id", updateRow.id);
+
+          if (error) throw error;
+        }
+
+        if (escalaRowsToInsert.length > 0) {
+          const { error } = await supabaseAdmin
+            .from("escalas")
+            .insert(escalaRowsToInsert);
+
+          if (error) throw error;
+          insertedScalesCount += escalaRowsToInsert.length;
+        }
+
+        escalasByCultId.set(
+          cultoId,
+          plannedEvent.assignments.map((assignment, index) => {
+            const key = toAssignmentKey(assignment.id_membros, assignment.id_funcao);
+            const primaryExistingAssignment = existingByKey.get(key)?.[0];
+
+            return {
+              id: primaryExistingAssignment?.id ?? `planned-${cultoId}-${index}`,
+              id_culto: cultoId,
+              id_membros: assignment.id_membros,
+              id_funcao: assignment.id_funcao,
+              data_ensaio: plannedEvent.data_ensaio,
+              horario_ensaio: plannedEvent.horario_ensaio,
+            };
+          }),
+        );
+      } else {
         insertedScalesCount += plannedEvent.assignments.length;
       }
 

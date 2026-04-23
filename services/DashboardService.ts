@@ -1,4 +1,5 @@
 import LocalStorageFirstService from './LocalStorageFirstService';
+import { buildWeeklyScaleItems, getWeekBoundsMondayToSunday } from '../utils/weeklyScale';
 
 export interface ProximaEscala {
   id_culto: string;
@@ -11,6 +12,21 @@ export interface ProximaEscala {
 export interface FrequenciaMembro {
   nome: string;
   quantidade: number;
+}
+
+export interface EscalaSemanaItem {
+  ministerioId: string | null;
+  idCulto: string;
+  culto: string;
+  data: string;
+  horario: string;
+  funcoes: string[];
+}
+
+export interface EscalaSemanaResumo {
+  startDate: string;
+  endDate: string;
+  items: EscalaSemanaItem[];
 }
 
 export interface Aniversariante {
@@ -133,6 +149,39 @@ class DashboardService {
     } catch (error) {
       console.error('Erro ao buscar proxima escala:', error);
       return null;
+    }
+  }
+
+  async getEscalasDaSemana(userId: string, scope?: DashboardScope): Promise<EscalaSemanaResumo> {
+    try {
+      const escalas = LocalStorageFirstService.get<any>('escalas');
+      const cultos = LocalStorageFirstService.get<any>('cultos');
+      const nomeCultos = LocalStorageFirstService.get<any>('nome_cultos');
+      const funcoes = LocalStorageFirstService.get<any>('funcao');
+      const weekBounds = getWeekBoundsMondayToSunday();
+
+      return {
+        startDate: weekBounds.startDate,
+        endDate: weekBounds.endDate,
+        items: buildWeeklyScaleItems({
+          userId,
+          escalas,
+          cultos,
+          nomeCultos,
+          funcoes,
+          ministerioId: scope?.ministerioId
+        })
+      };
+    } catch (error) {
+      console.error('Erro ao buscar escalas da semana:', error);
+
+      const weekBounds = getWeekBoundsMondayToSunday();
+
+      return {
+        startDate: weekBounds.startDate,
+        endDate: weekBounds.endDate,
+        items: []
+      };
     }
   }
 

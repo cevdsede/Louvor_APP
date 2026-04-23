@@ -4,6 +4,7 @@ import { ImageCache } from '../ui/ImageCache';
 import { useMinistryContext } from '../../contexts/MinistryContext';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import { ViewType } from '../../types';
+import MinistrySwitcher from './MinistrySwitcher';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -27,10 +28,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   setIsProfileModalOpen
 }) => {
   const {
-    activeMinisterioId,
     activeModules,
     isGlobalAdminOrLeader,
-    setActiveMinisterioId,
     userMinisterios
   } = useMinistryContext();
   const [isThemeExpanded, setIsThemeExpanded] = useState(false);
@@ -353,22 +352,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* FOOTER DESKTOP */}
       <div className="hidden lg:flex flex-col px-4 pb-6 gap-3 mt-auto border-t border-slate-50 dark:border-slate-800 pt-4">
         {userMinisterios.length > 1 && (
-          <div className="flex flex-col rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 overflow-hidden">
+          <div className="flex flex-col rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 overflow-visible">
             <div className="px-4 py-2.5">
               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Ministerio ativo</span>
             </div>
             <div className="px-4 pb-4">
-              <select
-                value={activeMinisterioId || ''}
-                onChange={(e) => setActiveMinisterioId(e.target.value)}
-                className="w-full rounded-xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-200 outline-none focus:ring-1 focus:ring-brand"
-              >
-                {userMinisterios.map((ministerio) => (
-                  <option key={ministerio.id} value={ministerio.id}>
-                    {ministerio.nome}
-                  </option>
-                ))}
-              </select>
+              <MinistrySwitcher variant="desktop" />
             </div>
           </div>
         )}

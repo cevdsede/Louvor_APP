@@ -1,5 +1,6 @@
 import React from 'react';
 import { useMinistryContext } from '../../contexts/MinistryContext';
+import MinistrySwitcher from './MinistrySwitcher';
 
 interface HeaderProps {
   onSync: () => void;
@@ -7,7 +8,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onSync, onOpenProfile }) => {
-  const { activeMinisterioId, setActiveMinisterioId, userMinisterios } = useMinistryContext();
+  const { userMinisterios } = useMinistryContext();
 
   return (
     <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-[#0f172a]/80 backdrop-blur-lg border-b border-slate-100 dark:border-slate-800 z-[90] px-6 flex items-center justify-between transition-colors">
@@ -24,19 +25,7 @@ const Header: React.FC<HeaderProps> = ({ onSync, onOpenProfile }) => {
         </button>
 
         {/* Seletor de Ministério no Mobile Header */}
-        {userMinisterios.length > 1 && (
-          <select
-            value={activeMinisterioId || ''}
-            onChange={(e) => setActiveMinisterioId(e.target.value)}
-            className="h-10 px-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-[9px] font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:ring-1 focus:ring-brand max-w-[110px] shadow-sm appearance-none text-center"
-          >
-            {userMinisterios.map((ministerio) => (
-              <option key={ministerio.id} value={ministerio.id}>
-                {ministerio.nome}
-              </option>
-            ))}
-          </select>
-        )}
+        {userMinisterios.length > 1 && <MinistrySwitcher variant="mobile" />}
 
         <button 
           onClick={onOpenProfile}
