@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { showSuccess, showError } from '../../utils/toast';
+import { showConfirmModal } from '../../utils/confirmModal';
 
 interface Ministerio {
   id: string;
@@ -128,7 +129,16 @@ const MinisterioManager: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este ministério?')) {
+    const confirmed = await showConfirmModal({
+      title: 'Excluir ministerio',
+      message: 'Este ministerio sera removido permanentemente se nao estiver em uso.',
+      confirmText: 'Excluir',
+      cancelText: 'Manter',
+      type: 'danger',
+      icon: 'fa-trash-alt'
+    });
+
+    if (!confirmed) {
       return;
     }
 

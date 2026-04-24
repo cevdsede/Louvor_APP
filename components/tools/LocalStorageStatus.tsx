@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import { getImageCacheSize } from '../../utils/teamUtils';
+import { showConfirmModal } from '../../utils/confirmModal';
 
 const LocalStorageStatus: React.FC = () => {
   const [status, setStatus] = useState({
@@ -57,11 +58,22 @@ const LocalStorageStatus: React.FC = () => {
     }
   };
 
-  const handleClearAll = () => {
-    if (confirm('Limpar todos os dados locais? Isso irá remover todo o cache.')) {
-      LocalStorageFirstService.clearAll();
-      window.location.reload();
+  const handleClearAll = async () => {
+    const confirmed = await showConfirmModal({
+      title: 'Limpar cache local',
+      message: 'Todos os dados locais e imagens em cache serao removidos deste dispositivo. Depois disso, a tela sera recarregada.',
+      confirmText: 'Limpar cache',
+      cancelText: 'Cancelar',
+      type: 'danger',
+      icon: 'fa-trash-alt'
+    });
+
+    if (!confirmed) {
+      return;
     }
+
+    LocalStorageFirstService.clearAll();
+    window.location.reload();
   };
 
   return (

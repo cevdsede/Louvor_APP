@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { showSuccess, showError } from '../../utils/toast';
+import { showConfirmModal } from '../../utils/confirmModal';
 
 interface Tema {
   id: string;
@@ -81,7 +82,16 @@ const TemasManager: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este tema?')) {
+    const confirmed = await showConfirmModal({
+      title: 'Excluir tema',
+      message: 'Esse tema sera removido permanentemente se nao estiver vinculado a musicas cadastradas.',
+      confirmText: 'Excluir',
+      cancelText: 'Manter',
+      type: 'danger',
+      icon: 'fa-trash-alt'
+    });
+
+    if (!confirmed) {
       return;
     }
 

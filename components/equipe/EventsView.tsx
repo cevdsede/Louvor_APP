@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { showSuccess, showError } from '../../utils/toast';
+import { showConfirmModal } from '../../utils/confirmModal';
 import EventService, { Evento } from '../../services/EventService';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import { useMinistryContext } from '../../contexts/MinistryContext';
@@ -95,7 +96,15 @@ const EventsView: React.FC<EventsViewProps> = ({ onEventClick }) => {
       showError('Somente Admin e Lider podem excluir eventos.');
       return;
     }
-    if (!confirm(`Tem certeza que deseja excluir o evento "${evento.tema}"?`)) return;
+    const confirmed = await showConfirmModal({
+      title: 'Excluir evento',
+      message: `O evento "${evento.tema}" sera removido. Esta acao nao pode ser desfeita.`,
+      confirmText: 'Excluir',
+      cancelText: 'Manter',
+      type: 'danger',
+      icon: 'fa-trash-alt'
+    });
+    if (!confirmed) return;
 
     try {
       await EventService.deleteEvento(evento.id_evento);

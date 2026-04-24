@@ -3,6 +3,7 @@ import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import { useMinistryContext } from '../../contexts/MinistryContext';
 import AvisoGeralService, { AvisoGeral, AvisoGeralDestino } from '../../services/AvisoGeralService';
 import { showError, showSuccess } from '../../utils/toast';
+import { showConfirmModal } from '../../utils/confirmModal';
 import { getDisplayName } from '../../utils/displayName';
 
 interface NotificationCenterModalProps {
@@ -29,9 +30,10 @@ const formatNotificationTime = (value?: string | null) => {
 
 const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClose }) => {
   const { currentMember, activeMinisterio, activeMinisterioId } = useMinistryContext();
-  const { data: avisosRaw, forceSync, loadData } = useLocalStorageFirst<AvisoGeral>({ table: 'aviso_geral' });
+  const { data: avisosRaw, forceSync, loadData, removeItem } = useLocalStorageFirst<AvisoGeral>({ table: 'aviso_geral' });
   const { data: membrosRaw } = useLocalStorageFirst<any>({ table: 'membros' });
   const [showGeneralNoticeForm, setShowGeneralNoticeForm] = useState(false);
+  const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
   const [target, setTarget] = useState<AvisoGeralDestino>('todos');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,6 +55,14 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
   const unreadNotifications = notifications.filter((aviso) => !aviso.lida);
   const readNotifications = notifications.filter((aviso) => aviso.lida);
   const unreadCount = unreadNotifications.length;
+  const selectedCount = selectedNotifications.length;
+  const selectedSet = new Set(selectedNotifications);
+
+  useEffect(() => {
+    setSelectedNotifications((current) =>
+      current.filter((id) => notifications.some((notification) => String(notification.id) === id))
+    );
+  }, [notifications]);
 
   useEffect(() => {
     const handleUpdated = () => {
@@ -77,6 +87,77 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
   const handleMarkAsRead = async (id: string | number) => {
     await AvisoGeralService.markAsRead(id);
     await forceSync();
+  };
+
+  const toggleNotificationSelection = (id: string | number) => {
+    const normalizedId = String(id);
+
+    setSelectedNotifications((current) =>
+      current.includes(normalizedId)
+        ? current.filter((item) => item !== normalizedId)
+        : [...current, normalizedId]
+    );
+  };
+
+  const handleSelectAllNotifications = () => {
+    if (selectedCount === notifications.length) {
+      setSelectedNotifications([]);
+      return;
+    }
+
+    setSelectedNotifications(notifications.map((notification) => String(notification.id)));
+  };
+
+  const handleDeleteNotification = async (id: string | number) => {
+    const confirmed = await showConfirmModal({
+      title: 'Excluir notificacao',
+      message: 'Esta notificacao sera removida da sua lista. Esta acao nao pode ser desfeita.',
+      confirmText: 'Excluir',
+      cancelText: 'Manter',
+      type: 'danger',
+      icon: 'fa-trash-alt'
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      removeItem(String(id));
+      showSuccess('A notificacao foi excluida com sucesso.');
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Nao foi possivel excluir a notificacao.');
+    }
+  };
+
+  const handleDeleteSelectedNotifications = async () => {
+    if (selectedCount === 0) {
+      showError('Selecione pelo menos uma notificacao.');
+      return;
+    }
+
+    const confirmed = await showConfirmModal({
+      title: 'Excluir notificacoes',
+      message: `${selectedCount} notificacao(oes) selecionada(s) serao removidas da sua lista. Esta acao nao pode ser desfeita.`,
+      confirmText: 'Excluir selecionadas',
+      cancelText: 'Manter',
+      type: 'danger',
+      icon: 'fa-trash-alt'
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      selectedNotifications.forEach((id) => {
+        removeItem(String(id));
+      });
+      setSelectedNotifications([]);
+      showSuccess(`${selectedCount} notificacao(oes) excluida(s) com sucesso.`);
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Nao foi possivel excluir as notificacoes selecionadas.');
+    }
   };
 
   const handleMarkAllAsRead = async () => {
@@ -152,18 +233,41 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
 
         <div className="border-b border-slate-100 px-6 py-4 dark:border-slate-800">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
-              <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Nao lidas</p>
-              <p className="mt-1 text-2xl font-black tracking-tight text-slate-900 dark:text-white">{unreadCount}</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
+                <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Nao lidas</p>
+                <p className="mt-1 text-2xl font-black tracking-tight text-slate-900 dark:text-white">{unreadCount}</p>
+              </div>
+
+              {notifications.length > 0 && (
+                <button
+                  onClick={handleSelectAllNotifications}
+                  className="rounded-2xl bg-slate-100 px-4 py-3 text-[9px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                >
+                  {selectedCount === notifications.length ? 'Limpar selecao' : 'Selecionar todas'}
+                </button>
+              )}
             </div>
 
-            <button
-              onClick={() => setShowGeneralNoticeForm((previous) => !previous)}
-              className="rounded-2xl bg-brand px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20 transition-transform hover:scale-[1.01]"
-            >
-              <i className="fas fa-bullhorn mr-2"></i>
-              Aviso Geral
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              {selectedCount > 0 && (
+                <button
+                  onClick={handleDeleteSelectedNotifications}
+                  className="rounded-2xl bg-red-500 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-red-500/20 transition-colors hover:bg-red-600"
+                >
+                  <i className="fas fa-trash mr-2"></i>
+                  Excluir ({selectedCount})
+                </button>
+              )}
+
+              <button
+                onClick={() => setShowGeneralNoticeForm((previous) => !previous)}
+                className="rounded-2xl bg-brand px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20 transition-transform hover:scale-[1.01]"
+              >
+                <i className="fas fa-bullhorn mr-2"></i>
+                Aviso Geral
+              </button>
+            </div>
           </div>
 
           {showGeneralNoticeForm && (
@@ -251,6 +355,19 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                         className="rounded-2xl border border-brand/20 bg-brand/5 p-4 transition-colors dark:border-brand/30 dark:bg-brand/10"
                       >
                         <div className="flex items-start justify-between gap-4">
+                          <button
+                            type="button"
+                            onClick={() => toggleNotificationSelection(notification.id)}
+                            className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                              selectedSet.has(String(notification.id))
+                                ? 'border-brand bg-brand text-white'
+                                : 'border-slate-300 bg-white text-transparent dark:border-slate-600 dark:bg-slate-900'
+                            }`}
+                            aria-label="Selecionar notificacao"
+                          >
+                            <i className="fas fa-check text-[9px]"></i>
+                          </button>
+
                           <div className="min-w-0 flex-1">
                             <div className="mb-2 flex items-center gap-2">
                               <span className="rounded-full bg-white/90 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-brand dark:bg-slate-900/70">
@@ -269,12 +386,22 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                             </div>
                           </div>
 
-                          <button
-                            onClick={() => handleMarkAsRead(notification.id)}
-                            className="rounded-xl bg-white px-3 py-2 text-[9px] font-black uppercase tracking-widest text-slate-500 shadow-sm transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-                          >
-                            Marcar
-                          </button>
+                          <div className="flex shrink-0 flex-col items-end gap-2">
+                            <button
+                              onClick={() => handleMarkAsRead(notification.id)}
+                              className="rounded-xl bg-white px-3 py-2 text-[9px] font-black uppercase tracking-widest text-slate-500 shadow-sm transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                            >
+                              Marcar
+                            </button>
+                            <button
+                              onClick={() => handleDeleteNotification(notification.id)}
+                              title="Excluir notificacao"
+                              aria-label="Excluir notificacao"
+                              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-red-500 shadow-sm transition-colors hover:bg-red-50 hover:text-red-600 dark:bg-slate-900 dark:hover:bg-red-950/40"
+                            >
+                              <i className="fas fa-trash text-[10px]"></i>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -301,6 +428,19 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                         className="rounded-2xl border border-slate-100 bg-slate-50 p-4 transition-colors dark:border-slate-800 dark:bg-slate-800/40"
                       >
                         <div className="flex items-start justify-between gap-4">
+                          <button
+                            type="button"
+                            onClick={() => toggleNotificationSelection(notification.id)}
+                            className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                              selectedSet.has(String(notification.id))
+                                ? 'border-brand bg-brand text-white'
+                                : 'border-slate-300 bg-white text-transparent dark:border-slate-600 dark:bg-slate-900'
+                            }`}
+                            aria-label="Selecionar notificacao"
+                          >
+                            <i className="fas fa-check text-[9px]"></i>
+                          </button>
+
                           <div className="min-w-0 flex-1">
                             <div className="mb-2 flex items-center gap-2">
                               <span className="rounded-full bg-white/90 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-brand dark:bg-slate-900/70">
@@ -316,12 +456,22 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                             </div>
                           </div>
 
-                          <button
-                            onClick={() => handleMarkAsRead(notification.id)}
-                            className="rounded-xl bg-white px-3 py-2 text-[9px] font-black uppercase tracking-widest text-slate-500 shadow-sm transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-                          >
-                            Lida
-                          </button>
+                          <div className="flex shrink-0 flex-col items-end gap-2">
+                            <button
+                              onClick={() => handleMarkAsRead(notification.id)}
+                              className="rounded-xl bg-white px-3 py-2 text-[9px] font-black uppercase tracking-widest text-slate-500 shadow-sm transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                            >
+                              Lida
+                            </button>
+                            <button
+                              onClick={() => handleDeleteNotification(notification.id)}
+                              title="Excluir notificacao"
+                              aria-label="Excluir notificacao"
+                              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-red-500 shadow-sm transition-colors hover:bg-red-50 hover:text-red-600 dark:bg-slate-900 dark:hover:bg-red-950/40"
+                            >
+                              <i className="fas fa-trash text-[10px]"></i>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}

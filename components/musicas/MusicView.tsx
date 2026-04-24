@@ -196,8 +196,10 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
     }
   }, [activeMinisterioId, newRepertoire.id_culto]);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (showLoader = true) => {
+    if (showLoader) {
+      setLoading(true);
+    }
     try {
       // OBTER TUDO DO LOCAL STORAGE (LocalStorage-First)
       const musicasData = LocalStorageFirstService.get<any>('musicas');
@@ -358,7 +360,9 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
     } catch (error) {
       logger.error('Error processing music data from cache:', error, 'database');
     } finally {
-      setLoading(false);
+      if (showLoader) {
+        setLoading(false);
+      }
     }
   };
 
@@ -381,7 +385,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
 
         setIsSongModalOpen(false);
         setNewSong({ song: '', singer: '', theme: '', style: 'Adoração' });
-        fetchData(); // Reload list from local cache
+        fetchData(false);
       } else {
         showError('Tema não encontrado. Por favor selecione um tema válido.');
       }
@@ -419,7 +423,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
         id_membros: '',
         id_tons: ''
       });
-      fetchData();
+      fetchData(false);
     } catch (err) {
       logger.error('Error adding repertoire:', err, 'database');
       showError('Erro ao adicionar repertório.');
@@ -441,7 +445,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
       });
 
       setEditingRepertoire(null);
-      fetchData();
+      fetchData(false);
     } catch (err) {
       logger.error('Error editing repertoire:', err, 'database');
       showError('Erro ao editar repertório.');
@@ -460,7 +464,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
       LocalStorageFirstService.remove('repertorio', deletingRepertoire.id);
       setIsDeleteModalOpen(false);
       setDeletingRepertoire(null);
-      fetchData();
+      fetchData(false);
     } catch (err) {
       logger.error('Error deleting repertoire:', err, 'database');
       showError('Erro ao excluir repertório.');
@@ -498,7 +502,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
 
       setIsEscalaDeleteModalOpen(false);
       setDeletingEscala(null);
-      fetchData();
+      fetchData(false);
     } catch (err) {
       logger.error('Error deleting escala:', err, 'database');
       showError('Erro ao excluir escala.');

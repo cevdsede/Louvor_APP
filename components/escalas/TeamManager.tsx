@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../supabaseClient';
 import { showError, showSuccess } from '../../utils/toast';
+import { showConfirmModal } from '../../utils/confirmModal';
 import { logger } from '../../utils/logger';
 import { sortMembersByRole, getRoleIcon } from '../../utils/teamUtils';
 import { Funcao } from '../../types-supabase';
@@ -73,7 +74,14 @@ const TeamManager: React.FC<TeamManagerProps> = ({
       return;
     }
 
-    const confirmed = window.confirm('Tem certeza que deseja remover esta funcao da escala?');
+    const confirmed = await showConfirmModal({
+      title: 'Remover funcao',
+      message: 'Esta funcao sera removida da escala deste membro.',
+      confirmText: 'Remover',
+      cancelText: 'Manter',
+      type: 'danger',
+      icon: 'fa-user-minus'
+    });
     if (!confirmed) return;
 
     try {

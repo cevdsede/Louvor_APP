@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { showSuccess, showError } from '../../utils/toast';
+import { showConfirmModal } from '../../utils/confirmModal';
 
 interface NomeCulto {
   id: string;
@@ -81,7 +82,16 @@ const NomeCultosManager: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este nome de culto?')) {
+    const confirmed = await showConfirmModal({
+      title: 'Excluir nome de culto',
+      message: 'Esse nome de culto sera removido permanentemente se nao estiver vinculado a cultos cadastrados.',
+      confirmText: 'Excluir',
+      cancelText: 'Manter',
+      type: 'danger',
+      icon: 'fa-trash-alt'
+    });
+
+    if (!confirmed) {
       return;
     }
 

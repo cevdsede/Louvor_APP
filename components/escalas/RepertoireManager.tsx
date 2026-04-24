@@ -5,6 +5,8 @@ import { logger } from '../../utils/logger';
 import { RepertoireItem } from '../../types';
 import { Song } from '../../types-supabase';
 import AvisoGeralService from '../../services/AvisoGeralService';
+import LocalStorageFirstService from '../../services/LocalStorageFirstService';
+import { showConfirmModal } from '../../utils/confirmModal';
 
 interface RepertoireManagerProps {
   eventId: string;
@@ -101,12 +103,7 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
           updateData.id_membros = newSongData.singer;
         }
 
-        const { error } = await supabase
-          .from('repertorio')
-          .update(updateData)
-          .eq('id', editingSongId.songId);
-
-        if (error) throw error;
+        LocalStorageFirstService.update('repertorio', editingSongId.songId, updateData);
       } else {
         // Insert new song
         const repertoireData: {
@@ -127,36 +124,7 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
           repertoireData.id_membros = newSongData.singer;
         }
 
-        logger.info('Enviando dados para repertorio:', repertoireData, 'database');
-        
-        // Primeiro, vamos verificar se o usuário tem permissão para inserir
-        const { data: testData, error: testError } = await supabase
-          .from('repertorio')
-          .select('id')
-          .limit(1);
-          
-        if (testError) {
-          logger.error('Erro de permissão ao acessar repertorio:', testError, 'database');
-          throw new Error(`Sem permissão para acessar a tabela repertorio: ${testError.message}`);
-        }
-        
-        logger.info('Permissão verificada, inserindo dados...', 'database');
-        
-        const { data, error } = await supabase
-          .from('repertorio')
-          .insert(repertoireData)
-          .select(); // Adiciona .select() para retornar os dados inseridos
-        logger.info('Resposta do Supabase:', { data, error }, 'database');
-        
-        if (error) {
-          logger.error('Erro específico do Supabase:', error, 'database');
-          throw error;
-        }
-        
-        // Se não houver erro mas data for null, a inserção funcionou mas não retornou dados
-        if (!data) {
-          logger.info('Inserção bem-sucedida mas sem retorno de dados', 'database');
-        }
+        LocalStorageFirstService.add('repertorio', repertoireData);
       }
 
       setShowAddSong(false);
@@ -232,66 +200,27 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
       return;
     }
 
-    // Criar modal de confirmação personalizado
-    const confirmModal = document.createElement('div');
-    confirmModal.className = 'fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50';
-    confirmModal.innerHTML = `
-      <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="w-10 h-10 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
-            <i class="fas fa-exclamation-triangle text-red-500"></i>
-          </div>
-          <h3 class="text-lg font-bold text-slate-800 dark:text-white">Confirmar Exclusão</h3>
-        </div>
-        <p class="text-slate-600 dark:text-slate-300 mb-6">Tem certeza que deseja remover esta música do repertório?</p>
-        <div class="flex gap-3">
-          <button id="cancelDelete" class="flex-1 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-            Cancelar
-          </button>
-          <button id="confirmDelete" class="flex-1 py-2 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 transition-colors">
-            Remover
-          </button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(confirmModal);
-    
-    // Adicionar eventos aos botões
-    const cancelBtn = confirmModal.querySelector('#cancelDelete');
-    const confirmBtn = confirmModal.querySelector('#confirmDelete');
-    
-    const closeModal = () => {
-      document.body.removeChild(confirmModal);
-    };
-    
-    cancelBtn?.addEventListener('click', closeModal);
-    
-    confirmBtn?.addEventListener('click', async () => {
-      try {
-        closeModal();
-        
-        const { error } = await supabase
-          .from('repertorio')
-          .delete()
-          .eq('id', songId);
+    const confirmed = await showConfirmModal({
+      title: 'Excluir musica',
+      message: 'Esta musica sera removida do repertorio desta escala.',
+      confirmText: 'Excluir',
+      cancelText: 'Manter',
+      type: 'danger',
+      icon: 'fa-trash-alt'
+    });
 
-        if (error) throw error;
-        
-        showSuccess('Música removida do repertório com sucesso!');
-        onSongAdded();
-      } catch (error) {
-        logger.error('Error removing song from repertoire:', error, 'database');
-        showError('Erro ao remover música do repertório.');
-      }
-    });
-    
-    // Fechar ao clicar fora
-    confirmModal.addEventListener('click', (e) => {
-      if (e.target === confirmModal) {
-        closeModal();
-      }
-    });
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      LocalStorageFirstService.remove('repertorio', songId);
+      showSuccess('Música removida do repertório com sucesso!');
+      onSongAdded();
+    } catch (error) {
+      logger.error('Error removing song from repertoire:', error, 'database');
+      showError('Erro ao remover música do repertório.');
+    }
   };
 
   return (

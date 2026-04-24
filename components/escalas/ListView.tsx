@@ -177,6 +177,11 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     });
   }, [events, searchTerm]);
 
+  const visibleEvents = useMemo(
+    () => filteredEvents.filter((event) => event.members.length > 0),
+    [filteredEvents]
+  );
+
   // Buscar usuário logado de forma resiliente (Offline-First)
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -411,7 +416,8 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
           members: groupedMembers,
           repertoire: [] // Will pull from repertorioRaw
         };
-      });
+      })
+      .filter((event) => event.members.length > 0);
 
     // We need repertorioRaw for the join
     setEvents(mappedEvents);
@@ -503,10 +509,10 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     await LocalStorageFirstService.forceSync();
   };
   const fetchNotices = async () => {
-    await LocalStorageFirstService.forceSync('avisos_cultos');
+    return;
   };
   const fetchEvents = async () => {
-    await LocalStorageFirstService.forceSync();
+    return;
   };
 
   const handleDeleteScale = async (eventId: string, eventTitle: string) => {
@@ -613,61 +619,98 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
 
   const exportFilteredData = async () => {
     try {
-      // Importar html2canvas dinamicamente
       const { default: html2canvas } = await import('html2canvas');
-      
-      // Criar elemento HTML para renderização
+
       const exportElement = document.createElement('div');
       exportElement.style.position = 'fixed';
       exportElement.style.left = '-9999px';
       exportElement.style.top = '0';
-      exportElement.style.width = '1000px';  // Reduzido de 1200px para 1000px
-      exportElement.style.background = '#1a1a2e';
-      exportElement.style.padding = '25px';
-      exportElement.style.fontFamily = 'Arial, sans-serif';
-      exportElement.style.color = '#ffffff';
-      exportElement.style.borderRadius = '15px';
-      exportElement.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
-      
-      // Header estilizado como na referência
+      exportElement.style.width = '1200px';
+      exportElement.style.background = 'linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%)';
+      exportElement.style.padding = '40px';
+      exportElement.style.fontFamily = 'Inter, Arial, sans-serif';
+      exportElement.style.color = '#0f172a';
+      exportElement.style.borderRadius = '32px';
+      exportElement.style.boxShadow = '0 24px 80px rgba(15,23,42,0.18)';
+
+      const totalMembers = visibleEvents.reduce((sum, event) => sum + event.members.length, 0);
+      const exportDate = new Date().toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+
       const header = document.createElement('div');
-      header.style.textAlign = 'center';
-      header.style.marginBottom = '20px';
-      header.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-      header.style.padding = '18px';
-      header.style.borderRadius = '10px';
+      header.style.marginBottom = '24px';
+      header.style.padding = '28px';
+      header.style.borderRadius = '28px';
+      header.style.background = 'linear-gradient(135deg, #0f172a 0%, #1e293b 52%, #334155 100%)';
+      header.style.color = '#ffffff';
       header.innerHTML = `
-        <h1 style="font-size: 22px; font-weight: bold; margin: 0; color: #fff;">
-          📸 ESCALA DE CULTOS
-        </h1>
-        ${searchTerm.trim() ? `
-          <div style="background: rgba(255,255,255,0.2); border-radius: 20px; padding: 4px 12px; margin: 8px auto; display: inline-block;">
-            <span style="font-size: 11px; font-weight: bold; color: #fff;">
-              🔍 "${searchTerm}"
-            </span>
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:20px;">
+          <div>
+            <p style="margin:0 0 8px 0; font-size:11px; font-weight:800; letter-spacing:0.32em; text-transform:uppercase; color:rgba(255,255,255,0.68);">
+              Escalas do ministerio
+            </p>
+            <h1 style="margin:0; font-size:34px; font-weight:900; letter-spacing:0; text-transform:uppercase;">
+              ${activeMinisterio?.nome || 'Escala de Cultos'}
+            </h1>
+            <p style="margin:10px 0 0 0; font-size:14px; color:rgba(255,255,255,0.78);">
+              ${visibleEvents.length} culto(s) com equipes montadas
+            </p>
           </div>
-        ` : ''}
-        <p style="font-size: 11px; margin: 6px 0 0 0; opacity: 0.9;">
-          ${new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-        </p>
+          <div style="text-align:right;">
+            <div style="display:inline-flex; align-items:center; justify-content:center; min-width:120px; padding:10px 16px; border-radius:999px; background:rgba(255,255,255,0.12); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.16em;">
+              ${exportDate}
+            </div>
+            ${searchTerm.trim() ? `
+              <div style="margin-top:10px; display:inline-flex; align-items:center; justify-content:center; max-width:260px; padding:10px 16px; border-radius:18px; background:rgba(255,255,255,0.08); font-size:12px; font-weight:700; color:rgba(255,255,255,0.92);">
+                Filtro: "${searchTerm}"
+              </div>
+            ` : ''}
+          </div>
+        </div>
       `;
       exportElement.appendChild(header);
-      
-      // Container principal - 4 colunas para cards mais curtos
+
+      const summaryGrid = document.createElement('div');
+      summaryGrid.style.display = 'grid';
+      summaryGrid.style.gridTemplateColumns = 'repeat(3, minmax(0, 1fr))';
+      summaryGrid.style.gap = '16px';
+      summaryGrid.style.marginBottom = '24px';
+
+      [
+        { label: 'Cultos visiveis', value: String(visibleEvents.length) },
+        { label: 'Membros escalados', value: String(totalMembers) },
+        { label: 'Busca ativa', value: searchTerm.trim() ? 'Sim' : 'Nao' }
+      ].forEach((item) => {
+        const card = document.createElement('div');
+        card.style.padding = '20px 22px';
+        card.style.borderRadius = '22px';
+        card.style.background = 'rgba(255,255,255,0.88)';
+        card.style.border = '1px solid rgba(148,163,184,0.2)';
+        card.innerHTML = `
+          <p style="margin:0 0 8px 0; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.2em; color:#64748b;">
+            ${item.label}
+          </p>
+          <div style="font-size:28px; font-weight:900; color:#0f172a;">${item.value}</div>
+        `;
+        summaryGrid.appendChild(card);
+      });
+      exportElement.appendChild(summaryGrid);
+
       const mainContainer = document.createElement('div');
       mainContainer.style.display = 'grid';
-      mainContainer.style.gridTemplateColumns = 'repeat(4, 1fr)';  // Mudado de 3 para 4 colunas
-      mainContainer.style.gap = '10px';  // Reduzido de 12px
-      
-      filteredEvents.forEach((event, index) => {
-        // Filtrar e agrupar membros
+      mainContainer.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
+      mainContainer.style.gap = '18px';
+
+      visibleEvents.forEach((event, index) => {
         const filteredMembers = event.members.filter(member => {
           if (!searchTerm.trim()) return true;
           const searchLower = searchTerm.toLowerCase();
-          return member.name.toLowerCase().includes(searchLower) || 
-                 member.role.toLowerCase().includes(searchLower);
+          return member.name.toLowerCase().includes(searchLower) || member.role.toLowerCase().includes(searchLower);
         });
-        
+
         const groupedMembers = filteredMembers.reduce((acc: Record<string, { name: string; roles: string[] }>, member) => {
           if (!acc[member.name]) {
             acc[member.name] = { name: member.name, roles: [] };
@@ -675,71 +718,70 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
           acc[member.name].roles.push(member.role);
           return acc;
         }, {});
-        
+
         const membersArray = Object.values(groupedMembers);
-        
-        // Card do culto - menor para 4 colunas
         const cultoCard = document.createElement('div');
-        cultoCard.style.background = '#16213e';
-        cultoCard.style.borderRadius = '8px';
-        cultoCard.style.padding = '10px';
-        cultoCard.style.border = '2px solid #0f3460';
-        cultoCard.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
-        
+        cultoCard.style.background = 'rgba(255,255,255,0.94)';
+        cultoCard.style.borderRadius = '26px';
+        cultoCard.style.padding = '24px';
+        cultoCard.style.border = '1px solid rgba(148,163,184,0.24)';
+        cultoCard.style.boxShadow = '0 18px 44px rgba(15,23,42,0.09)';
+
         cultoCard.innerHTML = `
-          <!-- Header do Card - ultra compacto -->
-          <div style="text-align: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #0f3460;">
-            <div style="background: linear-gradient(135deg, #e94560, #ff6b6b); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 4px; font-weight: bold; font-size: 12px;">
-              ${index + 1}
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:18px;">
+            <div>
+              <div style="display:inline-flex; align-items:center; justify-content:center; min-width:38px; height:38px; padding:0 14px; border-radius:999px; background:#e2e8f0; color:#0f172a; font-size:12px; font-weight:900;">
+                ${String(index + 1).padStart(2, '0')}
+              </div>
+              <h2 style="margin:14px 0 8px 0; font-size:22px; line-height:1.08; font-weight:900; color:#0f172a; text-transform:uppercase;">
+                ${event.title}
+              </h2>
+              <p style="margin:0; font-size:13px; font-weight:700; color:#475569;">
+                ${event.dayOfWeek} � ${event.date} � ${event.time}
+              </p>
             </div>
-            <h2 style="font-size: 11px; font-weight: bold; margin: 0; color: #fff; text-transform: uppercase; line-height: 1.1; word-wrap: break-word;">
-              ${event.title}
-            </h2>
-            <p style="font-size: 8px; margin: 2px 0 0 0; color: #a8a8a8; line-height: 1.1;">
-              ${event.dayOfWeek} • ${event.date}
-            </p>
+            <div style="min-width:92px; padding:12px 14px; border-radius:20px; background:#eff6ff; text-align:center;">
+              <div style="font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.18em; color:#64748b;">Equipe</div>
+              <div style="margin-top:6px; font-size:24px; font-weight:900; color:#1d4ed8;">${membersArray.length}</div>
+            </div>
           </div>
-          
-          <!-- Lista de Membros - ultra compacta -->
-          <div style="min-height: 80px;">
+
+          <div style="display:grid; gap:10px;">
             ${membersArray.length > 0 ? (membersArray as { name: string; roles: string[] }[]).map(member => `
-              <div style="display: flex; align-items: flex-start; margin-bottom: 4px; padding: 3px; background: rgba(255,255,255,0.05); border-radius: 4px; border-left: 2px solid #e94560;">
-                <div style="flex: 1; min-width: 0;">
-                  <div style="font-size: 8px; font-weight: bold; color: #fff; margin-bottom: 1px; line-height: 1.1; word-wrap: break-word;">
+              <div style="display:flex; align-items:flex-start; gap:12px; padding:14px 16px; border-radius:18px; background:#f8fafc; border:1px solid #e2e8f0;">
+                <div style="width:36px; height:36px; border-radius:14px; background:#dbeafe; color:#1d4ed8; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900; flex-shrink:0;">
+                  ${member.roles.length}
+                </div>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-size:14px; font-weight:800; color:#0f172a; margin-bottom:4px; line-height:1.25; word-wrap:break-word;">
                     ${member.name}
                   </div>
-                  <div style="font-size: 7px; color: #e94560; font-weight: 600; line-height: 1.1; word-wrap: break-word;">
-                    ${member.roles.join(' • ')}
+                  <div style="font-size:11px; color:#475569; font-weight:700; line-height:1.35; word-wrap:break-word;">
+                    ${member.roles.join(' � ')}
                   </div>
-                </div>
-                <div style="background: #e94560; color: #fff; padding: 1px 3px; border-radius: 4px; font-size: 6px; font-weight: bold; margin-left: 4px; flex-shrink: 0; margin-top: 2px;">
-                  ${member.roles.length}
                 </div>
               </div>
             `).join('') : `
-              <div style="text-align: center; padding: 12px; opacity: 0.5;">
-                <div style="font-size: 14px; margin-bottom: 2px;">🚫</div>
-                <p style="font-size: 8px; color: #a8a8a8;">Sem membros</p>
+              <div style="text-align:center; padding:24px; border-radius:18px; background:#f8fafc; border:1px dashed #cbd5e1;">
+                <p style="margin:0; font-size:13px; font-weight:700; color:#64748b;">Sem membros neste ministerio</p>
               </div>
             `}
           </div>
         `;
-        
+
         mainContainer.appendChild(cultoCard);
       });
-      
+
       exportElement.appendChild(mainContainer);
       document.body.appendChild(exportElement);
-      
-      // Gerar imagem
+
       const canvas = await html2canvas(exportElement, {
-        backgroundColor: '#1a1a2e',
+        backgroundColor: null,
         scale: 2,
         logging: false,
         useCORS: true
       });
-      
-      // Converter para blob e fazer download
+
       canvas.toBlob((blob) => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -751,13 +793,10 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        
-        // Limpar elemento
         document.body.removeChild(exportElement);
-        
         showSuccess('Imagem exportada com sucesso!');
       }, 'image/jpeg', 0.95);
-      
+
     } catch (error) {
       logger.error('Erro ao exportar imagem:', error, 'database');
       showError('Erro ao exportar imagem. Tente novamente.');
@@ -822,8 +861,8 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
       </div>
 
       <div className="space-y-6">
-        {filteredEvents.length > 0 ? (
-          filteredEvents.map((event) => (
+        {visibleEvents.length > 0 ? (
+          visibleEvents.map((event) => (
             <EventCard
               key={event.id}
               event={event}
@@ -945,3 +984,4 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
 };
 
 export default ListView;
+

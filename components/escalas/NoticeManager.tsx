@@ -3,6 +3,8 @@ import { supabase } from '../../supabaseClient';
 import { showSuccess, showError } from '../../utils/toast';
 import { logger } from '../../utils/logger';
 import AvisoGeralService from '../../services/AvisoGeralService';
+import LocalStorageFirstService from '../../services/LocalStorageFirstService';
+import { showConfirmModal } from '../../utils/confirmModal';
 
 interface Notice {
   id: string;
@@ -55,23 +57,11 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
       const isEditing = Boolean(editingNoticeId);
 
       if (isEditing) {
-        // Update existing notice
-        const { error } = await supabase
-          .from('avisos_cultos')
-          .update({ info: noticeText.trim() })
-          .eq('id_lembrete', editingNoticeId.noticeId);
-
-        if (error) throw error;
-
-        // Update local state
-        // This will be handled by parent component refresh
+        LocalStorageFirstService.update('avisos_cultos', editingNoticeId.noticeId, {
+          info: noticeText.trim()
+        });
       } else {
-        // Insert new notice
-        const { error } = await supabase
-          .from('avisos_cultos')
-          .insert(noticeData);
-
-        if (error) throw error;
+        LocalStorageFirstService.add('avisos_cultos', noticeData);
       }
 
       setNoticeText('');
@@ -103,66 +93,27 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
   };
 
   const handleDeleteNotice = async (noticeId: string) => {
-    // Criar modal de confirmação personalizado
-    const confirmModal = document.createElement('div');
-    confirmModal.className = 'fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50';
-    confirmModal.innerHTML = `
-      <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="w-10 h-10 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
-            <i class="fas fa-exclamation-triangle text-red-500"></i>
-          </div>
-          <h3 class="text-lg font-bold text-slate-800 dark:text-white">Confirmar Exclusão</h3>
-        </div>
-        <p class="text-slate-600 dark:text-slate-300 mb-6">Tem certeza que deseja remover este aviso?</p>
-        <div class="flex gap-3">
-          <button id="cancelDeleteNotice" class="flex-1 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-            Cancelar
-          </button>
-          <button id="confirmDeleteNotice" class="flex-1 py-2 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 transition-colors">
-            Remover
-          </button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(confirmModal);
-    
-    // Adicionar eventos aos botões
-    const cancelBtn = confirmModal.querySelector('#cancelDeleteNotice');
-    const confirmBtn = confirmModal.querySelector('#confirmDeleteNotice');
-    
-    const closeModal = () => {
-      document.body.removeChild(confirmModal);
-    };
-    
-    cancelBtn?.addEventListener('click', closeModal);
-    
-    confirmBtn?.addEventListener('click', async () => {
-      try {
-        closeModal();
-        
-        const { error } = await supabase
-          .from('avisos_cultos')
-          .delete()
-          .eq('id_lembrete', noticeId);
+    const confirmed = await showConfirmModal({
+      title: 'Excluir aviso',
+      message: 'Este aviso sera removido desta escala.',
+      confirmText: 'Excluir',
+      cancelText: 'Manter',
+      type: 'danger',
+      icon: 'fa-trash-alt'
+    });
 
-        if (error) throw error;
-        
-        showSuccess('Aviso removido com sucesso!');
-        onNoticesUpdated();
-      } catch (error) {
-        logger.error('Error deleting notice:', error, 'database');
-        showError('Erro ao deletar aviso.');
-      }
-    });
-    
-    // Fechar ao clicar fora
-    confirmModal.addEventListener('click', (e) => {
-      if (e.target === confirmModal) {
-        closeModal();
-      }
-    });
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      LocalStorageFirstService.remove('avisos_cultos', noticeId);
+      showSuccess('Aviso removido com sucesso!');
+      onNoticesUpdated();
+    } catch (error) {
+      logger.error('Error deleting notice:', error, 'database');
+      showError('Erro ao deletar aviso.');
+    }
   };
 
   const handleEditNotice = (notice: Notice) => {
