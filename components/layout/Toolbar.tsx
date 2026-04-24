@@ -49,7 +49,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ currentView, onViewChange }) => {
   const {
     activeMinisterio,
     canAccessModule,
-    isGlobalAdminOrLeader,
+    isGlobalAdmin,
     loading
   } = useMinistryContext();
 
@@ -59,7 +59,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ currentView, onViewChange }) => {
 
   const targetModule = getModuleForView(currentView);
 
-  if (targetModule === 'tools' && !isGlobalAdminOrLeader) {
+  if (targetModule === 'tools' && !isGlobalAdmin) {
     return null;
   }
 

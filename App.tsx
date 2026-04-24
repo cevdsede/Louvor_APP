@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 import Toolbar from './components/layout/Toolbar';
+import NotificationCenterModal from './components/layout/NotificationCenterModal';
 import DashboardView from './components/dashboard/DashboardView';
 import ListView from './components/escalas/ListView';
 import CalendarView from './components/escalas/CalendarView';
@@ -32,6 +33,8 @@ interface AppContentProps {
   setIsProfileModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isAvisoModalOpen: boolean;
   setIsAvisoModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isNotificationsOpen: boolean;
+  setIsNotificationsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   selectedEventId: string | null;
   openAviso: (eventId: string) => void;
   handleSync: () => Promise<void>;
@@ -71,16 +74,18 @@ const AppContent: React.FC<AppContentProps> = ({
   setIsProfileModalOpen,
   isAvisoModalOpen,
   setIsAvisoModalOpen,
+  isNotificationsOpen,
+  setIsNotificationsOpen,
   selectedEventId,
   openAviso,
   handleSync,
   isLoading
 }) => {
-  const { activeModules, isGlobalAdminOrLeader, loading: ministryLoading } = useMinistryContext();
+  const { activeModules, isGlobalAdmin, loading: ministryLoading } = useMinistryContext();
 
   useEffect(() => {
     const targetModule = getModuleForView(currentView);
-    const canAccessTools = isGlobalAdminOrLeader;
+    const canAccessTools = isGlobalAdmin;
 
     if (targetModule === 'tools' && !canAccessTools) {
       setCurrentView(getDefaultViewForModules(activeModules, canAccessTools));
@@ -90,7 +95,7 @@ const AppContent: React.FC<AppContentProps> = ({
     if (targetModule !== 'tools' && !activeModules.includes(targetModule)) {
       setCurrentView(getDefaultViewForModules(activeModules, canAccessTools));
     }
-  }, [activeModules, currentView, isGlobalAdminOrLeader, setCurrentView]);
+  }, [activeModules, currentView, isGlobalAdmin, setCurrentView]);
 
   if (ministryLoading) {
     return (
@@ -127,10 +132,15 @@ const AppContent: React.FC<AppContentProps> = ({
           onColorChange={setBrandColor}
           isProfileModalOpen={isProfileModalOpen}
           setIsProfileModalOpen={setIsProfileModalOpen}
+          onOpenNotifications={() => setIsNotificationsOpen(true)}
         />
 
         <div className="flex flex-1 flex-col overflow-hidden pt-16 lg:ml-[280px] lg:pt-0">
-          <Header onSync={handleSync} onOpenProfile={() => setIsProfileModalOpen(true)} />
+          <Header
+            onSync={handleSync}
+            onOpenProfile={() => setIsProfileModalOpen(true)}
+            onOpenNotifications={() => setIsNotificationsOpen(true)}
+          />
 
           <Toolbar currentView={currentView} onViewChange={setCurrentView} />
 
@@ -162,6 +172,8 @@ const AppContent: React.FC<AppContentProps> = ({
       {isAvisoModalOpen && selectedEventId && (
         <AvisoModal eventId={selectedEventId} onClose={() => setIsAvisoModalOpen(false)} />
       )}
+
+      {isNotificationsOpen && <NotificationCenterModal onClose={() => setIsNotificationsOpen(false)} />}
     </div>
   );
 };
@@ -181,6 +193,7 @@ const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>('splash');
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [isAvisoModalOpen, setIsAvisoModalOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -204,12 +217,12 @@ const App: React.FC = () => {
   }, [brandColor]);
 
   useEffect(() => {
-    if (isProfileModalOpen || isAvisoModalOpen) {
+    if (isProfileModalOpen || isAvisoModalOpen || isNotificationsOpen) {
       document.body.classList.add('modal-open');
     } else {
       document.body.classList.remove('modal-open');
     }
-  }, [isAvisoModalOpen, isProfileModalOpen]);
+  }, [isAvisoModalOpen, isNotificationsOpen, isProfileModalOpen]);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -338,6 +351,8 @@ const App: React.FC = () => {
           setIsProfileModalOpen={setIsProfileModalOpen}
           isAvisoModalOpen={isAvisoModalOpen}
           setIsAvisoModalOpen={setIsAvisoModalOpen}
+          isNotificationsOpen={isNotificationsOpen}
+          setIsNotificationsOpen={setIsNotificationsOpen}
           selectedEventId={selectedEventId}
           openAviso={openAviso}
           handleSync={handleSync}

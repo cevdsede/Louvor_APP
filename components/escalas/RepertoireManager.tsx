@@ -4,6 +4,7 @@ import { showSuccess, showError } from '../../utils/toast';
 import { logger } from '../../utils/logger';
 import { RepertoireItem } from '../../types';
 import { Song } from '../../types-supabase';
+import AvisoGeralService from '../../services/AvisoGeralService';
 
 interface RepertoireManagerProps {
   eventId: string;
@@ -11,7 +12,9 @@ interface RepertoireManagerProps {
   allSongs: Song[];
   tones: string[];
   singersInEvent: { id: string; name: string }[];
-  isMember: boolean;
+  canManageRepertoire: boolean;
+  currentUser: { id: string; name: string } | null;
+  ministerioId?: string | null;
   onSongAdded: () => void;
 }
 
@@ -21,7 +24,9 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
   allSongs,
   tones,
   singersInEvent,
-  isMember,
+  canManageRepertoire,
+  currentUser,
+  ministerioId,
   onSongAdded
 }) => {
   console.log('RepertoireManager - allSongs:', allSongs);
@@ -32,7 +37,7 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
   const [newSongData, setNewSongData] = useState({ song: '', singer: '', key: '' });
 
   const handleSaveSong = async () => {
-    if (!isMember) {
+    if (!canManageRepertoire) {
       showError('Apenas membros podem adicionar músicas.');
       return;
     }
@@ -79,7 +84,9 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
         }
       }
 
-      if (editingSongId) {
+      const isEditing = Boolean(editingSongId);
+
+      if (isEditing) {
         // Update existing song in repertoire
         const updateData: {
           id_musicas: string;
@@ -155,10 +162,22 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
       setShowAddSong(false);
       setEditingSongId(null);
       setNewSongData({ song: '', singer: '', key: '' });
+
+      if (!isEditing && currentUser?.id) {
+        const songLabel = `${musicData.musica}${musicData.cantor ? ` - ${musicData.cantor}` : ''}`;
+        await AvisoGeralService.notifyScaleMembers({
+          cultoId: eventId,
+          ministerioId,
+          senderId: currentUser.id,
+          tipo: 'escala_musica',
+          texto: `${currentUser.name} adicionou a musica "${songLabel}" nesta escala.`
+        });
+      }
+
       onSongAdded();
       
       // Toast de sucesso
-      if (editingSongId) {
+      if (isEditing) {
         showSuccess('Música atualizada com sucesso!');
       } else {
         showSuccess('Música adicionada ao repertório com sucesso!');
@@ -208,7 +227,7 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
   };
 
   const handleDeleteSong = async (songId: string) => {
-    if (!isMember) {
+    if (!canManageRepertoire) {
       showError('Apenas membros podem remover músicas.');
       return;
     }
@@ -278,7 +297,7 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
   return (
     <div>
       {/* Add Song Button */}
-      {!showAddSong && isMember && (
+      {!showAddSong && canManageRepertoire && (
         <div className="flex justify-end mb-4">
           <button
             onClick={() => { 
@@ -341,7 +360,7 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
               </select>
             </div>
           </div>
-          {isMember && (
+          {canManageRepertoire && (
             <div className="flex gap-2 mt-4">
               <button onClick={() => setShowAddSong(false)} className="flex-1 py-2 bg-slate-100 dark:bg-slate-700 text-slate-500 rounded-xl text-[9px] font-black uppercase tracking-widest">Cancelar</button>
               <button 
@@ -378,7 +397,7 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
                   Ministro: <span className="text-brand">{item.minister || 'Sem ministro'}</span>
                 </p>
               </div>
-              {isMember && (
+              {canManageRepertoire && (
                 <div className="absolute top-2 right-2 flex gap-1 z-10">
                   <button 
                     onClick={() => handleEditSong(item)}

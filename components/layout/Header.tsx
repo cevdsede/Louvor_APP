@@ -1,13 +1,15 @@
 import React from 'react';
 import { useMinistryContext } from '../../contexts/MinistryContext';
 import MinistrySwitcher from './MinistrySwitcher';
+import NotificationButton from './NotificationButton';
 
 interface HeaderProps {
   onSync: () => void;
   onOpenProfile: () => void;
+  onOpenNotifications: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onSync, onOpenProfile }) => {
+const Header: React.FC<HeaderProps> = ({ onSync, onOpenProfile, onOpenNotifications }) => {
   const { userMinisterios } = useMinistryContext();
 
   return (
@@ -16,6 +18,13 @@ const Header: React.FC<HeaderProps> = ({ onSync, onOpenProfile }) => {
         Cloud <span className="text-brand">Worship</span>
       </h1>
       <div className="flex items-center gap-2">
+        <div className="relative">
+          <NotificationButton
+            onClick={onOpenNotifications}
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 shadow-sm transition-all hover:text-brand dark:bg-slate-800"
+          />
+        </div>
+
         <button 
           onClick={onSync}
           className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-brand transition-all shadow-sm"

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '../../supabaseClient';
 import { showSuccess, showError } from '../../utils/toast';
 import { logger } from '../../utils/logger';
+import AvisoGeralService from '../../services/AvisoGeralService';
 
 interface Notice {
   id: string;
@@ -14,7 +15,7 @@ interface NoticeManagerProps {
   eventId: string;
   notices: Notice[];
   currentUser: { id: string, name: string } | null;
-  isMember: boolean;
+  canManageNotices: boolean;
   ministerioId?: string | null;
   onNoticesUpdated: () => void;
 }
@@ -23,7 +24,7 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
   eventId,
   notices,
   currentUser,
-  isMember,
+  canManageNotices,
   ministerioId,
   onNoticesUpdated
 }) => {
@@ -35,7 +36,7 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
     if (!noticeText.trim()) return;
 
     // Verifica se é membro válido
-    if (!isMember || !currentUser) {
+    if (!canManageNotices || !currentUser) {
       showError('Apenas membros cadastrados podem criar avisos.');
       return;
     }
@@ -48,7 +49,9 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
         ministerio_id: ministerioId
       };
 
-      if (editingNoticeId) {
+      const isEditing = Boolean(editingNoticeId);
+
+      if (isEditing) {
         // Update existing notice
         const { error } = await supabase
           .from('avisos_cultos')
@@ -71,9 +74,19 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
       setNoticeText('');
       setEditingNoticeId(null);
       setShowAddNotice(false);
+
+      if (!isEditing && currentUser?.id) {
+        await AvisoGeralService.notifyScaleMembers({
+          cultoId: eventId,
+          ministerioId,
+          senderId: currentUser.id,
+          tipo: 'escala_aviso',
+          texto: `${currentUser.name} adicionou um aviso nesta escala: ${noticeText.trim()}`
+        });
+      }
       
       // Toast de sucesso
-      if (editingNoticeId) {
+      if (isEditing) {
         showSuccess('Aviso atualizado com sucesso!');
       } else {
         showSuccess('Aviso postado com sucesso!');
@@ -158,7 +171,7 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
   return (
     <div>
       {/* Add Notice Button */}
-      {!showAddNotice && isMember && (
+      {!showAddNotice && canManageNotices && (
         <div className="flex justify-end mb-4">
           <button
             onClick={() => { 
@@ -186,7 +199,7 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
             className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-xs focus:ring-1 focus:ring-brand outline-none resize-none"
             rows={3}
           />
-          {isMember && (
+          {canManageNotices && (
             <div className="flex gap-2 mt-4">
               <button onClick={() => setShowAddNotice(false)} className="flex-1 py-2 bg-slate-100 dark:bg-slate-700 text-slate-500 rounded-xl text-[9px] font-black uppercase tracking-widest">Cancelar</button>
               <button 
@@ -209,7 +222,7 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
                 <span className="text-[8px] font-black text-brand uppercase tracking-widest">{notice.sender}</span>
                 <div className="flex items-center gap-2">
                   <span className="text-[7px] font-bold text-slate-400 uppercase">{notice.time}</span>
-                  {isMember && (
+                  {canManageNotices && (
                     <>
                       <button 
                         onClick={() => handleEditNotice(notice)}
@@ -239,7 +252,7 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
             <i className="fas fa-bell-slash text-slate-400 text-lg"></i>
           </div>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nenhum aviso ainda</p>
-          {isMember && (
+          {canManageNotices && (
             <p className="text-[8px] text-slate-500 mt-2">Clique em "Novo Aviso" para adicionar um comunicado</p>
           )}
         </div>

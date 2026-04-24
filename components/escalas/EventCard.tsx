@@ -8,7 +8,7 @@ interface EventCardProps {
   activeSubTab: 'team' | 'repertoire' | 'notices';
   onSubTabChange: (tab: 'team' | 'repertoire' | 'notices') => void;
   onDelete?: (eventId: string, eventTitle: string) => void;
-  isAdminOrLeader?: boolean;
+  canDeleteEvent?: boolean;
   showRepertoire?: boolean;
   children: React.ReactNode;
 }
@@ -20,7 +20,7 @@ const EventCard: React.FC<EventCardProps> = ({
   activeSubTab,
   onSubTabChange,
   onDelete,
-  isAdminOrLeader = false,
+  canDeleteEvent = false,
   showRepertoire = true,
   children
 }) => {
@@ -63,7 +63,7 @@ const EventCard: React.FC<EventCardProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {isAdminOrLeader && onDelete && (
+          {canDeleteEvent && onDelete && (
             <button
               onClick={(eventClick) => {
                 eventClick.stopPropagation();

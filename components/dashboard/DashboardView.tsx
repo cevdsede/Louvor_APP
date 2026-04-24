@@ -1,9 +1,14 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../../supabaseClient';
 import { useMinistryContext } from '../../contexts/MinistryContext';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import { ChartInstance } from '../../types-supabase';
 import DashboardService, { EscalaSemanaResumo, FrequenciaMembro } from '../../services/DashboardService';
+import { Member, Notice, ScheduleEvent } from '../../types';
+import EventCard from '../escalas/EventCard';
+import { sortMembersByRole, getRoleIcon } from '../../utils/teamUtils';
+import { getDisplayName } from '../../utils/displayName';
+import { getMemberIdsForMinisterio } from '../../utils/memberMinistry';
 
 const DashboardView: React.FC = () => {
   const { activeMinisterio, activeMinisterioId, activeModules } = useMinistryContext();
@@ -23,9 +28,59 @@ const DashboardView: React.FC = () => {
   const [frequenciaMembros, setFrequenciaMembros] = useState<FrequenciaMembro[]>([]);
   const [aniversariantes, setAniversariantes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedWeekEvents, setSelectedWeekEvents] = useState<ScheduleEvent[] | null>(null);
+  const [expandedWeekEventId, setExpandedWeekEventId] = useState<string | null>(null);
+  const [activeWeekSubTabs, setActiveWeekSubTabs] = useState<Record<string, 'team' | 'repertoire' | 'notices'>>({});
+  const { data: cultosRaw } = useLocalStorageFirst<any>({ table: 'cultos' });
+  const { data: nomeCultosRaw } = useLocalStorageFirst<any>({ table: 'nome_cultos' });
+  const { data: membrosRaw } = useLocalStorageFirst<any>({ table: 'membros' });
+  const { data: escalasRaw } = useLocalStorageFirst<any>({ table: 'escalas' });
+  const { data: repertorioRaw } = useLocalStorageFirst<any>({ table: 'repertorio' });
+  const { data: musicasRaw } = useLocalStorageFirst<any>({ table: 'musicas' });
+  const { data: tonsRaw } = useLocalStorageFirst<any>({ table: 'tons' });
+  const { data: avisosRaw } = useLocalStorageFirst<any>({ table: 'avisos_cultos' });
+  const { data: funcoesRaw } = useLocalStorageFirst<any>({ table: 'funcao' });
   const memberIds = (membrosMinisteriosRaw || [])
     .filter((membership: any) => membership.ministerio_id === activeMinisterioId && membership.ativo !== false)
     .map((membership: any) => membership.membro_id);
+  const linkedMemberIdsInMinisterio = useMemo(
+    () => getMemberIdsForMinisterio(membrosMinisteriosRaw, activeMinisterioId, true),
+    [activeMinisterioId, membrosMinisteriosRaw]
+  );
+  const scopedMembros = useMemo(
+    () =>
+      activeMinisterioId
+        ? (membrosRaw || []).filter((member: any) => linkedMemberIdsInMinisterio.has(member.id))
+        : membrosRaw || [],
+    [activeMinisterioId, linkedMemberIdsInMinisterio, membrosRaw]
+  );
+  const scopedEscalas = useMemo(
+    () =>
+      activeMinisterioId
+        ? (escalasRaw || []).filter((escala: any) => escala.ministerio_id === activeMinisterioId)
+        : escalasRaw || [],
+    [activeMinisterioId, escalasRaw]
+  );
+  const scopedAvisos = useMemo(
+    () =>
+      activeMinisterioId
+        ? (avisosRaw || []).filter((aviso: any) => aviso.ministerio_id === activeMinisterioId)
+        : avisosRaw || [],
+    [activeMinisterioId, avisosRaw]
+  );
+  const scopedFuncoes = useMemo(
+    () =>
+      activeMinisterioId
+        ? (funcoesRaw || []).filter((funcao: any) => funcao.ministerio_id === activeMinisterioId)
+        : funcoesRaw || [],
+    [activeMinisterioId, funcoesRaw]
+  );
+  const canManageRepertoire = activeModules.includes('music');
+  const activeMinisterioSlug = activeMinisterio?.slug
+    ?.normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  const canViewRepertoire = canManageRepertoire || activeMinisterioSlug === 'midia' || activeMinisterioSlug === 'media';
 
   // Carregar dados do dashboard apenas uma vez ao montar
   useEffect(() => {
@@ -110,6 +165,116 @@ const DashboardView: React.FC = () => {
     return value.slice(0, 5);
   };
 
+  const groupMembersByPerson = (eventEscalas: any[]): Member[] => {
+    const memberMap = new Map();
+
+    eventEscalas.forEach((escala) => {
+      const memberId = escala.membros?.id;
+      const memberName = getDisplayName(escala.membros);
+      const memberRole = escala.funcao?.nome_funcao;
+      const roleId = escala.funcao?.id;
+
+      if (memberId && memberName) {
+        if (!memberMap.has(memberId)) {
+          memberMap.set(memberId, {
+            id: memberId,
+            name: memberName,
+            gender: escala.membros?.genero === 'Homem' ? 'M' : 'F',
+            avatar: escala.membros?.foto || `https://ui-avatars.com/api/?name=${memberName}&background=random`,
+            status: 'confirmed',
+            upcomingScales: [],
+            songHistory: [],
+            roles: [],
+            roleIds: []
+          });
+        }
+
+        const member = memberMap.get(memberId);
+        if (memberRole && !member.roles.includes(memberRole)) {
+          member.roles.push(memberRole);
+          member.roleIds.push(roleId);
+        }
+      }
+    });
+
+    return Array.from(memberMap.values()).map((member: any) => {
+      const sortedRoles = member.roleIds
+        .map((id: number, index: number) => ({ id, role: member.roles[index] }))
+        .sort((a: any, b: any) => a.id - b.id)
+        .map((item: any) => item.role);
+
+      return {
+        ...member,
+        role: sortedRoles.join(' / '),
+        roles: sortedRoles,
+        roleIds: member.roleIds
+      };
+    });
+  };
+
+  const eventNotices = useMemo<Record<string, Notice[]>>(() => {
+    const noticesByEvent: Record<string, Notice[]> = {};
+
+    scopedAvisos.forEach((notice: any) => {
+      if (!notice.id_cultos) return;
+      if (!noticesByEvent[notice.id_cultos]) noticesByEvent[notice.id_cultos] = [];
+      const member = scopedMembros.find((item: any) => item.id === notice.id_membros);
+      noticesByEvent[notice.id_cultos].push({
+        id: notice.id_lembrete,
+        text: notice.info,
+        sender: getDisplayName(member, 'Admin'),
+        time: notice.created_at
+          ? new Date(notice.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+          : ''
+      });
+    });
+
+    return noticesByEvent;
+  }, [scopedAvisos, scopedMembros]);
+
+  const eventsByCultoId = useMemo(() => {
+    const mappedEvents = new Map<string, ScheduleEvent>();
+
+    (cultosRaw || []).forEach((culto: any) => {
+      const date = new Date(`${culto.data_culto}T12:00:00`);
+      const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      const eventEscalasRaw = scopedEscalas
+        .filter((escala: any) => escala.id_culto === culto.id)
+        .map((escala: any) => ({
+          membros: scopedMembros.find((member: any) => member.id === escala.id_membros),
+          funcao: scopedFuncoes.find((funcao: any) => funcao.id === escala.id_funcao)
+        }));
+
+      const members = sortMembersByRole(groupMembersByPerson(eventEscalasRaw));
+      const repertoire = (canViewRepertoire ? (repertorioRaw || []) : [])
+        .filter((item: any) => item.id_culto === culto.id)
+        .map((item: any) => {
+          const song = (musicasRaw || []).find((music: any) => music.id === item.id_musicas);
+          const tone = (tonsRaw || []).find((entry: any) => entry.id === item.id_tons);
+          const member = (membrosRaw || []).find((entry: any) => entry.id === item.id_membros);
+          return {
+            id: item.id,
+            musica: song?.musica || 'Sem música',
+            cantor: song?.cantor || 'Sem cantor',
+            key: tone?.nome_tons || 'Ñ',
+            minister: getDisplayName(member)
+          };
+        });
+
+      mappedEvents.set(culto.id, {
+        id: culto.id,
+        title: (nomeCultosRaw || []).find((item: any) => item.id === culto.id_nome_cultos)?.nome_culto || 'CULTO',
+        date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        dayOfWeek: daysOfWeek[date.getDay()],
+        time: culto.horario,
+        members,
+        repertoire
+      });
+    });
+
+    return mappedEvents;
+  }, [canViewRepertoire, cultosRaw, membrosRaw, musicasRaw, nomeCultosRaw, repertorioRaw, scopedEscalas, scopedFuncoes, scopedMembros, tonsRaw]);
+
   const proximaEscalaData = escalaSemana?.items?.[0]
     ? {
         culto: escalaSemana.items[0].culto,
@@ -117,6 +282,23 @@ const DashboardView: React.FC = () => {
         funcoes: escalaSemana.items[0].funcoes
       }
     : null;
+
+  const openWeekEventModal = (cultoId: string) => {
+    const event = eventsByCultoId.get(cultoId);
+    if (!event) return;
+    setSelectedWeekEvents([event]);
+    setExpandedWeekEventId(cultoId);
+    setActiveWeekSubTabs((previous) => ({ ...previous, [cultoId]: 'team' }));
+  };
+
+  const toggleWeekEvent = (id: string) => {
+    setExpandedWeekEventId((previous) => (previous === id ? null : id));
+    setActiveWeekSubTabs((previous) => (previous[id] ? previous : { ...previous, [id]: 'team' }));
+  };
+
+  const setWeekSubTab = (eventId: string, tab: 'team' | 'repertoire' | 'notices') => {
+    setActiveWeekSubTabs((previous) => ({ ...previous, [eventId]: tab }));
+  };
 
   // Helper para renderizar os nomes dos aniversariantes
   const renderBirthdayNames = () => {
@@ -537,7 +719,8 @@ const DashboardView: React.FC = () => {
                   {escalaSemana.items.map((item) => (
                     <div
                       key={item.idCulto}
-                      className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/40 p-4"
+                      onClick={() => openWeekEventModal(item.idCulto)}
+                      className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/40 p-4 cursor-pointer transition-all hover:border-brand/40 hover:bg-brand/5 dark:hover:bg-brand/10"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
@@ -810,6 +993,131 @@ const DashboardView: React.FC = () => {
               >
                 Salvar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedWeekEvents && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 lg:pl-[312px] antialiased">
+          <div className="absolute inset-0 bg-slate-900/80" onClick={() => setSelectedWeekEvents(null)}></div>
+          <div className="relative w-full max-w-4xl max-h-[85vh] lg:max-h-[90vh] bg-[#f4f7fa] dark:bg-[#0b1120] rounded-[2rem] lg:rounded-[3rem] shadow-2xl overflow-y-auto custom-scrollbar border border-slate-100 dark:border-slate-800">
+            <div className="p-6 lg:p-10">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter uppercase leading-none">
+                  Detalhes da Escala
+                </h3>
+                <button onClick={() => setSelectedWeekEvents(null)} className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white dark:bg-slate-800 text-slate-400 hover:text-red-500 transition-all border border-slate-100 dark:border-slate-700 shadow-sm">
+                  <i className="fas fa-times"></i>
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {selectedWeekEvents.map((event) => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    isExpanded={expandedWeekEventId === event.id}
+                    onToggle={() => toggleWeekEvent(event.id)}
+                    activeSubTab={activeWeekSubTabs[event.id] || 'team'}
+                    onSubTabChange={(tab) => setWeekSubTab(event.id, tab)}
+                    showRepertoire={canViewRepertoire}
+                  >
+                    {activeWeekSubTabs[event.id] === 'team' && (
+                      <div className="p-6">
+                        <div className={`grid gap-4 ${
+                          event.members.some((member) => member.roles && member.roles.length > 2)
+                            ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                            : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+                        }`}>
+                          {event.members.map((member, index) => (
+                            <div key={`${member.id}-${index}`} className="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                              <div className="flex flex-col items-center text-center">
+                                <div className="relative mb-3">
+                                  <div className="w-16 h-16 bg-gradient-to-br from-brand to-brand-gold rounded-full flex items-center justify-center shadow-lg">
+                                    {member.avatar ? (
+                                      <img src={member.avatar} alt={member.name} className="w-full h-full rounded-full object-cover" />
+                                    ) : (
+                                      <i className={`fas ${getRoleIcon(member.roles && member.roles.length > 0 ? member.roles[0] : member.role)} text-white text-xl`}></i>
+                                    )}
+                                  </div>
+                                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-md border-2 border-brand">
+                                    <i className={`fas ${getRoleIcon(member.roles && member.roles.length > 0 ? member.roles[0] : member.role)} text-brand text-[8px]`}></i>
+                                  </div>
+                                </div>
+                                <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate w-full">{member.name}</h5>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase w-full mt-2">
+                                  {member.roles && member.roles.length > 1 ? member.roles.join(' / ') : member.role}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        {event.members.length === 0 && (
+                          <div className="text-center py-8">
+                            <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                              <i className="fas fa-users-slash text-slate-400 text-lg"></i>
+                            </div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nenhum membro escalado</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {canViewRepertoire && activeWeekSubTabs[event.id] === 'repertoire' && (
+                      <div className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {event.repertoire.map((song) => (
+                            <div key={song.id} className="group bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+                              <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
+                                <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
+                                  {song.key || 'Ñ'}
+                                </div>
+                                <div className="flex-1 px-4">
+                                  <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate">{song.musica} - {song.cantor}</h5>
+                                  <p className="text-[9px] font-bold text-slate-400 uppercase">
+                                    Ministro: <span className="text-brand">{song.minister || 'Sem ministro'}</span>
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        {event.repertoire.length === 0 && (
+                          <div className="text-center py-8">
+                            <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                              <i className="fas fa-music-slash text-slate-400 text-lg"></i>
+                            </div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nenhuma música no repertório</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {activeWeekSubTabs[event.id] === 'notices' && (
+                      <div className="p-6">
+                        <div className="space-y-3">
+                          {(eventNotices[event.id] || []).map((notice) => (
+                            <div key={notice.id} className="bg-slate-50/50 dark:bg-slate-800/30 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                              <div className="flex justify-between items-center mb-1.5">
+                                <span className="text-[8px] font-black text-brand uppercase tracking-widest">{notice.sender}</span>
+                                <span className="text-[7px] font-bold text-slate-400 uppercase">{notice.time}</span>
+                              </div>
+                              <p className="text-[10px] text-slate-600 dark:text-slate-300 font-medium leading-relaxed">{notice.text}</p>
+                            </div>
+                          ))}
+                        </div>
+                        {(eventNotices[event.id] || []).length === 0 && (
+                          <div className="text-center py-8">
+                            <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                              <i className="fas fa-bell-slash text-slate-400 text-lg"></i>
+                            </div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nenhum aviso</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </EventCard>
+                ))}
+              </div>
             </div>
           </div>
         </div>

@@ -10,7 +10,7 @@ interface TeamManagerProps {
   eventId: string;
   members: AppMember[];
   allRegisteredMembers: AppMember[];
-  isMember: boolean;
+  canManageTeam: boolean;
   ministerioId?: string | null;
   onTeamUpdated: () => void;
 }
@@ -25,7 +25,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
   eventId,
   members,
   allRegisteredMembers,
-  isMember,
+  canManageTeam,
   ministerioId,
   onTeamUpdated
 }) => {
@@ -68,7 +68,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
   };
 
   const handleDeleteMember = async (memberId: string, roleId?: number) => {
-    if (!isMember) {
+    if (!canManageTeam) {
       showError('Apenas lideres podem remover da escala.');
       return;
     }
@@ -112,7 +112,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
   };
 
   const handleEditMember = async (member: AppMember) => {
-    if (!isMember) {
+    if (!canManageTeam) {
       showError('Apenas lideres podem editar funcoes na escala.');
       return;
     }
@@ -161,7 +161,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
   };
 
   const handleUpdateMemberRole = async () => {
-    if (!isMember || !editingMember) return;
+    if (!canManageTeam || !editingMember) return;
     if (!newMemberFormData.memberId || !newMemberFormData.roleId) return;
 
     try {
@@ -189,7 +189,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
   };
 
   const handleAddMemberToScale = async () => {
-    if (!isMember) {
+    if (!canManageTeam) {
       showError('Apenas lideres podem escalar membros.');
       return;
     }
@@ -224,7 +224,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
 
   return (
     <div>
-      {!showAddMember && isMember && (
+      {!showAddMember && canManageTeam && (
         <div className="mb-4 flex justify-end">
           <button
             onClick={() => {
@@ -342,7 +342,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
               </div>
 
               <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                {isMember && (
+                {canManageTeam && (
                   <button
                     onClick={() => handleDeleteMember(member.id, (member as any).roleId)}
                     className="flex h-6 w-6 items-center justify-center rounded-lg bg-red-50 text-red-400 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40"
@@ -351,7 +351,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
                     <i className="fas fa-times text-[8px]" />
                   </button>
                 )}
-                {isMember && (
+                {canManageTeam && (
                   <button
                     onClick={() => handleEditMember(member)}
                     className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-50 text-blue-400 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40"
@@ -372,7 +372,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
             <i className="fas fa-users-slash text-lg text-slate-400" />
           </div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Nenhum membro escalado</p>
-          {isMember && <p className="mt-2 text-[8px] text-slate-500">Clique em "Adicionar Membro" para escalar alguem</p>}
+          {canManageTeam && <p className="mt-2 text-[8px] text-slate-500">Clique em "Adicionar Membro" para escalar alguem</p>}
         </div>
       )}
     </div>

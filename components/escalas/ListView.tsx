@@ -127,6 +127,20 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     ?.normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
+  const normalizedProfile = (currentMember?.perfil || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  const activeMembership = memberships.find((membership) => membership.ministerio_id === activeMinisterioId) || null;
+  const normalizedRole = (activeMembership?.papel || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  const isAdminProfile = normalizedProfile.includes('admin');
+  const isLeaderProfile =
+    !isAdminProfile &&
+    (normalizedProfile.includes('lider') ||
+      ['lider', 'coordenador', 'administrador'].some((item) => normalizedRole.includes(item)));
   const canViewRepertoire = canManageRepertoire || activeMinisterioSlug === 'midia' || activeMinisterioSlug === 'media';
 
   // Trava scroll quando o modal de escala está aberto
@@ -249,6 +263,20 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     setIsMember(canAccessCurrentMinisterio);
     setIsAdminOrLeader(isGlobalAdminOrLeader || canManageCurrentMinisterio);
   }, [activeMinisterioId, canManageCurrentMinisterio, currentMember, isGlobalAdminOrLeader, memberships]);
+
+  const canManageTeamForEvent = (_event: ScheduleEvent) => isAdminProfile || isLeaderProfile;
+  const isCurrentUserInEvent = (event: ScheduleEvent) =>
+    Boolean(currentUser?.id) && event.members.some((member) => member.id === currentUser?.id);
+  const canManageNoticesForEvent = (event: ScheduleEvent) =>
+    isAdminProfile || (isMember && isCurrentUserInEvent(event));
+  const canManageRepertoireForEvent = (event: ScheduleEvent) => {
+    if (activeMinisterioSlug === 'midia' || activeMinisterioSlug === 'media') {
+      return false;
+    }
+
+    return isAdminProfile || (isMember && isCurrentUserInEvent(event) && canManageRepertoire);
+  };
+  const canDeleteEventForCurrentMinisterio = isAdminProfile;
 
   // Processamento e Join Local dos dados
   // Função para agrupar membros com múltiplas funções
@@ -802,7 +830,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
               activeSubTab={activeSubTabs[event.id] || 'team'}
               onSubTabChange={(tab) => setSubTab(event.id, tab)}
               onDelete={handleDeleteScaleByMinisterio}
-              isAdminOrLeader={isAdminOrLeader}
+              canDeleteEvent={canDeleteEventForCurrentMinisterio}
               showRepertoire={canViewRepertoire}
             >
               {activeSubTabs[event.id] === 'team' && (
@@ -810,7 +838,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
                   eventId={event.id}
                   members={event.members}
                   allRegisteredMembers={allRegisteredMembers}
-                  isMember={isAdminOrLeader}
+                  canManageTeam={canManageTeamForEvent(event)}
                   ministerioId={activeMinisterioId}
                   onTeamUpdated={fetchEvents}
                 />
@@ -827,7 +855,9 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
                     m.role.toLowerCase().includes('vocal') ||
                     m.role.toLowerCase().includes('cantor')
                   )}
-                  isMember={canManageRepertoire && isMember}
+                  canManageRepertoire={canManageRepertoireForEvent(event)}
+                  currentUser={currentUser}
+                  ministerioId={activeMinisterioId}
                   onSongAdded={fetchEvents}
                 />
               )}
@@ -837,7 +867,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
                   eventId={event.id}
                   notices={eventNotices[event.id] || []}
                   currentUser={currentUser}
-                  isMember={isMember}
+                  canManageNotices={canManageNoticesForEvent(event)}
                   ministerioId={activeMinisterioId}
                   onNoticesUpdated={fetchNotices}
                 />

@@ -10,7 +10,7 @@ interface EventsViewProps {
 }
 
 const EventsView: React.FC<EventsViewProps> = ({ onEventClick }) => {
-  const { activeMinisterioId } = useMinistryContext();
+  const { activeMinisterioId, currentMember } = useMinistryContext();
   const [showModal, setShowModal] = useState(false);
   const [editingEvento, setEditingEvento] = useState<Evento | null>(null);
   const [formData, setFormData] = useState({
@@ -28,6 +28,11 @@ const EventsView: React.FC<EventsViewProps> = ({ onEventClick }) => {
   const { data: presencasRaw } = useLocalStorageFirst<any>({ table: 'presenca_evento' });
   const { data: membrosMinisterios } = useLocalStorageFirst<any>({ table: 'membros_ministerios' });
   const activeMemberIdsInMinisterio = getMemberIdsForMinisterio(membrosMinisterios, activeMinisterioId, false);
+  const currentProfile = (currentMember?.perfil || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  const canManageAttendance = currentProfile.includes('admin') || currentProfile.includes('lider');
 
   const eventosDoMinisterio = eventos.filter((evento) => {
     if (!activeMinisterioId) return true;
@@ -48,6 +53,10 @@ const EventsView: React.FC<EventsViewProps> = ({ onEventClick }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canManageAttendance) {
+      showError('Somente Admin e Lider podem gerenciar eventos.');
+      return;
+    }
 
     try {
       if (editingEvento) {
@@ -68,6 +77,10 @@ const EventsView: React.FC<EventsViewProps> = ({ onEventClick }) => {
   };
 
   const handleEdit = (evento: Evento) => {
+    if (!canManageAttendance) {
+      showError('Somente Admin e Lider podem editar eventos.');
+      return;
+    }
     setEditingEvento(evento);
     setFormData({
       tema: evento.tema,
@@ -78,6 +91,10 @@ const EventsView: React.FC<EventsViewProps> = ({ onEventClick }) => {
   };
 
   const handleDelete = async (evento: Evento) => {
+    if (!canManageAttendance) {
+      showError('Somente Admin e Lider podem excluir eventos.');
+      return;
+    }
     if (!confirm(`Tem certeza que deseja excluir o evento "${evento.tema}"?`)) return;
 
     try {
@@ -123,25 +140,29 @@ const EventsView: React.FC<EventsViewProps> = ({ onEventClick }) => {
           </h2>
           <p className="text-slate-500 mt-2">Gerencie eventos e controle de presenca</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="px-6 py-3 bg-brand text-white rounded-xl font-medium hover:bg-brand/600 transition-colors shadow-lg shadow-brand/20 flex items-center gap-2"
-        >
-          <i className="fas fa-plus"></i>
-          Novo Evento
-        </button>
+        {canManageAttendance && (
+          <button
+            onClick={() => setShowModal(true)}
+            className="px-6 py-3 bg-brand text-white rounded-xl font-medium hover:bg-brand/600 transition-colors shadow-lg shadow-brand/20 flex items-center gap-2"
+          >
+            <i className="fas fa-plus"></i>
+            Novo Evento
+          </button>
+        )}
       </div>
 
       {eventosDoMinisterio.length === 0 ? (
         <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800">
           <i className="fas fa-calendar-alt text-4xl text-slate-300 mb-4"></i>
           <p className="text-slate-400 font-bold uppercase tracking-widest text-[9px]">Nenhum evento encontrado</p>
-          <button
-            onClick={() => setShowModal(true)}
-            className="mt-4 px-4 py-2 bg-brand text-white rounded-lg text-sm hover:bg-brand/600 transition-colors"
-          >
-            Criar primeiro evento
-          </button>
+          {canManageAttendance && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="mt-4 px-4 py-2 bg-brand text-white rounded-lg text-sm hover:bg-brand/600 transition-colors"
+            >
+              Criar primeiro evento
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -155,26 +176,28 @@ const EventsView: React.FC<EventsViewProps> = ({ onEventClick }) => {
                 <div className="w-12 h-12 bg-brand/10 rounded-xl flex items-center justify-center">
                   <i className="fas fa-calendar text-brand text-lg"></i>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEdit(evento);
-                    }}
-                    className="w-8 h-8 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                  >
-                    <i className="fas fa-edit text-slate-500 text-xs"></i>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(evento);
-                    }}
-                    className="w-8 h-8 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                  >
-                    <i className="fas fa-trash text-red-500 text-xs"></i>
-                  </button>
-                </div>
+                {canManageAttendance && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(evento);
+                      }}
+                      className="w-8 h-8 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      <i className="fas fa-edit text-slate-500 text-xs"></i>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(evento);
+                      }}
+                      className="w-8 h-8 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                    >
+                      <i className="fas fa-trash text-red-500 text-xs"></i>
+                    </button>
+                  </div>
+                )}
               </div>
 
               <h3 className="font-black text-slate-800 dark:text-white text-lg mb-2 line-clamp-2">{evento.tema}</h3>

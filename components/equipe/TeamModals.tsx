@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Member, ScheduleEvent } from '../../types';
 import { ImageCache } from '../ui/ImageCache';
 import { supabase } from '../../supabaseClient';
@@ -8,6 +8,9 @@ import AvisoGeralService, { AvisoGeral } from '../../services/AvisoGeralService'
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import { useMinistryContext } from '../../contexts/MinistryContext';
+import { getDisplayName } from '../../utils/displayName';
+import { sortMembersByRole, getRoleIcon } from '../../utils/teamUtils';
+import EventCard from '../escalas/EventCard';
 
 interface TeamModalsProps {
   selectedMember: Member | null;
@@ -32,11 +35,21 @@ const TeamModals: React.FC<TeamModalsProps> = ({
   const { data: funcoesRaw } = useLocalStorageFirst<any>({ table: 'funcao' });
   const { data: membrosFuncoesRaw } = useLocalStorageFirst<any>({ table: 'membros_funcoes' });
   const { data: membrosMinisteriosRaw } = useLocalStorageFirst<any>({ table: 'membros_ministerios' });
+  const { data: cultosRaw } = useLocalStorageFirst<any>({ table: 'cultos' });
+  const { data: nomeCultosRaw } = useLocalStorageFirst<any>({ table: 'nome_cultos' });
+  const { data: membrosRaw } = useLocalStorageFirst<any>({ table: 'membros' });
+  const { data: escalasRaw } = useLocalStorageFirst<any>({ table: 'escalas' });
+  const { data: repertorioRaw } = useLocalStorageFirst<any>({ table: 'repertorio' });
+  const { data: musicasRaw } = useLocalStorageFirst<any>({ table: 'musicas' });
+  const { data: tonsRaw } = useLocalStorageFirst<any>({ table: 'tons' });
+  const { data: avisosCultoRaw } = useLocalStorageFirst<any>({ table: 'avisos_cultos' });
   const [isInactiveExpanded, setIsInactiveExpanded] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [avisosGerais, setAvisosGerais] = useState<AvisoGeral[]>([]);
   const [loadingAvisos, setLoadingAvisos] = useState(false);
+  const [viewingEventExpanded, setViewingEventExpanded] = useState(true);
+  const [viewingEventTab, setViewingEventTab] = useState<'team' | 'repertoire' | 'notices'>('team');
   const normalizeText = (value?: string | null) =>
     (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const currentProfile = normalizeText(currentMember?.perfil);
@@ -50,39 +63,161 @@ const TeamModals: React.FC<TeamModalsProps> = ({
   );
   const editingMemberFuncaoIds = new Set((editingMember?.funcaoIds || []).map(String));
 
-  // FunÃ§Ã£o para abrir WhatsApp com o membro
+  const buildEventFromCultoId = (eventId: string): ScheduleEvent | null => {
+    const culto = (cultosRaw || []).find((item: any) => item.id === eventId);
+    if (!culto) return null;
+
+    const cultoDate = new Date(`${culto.data_culto}T12:00:00`);
+    const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+    const eventEscalas = (escalasRaw || [])
+      .filter(
+        (escala: any) =>
+          escala.id_culto === eventId &&
+          (!activeMinisterioId || escala.ministerio_id === activeMinisterioId)
+      )
+      .map((escala: any) => ({
+        membro: (membrosRaw || []).find((member: any) => member.id === escala.id_membros),
+        funcao: (funcoesRaw || []).find((funcao: any) => funcao.id === escala.id_funcao)
+      }));
+
+    const groupedMembers = new Map<string, any>();
+    eventEscalas.forEach(({ membro, funcao }) => {
+      if (!membro) return;
+      const memberId = membro.id;
+      const memberName = getDisplayName(membro);
+
+      if (!groupedMembers.has(memberId)) {
+        groupedMembers.set(memberId, {
+          id: memberId,
+          name: memberName,
+          gender: membro.genero === 'Homem' ? 'M' : 'F',
+          avatar: membro.foto || `https://ui-avatars.com/api/?name=${memberName}&background=random`,
+          status: 'confirmed',
+          upcomingScales: [],
+          songHistory: [],
+          roles: [],
+          roleIds: []
+        });
+      }
+
+      const member = groupedMembers.get(memberId);
+      if (funcao?.nome_funcao && !member.roles.includes(funcao.nome_funcao)) {
+        member.roles.push(funcao.nome_funcao);
+        member.roleIds.push(funcao.id);
+      }
+    });
+
+    const members = sortMembersByRole(
+      Array.from(groupedMembers.values()).map((member: any) => {
+        const sortedRoles = member.roleIds
+          .map((id: number, index: number) => ({ id, role: member.roles[index] }))
+          .sort((a: any, b: any) => a.id - b.id)
+          .map((item: any) => item.role);
+
+        return {
+          ...member,
+          role: sortedRoles.join(' / '),
+          roles: sortedRoles,
+          roleIds: member.roleIds
+        };
+      })
+    );
+
+    const repertoire = (repertorioRaw || [])
+      .filter((item: any) => item.id_culto === eventId)
+      .map((item: any) => {
+        const song = (musicasRaw || []).find((music: any) => music.id === item.id_musicas);
+        const tone = (tonsRaw || []).find((entry: any) => entry.id === item.id_tons);
+        const member = (membrosRaw || []).find((entry: any) => entry.id === item.id_membros);
+
+        return {
+          id: item.id,
+          musica: song?.musica || 'Sem música',
+          cantor: song?.cantor || 'Sem cantor',
+          key: tone?.nome_tons || 'N/D',
+          minister: getDisplayName(member)
+        };
+      });
+
+    return {
+      id: culto.id,
+      title:
+        (nomeCultosRaw || []).find((item: any) => item.id === culto.id_nome_cultos)?.nome_culto ||
+        'CULTO',
+      date: cultoDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+      dayOfWeek: daysOfWeek[cultoDate.getDay()],
+      time: culto.horario,
+      members,
+      repertoire
+    };
+  };
+
+  const noticesForViewingEvent = viewingEvent
+    ? (avisosCultoRaw || [])
+        .filter(
+          (notice: any) =>
+            notice.id_cultos === viewingEvent.id &&
+            (!activeMinisterioId || notice.ministerio_id === activeMinisterioId)
+        )
+        .map((notice: any) => {
+          const member = (membrosRaw || []).find((item: any) => item.id === notice.id_membros);
+          return {
+            id: notice.id_lembrete,
+            text: notice.info,
+            sender: getDisplayName(member, 'Admin'),
+            time: notice.created_at
+              ? new Date(notice.created_at).toLocaleTimeString('pt-BR', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })
+              : ''
+          };
+        })
+    : [];
+
+  const openScaleDetailFromMember = (eventId: string) => {
+    const event = buildEventFromCultoId(eventId);
+    if (!event) {
+      showError('Não foi possível carregar os detalhes da escala.');
+      return;
+    }
+
+    onViewingEventChange(event);
+  };
+
+  // Função para abrir WhatsApp com o membro
   const handleWhatsAppContact = (member: Member) => {
-    const message = encodeURIComponent(`OlÃ¡ ${member.name}! Tudo bem?`);
+    const message = encodeURIComponent(`Olá ${member.name}! Tudo bem?`);
     
     // Abre WhatsApp Web com mensagem personalizada
     window.open(`https://web.whatsapp.com/send?text=${message}`, '_blank');
   };
 
-  // FunÃ§Ã£o para editar membro
+  // Função para editar membro
   const handleEditMember = (member: Member) => {
     if (!canEditMember(member)) {
       showError('Voce nao tem permissao para editar este membro.');
       return;
     }
 
-    // Fecha o modal atual e abre o modal de ediÃ§Ã£o
+    // Fecha o modal atual e abre o modal de edição
     onSelectedMemberChange(null);
     onEditingMemberChange(member);
   };
 
-  // FunÃ§Ã£o para fazer upload da foto
+  // Função para fazer upload da foto
   const handlePhotoUpload = async (file: File) => {
     if (!file || !editingMember) return;
 
     // Validar tipo de arquivo
     if (!file.type.startsWith('image/')) {
-      showError('Por favor, selecione um arquivo de imagem vÃ¡lido.');
+      showError('Por favor, selecione um arquivo de imagem válido.');
       return;
     }
 
-    // Validar tamanho (mÃ¡ximo 5MB)
+    // Validar tamanho (máximo 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      showError('A imagem deve ter no mÃ¡ximo 5MB.');
+      showError('A imagem deve ter no máximo 5MB.');
       return;
     }
 
@@ -113,7 +248,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
             .remove([oldPath]);
           
           if (deleteError) {
-            logger.warn('NÃ£o foi possÃ­vel apagar a foto antiga:', deleteError, 'ui');
+            logger.warn('Não foi possível apagar a foto antiga:', deleteError, 'ui');
           }
         } catch (deleteError) {
           logger.warn('Erro ao tentar apagar foto antiga:', deleteError, 'ui');
@@ -130,7 +265,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
 
       if (uploadError) throw uploadError;
 
-      // Obter URL pÃºblica
+      // Obter URL pública
       const { data: { publicUrl } } = supabase.storage
         .from('public')
         .getPublicUrl(filePath);
@@ -151,7 +286,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
     }
   };
 
-  // FunÃ§Ã£o para salvar ediÃ§Ã£o do membro
+  // Função para salvar edição do membro
   const handleSaveEditMember = async (updatedMember: Partial<Member> & { 
     avatar?: string; 
     email?: string; 
@@ -299,8 +434,8 @@ const TeamModals: React.FC<TeamModalsProps> = ({
         );
 
         if (authError) {
-          console.warn('Aviso: NÃ£o foi possÃ­vel atualizar o email na tabela auth.users:', authError.message);
-          // NÃ£o falhar a operaÃ§Ã£o principal, apenas avisar
+          console.warn('Aviso: Não foi possível atualizar o email na tabela auth.users:', authError.message);
+          // Não falhar a operação principal, apenas avisar
         }
         }
       }
@@ -325,7 +460,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
           : m
       ));
 
-      // Fecha o modal de ediÃ§Ã£o
+      // Fecha o modal de edição
       onEditingMemberChange(null);
       showSuccess('Membro atualizado com sucesso!');
     } catch (error) {
@@ -334,36 +469,38 @@ const TeamModals: React.FC<TeamModalsProps> = ({
     }
   };
 
-  // Buscar avisos gerais do membro quando o modal Ã© aberto
+  // Buscar avisos gerais do membro quando o modal é aberto
   useEffect(() => {
     if (selectedMember) {
       fetchAvisosGerais();
     }
   }, [selectedMember]);
 
+  useEffect(() => {
+    if (viewingEvent) {
+      setViewingEventExpanded(true);
+      setViewingEventTab('team');
+    }
+  }, [viewingEvent]);
+
   const fetchAvisosGerais = async () => {
     if (!selectedMember) return;
     
     setLoadingAvisos(true);
     try {
-      const avisos = await AvisoGeralService.getAvisosByMembro(selectedMember.id);
+      const avisos = await AvisoGeralService.getAvisosByMembro(selectedMember.id, activeMinisterioId);
       setAvisosGerais(avisos);
     } catch (error) {
       logger.error('Erro ao buscar avisos gerais:', error, 'ui');
-      // NÃ£o mostrar erro para o usuÃ¡rio, apenas log
+      // Não mostrar erro para o usuário, apenas log
     } finally {
       setLoadingAvisos(false);
     }
   };
 
-  const openScaleDetail = (eventId: string) => {
-    // Mock function - implementar lÃ³gica real
-    console.log('Opening scale detail for:', eventId);
-  };
-
   return (
     <>
-      {/* Modal de Membro - Centralizado apenas na Ã¡rea de conteÃºdo (ignorando navbar) */}
+      {/* Modal de Membro - Centralizado apenas na área de conteúdo (ignorando navbar) */}
       {selectedMember && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 lg:p-10 py-20 lg:py-10 overflow-hidden">
           <div className="absolute inset-0 bg-slate-900/80 dark:bg-black/90 backdrop-blur-xl" onClick={() => onSelectedMemberChange(null)}></div>
@@ -383,7 +520,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
             </div>
 
             <div className="p-6 lg:p-8 overflow-y-auto no-scrollbar flex-grow space-y-6">
-              {/* SeÃ§Ã£o Perfil */}
+              {/* Seção Perfil */}
               <div className="text-center space-y-4">
                 <div className="relative inline-block">
                   <div className="absolute inset-0 bg-brand/20 rounded-full blur-xl animate-pulse"></div>
@@ -412,13 +549,13 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                 </div>
               </div>
 
-              {/* PrÃ³ximas Escalas */}
+              {/* Próximas Escalas */}
               <div className="space-y-4">
-                <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left">PrÃ³ximas Escalas</h4>
+                <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left">Próximas Escalas</h4>
                 <div className="space-y-3">
                   {selectedMember.upcomingScales && selectedMember.upcomingScales.length > 0 ? (
                     selectedMember.upcomingScales.map((s, idx) => (
-                      <button key={idx} onClick={() => openScaleDetail(s.id)} className="w-full bg-slate-50 dark:bg-slate-800/50 px-5 py-4 rounded-[2rem] border border-slate-100/50 dark:border-slate-700/50 flex justify-between items-center group transition-all hover:border-brand/40 hover:shadow-lg hover:shadow-brand/10 active:scale-[0.98]">
+                      <button key={idx} onClick={() => openScaleDetailFromMember(s.id)} className="w-full bg-slate-50 dark:bg-slate-800/50 px-5 py-4 rounded-[2rem] border border-slate-100/50 dark:border-slate-700/50 flex justify-between items-center group transition-all hover:border-brand/40 hover:shadow-lg hover:shadow-brand/10 active:scale-[0.98]">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 bg-white dark:bg-slate-700 rounded-2xl flex flex-col items-center justify-center border border-slate-100/50 dark:border-slate-600/50 shadow-md">
                             <span className="text-[8px] font-black text-slate-400 leading-none">{s.date.split('/')[1]}</span>
@@ -428,7 +565,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                             <span className="text-[11px] font-black text-slate-700 dark:text-slate-200 uppercase block mb-1">{s.event}</span>
                             <div className="flex items-center gap-2">
                               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">{s.role}</span>
-                              {s.time && <span className="text-[7px] text-slate-300">â€¢ {s.time}</span>}
+                              {s.time && <span className="text-[7px] text-slate-300">• {s.time}</span>}
                             </div>
                           </div>
                         </div>
@@ -448,10 +585,10 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                 </div>
               </div>
 
-              {/* RepertÃ³rio Recente - Apenas para Ministro ou Vocal */}
+              {/* Repertório Recente - Apenas para Ministro ou Vocal */}
               {(selectedMember.role?.toLowerCase().includes('ministro') || selectedMember.role?.toLowerCase().includes('vocal')) && (
                 <div className="space-y-4">
-                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left">RepertÃ³rio Recente</h4>
+                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left">Repertório Recente</h4>
                   <div className="space-y-3">
                     {selectedMember.songHistory && selectedMember.songHistory.length > 0 ? (
                       selectedMember.songHistory.map((h, idx) => (
@@ -461,7 +598,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                             <span className="text-[11px] font-black text-slate-600 dark:text-slate-300 truncate block">{h.song}</span>
                             <div className="flex items-center gap-2 text-[8px] text-slate-400">
                               <span>{h.date}</span>
-                              <span>â€¢</span>
+                              <span>•</span>
                               <span>{h.event}</span>
                             </div>
                           </div>
@@ -472,7 +609,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                         <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-3">
                           <i className="fas fa-music text-slate-300 text-xl"></i>
                         </div>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase">Nenhuma mÃºsica registrada</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase">Nenhuma música registrada</p>
                       </div>
                     )}
                   </div>
@@ -530,7 +667,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
         </div>
       )}
 
-      {/* Modal de EdiÃ§Ã£o de Membro */}
+      {/* Modal de Edição de Membro */}
       {editingMember && (
         <div className="fixed inset-0 z-[700] flex items-center justify-center p-4 lg:p-10 py-20 lg:py-10 overflow-hidden">
           <div className="absolute inset-0 bg-slate-900/80 dark:bg-black/90 backdrop-blur-xl" onClick={() => onEditingMemberChange(null)}></div>
@@ -550,7 +687,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
             </div>
 
             <div className="p-6 lg:p-8 overflow-y-auto no-scrollbar flex-grow space-y-6">
-              {/* FormulÃ¡rio de EdiÃ§Ã£o Simplificado */}
+              {/* Formulário de Edição Simplificado */}
               <div className="space-y-4">
                 {canEditBasic && (
                   <>
@@ -690,33 +827,128 @@ const TeamModals: React.FC<TeamModalsProps> = ({
 
       {/* Sub-Modal: Detalhes do Evento */}
       {viewingEvent && (
-        <div className="fixed inset-0 z-[800] flex items-center justify-center p-4 lg:p-6 py-20 lg:py-10 overflow-hidden animate-fade-in">
-          <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-xl" onClick={() => onViewingEventChange(null)}></div>
-          <div className="relative w-full max-w-2xl bg-[#f4f7fa] dark:bg-[#0b1120] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[75vh] lg:max-h-[85vh] border border-slate-100 dark:border-slate-800 lg:ml-64">
-            <div className="p-8 pb-4 flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-brand text-white flex flex-col items-center justify-center font-black">
-                  <span className="text-[9px] uppercase leading-none mb-1">{viewingEvent.dayOfWeek}</span>
-                  <span className="text-lg leading-none">{viewingEvent.date.split('/')[0]}</span>
-                </div>
-                <div className="text-left">
-                  <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase leading-none tracking-tighter">{viewingEvent.title}</h3>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 block">{viewingEvent.time} â€¢ Detalhes do Culto</span>
-                </div>
+        <div className="fixed inset-0 z-[800] flex items-center justify-center p-4 lg:pl-[312px] antialiased">
+          <div className="absolute inset-0 bg-slate-900/80" onClick={() => onViewingEventChange(null)}></div>
+          <div className="relative w-full max-w-4xl max-h-[85vh] lg:max-h-[90vh] bg-[#f4f7fa] dark:bg-[#0b1120] rounded-[2rem] lg:rounded-[3rem] shadow-2xl overflow-y-auto custom-scrollbar border border-slate-100 dark:border-slate-800">
+            <div className="p-6 lg:p-10">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter uppercase leading-none">
+                  Detalhes da Escala
+                </h3>
+                <button
+                  onClick={() => onViewingEventChange(null)}
+                  className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white dark:bg-slate-800 text-slate-400 hover:text-red-500 transition-all border border-slate-100 dark:border-slate-700 shadow-sm"
+                >
+                  <i className="fas fa-times"></i>
+                </button>
               </div>
-              <button onClick={() => onViewingEventChange(null)} className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white dark:bg-slate-800 text-slate-400 hover:text-red-500 transition-colors border border-slate-100 dark:border-slate-800 shadow-sm"><i className="fas fa-times"></i></button>
-            </div>
 
-            <div className="p-8 pt-4 overflow-y-auto no-scrollbar flex-grow space-y-8">
-              {/* ConteÃºdo do modal de detalhes */}
-              <div className="text-center py-20">
-                <i className="fas fa-calendar-check text-4xl text-brand mb-4"></i>
-                <p className="text-slate-400 font-bold uppercase tracking-widest text-[9px]">Detalhes do evento em desenvolvimento</p>
-              </div>
-            </div>
+              <EventCard
+                event={viewingEvent}
+                isExpanded={viewingEventExpanded}
+                onToggle={() => setViewingEventExpanded((current) => !current)}
+                activeSubTab={viewingEventTab}
+                onSubTabChange={setViewingEventTab}
+                showRepertoire
+              >
+                {viewingEventTab === 'team' && (
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {viewingEvent.members.map((member, index) => (
+                        <div key={`${member.id}-${index}`} className="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                          <div className="flex flex-col items-center text-center">
+                            <div className="relative mb-3">
+                              <div className="w-16 h-16 bg-gradient-to-br from-brand to-brand-gold rounded-full flex items-center justify-center shadow-lg">
+                                {member.avatar ? (
+                                  <img src={member.avatar} alt={member.name} className="w-full h-full rounded-full object-cover" />
+                                ) : (
+                                  <i className={`fas ${getRoleIcon(member.roles && member.roles.length > 0 ? member.roles[0] : member.role)} text-white text-xl`}></i>
+                                )}
+                              </div>
+                              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-md border-2 border-brand">
+                                <i className={`fas ${getRoleIcon(member.roles && member.roles.length > 0 ? member.roles[0] : member.role)} text-brand text-[8px]`}></i>
+                              </div>
+                            </div>
+                            <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate w-full">{member.name}</h5>
+                            <div className="flex flex-col items-center gap-1 mt-2">
+                              {member.roles && member.roles.length > 1 ? (
+                                <div className="text-center">
+                                  <p className="text-[9px] font-bold text-slate-400 uppercase leading-tight">{member.roles.join(' / ')}</p>
+                                  {member.roles.length > 2 && <span className="text-[7px] font-bold text-brand">+{member.roles.length - 1} funções</span>}
+                                </div>
+                              ) : (
+                                <p className="text-[9px] font-bold text-slate-400 uppercase truncate w-full">{member.role}</p>
+                              )}
+                              <div className="flex items-center gap-1 mt-2">
+                                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                <span className="text-[7px] font-bold text-slate-500 uppercase">Escalado</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {viewingEvent.members.length === 0 && (
+                      <div className="text-center py-8">
+                        <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <i className="fas fa-users-slash text-slate-400 text-lg"></i>
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nenhum membro escalado</p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-            <div className="p-8 bg-white dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800 flex gap-4 shrink-0">
-              <button onClick={() => onViewingEventChange(null)} className="flex-1 py-4 bg-brand text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-brand/20">Ok, entendi</button>
+                {viewingEventTab === 'repertoire' && (
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {viewingEvent.repertoire.map((song) => (
+                        <div key={song.id} className="group bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+                          <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
+                            <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">{song.key || 'N/D'}</div>
+                            <div className="flex-1 px-4">
+                              <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate">{song.musica} - {song.cantor}</h5>
+                              <p className="text-[9px] font-bold text-slate-400 uppercase">Ministro: <span className="text-brand">{song.minister || 'Sem ministro'}</span></p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {viewingEvent.repertoire.length === 0 && (
+                      <div className="text-center py-8">
+                        <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <i className="fas fa-music-slash text-slate-400 text-lg"></i>
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nenhuma música no repertório</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {viewingEventTab === 'notices' && (
+                  <div className="p-6">
+                    <div className="space-y-3">
+                      {noticesForViewingEvent.map((notice) => (
+                        <div key={notice.id} className="bg-slate-50/50 dark:bg-slate-800/30 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                          <div className="flex justify-between items-center mb-1.5">
+                            <span className="text-[8px] font-black text-brand uppercase tracking-widest">{notice.sender}</span>
+                            <span className="text-[7px] font-bold text-slate-400 uppercase">{notice.time}</span>
+                          </div>
+                          <p className="text-[10px] text-slate-600 dark:text-slate-300 font-medium leading-relaxed">{notice.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {noticesForViewingEvent.length === 0 && (
+                      <div className="text-center py-8">
+                        <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <i className="fas fa-bell-slash text-slate-400 text-lg"></i>
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nenhum aviso</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </EventCard>
             </div>
           </div>
         </div>

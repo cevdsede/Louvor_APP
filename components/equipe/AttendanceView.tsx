@@ -14,7 +14,7 @@ interface AttendanceViewProps {
 }
 
 const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
-  const { activeMinisterioId } = useMinistryContext();
+  const { activeMinisterioId, currentMember } = useMinistryContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'todos' | 'presente' | 'ausente' | 'justificado'>('todos');
   const [editingJustificativa, setEditingJustificativa] = useState<string | null>(null);
@@ -52,6 +52,11 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
     false
   );
   const currentMinisterioId = activeMinisterioId || evento.ministerio_id || null;
+  const currentProfile = (currentMember?.perfil || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  const canManageAttendance = currentProfile.includes('admin') || currentProfile.includes('lider');
 
   // Realizar o "join" em memória e filtrar pelo evento atual
   const presencas = Array.from(
@@ -81,6 +86,10 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
   const loading = loadingPresencas || loadingMembros || loadingMembrosMinisterios;
 
   const updatePresenca = async (id_membro: string, status: 'presente' | 'ausente' | 'justificado', justificativa?: string) => {
+    if (!canManageAttendance) {
+      showError('Somente Admin e Lider podem editar a chamada.');
+      return;
+    }
     try {
       const existing = presencas.find(p => p.id_membro === id_membro);
       
@@ -132,6 +141,10 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
 
   // Funções para gerenciar membros
   const handleAddMembro = async (id_membro: string) => {
+    if (!canManageAttendance) {
+      showError('Somente Admin e Lider podem adicionar membros na chamada.');
+      return;
+    }
     try {
       const id_chamada = `local-ch-${Date.now()}`;
       await addPresenca({
@@ -153,6 +166,10 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
   };
 
   const handleRemoveMembro = async (presenca: (typeof presencas)[number]) => {
+    if (!canManageAttendance) {
+      showError('Somente Admin e Lider podem remover membros da chamada.');
+      return;
+    }
     const confirmed = await showConfirmModal({
       title: 'Remover Da Chamada',
       message:
@@ -220,6 +237,42 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
     return timeString.substring(0, 5);
   };
 
+  const getStatusStyles = (status: 'presente' | 'ausente' | 'justificado') => {
+    if (status === 'presente') {
+      return {
+        card: 'bg-green-50/80 dark:bg-green-900/10 border-green-200 dark:border-green-800/50',
+        avatar: 'border-green-300 dark:border-green-700',
+        badge: 'bg-green-500 text-white',
+        label: 'text-green-700 dark:text-green-300',
+        dot: 'bg-green-500'
+      };
+    }
+
+    if (status === 'ausente') {
+      return {
+        card: 'bg-red-50/80 dark:bg-red-900/10 border-red-200 dark:border-red-800/50',
+        avatar: 'border-red-300 dark:border-red-700',
+        badge: 'bg-red-500 text-white',
+        label: 'text-red-700 dark:text-red-300',
+        dot: 'bg-red-500'
+      };
+    }
+
+    return {
+      card: 'bg-yellow-50/80 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800/50',
+      avatar: 'border-yellow-300 dark:border-yellow-700',
+      badge: 'bg-yellow-500 text-white',
+      label: 'text-yellow-700 dark:text-yellow-300',
+      dot: 'bg-yellow-500'
+    };
+  };
+
+  const getStatusLabel = (status: 'presente' | 'ausente' | 'justificado') => {
+    if (status === 'presente') return 'Presente';
+    if (status === 'ausente') return 'Ausente';
+    return 'Justificado';
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -245,13 +298,15 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
           </h2>
           <p className="text-slate-500 mt-2">{evento.tema}</p>
         </div>
-        <button
-          onClick={openAddMembroModal}
-          className="px-4 py-2 bg-brand text-white rounded-xl font-medium hover:bg-brand/600 transition-colors shadow-lg shadow-brand/20 flex items-center gap-2"
-        >
-          <i className="fas fa-user-plus"></i>
-          Adicionar Membro
-        </button>
+        {canManageAttendance && (
+          <button
+            onClick={openAddMembroModal}
+            className="px-4 py-2 bg-brand text-white rounded-xl font-medium hover:bg-brand/600 transition-colors shadow-lg shadow-brand/20 flex items-center gap-2"
+          >
+            <i className="fas fa-user-plus"></i>
+            Adicionar Membro
+          </button>
+        )}
       </div>
 
       {/* Info do Evento */}
@@ -343,21 +398,27 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
               {filteredPresencas.map((presenca) => (
                 <div
                   key={String(presenca.id_chamada)}
-                  className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl"
+                  className={`flex items-center justify-between p-4 rounded-xl border ${getStatusStyles(presenca.presenca).card}`}
                 >
                   <div className="flex items-center gap-4">
                     <ImageCache
                       src={presenca.membros?.foto || `https://ui-avatars.com/api/?name=${getDisplayName(presenca.membros)}&background=random`}
                       alt={getDisplayName(presenca.membros)}
-                      className="w-10 h-10 rounded-full border-2 border-slate-200 dark:border-slate-700"
+                      className={`w-10 h-10 rounded-full border-2 ${getStatusStyles(presenca.presenca).avatar}`}
                       fallbackSrc={`https://ui-avatars.com/api/?name=${getDisplayName(presenca.membros)}&background=random`}
                     />
                     <div>
-                      <div className="font-medium text-slate-800 dark:text-white">
-                        {getDisplayName(presenca.membros)}
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2.5 h-2.5 rounded-full ${getStatusStyles(presenca.presenca).dot}`}></div>
+                        <div className="font-medium text-slate-800 dark:text-white">
+                          {getDisplayName(presenca.membros)}
+                        </div>
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${getStatusStyles(presenca.presenca).badge}`}>
+                          {getStatusLabel(presenca.presenca)}
+                        </span>
                       </div>
                       {presenca.presenca === 'justificado' && presenca.justificativa && (
-                        <div className="text-sm text-slate-500 mt-1">
+                        <div className={`text-sm mt-1 ${getStatusStyles(presenca.presenca).label}`}>
                           <i className="fas fa-exclamation-triangle text-yellow-500 mr-1"></i>
                           {presenca.justificativa}
                         </div>
@@ -365,7 +426,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
                     </div>
                   </div>
 
-                  {editingJustificativa === presenca.id_membro ? (
+                  {canManageAttendance && editingJustificativa === presenca.id_membro ? (
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
@@ -399,7 +460,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
                         <i className="fas fa-times"></i>
                       </button>
                     </div>
-                  ) : (
+                  ) : canManageAttendance ? (
                     <div className="flex items-center gap-2">
                       <div className="flex gap-1">
                         <button
@@ -440,6 +501,10 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
                       >
                         <i className="fas fa-trash text-red-500 text-xs group-hover:text-red-600"></i>
                       </button>
+                    </div>
+                  ) : (
+                    <div className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider ${getStatusStyles(presenca.presenca).badge}`}>
+                      {getStatusLabel(presenca.presenca)}
                     </div>
                   )}
                 </div>

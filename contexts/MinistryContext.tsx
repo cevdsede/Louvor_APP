@@ -41,6 +41,7 @@ interface MinistryContextValue {
   memberships: MembroMinisterio[];
   userMinisterios: Ministerio[];
   loading: boolean;
+  isGlobalAdmin: boolean;
   isGlobalAdminOrLeader: boolean;
   canManageCurrentMinisterio: boolean;
   setActiveMinisterioId: (ministerioId: string) => void;
@@ -54,6 +55,11 @@ const isActiveRow = (row: { ativo?: boolean | null } | null | undefined) => row?
 const isAdminProfile = (perfil?: string | null) => {
   const normalized = (perfil || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   return normalized.includes('admin') || normalized.includes('lider');
+};
+
+const isStrictAdminProfile = (perfil?: string | null) => {
+  const normalized = (perfil || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  return normalized.includes('admin');
 };
 
 const isManagerRole = (papel?: string | null) => {
@@ -126,6 +132,11 @@ export const MinistryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     [currentMember?.perfil]
   );
 
+  const isGlobalAdmin = useMemo(
+    () => isStrictAdminProfile(currentMember?.perfil),
+    [currentMember?.perfil]
+  );
+
   const memberships = useMemo<MembroMinisterio[]>(() => {
     if (!currentMember) return [];
 
@@ -140,13 +151,13 @@ export const MinistryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [ministeriosRaw]);
 
   const userMinisterios = useMemo<Ministerio[]>(() => {
-    if (isGlobalAdminOrLeader) {
+    if (isGlobalAdmin) {
       return allMinisterios;
     }
 
     const accessibleIds = new Set(memberships.map((membership) => membership.ministerio_id));
     return allMinisterios.filter((ministerio) => accessibleIds.has(ministerio.id));
-  }, [allMinisterios, isGlobalAdminOrLeader, memberships]);
+  }, [allMinisterios, isGlobalAdmin, memberships]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -211,6 +222,7 @@ export const MinistryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       memberships,
       userMinisterios,
       loading: !authResolved || membrosLoading || ministeriosLoading || membrosMinisteriosLoading,
+      isGlobalAdmin,
       isGlobalAdminOrLeader,
       canManageCurrentMinisterio: isGlobalAdminOrLeader || isManagerRole(activeMembership?.papel),
       setActiveMinisterioId,
@@ -223,6 +235,7 @@ export const MinistryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       authResolved,
       currentMember,
       currentUserId,
+      isGlobalAdmin,
       isGlobalAdminOrLeader,
       memberships,
       membrosLoading,

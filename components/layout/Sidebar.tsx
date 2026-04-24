@@ -6,6 +6,7 @@ import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import { ViewType } from '../../types';
 import MinistrySwitcher from './MinistrySwitcher';
 import { getDisplayName } from '../../utils/displayName';
+import NotificationButton from './NotificationButton';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -16,6 +17,7 @@ interface SidebarProps {
   onColorChange: (color: string) => void;
   isProfileModalOpen: boolean;
   setIsProfileModalOpen: (open: boolean) => void;
+  onOpenNotifications: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -26,11 +28,12 @@ const Sidebar: React.FC<SidebarProps> = ({
   brandColor,
   onColorChange,
   isProfileModalOpen,
-  setIsProfileModalOpen
+  setIsProfileModalOpen,
+  onOpenNotifications
 }) => {
   const {
     activeModules,
-    isGlobalAdminOrLeader,
+    isGlobalAdmin,
     userMinisterios
   } = useMinistryContext();
   const [isThemeExpanded, setIsThemeExpanded] = useState(false);
@@ -299,7 +302,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     if (item.id === 'scales') return activeModules.includes('scales');
     if (item.id === 'music') return activeModules.includes('music');
     if (item.id === 'team') return activeModules.includes('team');
-    if (item.id === 'tools') return isGlobalAdminOrLeader;
+    if (item.id === 'tools') return isGlobalAdmin;
     return true;
   });
 
@@ -405,6 +408,13 @@ const Sidebar: React.FC<SidebarProps> = ({
               <span className="text-[11px] font-black text-slate-800 dark:text-white truncate">{profileData.name}</span>
               <span className="text-[7px] font-bold text-brand uppercase tracking-widest">{profileData.perfil}</span>
             </div>
+          </div>
+          <div className="relative">
+            <NotificationButton
+              onClick={onOpenNotifications}
+              className="flex h-[60px] w-12 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 text-slate-500 transition-all hover:bg-slate-100 hover:text-brand dark:border-slate-800 dark:bg-slate-800/30 dark:text-slate-300 dark:hover:bg-slate-800"
+              iconClassName="text-lg"
+            />
           </div>
           <button
             onClick={handleLogout}
