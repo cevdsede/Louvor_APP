@@ -35,6 +35,12 @@ export const sortMembersByRole = (membersList: Member[]) => {
 };
 
 // Função para obter ícone da função
+export const sortMembersAlphabetically = (membersList: Member[]) => {
+  return membersList.sort((a, b) =>
+    (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })
+  );
+};
+
 export const getRoleIcon = (role: string) => {
   const found = roleOrder.find(r => r.role.toLowerCase() === role.toLowerCase());
   return found ? found.icon : 'fa-user';

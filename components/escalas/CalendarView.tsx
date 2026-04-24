@@ -6,11 +6,18 @@ import { sortMembersByRole, getRoleIcon } from '../../utils/teamUtils';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import EventCard from './EventCard';
 import { getMemberIdsForMinisterio } from '../../utils/memberMinistry';
+import { getDisplayName } from '../../utils/displayName';
 
 const CalendarView: React.FC = () => {
-  const { activeMinisterioId, activeModules } = useMinistryContext();
+  const { activeMinisterio, activeMinisterioId, activeModules } = useMinistryContext();
   const [selectedDateEvents, setSelectedDateEvents] = useState<ScheduleEvent[] | null>(null);
   const [currentBaseDate, setCurrentBaseDate] = useState(new Date());
+  const canManageRepertoire = activeModules.includes('music');
+  const activeMinisterioSlug = activeMinisterio?.slug
+    ?.normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  const canViewRepertoire = canManageRepertoire || activeMinisterioSlug === 'midia' || activeMinisterioSlug === 'media';
 
   // Estados para cards colapsáveis (igual ListView)
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -32,7 +39,7 @@ const CalendarView: React.FC = () => {
     
     escalas.forEach(escala => {
       const memberId = escala.membros?.id;
-      const memberName = escala.membros?.nome;
+      const memberName = getDisplayName(escala.membros);
       const memberRole = escala.funcao?.nome_funcao;
       const roleId = escala.funcao?.id;
       
@@ -114,10 +121,10 @@ const CalendarView: React.FC = () => {
     // 1. Membros Ativos
     const mappedMembers: Member[] = (scopedActiveMembros || []).map((m: any) => ({
       id: m.id,
-      name: m.nome,
+      name: getDisplayName(m),
       role: 'Membro',
       gender: m.genero === 'Homem' ? 'M' : 'F',
-      avatar: m.foto || `https://ui-avatars.com/api/?name=${m.nome}&background=random`,
+      avatar: m.foto || `https://ui-avatars.com/api/?name=${getDisplayName(m)}&background=random`,
       status: 'confirmed',
       upcomingScales: [],
       songHistory: []
@@ -125,7 +132,7 @@ const CalendarView: React.FC = () => {
     setAllRegisteredMembers(mappedMembers);
 
     // 2. Músicas e Tons
-    setAllSongs(activeModules.includes('music') ? musicasRaw : []);
+    setAllSongs(canManageRepertoire ? musicasRaw : []);
     setTones(tonsRaw);
 
     // 3. Avisos por Evento
@@ -137,7 +144,7 @@ const CalendarView: React.FC = () => {
       noticesByEvent[n.id_cultos].push({
         id: n.id_lembrete,
         text: n.info,
-        sender: membro?.nome || 'Admin',
+        sender: getDisplayName(membro, 'Admin'),
         time: n.created_at ? new Date(n.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''
       });
     });
@@ -158,18 +165,18 @@ const CalendarView: React.FC = () => {
       const groupedMembers = groupMembersByPerson(eventMembrosRaw);
 
       // Local Join: Repertório
-      const cRepertorio = (activeModules.includes('music') ? (repertorioRaw || []) : [])
+      const cRepertorio = (canViewRepertoire ? (repertorioRaw || []) : [])
         .filter((r: any) => r.id_culto === c.id)
         .map((r: any) => {
           const musica = musicasRaw.find((m: any) => m.id === r.id_musicas);
           const tom = tonsRaw.find((t: any) => t.id === r.id_tons);
-          const membro = (scopedMembros || []).find((m: any) => m.id === r.id_membros);
+          const membro = (membrosRaw || []).find((m: any) => m.id === r.id_membros);
           return {
             id: r.id,
             musica: musica?.musica || 'Sem música',
             cantor: musica?.cantor || 'Sem cantor',
             key: tom?.nome_tons || 'Ñ',
-            minister: membro?.nome || ''
+            minister: getDisplayName(membro)
           };
         });
 
@@ -184,7 +191,7 @@ const CalendarView: React.FC = () => {
       };
     });
     setEvents(mapped);
-  }, [activeModules, cultosRaw, musicasRaw, nomeCultosRaw, repertorioRaw, scopedActiveMembros, scopedAvisos, scopedEscalas, scopedFuncoes, scopedMembros, tonsRaw]);
+  }, [canManageRepertoire, canViewRepertoire, cultosRaw, membrosRaw, musicasRaw, nomeCultosRaw, repertorioRaw, scopedActiveMembros, scopedAvisos, scopedEscalas, scopedFuncoes, scopedMembros, tonsRaw]);
 
   // Auth check
   useEffect(() => {
@@ -198,7 +205,7 @@ const CalendarView: React.FC = () => {
       if (user && user.email) {
         const member = membrosRaw?.find((m: any) => m.email?.toLowerCase() === user.email?.toLowerCase());
         if (member) {
-          setCurrentUser({ id: member.id, name: member.nome });
+          setCurrentUser({ id: member.id, name: getDisplayName(member) });
           setIsMember(true);
         }
       }
@@ -353,7 +360,7 @@ const CalendarView: React.FC = () => {
                     onToggle={() => toggleExpand(event.id)}
                     activeSubTab={activeSubTabs[event.id] || 'team'}
                     onSubTabChange={(tab) => setSubTab(event.id, tab)}
-                    showRepertoire={activeModules.includes('music')}
+                    showRepertoire={canViewRepertoire}
                   >
                     {activeSubTabs[event.id] === 'team' && (
                       <div className="p-6">
@@ -421,7 +428,7 @@ const CalendarView: React.FC = () => {
                         )}
                       </div>
                     )}
-                    {activeSubTabs[event.id] === 'repertoire' && (
+                    {canViewRepertoire && activeSubTabs[event.id] === 'repertoire' && (
                       <div className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {event.repertoire.map((song) => (

@@ -441,10 +441,37 @@ class LocalStorageFirstService {
         throw error;
       }
 
+      if (table === 'membros' && Array.isArray(data)) {
+        data = (await this.attachAuthDisplayNames(data as any[])) as T;
+      }
+
       return (data as T) || null;
     } catch (error) {
       console.error(`Erro ao buscar dados do servidor para ${table}:`, error);
       return null;
+    }
+  }
+
+  private static async attachAuthDisplayNames(membros: any[]): Promise<any[]> {
+    try {
+      const { data, error } = await supabase.rpc('get_auth_display_names');
+      if (error || !Array.isArray(data)) {
+        return membros;
+      }
+
+      const displayNameById = new Map(
+        data
+          .filter((item: any) => item?.id && item?.display_name)
+          .map((item: any) => [item.id, item.display_name])
+      );
+
+      return membros.map((membro) => ({
+        ...membro,
+        display_name: displayNameById.get(membro.id) || membro.display_name || null
+      }));
+    } catch (error) {
+      console.warn('Nao foi possivel anexar display_name do Auth:', error);
+      return membros;
     }
   }
 

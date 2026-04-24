@@ -1,12 +1,14 @@
 import { supabase } from '../supabaseClient';
 import LocalStorageFirstService from './LocalStorageFirstService';
 import { getMemberIdsForMinisterio } from '../utils/memberMinistry';
+import { getDisplayName } from '../utils/displayName';
 
 export interface Evento {
   id_evento: string | number;
   tema: string;
   data_evento: string;
   horario_evento: string;
+  ministerio_id?: string | null;
   created_at: string;
 }
 
@@ -14,6 +16,7 @@ export interface PresencaEvento {
   id_chamada: string | number;
   id_evento: string | number;
   id_membro: string;
+  ministerio_id?: string | null;
   presenca: 'presente' | 'ausente' | 'justificado';
   justificativa?: string | null;
   created_at: string;
@@ -52,7 +55,8 @@ class EventService {
         .insert({
           tema: evento.tema,
           data_evento: evento.data_evento,
-          horario_evento: evento.horario_evento
+          horario_evento: evento.horario_evento,
+          ministerio_id: ministerioId || null
         })
         .select()
         .single();
@@ -82,6 +86,7 @@ class EventService {
       ...evento,
       id_evento,
       id: id_evento,
+      ministerio_id: ministerioId || null,
       created_at: new Date().toISOString()
     };
 
@@ -136,6 +141,7 @@ class EventService {
     const updateData = {
       id_evento,
       id_membro,
+      ministerio_id: this.getEventoMinisterioId(id_evento),
       presenca,
       justificativa: presenca === 'justificado' ? justificativa : null
     };
@@ -177,7 +183,7 @@ class EventService {
       (membro: any) =>
         membro.ativo === true &&
         (!ministerioId || activeMemberIdsInMinisterio.has(membro.id)) &&
-        !(membro.nome || '').toLowerCase().includes('convidado') &&
+        !getDisplayName(membro).toLowerCase().includes('convidado') &&
         !presencasExistentes.has(membro.id)
     );
 
@@ -188,6 +194,7 @@ class EventService {
         id: id_chamada,
         id_evento,
         id_membro: membro.id,
+        ministerio_id: ministerioId || null,
         presenca: 'ausente',
         created_at: new Date().toISOString()
       });
@@ -210,6 +217,7 @@ class EventService {
       id: id_chamada,
       id_evento,
       id_membro,
+      ministerio_id: this.getEventoMinisterioId(id_evento),
       presenca: 'ausente',
       created_at: new Date().toISOString()
     });
@@ -234,10 +242,16 @@ class EventService {
       .filter((membro: any) => !ministerioId || activeMemberIdsInMinisterio.has(membro.id))
       .map((membro: any) => ({
       id: membro.id,
-      nome: membro.nome,
+      nome: getDisplayName(membro),
       foto: membro.foto,
       ativo: membro.ativo
       }));
+  }
+
+  private static getEventoMinisterioId(id_evento: string | number): string | null {
+    const eventos = LocalStorageFirstService.get<Evento>('eventos');
+    const evento = eventos.find((item) => String(item.id_evento) === String(id_evento));
+    return evento?.ministerio_id || null;
   }
 }
 

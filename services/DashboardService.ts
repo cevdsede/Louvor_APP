@@ -1,5 +1,6 @@
 import LocalStorageFirstService from './LocalStorageFirstService';
 import { buildWeeklyScaleItems, getWeekBoundsMondayToSunday } from '../utils/weeklyScale';
+import { getDisplayName } from '../utils/displayName';
 
 export interface ProximaEscala {
   id_culto: string;
@@ -263,11 +264,12 @@ class DashboardService {
         const membro = membroPorId.get(escala.id_membros);
         if (!membro) return;
 
-        if (!frequenciaMap.has(membro.nome)) {
-          frequenciaMap.set(membro.nome, new Set());
+        const displayName = getDisplayName(membro);
+        if (!frequenciaMap.has(displayName)) {
+          frequenciaMap.set(displayName, new Set());
         }
 
-        frequenciaMap.get(membro.nome)?.add(escala.id_culto);
+        frequenciaMap.get(displayName)?.add(escala.id_culto);
       });
 
       return Array.from(frequenciaMap.entries())
@@ -299,7 +301,7 @@ class DashboardService {
         })
         .map((membro: any) => ({
           id: membro.id,
-          nome: membro.nome,
+          nome: getDisplayName(membro),
           data_nasc: membro.data_nasc
         }))
         .sort((a, b) => {

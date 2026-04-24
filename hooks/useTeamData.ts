@@ -10,6 +10,7 @@ import {
   getMembershipForMemberInMinisterio,
   isMemberActiveInMinisterio
 } from '../utils/memberMinistry';
+import { getDisplayName } from '../utils/displayName';
 
 interface UseTeamDataProps {
   currentView: ViewType;
@@ -145,8 +146,10 @@ export const useTeamData = ({ currentView }: UseTeamDataProps) => {
 
         const displayName =
           user && member.id === user.id
-            ? user.user_metadata?.display_name || user.email?.split('@')[0] || member.nome
-            : member.nome;
+            ? user.user_metadata?.display_name || getDisplayName(member)
+            : getDisplayName(member);
+        const authDisplayName =
+          user && member.id === user.id ? user.user_metadata?.display_name || member.display_name || '' : member.display_name || '';
         const memberMembership = activeMinisterioId
           ? getMembershipForMemberInMinisterio(membrosMinisteriosData, member.id, activeMinisterioId, true)
           : null;
@@ -157,13 +160,19 @@ export const useTeamData = ({ currentView }: UseTeamDataProps) => {
         return {
           id: member.id,
           name: displayName,
+          nome: member.nome,
+          displayName: authDisplayName,
           role: memberFuncoes.length > 0 ? memberFuncoes.join(', ') : 'Sem funcao',
+          funcaoIds: memberFuncaoIds.map((id: string | number) => String(id)),
+          activeMinisterioMembershipId: memberMembership?.id,
+          activeMinisterioStatus: memberMembership?.ativo !== false,
           gender: member.genero === 'Homem' ? 'M' : 'F',
           status: isActiveInCurrentMinisterio ? 'confirmed' : 'absent',
           avatar: member.foto || '',
           telefone: member.telefone,
           email: member.email,
           data_nasc: member.data_nasc,
+          perfil: member.perfil,
           upcomingScales: finalScales as any[],
           songHistory: memberHistory as any[]
         };

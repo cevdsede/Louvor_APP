@@ -5,6 +5,7 @@ import { useMinistryContext } from '../../contexts/MinistryContext';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import { ViewType } from '../../types';
 import MinistrySwitcher from './MinistrySwitcher';
+import { getDisplayName } from '../../utils/displayName';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -88,8 +89,10 @@ const Sidebar: React.FC<SidebarProps> = ({
             memberData = onlineMemberData;
           }
 
+          const authDisplayName = user.user_metadata?.display_name || user.user_metadata?.full_name || user.user_metadata?.name || '';
+
           const newProfileData = {
-            name: memberData?.nome || user.user_metadata?.display_name || user.user_metadata?.full_name || user.user_metadata?.name || 'Administrador do Sistema',
+            name: authDisplayName || getDisplayName(memberData, 'Administrador do Sistema'),
             email: memberData?.email || user.email || '',
             password: '',
             perfil: memberData?.perfil || 'Administrador',
@@ -250,7 +253,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         }));
       }
 
-      showSuccess('Perfil updated com sucesso!');
+      showSuccess('Perfil atualizado com sucesso!');
       setIsProfileModalOpen(false);
       setProfileData(prev => ({ ...prev, password: '' }));
     } catch (error: any) {
@@ -452,7 +455,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
             <div className="space-y-4">
               <div>
-                <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1 block ml-1">Nome de Exibição</label>
+                <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1 block ml-1">Nome</label>
                 <input type="text" value={profileData.name} onChange={(e) => setProfileData({ ...profileData, name: e.target.value })} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand" />
               </div>
               <div>

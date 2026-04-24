@@ -6,6 +6,7 @@ import { ImageCache } from '../ui/ImageCache';
 import { showConfirmModal } from '../../utils/confirmModal';
 import { useMinistryContext } from '../../contexts/MinistryContext';
 import { getMemberIdsForMinisterio } from '../../utils/memberMinistry';
+import { getDisplayName } from '../../utils/displayName';
 
 interface AttendanceViewProps {
   evento: Evento;
@@ -45,11 +46,22 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
   } = useLocalStorageFirst<any>({
     table: 'membros_ministerios'
   });
+  const activeMemberIdsInMinisterio = getMemberIdsForMinisterio(
+    membrosMinisterios,
+    activeMinisterioId,
+    false
+  );
+  const currentMinisterioId = activeMinisterioId || evento.ministerio_id || null;
 
   // Realizar o "join" em memória e filtrar pelo evento atual
   const presencas = Array.from(
     (rawPresencas || [])
-      .filter((p) => String(p.id_evento) === String(evento.id_evento))
+      .filter((p) => {
+        if (String(p.id_evento) !== String(evento.id_evento)) return false;
+        if (!currentMinisterioId) return true;
+        if (p.ministerio_id) return p.ministerio_id === currentMinisterioId;
+        return activeMemberIdsInMinisterio.has(p.id_membro);
+      })
       .reduce((map, presenca) => {
         if (!map.has(presenca.id_membro)) {
           map.set(presenca.id_membro, {
@@ -64,7 +76,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
         return map;
       }, new Map<string, PresencaEvento & { membros: { id: string; nome: string; foto?: string } }>())
       .values()
-  ).sort((a, b) => (a.membros?.nome || '').localeCompare(b.membros?.nome || ''));
+  ).sort((a, b) => getDisplayName(a.membros).localeCompare(getDisplayName(b.membros)));
 
   const loading = loadingPresencas || loadingMembros || loadingMembrosMinisterios;
 
@@ -75,6 +87,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
       const updateData = {
         id_evento: evento.id_evento,
         id_membro,
+        ministerio_id: currentMinisterioId,
         presenca: status,
         justificativa: status === 'justificado' ? justificativa : null
       };
@@ -126,6 +139,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
         id_chamada,
         id_evento: evento.id_evento,
         id_membro,
+        ministerio_id: currentMinisterioId,
         presenca: 'ausente',
         created_at: new Date().toISOString()
       } as any);
@@ -142,7 +156,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
     const confirmed = await showConfirmModal({
       title: 'Remover Da Chamada',
       message:
-        `Deseja remover ${presenca.membros?.nome || 'este membro'} da chamada de "${evento.tema}"?\n\n` +
+        `Deseja remover ${getDisplayName(presenca.membros, 'este membro')} da chamada de "${evento.tema}"?\n\n` +
         'Essa acao remove apenas desta chamada. Voce podera adicionar o membro novamente depois, se quiser.',
       confirmText: 'Remover',
       cancelText: 'Cancelar',
@@ -167,21 +181,18 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
 
   // Membros disponíveis para adicionar (não estão na chamada atual)
   const membrosNaChamada = presencas.map(p => p.id_membro);
-  const activeMemberIdsInMinisterio = getMemberIdsForMinisterio(
-    membrosMinisterios,
-    activeMinisterioId,
-    false
-  );
   const membrosDisponiveis = allMembros.filter(
     (m) =>
       !membrosNaChamada.includes(m.id) &&
       m.ativo !== false &&
-      (!activeMinisterioId || activeMemberIdsInMinisterio.has(m.id)) &&
-      !(m.nome || '').toLowerCase().includes('convidado')
+      (!currentMinisterioId || activeMemberIdsInMinisterio.has(m.id)) &&
+      !getDisplayName(m).toLowerCase().includes('convidado')
+  ).sort((a, b) =>
+    getDisplayName(a).localeCompare(getDisplayName(b), 'pt-BR', { sensitivity: 'base' })
   );
 
   const filteredPresencas = presencas.filter(p => {
-    const matchesSearch = p.membros?.nome.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = getDisplayName(p.membros).toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'todos' || p.presenca === filterStatus;
     return matchesSearch && matchesFilter;
   });
@@ -336,14 +347,14 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
                 >
                   <div className="flex items-center gap-4">
                     <ImageCache
-                      src={presenca.membros?.foto || `https://ui-avatars.com/api/?name=${presenca.membros?.nome}&background=random`}
-                      alt={presenca.membros?.nome}
+                      src={presenca.membros?.foto || `https://ui-avatars.com/api/?name=${getDisplayName(presenca.membros)}&background=random`}
+                      alt={getDisplayName(presenca.membros)}
                       className="w-10 h-10 rounded-full border-2 border-slate-200 dark:border-slate-700"
-                      fallbackSrc={`https://ui-avatars.com/api/?name=${presenca.membros?.nome}&background=random`}
+                      fallbackSrc={`https://ui-avatars.com/api/?name=${getDisplayName(presenca.membros)}&background=random`}
                     />
                     <div>
                       <div className="font-medium text-slate-800 dark:text-white">
-                        {presenca.membros?.nome}
+                        {getDisplayName(presenca.membros)}
                       </div>
                       {presenca.presenca === 'justificado' && presenca.justificativa && (
                         <div className="text-sm text-slate-500 mt-1">
@@ -474,14 +485,14 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
                     >
                       <div className="flex items-center gap-3">
                         <ImageCache
-                          src={membro.foto || `https://ui-avatars.com/api/?name=${membro.nome}&background=random`}
-                          alt={membro.nome}
+                          src={membro.foto || `https://ui-avatars.com/api/?name=${getDisplayName(membro)}&background=random`}
+                          alt={getDisplayName(membro)}
                           className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-700"
-                          fallbackSrc={`https://ui-avatars.com/api/?name=${membro.nome}&background=random`}
+                          fallbackSrc={`https://ui-avatars.com/api/?name=${getDisplayName(membro)}&background=random`}
                         />
                         <div>
                           <div className="font-medium text-slate-800 dark:text-white text-sm">
-                            {membro.nome}
+                            {getDisplayName(membro)}
                           </div>
                         </div>
                       </div>

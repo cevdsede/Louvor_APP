@@ -55,9 +55,15 @@ export interface SongHistoryItem {
 export interface Member {
   id: string;
   name: string;
+  nome?: string;
+  displayName?: string;
   role: string;
   roles?: string[];
   roleIds?: number[];
+  funcaoIds?: string[];
+  activeMinisterioMembershipId?: string;
+  activeMinisterioStatus?: boolean;
+  perfil?: string;
   ministryIds?: string[];
   ministries?: MinistrySummary[];
   gender: 'M' | 'F';

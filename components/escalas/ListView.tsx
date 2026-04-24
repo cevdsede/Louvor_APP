@@ -15,6 +15,7 @@ import NoticeManager from './NoticeManager';
 import TeamManager from './TeamManager';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import { getMemberIdsForMinisterio } from '../../utils/memberMinistry';
+import { getDisplayName } from '../../utils/displayName';
 
 interface ListViewProps {
   onReportAbsence: (id: string) => void;
@@ -37,6 +38,7 @@ interface NomeCulto {
 
 const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
   const {
+    activeMinisterio,
     activeMinisterioId,
     activeModules,
     canManageCurrentMinisterio,
@@ -120,6 +122,12 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
   const [tones, setTones] = useState<string[]>([]);
   const [scaleFormData, setScaleFormData] = useState({ title: '', date: '', time: '' });
   const [searchTerm, setSearchTerm] = useState('');
+  const canManageRepertoire = activeModules.includes('music');
+  const activeMinisterioSlug = activeMinisterio?.slug
+    ?.normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  const canViewRepertoire = canManageRepertoire || activeMinisterioSlug === 'midia' || activeMinisterioSlug === 'media';
 
   // Trava scroll quando o modal de escala está aberto
   useEffect(() => {
@@ -178,7 +186,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
           const memberData = membrosRaw.find((m: any) => m.email?.toLowerCase() === userEmail?.toLowerCase());
           
           if (memberData) {
-            setCurrentUser({ id: memberData.id, name: memberData.nome });
+            setCurrentUser({ id: memberData.id, name: getDisplayName(memberData) });
             const isAdmin = memberData.perfil && (
               memberData.perfil.toLowerCase().includes('admin') || 
               memberData.perfil.toLowerCase().includes('líder') ||
@@ -233,7 +241,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
       (isGlobalAdminOrLeader || memberships.some((membership) => membership.ministerio_id === activeMinisterioId));
 
     if (currentMember) {
-      setCurrentUser({ id: currentMember.id, name: currentMember.nome });
+      setCurrentUser({ id: currentMember.id, name: getDisplayName(currentMember) });
     } else {
       setCurrentUser(null);
     }
@@ -249,7 +257,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     
     escalas.forEach(escala => {
       const memberId = escala.membros?.id;
-      const memberName = escala.membros?.nome;
+      const memberName = getDisplayName(escala.membros);
       const memberRole = escala.funcao?.nome_funcao;
       const roleId = escala.funcao?.id;
       
@@ -300,7 +308,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     // 1. Membros
     const mappedMembers: Member[] = (scopedActiveMembros || []).map((m: any) => ({
       id: m.id,
-      name: m.nome,
+      name: getDisplayName(m),
       role: 'Membro',
       gender: m.genero === 'Homem' ? 'M' : 'F',
       status: 'confirmed',
@@ -327,7 +335,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
       
       noticesByEvent[n.id_cultos].push({
         id: n.id_lembrete,
-        sender: membro?.nome || 'Admin',
+        sender: getDisplayName(membro, 'Admin'),
         text: n.info || 'Sem texto',
         time: n.created_at ? new Date(n.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''
       });
@@ -388,7 +396,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
 
     setEvents((currentEvents) =>
       currentEvents.map((event) => {
-        if (!activeModules.includes('music')) {
+        if (!canViewRepertoire) {
           return { ...event, repertoire: [] };
         }
 
@@ -396,21 +404,21 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
           .filter((r: any) => r.id_culto === event.id)
           .map((r: any) => {
             const musica = musicasRaw.find((m: any) => m.id === r.id_musicas);
-            const membro = (scopedMembros || []).find((m: any) => m.id === r.id_membros);
+            const membro = (membrosRaw || []).find((m: any) => m.id === r.id_membros);
             const tom = tonsRaw.find((t: any) => t.id === r.id_tons);
             return {
               id: r.id,
               musica: musica?.musica,
               cantor: musica?.cantor,
               key: tom?.nome_tons || '',
-              minister: membro?.nome || ''
+              minister: getDisplayName(membro)
             };
           });
 
         return { ...event, repertoire: cRep };
       })
     );
-  }, [activeModules, musicasRaw, repertorioRaw, scopedMembros, tonsRaw, activeMinisterioId]);
+  }, [canViewRepertoire, membrosRaw, musicasRaw, repertorioRaw, tonsRaw, activeMinisterioId]);
 
   // Função para salvar escala usando o service
   const handleSaveScale = async () => {
@@ -795,7 +803,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
               onSubTabChange={(tab) => setSubTab(event.id, tab)}
               onDelete={handleDeleteScaleByMinisterio}
               isAdminOrLeader={isAdminOrLeader}
-              showRepertoire={activeModules.includes('music')}
+              showRepertoire={canViewRepertoire}
             >
               {activeSubTabs[event.id] === 'team' && (
                 <TeamManager
@@ -808,7 +816,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
                 />
               )}
               
-              {activeModules.includes('music') && activeSubTabs[event.id] === 'repertoire' && (
+              {canViewRepertoire && activeSubTabs[event.id] === 'repertoire' && (
                 <RepertoireManager
                   eventId={event.id}
                   repertoire={event.repertoire}
@@ -819,7 +827,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
                     m.role.toLowerCase().includes('vocal') ||
                     m.role.toLowerCase().includes('cantor')
                   )}
-                  isMember={isMember}
+                  isMember={canManageRepertoire && isMember}
                   onSongAdded={fetchEvents}
                 />
               )}

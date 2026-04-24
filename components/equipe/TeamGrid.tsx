@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Member } from '../../types';
-import { sortMembersByRole } from '../../utils/teamUtils';
+import { sortMembersAlphabetically } from '../../utils/teamUtils';
 import { ImageCache } from '../ui/ImageCache';
 
 interface TeamGridProps {
@@ -50,7 +50,7 @@ const TeamGrid: React.FC<TeamGridProps> = ({ members, activeFilter, onMemberClic
   }), [members, activeFilter]);
 
   const activeMembers = useMemo(() => filteredMembers.filter((member) => member.status === 'confirmed'), [filteredMembers]);
-  const sortedActiveMembers = useMemo(() => sortMembersByRole([...activeMembers]), [activeMembers]);
+  const sortedActiveMembers = useMemo(() => sortMembersAlphabetically([...activeMembers]), [activeMembers]);
 
   const finalMembers = useMemo(() => [...sortedActiveMembers].filter((member) => {
     const isGuestByRole = (member.role || '').toString().toLowerCase().includes('convidado');

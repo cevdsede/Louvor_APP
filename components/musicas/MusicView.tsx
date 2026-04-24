@@ -6,6 +6,7 @@ import { showError } from '../../utils/toast';
 import { logger } from '../../utils/logger';
 import { ChartInstances, EscalaMusicView, RepertorioMusicView, EscalaEvent, EscalaItem } from '../../types-supabase';
 import { getMemberIdsForMinisterio } from '../../utils/memberMinistry';
+import { getDisplayName } from '../../utils/displayName';
 
 interface Music {
   id: string;
@@ -285,7 +286,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
           id_tons: item.id_tons,
           song: musica?.musica || 'Sem música',
           singer: musica?.cantor || 'Sem cantor',
-          minister: membro?.nome || 'Sem ministro',
+          minister: getDisplayName(membro, 'Sem ministro'),
           key: tom?.nome_tons || 'Ñ',
           style: musica?.estilo || 'Adoração'
         });
@@ -311,7 +312,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
             song: musica?.musica || h.musica || 'Desconhecida',
             singer: musica?.cantor || '',
             key: tom?.nome_tons || '',
-            minister: membro?.nome || 'Sem ministro',
+            minister: getDisplayName(membro, 'Sem ministro'),
             theme: tema?.nome_tema || 'Geral',
             style: musica?.estilo || '',
             keys: []
@@ -337,7 +338,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
             horario: culto?.horario,
             nome_cultos: [{ nome_culto: nomeCultoObj?.nome_culto }]
           }],
-          membros: [{ id: membro?.id, nome: membro?.nome, foto: membro?.foto, genero: membro?.genero }],
+          membros: [{ id: membro?.id, nome: getDisplayName(membro), foto: membro?.foto, genero: membro?.genero }],
           funcao: [{ nome_funcao: funcao?.nome_funcao }]
         };
       });
@@ -1146,7 +1147,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                     <div className="relative">
                       <select 
                         value={newRepertoire.id_membros} 
-                        onChange={e => setNewRepertoire({ ...newRepertoire, id_membros: e.target.value, minister: filteredMembers.find(m => m.id === e.target.value)?.nome || '' })} 
+                        onChange={e => setNewRepertoire({ ...newRepertoire, id_membros: e.target.value, minister: getDisplayName(filteredMembers.find(m => m.id === e.target.value)) })} 
                         className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand appearance-none"
                         disabled={!newRepertoire.id_culto || loadingMinisters}
                       >
@@ -1156,7 +1157,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                         </option>
                         {filteredMembers.map(member => (
                           <option key={member.id} value={member.id}>
-                            {member.nome}
+                            {getDisplayName(member)}
                           </option>
                         ))}
                       </select>
@@ -1302,11 +1303,11 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                 <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 text-left">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
-                      {deletingEscala.membros?.[0]?.nome?.charAt(0)?.toUpperCase() || 'M'}
+                      {getDisplayName(deletingEscala.membros?.[0], 'M').charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-black text-slate-800 dark:text-white uppercase truncate">
-                        {deletingEscala.membros?.[0]?.nome || 'Sem Nome'}
+                        {getDisplayName(deletingEscala.membros?.[0], 'Sem Nome')}
                       </h4>
                       <p className="text-[9px] font-bold text-slate-400 uppercase">
                         Função: <span className="text-brand">{deletingEscala.funcao?.[0]?.nome_funcao || 'Membro'}</span>
@@ -1543,7 +1544,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
       }
       acc[eventKey].items.push({
         id: escala.id,
-        memberName: escala.membros?.[0]?.nome || 'Sem Nome',
+        memberName: getDisplayName(escala.membros?.[0], 'Sem Nome'),
         role: 'Músico' // Valor padrão já que a propriedade não existe
       });
       return acc;
@@ -1604,20 +1605,20 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                         </div>
                         <div className="flex items-center gap-3 mb-3">
                           <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
-                            {item.membros?.[0]?.nome?.charAt(0)?.toUpperCase() || 'M'}
+                            {getDisplayName(item.membros?.[0], 'M').charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate mb-1">{item.membros?.[0]?.nome || 'Sem Nome'}</h5>
+                            <h5 className="text-[11px] font-black text-slate-800 dark:text-white uppercase truncate mb-1">{getDisplayName(item.membros?.[0], 'Sem Nome')}</h5>
                             <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
                               FUNÇÃO: <span className="text-brand">{item.funcao?.[0]?.nome_funcao || 'Membro'}</span>
                             </p>
                           </div>
                         </div>
                         <div className="grid grid-cols-4 gap-1">
-                          <a href={getLink('youtube', item.membros?.[0]?.nome || '', item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
-                          <a href={getLink('spotify', item.membros?.[0]?.nome || '', item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-emerald-500 hover:bg-emerald-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
-                          <a href={getLink('lyrics', item.membros?.[0]?.nome || '', item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-500 hover:bg-blue-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-align-left text-[9px]"></i></a>
-                          <a href={getLink('chords', item.membros?.[0]?.nome || '', item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-amber-500 hover:bg-amber-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[9px]"></i></a>
+                          <a href={getLink('youtube', getDisplayName(item.membros?.[0]), item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
+                          <a href={getLink('spotify', getDisplayName(item.membros?.[0]), item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-emerald-500 hover:bg-emerald-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
+                          <a href={getLink('lyrics', getDisplayName(item.membros?.[0]), item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-500 hover:bg-blue-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-align-left text-[9px]"></i></a>
+                          <a href={getLink('chords', getDisplayName(item.membros?.[0]), item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-amber-500 hover:bg-amber-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[9px]"></i></a>
                         </div>
                       </div>
                     ))}

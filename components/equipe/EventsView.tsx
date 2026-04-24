@@ -3,6 +3,7 @@ import { showSuccess, showError } from '../../utils/toast';
 import EventService, { Evento } from '../../services/EventService';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import { useMinistryContext } from '../../contexts/MinistryContext';
+import { getMemberIdsForMinisterio } from '../../utils/memberMinistry';
 
 interface EventsViewProps {
   onEventClick: (evento: Evento) => void;
@@ -23,6 +24,20 @@ const EventsView: React.FC<EventsViewProps> = ({ onEventClick }) => {
     autoRefresh: true,
     refreshInterval: 30000,
     enableBackgroundSync: true
+  });
+  const { data: presencasRaw } = useLocalStorageFirst<any>({ table: 'presenca_evento' });
+  const { data: membrosMinisterios } = useLocalStorageFirst<any>({ table: 'membros_ministerios' });
+  const activeMemberIdsInMinisterio = getMemberIdsForMinisterio(membrosMinisterios, activeMinisterioId, false);
+
+  const eventosDoMinisterio = eventos.filter((evento) => {
+    if (!activeMinisterioId) return true;
+    if (evento.ministerio_id) return evento.ministerio_id === activeMinisterioId;
+
+    return (presencasRaw || []).some(
+      (presenca: any) =>
+        String(presenca.id_evento) === String(evento.id_evento) &&
+        (presenca.ministerio_id === activeMinisterioId || activeMemberIdsInMinisterio.has(presenca.id_membro))
+    );
   });
 
   const resetForm = () => {
@@ -117,7 +132,7 @@ const EventsView: React.FC<EventsViewProps> = ({ onEventClick }) => {
         </button>
       </div>
 
-      {eventos.length === 0 ? (
+      {eventosDoMinisterio.length === 0 ? (
         <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800">
           <i className="fas fa-calendar-alt text-4xl text-slate-300 mb-4"></i>
           <p className="text-slate-400 font-bold uppercase tracking-widest text-[9px]">Nenhum evento encontrado</p>
@@ -130,7 +145,7 @@ const EventsView: React.FC<EventsViewProps> = ({ onEventClick }) => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {eventos.map((evento) => (
+          {eventosDoMinisterio.map((evento) => (
             <div
               key={evento.id_evento}
               className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-shadow cursor-pointer"
