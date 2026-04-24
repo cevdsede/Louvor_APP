@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import { useMinistryContext } from '../../contexts/MinistryContext';
 import { AvisoGeral } from '../../services/AvisoGeralService';
@@ -17,10 +17,21 @@ const NotificationButton: React.FC<NotificationButtonProps> = ({
   title = 'Notificacoes'
 }) => {
   const { currentMember, activeMinisterioId } = useMinistryContext();
-  const { data: avisosRaw } = useLocalStorageFirst<AvisoGeral>({
+  const { data: avisosRaw, loadData } = useLocalStorageFirst<AvisoGeral>({
     table: 'aviso_geral',
     refreshInterval: 15000
   });
+
+  useEffect(() => {
+    const handleUpdated = () => {
+      loadData();
+    };
+
+    window.addEventListener('aviso-geral-updated', handleUpdated);
+    return () => {
+      window.removeEventListener('aviso-geral-updated', handleUpdated);
+    };
+  }, [loadData]);
 
   const unreadCount = useMemo(() => {
     if (!currentMember?.id) {

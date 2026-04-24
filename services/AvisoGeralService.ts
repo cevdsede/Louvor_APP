@@ -47,6 +47,12 @@ const isLeaderRole = (papel?: string | null) => {
 const isAdminProfile = (perfil?: string | null) => normalizeText(perfil).includes('admin');
 
 class AvisoGeralService {
+  private static emitChange() {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('aviso-geral-updated'));
+    }
+  }
+
   private static async getCurrentUserContext(): Promise<CurrentUserContext> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -186,6 +192,7 @@ class AvisoGeralService {
       lida: aviso.lida ?? false
     });
 
+    this.emitChange();
     return created;
   }
 
@@ -222,6 +229,7 @@ class AvisoGeralService {
       id_culto: null
     });
 
+    this.emitChange();
     return created.length;
   }
 
@@ -254,11 +262,14 @@ class AvisoGeralService {
       id_culto: cultoId
     });
 
+    this.emitChange();
     return created.length;
   }
 
   static async updateAvisoGeral(id: string | number, aviso: Partial<AvisoGeral>): Promise<AvisoGeral | null> {
-    return LocalStorageFirstService.update<AvisoGeral>('aviso_geral', String(id), aviso);
+    const updated = LocalStorageFirstService.update<AvisoGeral>('aviso_geral', String(id), aviso);
+    this.emitChange();
+    return updated;
   }
 
   static async markAsRead(id: string | number): Promise<AvisoGeral | null> {
@@ -272,10 +283,13 @@ class AvisoGeralService {
     for (const aviso of avisos) {
       LocalStorageFirstService.update<AvisoGeral>('aviso_geral', String(aviso.id), { lida: true });
     }
+
+    this.emitChange();
   }
 
   static async deleteAvisoGeral(id: string | number): Promise<void> {
     LocalStorageFirstService.remove('aviso_geral', String(id));
+    this.emitChange();
   }
 }
 

@@ -29,7 +29,7 @@ const formatNotificationTime = (value?: string | null) => {
 
 const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClose }) => {
   const { currentMember, activeMinisterio, activeMinisterioId } = useMinistryContext();
-  const { data: avisosRaw, forceSync } = useLocalStorageFirst<AvisoGeral>({ table: 'aviso_geral' });
+  const { data: avisosRaw, forceSync, loadData } = useLocalStorageFirst<AvisoGeral>({ table: 'aviso_geral' });
   const { data: membrosRaw } = useLocalStorageFirst<any>({ table: 'membros' });
   const [showGeneralNoticeForm, setShowGeneralNoticeForm] = useState(false);
   const [target, setTarget] = useState<AvisoGeralDestino>('todos');
@@ -50,37 +50,20 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
       .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
   }, [activeMinisterioId, avisosRaw, currentMember?.id]);
 
-  const unreadCount = notifications.filter((aviso) => !aviso.lida).length;
+  const unreadNotifications = notifications.filter((aviso) => !aviso.lida);
+  const readNotifications = notifications.filter((aviso) => aviso.lida);
+  const unreadCount = unreadNotifications.length;
 
   useEffect(() => {
-    if (notifications.length === 0) {
-      return;
-    }
-
-    const unreadIds = notifications.filter((notification) => !notification.lida).map((notification) => notification.id);
-    if (unreadIds.length === 0) {
-      return;
-    }
-
-    let active = true;
-
-    const markVisibleAsRead = async () => {
-      try {
-        await AvisoGeralService.markAllAsRead(activeMinisterioId);
-        if (active) {
-          await forceSync();
-        }
-      } catch {
-        // leitura automatica nao deve bloquear o modal
-      }
+    const handleUpdated = () => {
+      loadData();
     };
 
-    void markVisibleAsRead();
-
+    window.addEventListener('aviso-geral-updated', handleUpdated);
     return () => {
-      active = false;
+      window.removeEventListener('aviso-geral-updated', handleUpdated);
     };
-  }, [activeMinisterioId, forceSync, notifications]);
+  }, [loadData]);
 
   const getSenderName = (remetenteId?: string | null) => {
     if (!remetenteId) {
@@ -98,7 +81,16 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
 
   const handleMarkAllAsRead = async () => {
     await AvisoGeralService.markAllAsRead(activeMinisterioId);
-    await forceSync();
+    loadData();
+  };
+
+  const handleClose = async () => {
+    if (unreadNotifications.length > 0) {
+      await AvisoGeralService.markAllAsRead(activeMinisterioId);
+      loadData();
+    }
+
+    onClose();
   };
 
   const handleSubmitGeneralNotice = async () => {
@@ -150,7 +142,7 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
               </button>
             )}
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-red-500 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
             >
               <i className="fas fa-times text-sm"></i>
@@ -239,46 +231,103 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {notifications.map((notification) => (
-                <div
-                  key={String(notification.id)}
-                  className={`rounded-2xl border p-4 transition-colors ${
-                    notification.lida
-                      ? 'border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/40'
-                      : 'border-brand/20 bg-brand/5 dark:border-brand/30 dark:bg-brand/10'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-2 flex items-center gap-2">
-                        <span className="rounded-full bg-white/90 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-brand dark:bg-slate-900/70">
-                          {notification.titulo || 'Notificacao'}
-                        </span>
-                        {!notification.lida && (
-                          <span className="rounded-full bg-red-500 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-white">
-                            Nova
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="text-sm font-bold text-slate-800 dark:text-white">{notification.texto}</p>
-
-                      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                        <span>{getSenderName(notification.remetente_id)}</span>
-                        <span>{formatNotificationTime(notification.created_at)}</span>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => handleMarkAsRead(notification.id)}
-                      className="rounded-xl bg-white px-3 py-2 text-[9px] font-black uppercase tracking-widest text-slate-500 shadow-sm transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-                    >
-                      {notification.lida ? 'Lida' : 'Marcar'}
-                    </button>
-                  </div>
+            <div className="space-y-6">
+              <div>
+                <div className="mb-3 flex items-center justify-between">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Novas</h4>
+                  <span className="rounded-full bg-red-500 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-white">
+                    {unreadNotifications.length}
+                  </span>
                 </div>
-              ))}
+                {unreadNotifications.length === 0 ? (
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:border-slate-800 dark:bg-slate-800/40">
+                    Nenhuma notificacao nova
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {unreadNotifications.map((notification) => (
+                      <div
+                        key={String(notification.id)}
+                        className="rounded-2xl border border-brand/20 bg-brand/5 p-4 transition-colors dark:border-brand/30 dark:bg-brand/10"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0 flex-1">
+                            <div className="mb-2 flex items-center gap-2">
+                              <span className="rounded-full bg-white/90 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-brand dark:bg-slate-900/70">
+                                {notification.titulo || 'Notificacao'}
+                              </span>
+                              <span className="rounded-full bg-red-500 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-white">
+                                Nova
+                              </span>
+                            </div>
+
+                            <p className="text-sm font-bold text-slate-800 dark:text-white">{notification.texto}</p>
+
+                            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                              <span>{getSenderName(notification.remetente_id)}</span>
+                              <span>{formatNotificationTime(notification.created_at)}</span>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleMarkAsRead(notification.id)}
+                            className="rounded-xl bg-white px-3 py-2 text-[9px] font-black uppercase tracking-widest text-slate-500 shadow-sm transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                          >
+                            Marcar
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <div className="mb-3 flex items-center justify-between">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Lidas</h4>
+                  <span className="rounded-full bg-slate-200 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+                    {readNotifications.length}
+                  </span>
+                </div>
+                {readNotifications.length === 0 ? (
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:border-slate-800 dark:bg-slate-800/40">
+                    Nenhuma notificacao lida
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {readNotifications.map((notification) => (
+                      <div
+                        key={String(notification.id)}
+                        className="rounded-2xl border border-slate-100 bg-slate-50 p-4 transition-colors dark:border-slate-800 dark:bg-slate-800/40"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0 flex-1">
+                            <div className="mb-2 flex items-center gap-2">
+                              <span className="rounded-full bg-white/90 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-brand dark:bg-slate-900/70">
+                                {notification.titulo || 'Notificacao'}
+                              </span>
+                            </div>
+
+                            <p className="text-sm font-bold text-slate-800 dark:text-white">{notification.texto}</p>
+
+                            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                              <span>{getSenderName(notification.remetente_id)}</span>
+                              <span>{formatNotificationTime(notification.created_at)}</span>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleMarkAsRead(notification.id)}
+                            className="rounded-xl bg-white px-3 py-2 text-[9px] font-black uppercase tracking-widest text-slate-500 shadow-sm transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                          >
+                            Lida
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
