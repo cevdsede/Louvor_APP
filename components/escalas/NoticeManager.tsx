@@ -7,6 +7,7 @@ import AvisoGeralService from '../../services/AvisoGeralService';
 interface Notice {
   id: string;
   sender: string;
+  senderId: string;
   text: string;
   time: string;
 }
@@ -16,6 +17,7 @@ interface NoticeManagerProps {
   notices: Notice[];
   currentUser: { id: string, name: string } | null;
   canManageNotices: boolean;
+  isAdmin: boolean;
   ministerioId?: string | null;
   onNoticesUpdated: () => void;
 }
@@ -25,6 +27,7 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
   notices,
   currentUser,
   canManageNotices,
+  isAdmin,
   ministerioId,
   onNoticesUpdated
 }) => {
@@ -168,6 +171,9 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
     setShowAddNotice(true);
   };
 
+  const canEditOrDeleteNotice = (notice: Notice) =>
+    isAdmin || (Boolean(currentUser?.id) && currentUser?.id === notice.senderId);
+
   return (
     <div>
       {/* Add Notice Button */}
@@ -222,18 +228,18 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
                 <span className="text-[8px] font-black text-brand uppercase tracking-widest">{notice.sender}</span>
                 <div className="flex items-center gap-2">
                   <span className="text-[7px] font-bold text-slate-400 uppercase">{notice.time}</span>
-                  {canManageNotices && (
+                  {canManageNotices && canEditOrDeleteNotice(notice) && (
                     <>
                       <button 
                         onClick={() => handleEditNotice(notice)}
-                        className="w-6 h-6 flex items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-400 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                        className="w-6 h-6 flex items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-400 dark:text-blue-400 transition-colors hover:bg-blue-100 dark:hover:bg-blue-900/40"
                         title="Editar aviso"
                       >
                         <i className="fas fa-edit text-[8px]"></i>
                       </button>
                       <button 
                         onClick={() => handleDeleteNotice(notice.id)}
-                        className="w-6 h-6 flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 text-red-400 dark:text-red-400 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-red-100 dark:hover:bg-red-900/40"
+                        className="w-6 h-6 flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 text-red-400 dark:text-red-400 transition-colors hover:bg-red-100 dark:hover:bg-red-900/40"
                         title="Deletar aviso"
                       >
                         <i className="fas fa-trash-alt text-[8px]"></i>

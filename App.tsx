@@ -232,43 +232,35 @@ const App: React.FC = () => {
     }
   }, [isDarkMode]);
 
-  useEffect(() => {
-    if (appState !== 'splash') return;
+  const handleSplashContinue = async () => {
+    if (!navigator.onLine) {
+      setAppState(sessionCached ? 'main' : 'login');
+      return;
+    }
 
-    const checkSession = async () => {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
 
-      if (!navigator.onLine) {
-        setAppState(sessionCached ? 'main' : 'login');
+      if (session) {
+        localStorage.setItem('supabase_session_cache', JSON.stringify(session));
+        setSessionCached(session);
+        setAppState('main');
         return;
       }
 
-      try {
-        const {
-          data: { session }
-        } = await supabase.auth.getSession();
-
-        if (session) {
-          localStorage.setItem('supabase_session_cache', JSON.stringify(session));
-          setSessionCached(session);
-          setAppState('main');
-          return;
-        }
-
-        setAppState('login');
-      } catch (error) {
-        if (sessionCached) {
-          console.warn('Erro ao verificar sessao, usando cache local:', error);
-          setAppState('main');
-          return;
-        }
-
-        setAppState('login');
+      setAppState('login');
+    } catch (error) {
+      if (sessionCached) {
+        console.warn('Erro ao verificar sessao, usando cache local:', error);
+        setAppState('main');
+        return;
       }
-    };
 
-    checkSession();
-  }, [appState, sessionCached]);
+      setAppState('login');
+    }
+  };
 
   useEffect(() => {
     if (!navigator.onLine) {
@@ -322,7 +314,7 @@ const App: React.FC = () => {
   };
 
   if (appState === 'splash') {
-    return <SplashScreen onComplete={() => setAppState('login')} />;
+    return <SplashScreen onComplete={handleSplashContinue} />;
   }
 
   if (appState === 'login') {

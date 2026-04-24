@@ -276,6 +276,9 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
           </button>
           <div className="flex flex-col items-center">
             <i className="fas fa-cloud text-brand text-3xl"></i>
+            <p className="mt-2 text-[9px] font-black uppercase tracking-[0.3em] text-brand">
+              Valentes Hub
+            </p>
             <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter text-center leading-none mt-2">
               Criar Perfil
             </h2>

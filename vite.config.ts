@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
                   cacheName: 'supabase-storage-cache',
                   expiration: {
                     maxEntries: 100,
-                    maxAgeSeconds: 60 * 60 * 24 * 30, // 30 dias
+                    maxAgeSeconds: 60 * 60 * 24 * 30,
                   },
                   cacheableResponse: {
                     statuses: [0, 200]
@@ -45,16 +45,16 @@ export default defineConfig(({ mode }) => {
                   cacheName: 'google-fonts-webfonts',
                   expiration: {
                     maxEntries: 10,
-                    maxAgeSeconds: 60 * 60 * 24 * 365, // 1 ano
+                    maxAgeSeconds: 60 * 60 * 24 * 365,
                   }
                 }
               }
             ]
           },
           manifest: {
-            name: 'Cloud Worship',
-            short_name: 'Cloud Worship',
-            description: 'Sistema de gerenciamento de louvor e adoração',
+            name: 'Valentes Hub',
+            short_name: 'Valentes Hub',
+            description: 'Sistema de gerenciamento de ministerios conectados',
             theme_color: '#3b82f6',
             background_color: '#ffffff',
             display: 'standalone',

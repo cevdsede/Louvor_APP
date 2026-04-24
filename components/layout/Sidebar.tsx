@@ -329,7 +329,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
           <h2 className="text-xl font-extrabold tracking-tighter leading-none text-slate-800 dark:text-white uppercase text-center mt-2">
-            Cloud <span className="text-brand">Worship</span>
+            Valentes <span className="text-brand">Hub</span>
           </h2>
         </div>
       </div>

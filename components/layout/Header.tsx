@@ -15,7 +15,7 @@ const Header: React.FC<HeaderProps> = ({ onSync, onOpenProfile, onOpenNotificati
   return (
     <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-[#0f172a]/80 backdrop-blur-lg border-b border-slate-100 dark:border-slate-800 z-[90] px-6 flex items-center justify-between transition-colors">
       <h1 className="text-lg font-black tracking-tighter uppercase text-slate-800 dark:text-white">
-        Cloud <span className="text-brand">Worship</span>
+        Valentes <span className="text-brand">Hub</span>
       </h1>
       <div className="flex items-center gap-2">
         <div className="relative">

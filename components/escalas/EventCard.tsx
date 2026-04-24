@@ -26,7 +26,7 @@ const EventCard: React.FC<EventCardProps> = ({
 }) => {
   return (
     <div
-      className={`mb-6 h-fit overflow-hidden rounded-[2.5rem] border bg-white shadow-sm transition-all duration-300 dark:bg-slate-900 ${
+      className={`mb-6 h-fit overflow-hidden rounded-[2.5rem] border bg-white shadow-sm transition-all duration-150 dark:bg-slate-900 ${
         isExpanded ? 'border-brand/40 ring-4 ring-brand/5' : 'border-slate-100 dark:border-slate-800'
       }`}
     >
@@ -87,7 +87,7 @@ const EventCard: React.FC<EventCardProps> = ({
       </div>
 
       {isExpanded && (
-        <div className="animate-fade-in border-t border-slate-50 bg-slate-50/20 dark:border-slate-800 dark:bg-slate-800/10">
+        <div className="border-t border-slate-50 bg-slate-50/20 dark:border-slate-800 dark:bg-slate-800/10">
           <div className="px-6 pb-4 pt-6">
             <div className="flex w-full items-center overflow-hidden rounded-2xl border border-slate-100 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-800">
               <button
@@ -130,7 +130,7 @@ const EventCard: React.FC<EventCardProps> = ({
             </div>
           </div>
 
-          <div className="fade-in min-h-[150px] px-8 pb-10">{children}</div>
+          <div className="min-h-[150px] px-8 pb-10">{children}</div>
         </div>
       )}
     </div>

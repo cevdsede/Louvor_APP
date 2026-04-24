@@ -10,10 +10,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
   const [fade, setFade] = useState(true);
 
   const inspiringMessages = [
-    "Sua música, sua escala, sua adoração. Conectados.",
-    "Tecnologia a serviço do Reino.",
-    "Organização que potencializa o louvor.",
-    "Onde a excelência encontra a adoração."
+    "Seus ministerios, suas escalas e sua comunicacao. Conectados.",
+    "Tecnologia a servico do Reino.",
+    "Organizacao que fortalece cada ministerio.",
+    "Onde excelencia e servico caminham juntos."
   ];
 
   useEffect(() => {
@@ -58,10 +58,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
         </div>
 
         <h1 className="text-5xl lg:text-6xl font-black text-white uppercase tracking-tighter mb-3 drop-shadow-lg">
-          Cloud <span className="text-brand">Worship</span>
+          Valentes <span className="text-brand">Hub</span>
         </h1>
         <p className="text-brand-gold font-bold uppercase tracking-[0.4em] text-[12px] mb-12 drop-shadow">
-          Louvor e Adoração
+          Ministerios Conectados
         </p>
 
         {/* Mensagens Inspiradoras Rotativas */}

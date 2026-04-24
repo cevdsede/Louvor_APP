@@ -341,7 +341,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
                 </div>
               </div>
 
-              <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+              <div className="absolute right-2 top-2 flex gap-1">
                 {canManageTeam && (
                   <button
                     onClick={() => handleDeleteMember(member.id, (member as any).roleId)}

@@ -26,6 +26,7 @@ type SubTab = 'team' | 'repertoire' | 'notices';
 interface Notice {
   id: string;
   sender: string;
+  senderId: string;
   text: string;
   time: string;
 }
@@ -364,6 +365,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
       noticesByEvent[n.id_cultos].push({
         id: n.id_lembrete,
         sender: getDisplayName(membro, 'Admin'),
+        senderId: n.id_membros,
         text: n.info || 'Sem texto',
         time: n.created_at ? new Date(n.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''
       });
@@ -868,6 +870,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
                   notices={eventNotices[event.id] || []}
                   currentUser={currentUser}
                   canManageNotices={canManageNoticesForEvent(event)}
+                  isAdmin={isAdminProfile}
                   ministerioId={activeMinisterioId}
                   onNoticesUpdated={fetchNotices}
                 />
