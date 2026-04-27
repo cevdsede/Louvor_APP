@@ -170,9 +170,11 @@ class AvisoGeralService {
       throw new Error('Sem permissao para visualizar estes avisos');
     }
 
+    const seen = new Set<string>();
+
     return this.getAvisosStore()
       .filter((aviso) => {
-        if (aviso.id_membro !== id_membro) {
+        if (aviso.remetente_id !== id_membro || aviso.destino !== 'lideres') {
           return false;
         }
 
@@ -180,7 +182,23 @@ class AvisoGeralService {
           return true;
         }
 
-        return !aviso.ministerio_id || aviso.ministerio_id === ministerioId;
+        return aviso.ministerio_id === ministerioId;
+      })
+      .filter((aviso) => {
+        const uniqueKey = [
+          aviso.remetente_id || '',
+          aviso.ministerio_id || '',
+          aviso.created_at || '',
+          aviso.texto || '',
+          aviso.titulo || ''
+        ].join(':');
+
+        if (seen.has(uniqueKey)) {
+          return false;
+        }
+
+        seen.add(uniqueKey);
+        return true;
       })
       .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
   }

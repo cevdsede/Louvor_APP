@@ -317,16 +317,12 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <nav className="fixed inset-x-0 bottom-2 z-[100] mx-auto flex min-h-16 w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] rounded-2xl border border-slate-100 bg-white shadow-xl transition-all dark:border-slate-800 dark:bg-[#0f172a] sm:bottom-3 sm:w-[calc(100%-1.5rem)] sm:max-w-[720px] lg:inset-x-auto lg:bottom-0 lg:left-0 lg:mx-0 lg:h-full lg:w-[280px] lg:max-w-none lg:flex-col lg:rounded-none lg:border-r lg:border-b-0 lg:border-l-0 lg:border-t-0 lg:shadow-none">
-      {/* LOGO DESKTOP - Restaurada */}
+      {/* LOGO DESKTOP */}
       <div className="hidden lg:flex flex-col items-center py-10 px-6">
         <div className="flex flex-col items-center gap-2">
-          <div className="flex flex-col items-center">
-            <i className="fas fa-cloud text-brand text-3xl"></i>
-            <div className="flex gap-1 mt-1.5">
-              <div className="w-1 h-3 bg-brand-gold rounded-full animate-pulse"></div>
-              <div className="w-1 h-5 bg-brand-gold rounded-full animate-pulse delay-150"></div>
-              <div className="w-1 h-3 bg-brand-gold rounded-full animate-pulse delay-300"></div>
-            </div>
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-brand/10 shadow-md dark:bg-brand/20">
+            <i className="fa-solid fa-shield text-transparent text-5xl [-webkit-text-stroke:2px_var(--brand-primary)]"></i>
+            <i className="fa-solid fa-crown absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[55%] text-brand-gold text-base"></i>
           </div>
           <h2 className="text-xl font-extrabold tracking-tighter leading-none text-slate-800 dark:text-white uppercase text-center mt-2">
             Valentes <span className="text-brand">Hub</span>

@@ -44,16 +44,12 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
       </div>
 
       <div className="relative flex flex-col items-center animate-fade-in text-center px-8">
-        {/* Logo Animation - "Flutuando" */}
+        {/* Logo Animation */}
         <div className="relative w-36 h-36 flex items-center justify-center mb-10 transition-transform hover:scale-105 duration-700">
-           <div className="absolute inset-0 bg-brand/25 rounded-[2.5rem] border border-brand/40 shadow-2xl shadow-brand/20 animate-bounce transition-all duration-[3000ms]"></div>
-           <div className="z-10 flex flex-col items-center scale-[1.7]">
-              <i className="fas fa-cloud text-brand text-4xl"></i>
-              <div className="flex gap-1.5 mt-2">
-                 <div className="w-1.5 h-4 bg-brand-gold rounded-full animate-pulse"></div>
-                 <div className="w-1.5 h-8 bg-brand-gold rounded-full animate-pulse delay-150"></div>
-                 <div className="w-1.5 h-4 bg-brand-gold rounded-full animate-pulse delay-300"></div>
-              </div>
+           <div className="absolute inset-0 bg-brand/25 rounded-[2.5rem] border border-brand/40 shadow-2xl shadow-brand/20 transition-all duration-[3000ms]"></div>
+           <div className="z-10 relative flex h-24 w-24 animate-bounce items-center justify-center drop-shadow-2xl">
+              <i className="fa-solid fa-shield text-transparent text-7xl [-webkit-text-stroke:3px_var(--brand-primary)]"></i>
+              <i className="fa-solid fa-crown absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[55%] text-brand-gold text-2xl"></i>
            </div>
         </div>
 

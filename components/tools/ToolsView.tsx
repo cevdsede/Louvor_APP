@@ -31,6 +31,8 @@ interface ToolsViewProps {
 interface EditingMemberState {
   id: string;
   nome?: string;
+  display_name?: string;
+  nome_planilha?: string;
   email?: string;
   telefone?: string;
   data_nasc?: string;
@@ -315,6 +317,8 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
         .from('membros')
         .update({
           nome: updatedMember.nome,
+          display_name: updatedMember.display_name,
+          nome_planilha: updatedMember.nome_planilha,
           email: updatedMember.email,
           telefone: updatedMember.telefone,
           data_nasc: updatedMember.data_nasc,
@@ -1443,11 +1447,31 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
               {/* Campos de Edição */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Nome</label>
+                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Nome base</label>
                   <input
                     type="text"
                     value={editingMember.nome || ''}
                     onChange={(e) => setEditingMember({ ...editingMember, nome: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Nome de exibicao</label>
+                  <input
+                    type="text"
+                    value={editingMember.display_name || ''}
+                    onChange={(e) => setEditingMember({ ...editingMember, display_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Nome na planilha</label>
+                  <input
+                    type="text"
+                    value={editingMember.nome_planilha || ''}
+                    onChange={(e) => setEditingMember({ ...editingMember, nome_planilha: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
                   />
                 </div>

@@ -126,11 +126,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
       <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl border border-slate-100 dark:border-slate-800 p-10 lg:p-14 animate-fade-in">
         <div className="flex flex-col items-center mb-10">
           <div className="flex flex-col items-center mb-6">
-            <i className="fas fa-cloud text-brand text-5xl"></i>
-            <div className="flex gap-1.5 mt-2.5">
-              <div className="w-1.5 h-4 bg-brand-gold rounded-full animate-pulse"></div>
-              <div className="w-1.5 h-7 bg-brand-gold rounded-full animate-pulse delay-150"></div>
-              <div className="w-1.5 h-4 bg-brand-gold rounded-full animate-pulse delay-300"></div>
+            <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-brand/10 shadow-md dark:bg-brand/20">
+              <i className="fa-solid fa-shield text-transparent text-5xl [-webkit-text-stroke:2px_var(--brand-primary)]"></i>
+              <i className="fa-solid fa-crown absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[55%] text-brand-gold text-base"></i>
             </div>
           </div>
           <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter text-center leading-none">

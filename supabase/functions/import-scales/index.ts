@@ -66,6 +66,8 @@ interface FuncaoRecord {
 interface MembroRecord {
   id: string;
   nome: string;
+  display_name?: string | null;
+  nome_planilha?: string | null;
 }
 
 interface MembroMinisterioRecord {
@@ -328,7 +330,7 @@ async function loadData(
       .eq("ministerio_id", ministerio.id),
     supabaseAdmin
       .from("membros")
-      .select("id, nome"),
+      .select("id, nome, display_name, nome_planilha"),
     supabaseAdmin
       .from("membros_ministerios")
       .select("membro_id, ativo")
@@ -540,8 +542,14 @@ Deno.serve(async (req: Request) => {
     );
 
     const memberMap = buildGroupedMap(
-      loaded.membros,
-      (item) => normalizeKey(item.nome),
+      loaded.membros.flatMap((item) => {
+        const names = [item.nome_planilha, item.nome, item.display_name]
+          .map((value) => ensureString(value))
+          .filter(Boolean);
+
+        return [...new Set(names)].map((name) => ({ key: name, member: item }));
+      }),
+      (item) => normalizeKey(item.key),
     );
     const functionMap = buildGroupedMap(
       loaded.funcoes,
@@ -664,7 +672,7 @@ Deno.serve(async (req: Request) => {
           resolvedMemberLookup,
           ref,
           issues,
-        );
+        )?.member;
 
         if (!member) continue;
 

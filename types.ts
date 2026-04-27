@@ -57,6 +57,8 @@ export interface Member {
   name: string;
   nome?: string;
   displayName?: string;
+  display_name?: string;
+  nome_planilha?: string;
   role: string;
   roles?: string[];
   roleIds?: number[];

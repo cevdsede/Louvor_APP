@@ -36,6 +36,13 @@ interface NomeCulto {
   nome_culto: string;
 }
 
+const normalizeSearchText = (value?: string | null) =>
+  (value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toUpperCase();
+
 
 const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
   const {
@@ -143,6 +150,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     (normalizedProfile.includes('lider') ||
       ['lider', 'coordenador', 'administrador'].some((item) => normalizedRole.includes(item)));
   const canViewRepertoire = canManageRepertoire || activeMinisterioSlug === 'midia' || activeMinisterioSlug === 'media';
+  const canCreateScale = isAdminOrLeader || isGlobalAdminOrLeader || canManageCurrentMinisterio;
 
   // Trava scroll quando o modal de escala está aberto
   useEffect(() => {
@@ -461,7 +469,8 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     if (!scaleFormData.title || !scaleFormData.date) return;
 
     try {
-      let nomeCultoId = cultoTypes.find(c => c.nome_culto.toUpperCase() === scaleFormData.title.toUpperCase())?.id;
+      const normalizedTitle = normalizeSearchText(scaleFormData.title);
+      let nomeCultoId = cultoTypes.find(c => normalizeSearchText(c.nome_culto) === normalizedTitle)?.id;
 
       if (!nomeCultoId) {
         // No offline-first complexo, criaríamos o nome_culto localmente também.
@@ -847,7 +856,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
             </button>
             
             {/* Botão Nova Escala - apenas para admin/líder */}
-            {isAdminOrLeader && (
+            {canCreateScale && (
               <button
                 onClick={() => setShowScaleModal({ mode: 'add' })}
                 className="w-full max-w-sm sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-brand hover:border-brand transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm"

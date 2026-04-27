@@ -14,6 +14,8 @@ export interface SupabaseCulto {
 export interface SupabaseMembro {
   id: string;
   nome: string;
+  display_name?: string | null;
+  nome_planilha?: string | null;
   email: string;
   genero: 'Homem' | 'Mulher';
   foto?: string;

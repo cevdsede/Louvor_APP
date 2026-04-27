@@ -5,6 +5,7 @@ import AvisoGeralService, { AvisoGeral, AvisoGeralDestino } from '../../services
 import { showError, showSuccess } from '../../utils/toast';
 import { showConfirmModal } from '../../utils/confirmModal';
 import { getDisplayName } from '../../utils/displayName';
+import { buildWeeklyScaleItems, formatDateOnly } from '../../utils/weeklyScale';
 
 interface NotificationCenterModalProps {
   onClose: () => void;
@@ -32,25 +33,74 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
   const { currentMember, activeMinisterio, activeMinisterioId } = useMinistryContext();
   const { data: avisosRaw, forceSync, loadData, removeItem } = useLocalStorageFirst<AvisoGeral>({ table: 'aviso_geral' });
   const { data: membrosRaw } = useLocalStorageFirst<any>({ table: 'membros' });
+  const { data: escalasRaw } = useLocalStorageFirst<any>({ table: 'escalas' });
+  const { data: cultosRaw } = useLocalStorageFirst<any>({ table: 'cultos' });
+  const { data: nomeCultosRaw } = useLocalStorageFirst<any>({ table: 'nome_cultos' });
+  const { data: funcoesRaw } = useLocalStorageFirst<any>({ table: 'funcao' });
   const [showGeneralNoticeForm, setShowGeneralNoticeForm] = useState(false);
   const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
   const [target, setTarget] = useState<AvisoGeralDestino>('todos');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [readScaleNotifications, setReadScaleNotifications] = useState<Record<string, boolean>>(() => {
+    if (typeof window === 'undefined') return {};
+    return JSON.parse(localStorage.getItem('louvor_read_scale_notifications') || '{}');
+  });
 
   const notifications = useMemo(() => {
     if (!currentMember?.id) {
       return [];
     }
 
-    return (avisosRaw || [])
+    const storedNotifications = (avisosRaw || [])
       .filter(
         (aviso) =>
           aviso.id_membro === currentMember.id &&
           (!activeMinisterioId || !aviso.ministerio_id || aviso.ministerio_id === activeMinisterioId)
       )
       .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
-  }, [activeMinisterioId, avisosRaw, currentMember?.id]);
+
+    const today = formatDateOnly(new Date());
+    const scaleNotifications: AvisoGeral[] = buildWeeklyScaleItems({
+      userId: currentMember.id,
+      escalas: escalasRaw || [],
+      cultos: cultosRaw || [],
+      nomeCultos: nomeCultosRaw || [],
+      funcoes: funcoesRaw || [],
+      ministerioId: activeMinisterioId
+    }).map((item) => {
+      const id = `scale:${activeMinisterioId || 'all'}:${item.idCulto}:${item.data}`;
+      const roles = item.funcoes.join(' / ');
+      const isToday = item.data === today;
+
+      return {
+        id,
+        created_at: `${item.data}T${item.horario || '00:00:00'}`,
+        id_membro: currentMember.id,
+        titulo: isToday ? 'Sua escala e hoje' : 'Voce esta escalado esta semana',
+        texto: isToday
+          ? `Sua escala de ${roles || 'servico'} e hoje${item.horario ? ` as ${item.horario.slice(0, 5)}` : ''}.`
+          : `Voce esta escalado esta semana em ${item.culto}${roles ? ` como ${roles}` : ''}.`,
+        tipo: 'escala_aviso',
+        remetente_id: null,
+        ministerio_id: item.ministerioId,
+        destino: 'escala',
+        id_culto: item.idCulto,
+        lida: Boolean(readScaleNotifications[id])
+      };
+    });
+
+    return [...scaleNotifications, ...storedNotifications].sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+  }, [
+    activeMinisterioId,
+    avisosRaw,
+    cultosRaw,
+    currentMember?.id,
+    escalasRaw,
+    funcoesRaw,
+    nomeCultosRaw,
+    readScaleNotifications
+  ]);
 
   const unreadNotifications = notifications.filter((aviso) => !aviso.lida);
   const readNotifications = notifications.filter((aviso) => aviso.lida);
@@ -85,6 +135,14 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
   };
 
   const handleMarkAsRead = async (id: string | number) => {
+    if (String(id).startsWith('scale:')) {
+      const updated = { ...readScaleNotifications, [String(id)]: true };
+      setReadScaleNotifications(updated);
+      localStorage.setItem('louvor_read_scale_notifications', JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('aviso-geral-updated'));
+      return;
+    }
+
     await AvisoGeralService.markAsRead(id);
     await forceSync();
   };
@@ -161,14 +219,23 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
   };
 
   const handleMarkAllAsRead = async () => {
+    const updated = { ...readScaleNotifications };
+    unreadNotifications
+      .filter((notification) => String(notification.id).startsWith('scale:'))
+      .forEach((notification) => {
+        updated[String(notification.id)] = true;
+      });
+
+    setReadScaleNotifications(updated);
+    localStorage.setItem('louvor_read_scale_notifications', JSON.stringify(updated));
     await AvisoGeralService.markAllAsRead(activeMinisterioId);
+    window.dispatchEvent(new CustomEvent('aviso-geral-updated'));
     loadData();
   };
 
   const handleClose = async () => {
     if (unreadNotifications.length > 0) {
-      await AvisoGeralService.markAllAsRead(activeMinisterioId);
-      loadData();
+      await handleMarkAllAsRead();
     }
 
     onClose();

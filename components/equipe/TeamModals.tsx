@@ -301,25 +301,34 @@ const TeamModals: React.FC<TeamModalsProps> = ({
         return;
       }
       
-      if (canEditBasic) {
-        const memberPayload: Record<string, any> = {
-          foto: updatedMember.avatar,
-          telefone: updatedMember.telefone,
-          email: updatedMember.email,
-          data_nasc: updatedMember.data_nasc
-        };
+      if (canEditBasic || canEditMinistry) {
+        const memberPayload: Record<string, any> = {};
+
+        if (canEditBasic) {
+          memberPayload.foto = updatedMember.avatar;
+          memberPayload.telefone = updatedMember.telefone;
+          memberPayload.email = updatedMember.email;
+          memberPayload.data_nasc = updatedMember.data_nasc;
+          memberPayload.display_name = updatedMember.displayName;
+        }
+
+        if (canEditMinistry) {
+          memberPayload.nome_planilha = updatedMember.nome_planilha;
+        }
 
         if (isAdmin) {
           memberPayload.genero = updatedMember.gender === 'F' ? 'Mulher' : 'Homem';
           memberPayload.perfil = updatedMember.perfil;
         }
 
-        const { error: memberError } = await supabase
-          .from('membros')
-          .update(memberPayload)
-          .eq('id', editingMember.id);
+        if (Object.keys(memberPayload).length > 0) {
+          const { error: memberError } = await supabase
+            .from('membros')
+            .update(memberPayload)
+            .eq('id', editingMember.id);
 
-        if (memberError) throw memberError;
+          if (memberError) throw memberError;
+        }
       }
 
       if (canEditMinistry && activeMinisterioId) {
@@ -390,6 +399,9 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                 telefone: updatedMember.telefone ?? member.telefone,
                 email: updatedMember.email ?? member.email,
                 data_nasc: updatedMember.data_nasc ?? member.data_nasc,
+                display_name: updatedMember.displayName ?? member.display_name,
+                displayName: updatedMember.displayName ?? member.displayName,
+                nome_planilha: updatedMember.nome_planilha ?? member.nome_planilha,
                 perfil: isAdmin ? updatedMember.perfil ?? member.perfil : member.perfil,
                 genero: isAdmin ? (updatedMember.gender === 'F' ? 'Mulher' : 'Homem') : member.genero
               }
@@ -446,7 +458,9 @@ const TeamModals: React.FC<TeamModalsProps> = ({
           ? { 
               ...m, 
               name: updatedMember.displayName || m.name,
+              display_name: updatedMember.displayName ?? m.display_name,
               displayName: updatedMember.displayName ?? m.displayName,
+              nome_planilha: updatedMember.nome_planilha ?? m.nome_planilha,
               avatar: updatedMember.avatar || m.avatar,
               telefone: updatedMember.telefone || m.telefone,
               email: updatedMember.email || m.email,
@@ -616,10 +630,10 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                 </div>
               )}
 
-              {/* Avisos Gerais - Apenas se houver avisos */}
+              {/* Avisos enviados para lideres - Apenas se houver avisos */}
               {!loadingAvisos && avisosGerais.length > 0 && (
                 <div className="space-y-4">
-                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left">Avisos Gerais</h4>
+                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left">Avisos para lideres</h4>
                   <div className="space-y-3">
                     {avisosGerais.map((aviso) => (
                       <div key={aviso.id.toString()} className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200 dark:border-amber-800/50">
@@ -692,10 +706,10 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                 {canEditBasic && (
                   <>
                     <div>
-                      <label className="block text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-2">Nome</label>
+                      <label className="block text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-2">Nome de exibicao</label>
                       <input
                         type="text"
-                        value={editingMember.displayName || editingMember.nome || editingMember.name || ''}
+                        value={editingMember.displayName || editingMember.display_name || editingMember.nome || editingMember.name || ''}
                         onChange={(e) =>
                           onEditingMemberChange({
                             ...editingMember,
@@ -707,7 +721,43 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                         placeholder="Nome"
                       />
                     </div>
+
+                    {canEditMinistry && (
+                      <div>
+                        <label className="block text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-2">Nome na planilha</label>
+                        <input
+                          type="text"
+                          value={editingMember.nome_planilha || ''}
+                          onChange={(e) =>
+                            onEditingMemberChange({
+                              ...editingMember,
+                              nome_planilha: e.target.value
+                            })
+                          }
+                          className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition-colors"
+                          placeholder="Igual ao nome usado na escala"
+                        />
+                      </div>
+                    )}
                   </>
+                )}
+
+                {canEditMinistry && !canEditBasic && (
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-2">Nome na planilha</label>
+                    <input
+                      type="text"
+                      value={editingMember.nome_planilha || ''}
+                      onChange={(e) =>
+                        onEditingMemberChange({
+                          ...editingMember,
+                          nome_planilha: e.target.value
+                        })
+                      }
+                      className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition-colors"
+                      placeholder="Igual ao nome usado na escala"
+                    />
+                  </div>
                 )}
 
                 {canEditBasic && (

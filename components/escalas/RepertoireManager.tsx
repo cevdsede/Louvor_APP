@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Select from 'react-select';
 import { supabase } from '../../supabaseClient';
 import { showSuccess, showError } from '../../utils/toast';
 import { logger } from '../../utils/logger';
@@ -37,6 +38,11 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
   const [editingSongId, setEditingSongId] = useState<{ eventId: string, songId: string } | null>(null);
   const [isSavingSong, setIsSavingSong] = useState(false);
   const [newSongData, setNewSongData] = useState({ song: '', singer: '', key: '' });
+  const songOptions = allSongs.map((song) => ({
+    value: song.id,
+    label: `${song.musica}${song.cantor ? ` - ${song.cantor}` : ''}`
+  }));
+  const selectedSongOption = songOptions.find((option) => option.value === newSongData.song) || null;
 
   const handleSaveSong = async () => {
     if (!canManageRepertoire) {
@@ -250,23 +256,43 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
           <div className="grid grid-cols-1 gap-4">
             <div>
               <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Música</label>
-              <select
-                value={newSongData.song}
-                onChange={(e) => {
-                  const selectedSong = allSongs.find(s => s.id === e.target.value);
-                  setNewSongData({ 
-                    ...newSongData, 
-                    song: e.target.value,
-                    singer: selectedSong?.cantor || ''
-                  });
+              <Select
+                value={selectedSongOption}
+                onChange={(option) => setNewSongData({ ...newSongData, song: option?.value || '' })}
+                options={songOptions}
+                placeholder="Pesquisar musica... *"
+                isClearable
+                noOptionsMessage={() => 'Nenhuma musica encontrada'}
+                classNamePrefix="song-select"
+                styles={{
+                  control: (base, state) => ({
+                    ...base,
+                    minHeight: 38,
+                    borderRadius: 12,
+                    borderColor: state.isFocused ? 'var(--brand-primary)' : 'rgb(226 232 240)',
+                    boxShadow: state.isFocused ? '0 0 0 1px var(--brand-primary)' : 'none',
+                    backgroundColor: 'transparent',
+                    fontSize: 12
+                  }),
+                  menu: (base) => ({
+                    ...base,
+                    zIndex: 80,
+                    borderRadius: 12,
+                    overflow: 'hidden'
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    backgroundColor: state.isSelected
+                      ? 'var(--brand-primary)'
+                      : state.isFocused
+                        ? 'rgba(59, 130, 246, 0.08)'
+                        : base.backgroundColor,
+                    color: state.isSelected ? '#fff' : base.color
+                  })
                 }}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs focus:ring-1 focus:ring-brand outline-none appearance-none"
-              >
-                <option value="">Selecionar Música... *</option>
-                {allSongs.map(m => (
-                  <option key={m.id} value={m.id}>{m.musica} - {m.cantor}</option>
-                ))}
-              </select>
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <select

@@ -47,6 +47,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
         options: {
           data: {
             nome: formData.nome,
+            display_name: formData.nome,
             genero: formData.genero,
             telefone: formData.telefone
           }
@@ -95,6 +96,8 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
             .from('membros')
             .update({
               nome: formData.nome,
+              display_name: formData.nome,
+              nome_planilha: formData.nome,
               email: formData.email.toLowerCase(),
               genero: formData.genero,
               telefone: formData.telefone,
@@ -154,6 +157,8 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
           .insert({
             id: authData.user.id,
             nome: formData.nome,
+            display_name: formData.nome,
+            nome_planilha: formData.nome,
             email: formData.email,
             genero: formData.genero,
             telefone: formData.telefone,
@@ -275,7 +280,10 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
             <i className="fas fa-arrow-left"></i>
           </button>
           <div className="flex flex-col items-center">
-            <i className="fas fa-cloud text-brand text-3xl"></i>
+            <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-brand/10 shadow-sm dark:bg-brand/20">
+              <i className="fa-solid fa-shield text-transparent text-3xl [-webkit-text-stroke:1.5px_var(--brand-primary)]"></i>
+              <i className="fa-solid fa-crown absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[55%] text-brand-gold text-[10px]"></i>
+            </div>
             <p className="mt-2 text-[9px] font-black uppercase tracking-[0.3em] text-brand">
               Valentes Hub
             </p>

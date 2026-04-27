@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
         react(),
         VitePWA({
           registerType: 'autoUpdate',
-          includeAssets: ['favicon.ico', 'Cloud Worship.png'],
+          includeAssets: ['logo.png', 'logo-192.png', 'logo-512.png'],
           workbox: {
             runtimeCaching: [
               {
@@ -63,14 +63,16 @@ export default defineConfig(({ mode }) => {
             start_url: '/',
             icons: [
               {
-                src: 'Cloud Worship.png',
+                src: 'logo-192.png',
                 sizes: '192x192',
-                type: 'image/png'
+                type: 'image/png',
+                purpose: 'any maskable'
               },
               {
-                src: 'Cloud Worship.png',
+                src: 'logo-512.png',
                 sizes: '512x512',
-                type: 'image/png'
+                type: 'image/png',
+                purpose: 'any maskable'
               }
             ]
           }
