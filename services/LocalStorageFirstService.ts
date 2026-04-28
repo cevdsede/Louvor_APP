@@ -80,6 +80,7 @@ class LocalStorageFirstService {
   private static scheduledTables = new Set<string>();
   private static syncingTables = new Map<string, Promise<void>>();
   private static bootstrapPromise: Promise<void> | null = null;
+  private static lastSyncStartedAt = 0;
 
   static init(config?: LocalStorageConfig): void {
     this.config = { ...this.config, ...config };
@@ -132,6 +133,7 @@ class LocalStorageFirstService {
     }
 
     const run = async () => {
+      this.lastSyncStartedAt = Date.now();
       await LocalStorageService.processSyncQueue();
       await Promise.allSettled(this.MANAGED_TABLES.map((table) => this.syncTable(table)));
 
@@ -264,6 +266,7 @@ class LocalStorageFirstService {
     }
 
     if (table) {
+      this.lastSyncStartedAt = Date.now();
       await this.syncTable(table, { preloadImages: this.shouldPreloadImages(table) });
       return;
     }
@@ -281,13 +284,30 @@ class LocalStorageFirstService {
   static getStatus(): {
     isInitialized: boolean;
     isOnline: boolean;
+    isSyncing: boolean;
+    backgroundSyncEnabled: boolean;
+    activeSyncTables: string[];
+    scheduledSyncTables: string[];
+    lastFullSync: number;
+    lastSyncStartedAt: number;
+    nextBackgroundSync: number;
     lastSyncTimes: { [table: string]: number };
     queueStats: { pending: number; retrying: number };
     cacheStats: { [table: string]: { size: number; timestamp: number; valid: boolean } };
   } {
+    const lastFullSync = Number(localStorage.getItem(this.LAST_FULL_SYNC_KEY) || 0);
+    const interval = this.config.syncInterval ?? 2 * 60 * 1000;
+
     return {
       isInitialized: this.isInitialized,
       isOnline: navigator.onLine,
+      isSyncing: this.bootstrapPromise !== null || this.syncingTables.size > 0,
+      backgroundSyncEnabled: Boolean(this.syncTimer),
+      activeSyncTables: [...this.syncingTables.keys()],
+      scheduledSyncTables: [...this.scheduledTables],
+      lastFullSync,
+      lastSyncStartedAt: this.lastSyncStartedAt,
+      nextBackgroundSync: this.syncTimer && lastFullSync ? lastFullSync + interval : 0,
       lastSyncTimes: this.getAllLastSyncTimes(),
       queueStats: LocalStorageService.getSyncQueueStats(),
       cacheStats: LocalStorageService.getCacheStatus()

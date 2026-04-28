@@ -26,6 +26,12 @@ const LocalStorageStatus: React.FC = () => {
   );
   const tableCount = Object.keys(status.cacheStats).length;
   const pendingCount = status.queueStats.pending + status.queueStats.retrying;
+  const activeSyncLabel =
+    status.activeSyncTables.length > 0
+      ? status.activeSyncTables.slice(0, 3).join(', ')
+      : status.isSyncing
+      ? 'Sincronizacao completa em andamento'
+      : 'Nenhuma';
 
   const formatTime = (timestamp: number) => {
     if (!timestamp) return 'Nunca';
@@ -147,6 +153,39 @@ const LocalStorageStatus: React.FC = () => {
             <span className={`text-sm font-bold ${pendingCount > 0 ? 'text-orange-600' : 'text-slate-600'}`}>
               {pendingCount}
             </span>
+          </div>
+        </div>
+
+        <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
+          <div className="mb-2 flex items-center gap-2">
+            <i className={`fas ${status.isSyncing ? 'fa-spinner animate-spin' : 'fa-satellite-dish'} text-xs text-cyan-500`}></i>
+            <span className="text-xs text-slate-600 dark:text-slate-400">Sincronizacao</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <p className="text-slate-500 dark:text-slate-400">Estado</p>
+              <p className="font-bold text-slate-800 dark:text-white">
+                {status.isSyncing ? 'Em andamento' : 'Aguardando'}
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-500 dark:text-slate-400">Auto sync</p>
+              <p className="font-bold text-slate-800 dark:text-white">
+                {status.backgroundSyncEnabled ? 'Ativo' : 'Inativo'}
+              </p>
+            </div>
+            <div className="col-span-2">
+              <p className="text-slate-500 dark:text-slate-400">Tabelas ativas</p>
+              <p className="truncate font-bold text-slate-800 dark:text-white">{activeSyncLabel}</p>
+            </div>
+            <div>
+              <p className="text-slate-500 dark:text-slate-400">Ultima completa</p>
+              <p className="font-bold text-slate-800 dark:text-white">{formatTime(status.lastFullSync)}</p>
+            </div>
+            <div>
+              <p className="text-slate-500 dark:text-slate-400">Proxima auto</p>
+              <p className="font-bold text-slate-800 dark:text-white">{formatTime(status.nextBackgroundSync)}</p>
+            </div>
           </div>
         </div>
 
