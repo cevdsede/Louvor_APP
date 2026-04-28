@@ -8,6 +8,7 @@ import MinistrySwitcher from './MinistrySwitcher';
 import { getDisplayName } from '../../utils/displayName';
 import NotificationButton from './NotificationButton';
 import { showError, showSuccess } from '../../utils/toast';
+import { isMusicView, isScaleView, isTeamView, isToolsView } from '../../utils/views';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -309,10 +310,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const isActive = (id: string) => {
     if (id === 'dashboard') return currentView === 'dashboard';
-    if (id === 'scales') return ['list', 'calendar', 'cleaning'].includes(currentView);
-    if (id === 'music') return ['music-stats', 'music-list', 'music-repertoire', 'music-create', 'music-history'].includes(currentView);
-    if (id === 'team') return ['team', 'attendance'].includes(currentView);
-    if (id === 'tools') return ['tools-admin', 'tools-users', 'tools-approvals', 'tools-performance'].includes(currentView);
+    if (id === 'scales') return isScaleView(currentView);
+    if (id === 'music') return isMusicView(currentView);
+    if (id === 'team') return isTeamView(currentView);
+    if (id === 'tools') return isToolsView(currentView);
     return false;
   };
 

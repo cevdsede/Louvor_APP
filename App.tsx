@@ -10,8 +10,7 @@ import { MinistryProvider, useMinistryContext } from './contexts/MinistryContext
 import LocalStorageFirstService from './services/LocalStorageFirstService';
 import { ViewType } from './types';
 import { getDefaultViewForModules, getModuleForView } from './utils/ministry';
-
-type ToolsSubView = 'tools-admin' | 'tools-users' | 'tools-approvals' | 'tools-performance';
+import { isMusicView, isTeamView, isToolsView } from './utils/views';
 
 const NotificationCenterModal = lazy(() => import('./components/layout/NotificationCenterModal'));
 const DashboardView = lazy(() => import('./components/dashboard/DashboardView'));
@@ -50,14 +49,6 @@ interface AppContentProps {
   handleSync: () => Promise<void>;
   isLoading: boolean;
 }
-
-const isMusicView = (view: ViewType) =>
-  ['music-stats', 'music-list', 'music-repertoire', 'music-create', 'music-history', 'music-escalas'].includes(view);
-
-const isTeamView = (view: ViewType) => ['team', 'attendance'].includes(view);
-
-const isToolsView = (view: ViewType) =>
-  ['tools-admin', 'tools-users', 'tools-approvals', 'tools-performance'].includes(view);
 
 const getAccentColor = (primaryColor: string) => {
   const hex = primaryColor.replace('#', '');
@@ -172,7 +163,7 @@ const AppContent: React.FC<AppContentProps> = ({
                   {currentView === 'cleaning' && <CleaningView />}
                   {isTeamView(currentView) && <TeamView currentView={currentView} />}
                   {isMusicView(currentView) && <MusicView subView={currentView} />}
-                  {isToolsView(currentView) && <ToolsView subView={currentView as ToolsSubView} />}
+                  {isToolsView(currentView) && <ToolsView subView={currentView} />}
                   </div>
                 </Suspense>
               )}

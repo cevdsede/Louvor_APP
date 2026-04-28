@@ -2,6 +2,7 @@ import React from 'react';
 import { useMinistryContext } from '../../contexts/MinistryContext';
 import { ViewType } from '../../types';
 import { getModuleForView } from '../../utils/ministry';
+import { isMusicView, isScaleView, isTeamView, isToolsView } from '../../utils/views';
 
 interface ToolbarProps {
   currentView: ViewType;
@@ -38,13 +39,6 @@ const TOOLS_TABS: ToolbarTab[] = [
   { view: 'tools-performance', label: 'Desempenho', icon: 'fas fa-chart-line' }
 ];
 
-const isScaleMode = (view: ViewType) => ['list', 'calendar', 'cleaning'].includes(view);
-const isMusicMode = (view: ViewType) =>
-  ['music-stats', 'music-list', 'music-repertoire', 'music-create', 'music-history', 'music-escalas'].includes(view);
-const isTeamMode = (view: ViewType) => ['team', 'attendance'].includes(view);
-const isToolsMode = (view: ViewType) =>
-  ['tools-admin', 'tools-users', 'tools-approvals', 'tools-performance'].includes(view);
-
 const Toolbar: React.FC<ToolbarProps> = ({ currentView, onViewChange }) => {
   const {
     activeMinisterio,
@@ -68,20 +62,20 @@ const Toolbar: React.FC<ToolbarProps> = ({ currentView, onViewChange }) => {
   }
 
   const getTitle = () => {
-    if (isTeamMode(currentView)) return 'Equipe';
-    if (isMusicMode(currentView)) return 'Musicas';
-    if (isToolsMode(currentView)) return 'Ferramentas';
+    if (isTeamView(currentView)) return 'Equipe';
+    if (isMusicView(currentView)) return 'Musicas';
+    if (isToolsView(currentView)) return 'Ferramentas';
     return 'Escalas';
   };
 
-  const tabs = isScaleMode(currentView)
+  const tabs = isScaleView(currentView)
     ? SCALE_TABS
-    : isMusicMode(currentView)
+    : isMusicView(currentView)
       ? MUSIC_TABS
-      : isTeamMode(currentView)
+      : isTeamView(currentView)
         ? TEAM_TABS
         : TOOLS_TABS;
-  const isToolsToolbar = isToolsMode(currentView);
+  const isToolsToolbar = isToolsView(currentView);
 
   return (
     <div className="mb-6 animate-fade-in pt-4 sm:mb-8">

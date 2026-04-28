@@ -159,8 +159,10 @@ const assertSupabaseMigrationsAreAllowed = () => {
 const assertViewRoutingContracts = () => {
   const typesPath = join(root, 'types.ts');
   const appPath = join(root, 'App.tsx');
+  const viewsPath = join(root, 'utils', 'views.ts');
   const types = readFileSync(typesPath, 'utf8');
   const app = readFileSync(appPath, 'utf8');
+  const views = readFileSync(viewsPath, 'utf8');
   const viewTypeMatch = types.match(/export type ViewType =([\s\S]*?);/);
 
   if (!viewTypeMatch) {
@@ -169,7 +171,7 @@ const assertViewRoutingContracts = () => {
   }
 
   const viewMatches = [...viewTypeMatch[1].matchAll(/'([^']+)'/g)].map((match) => match[1]);
-  const missingViews = viewMatches.filter((view) => !app.includes(`'${view}'`));
+  const missingViews = viewMatches.filter((view) => !app.includes(`'${view}'`) && !views.includes(`'${view}'`));
 
   if (missingViews.length > 0) {
     failures.push(`Views sem contrato de roteamento em App.tsx: ${missingViews.join(', ')}`);

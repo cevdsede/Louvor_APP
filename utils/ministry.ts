@@ -1,4 +1,5 @@
 import { ViewType } from '../types';
+import { isMusicView, isScaleView, isTeamView } from './views';
 
 export type MinistryModule = 'dashboard' | 'scales' | 'music' | 'team';
 
@@ -19,9 +20,9 @@ const DEFAULT_VIEW_BY_MODULE: Record<MinistryModule | 'tools', ViewType> = {
 
 export const getModuleForView = (view: ViewType): MinistryModule | 'tools' => {
   if (view === 'dashboard') return 'dashboard';
-  if (['list', 'calendar', 'cleaning'].includes(view)) return 'scales';
-  if (['music-stats', 'music-list', 'music-repertoire', 'music-create', 'music-history', 'music-escalas'].includes(view)) return 'music';
-  if (['team', 'attendance'].includes(view)) return 'team';
+  if (isScaleView(view)) return 'scales';
+  if (isMusicView(view)) return 'music';
+  if (isTeamView(view)) return 'team';
   return 'tools';
 };
 
