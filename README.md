@@ -81,6 +81,7 @@ Etapas ja aplicadas:
 - Migrations do Supabase versionadas.
 - Migration corretiva de RLS para notificacoes, avisos de cultos e repertorio.
 - Testes contratuais para impedir regressao de seguranca, roteamento e camada offline.
+- Protecao automatizada contra novas policies RLS amplas em tabelas sensiveis apos a migration corretiva.
 
 Proximas frentes:
 
