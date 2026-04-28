@@ -77,7 +77,7 @@ const assertRlsMigrationExists = () => {
     root,
     'supabase',
     'migrations',
-    '202604280001_tighten_notification_and_repertoire_rls.sql'
+    '20260428161851_tighten_notification_and_repertoire_rls.sql'
   );
 
   if (!existsSync(migrationPath) || !statSync(migrationPath).isFile()) {
@@ -158,7 +158,7 @@ const assertSupabaseMigrationsAreAllowed = () => {
 
 const assertNoPermissiveRlsAfterCorrection = () => {
   const migrationsDir = join(root, 'supabase', 'migrations');
-  const correctionMigration = '202604280001_tighten_notification_and_repertoire_rls.sql';
+  const correctionMigration = '20260428161851_tighten_notification_and_repertoire_rls.sql';
   const sensitiveTables = ['aviso_geral', 'avisos_cultos', 'repertorio'];
   const migrations = readdirSync(migrationsDir)
     .filter((file) => file.endsWith('.sql'))
