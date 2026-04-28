@@ -156,6 +156,46 @@ const assertSupabaseMigrationsAreAllowed = () => {
   }
 };
 
+const assertNoPermissiveRlsAfterCorrection = () => {
+  const migrationsDir = join(root, 'supabase', 'migrations');
+  const correctionMigration = '202604280001_tighten_notification_and_repertoire_rls.sql';
+  const sensitiveTables = ['aviso_geral', 'avisos_cultos', 'repertorio'];
+  const migrations = readdirSync(migrationsDir)
+    .filter((file) => file.endsWith('.sql'))
+    .sort();
+  const correctionIndex = migrations.indexOf(correctionMigration);
+
+  if (correctionIndex === -1) {
+    failures.push(`Migration corretiva nao encontrada na ordem esperada: ${correctionMigration}`);
+    return;
+  }
+
+  const laterMigrations = migrations.slice(correctionIndex + 1);
+  const permissivePatterns = [
+    /auth\.role\(\)\s*=\s*'authenticated'/i,
+    /auth\.role\(\)\s*=\s*"authenticated"/i,
+    /to\s+authenticated\s+with\s+check\s*\(\s*true\s*\)/i,
+    /authenticated_users_policy/i,
+    /authenticated_(insert|update|delete|users)/i,
+    /usuarios autenticados podem/i,
+    /usuários autenticados podem/i
+  ];
+
+  for (const migrationFile of laterMigrations) {
+    const migrationPath = join(migrationsDir, migrationFile);
+    const migration = readFileSync(migrationPath, 'utf8');
+    const lowerMigration = migration.toLowerCase();
+    const touchesSensitiveTable = sensitiveTables.some((table) => lowerMigration.includes(`on public.${table}`));
+    const hasPermissivePattern = permissivePatterns.some((pattern) => pattern.test(migration));
+
+    if (touchesSensitiveTable && hasPermissivePattern) {
+      failures.push(
+        `${relative(root, migrationPath)} cria politica RLS ampla em tabela sensivel depois da migration corretiva.`
+      );
+    }
+  }
+};
+
 const assertViewRoutingContracts = () => {
   const typesPath = join(root, 'types.ts');
   const appPath = join(root, 'App.tsx');
@@ -199,6 +239,7 @@ assertRlsMigrationExists();
 assertNoTemporaryArtifacts();
 assertWorkflowRunsCriticalChecks();
 assertSupabaseMigrationsAreAllowed();
+assertNoPermissiveRlsAfterCorrection();
 assertViewRoutingContracts();
 
 if (failures.length > 0) {
