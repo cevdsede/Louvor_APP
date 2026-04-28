@@ -1,0 +1,17 @@
+create index if not exists aviso_geral_id_culto_idx on public.aviso_geral (id_culto);
+create index if not exists aviso_geral_remetente_id_idx on public.aviso_geral (remetente_id);
+create index if not exists avisos_cultos_id_cultos_idx on public.avisos_cultos (id_cultos);
+create index if not exists avisos_cultos_id_membros_idx on public.avisos_cultos (id_membros);
+create index if not exists cultos_id_nome_cultos_idx on public.cultos (id_nome_cultos);
+create index if not exists escalas_id_funcao_idx on public.escalas (id_funcao);
+create index if not exists escalas_id_membros_idx on public.escalas (id_membros);
+create index if not exists historico_musicas_id_membros_idx on public.historico_musicas (id_membros);
+create index if not exists historico_musicas_id_musica_idx on public.historico_musicas (id_musica);
+create index if not exists historico_musicas_id_tons_idx on public.historico_musicas (id_tons);
+create index if not exists musicas_id_temas_idx on public.musicas (id_temas);
+create index if not exists presenca_evento_id_membro_idx on public.presenca_evento (id_membro);
+create index if not exists presenca_evento_id_evento_idx on public.presenca_evento (id_evento);
+create index if not exists repertorio_id_membros_idx on public.repertorio (id_membros);
+create index if not exists repertorio_id_musicas_idx on public.repertorio (id_musicas);
+create index if not exists repertorio_id_tons_idx on public.repertorio (id_tons);
+create index if not exists solicitacoes_membro_processado_por_idx on public.solicitacoes_membro (processado_por);
