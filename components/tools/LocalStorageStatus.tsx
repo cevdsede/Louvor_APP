@@ -26,6 +26,7 @@ const LocalStorageStatus: React.FC = () => {
   );
   const tableCount = Object.keys(status.cacheStats).length;
   const pendingCount = status.queueStats.pending + status.queueStats.retrying;
+  const recentSyncErrors = status.syncErrors.slice(0, 3);
   const activeSyncLabel =
     status.activeSyncTables.length > 0
       ? status.activeSyncTables.slice(0, 3).join(', ')
@@ -202,6 +203,28 @@ const LocalStorageStatus: React.FC = () => {
                 <div key={table} className="flex items-center justify-between text-xs">
                   <span className="capitalize text-slate-600 dark:text-slate-400">{table}</span>
                   <span className="font-medium text-slate-500">{formatTime(time)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {recentSyncErrors.length > 0 && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/30">
+            <div className="mb-2 flex items-center gap-2">
+              <i className="fas fa-exclamation-triangle text-xs text-red-500"></i>
+              <span className="text-xs font-black uppercase tracking-wider text-red-700 dark:text-red-200">
+                Erros recentes
+              </span>
+            </div>
+            <div className="space-y-2">
+              {recentSyncErrors.map((error) => (
+                <div key={`${error.table}-${error.timestamp}`} className="text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-red-700 dark:text-red-200">{error.table}</span>
+                    <span className="shrink-0 text-red-500 dark:text-red-300">{formatTime(error.timestamp)}</span>
+                  </div>
+                  <p className="mt-0.5 line-clamp-2 text-red-600 dark:text-red-200">{error.message}</p>
                 </div>
               ))}
             </div>

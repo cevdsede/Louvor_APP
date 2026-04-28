@@ -8,6 +8,12 @@ interface LocalStorageConfig {
   priorityLocal?: boolean;
 }
 
+interface SyncErrorEntry {
+  table: string;
+  message: string;
+  timestamp: number;
+}
+
 type ManagedTable =
   | 'membros'
   | 'ministerios'
@@ -81,6 +87,7 @@ class LocalStorageFirstService {
   private static syncingTables = new Map<string, Promise<void>>();
   private static bootstrapPromise: Promise<void> | null = null;
   private static lastSyncStartedAt = 0;
+  private static syncErrors = new Map<string, SyncErrorEntry>();
 
   static init(config?: LocalStorageConfig): void {
     this.config = { ...this.config, ...config };
@@ -288,6 +295,7 @@ class LocalStorageFirstService {
     backgroundSyncEnabled: boolean;
     activeSyncTables: string[];
     scheduledSyncTables: string[];
+    syncErrors: SyncErrorEntry[];
     lastFullSync: number;
     lastSyncStartedAt: number;
     nextBackgroundSync: number;
@@ -305,6 +313,7 @@ class LocalStorageFirstService {
       backgroundSyncEnabled: Boolean(this.syncTimer),
       activeSyncTables: [...this.syncingTables.keys()],
       scheduledSyncTables: [...this.scheduledTables],
+      syncErrors: [...this.syncErrors.values()].sort((a, b) => b.timestamp - a.timestamp),
       lastFullSync,
       lastSyncStartedAt: this.lastSyncStartedAt,
       nextBackgroundSync: this.syncTimer && lastFullSync ? lastFullSync + interval : 0,
@@ -429,6 +438,7 @@ class LocalStorageFirstService {
       const mergedData = this.mergeWithPendingChanges(table, serverData);
       LocalStorageService.set(table, mergedData);
       this.updateLastSyncTime(table);
+      this.syncErrors.delete(table);
 
       if (preloadImages && this.shouldPreloadImages(table)) {
         await CacheService.downloadAppImages([table]);
@@ -468,8 +478,19 @@ class LocalStorageFirstService {
       return (data as T) || null;
     } catch (error) {
       console.error(`Erro ao buscar dados do servidor para ${table}:`, error);
+      this.recordSyncError(table, error);
       return null;
     }
+  }
+
+  private static recordSyncError(table: string, error: unknown): void {
+    const message = error instanceof Error ? error.message : String(error || 'Erro desconhecido');
+
+    this.syncErrors.set(table, {
+      table,
+      message,
+      timestamp: Date.now()
+    });
   }
 
   private static async attachAuthDisplayNames(membros: any[]): Promise<any[]> {
