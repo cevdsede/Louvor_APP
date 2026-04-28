@@ -62,11 +62,31 @@ npm run preview
 O projeto possui verificacao de tipos e build automatizados:
 
 ```bash
+npm run verify
 npm run typecheck
 npm run build
 ```
 
 O workflow `.github/workflows/quality.yml` roda essas verificacoes em pull requests, pushes para `main`/`dev` e execucao manual.
+
+## Plano De Melhorias Em Andamento
+
+Etapas ja aplicadas:
+
+- Higiene do repositorio e remocao de artefatos temporarios versionados.
+- Verificacao automatizada com `typecheck`, `verify` e `build`.
+- Code splitting das telas principais com `React.lazy`.
+- Consolidacao inicial do offline/sync em `LocalStorageFirstService`.
+- Painel de cache local com status de fila, sync manual e telemetria basica.
+- Migrations do Supabase versionadas.
+- Migration corretiva de RLS para notificacoes, avisos de cultos e repertorio.
+- Testes contratuais para impedir regressao de seguranca, roteamento e camada offline.
+
+Proximas frentes:
+
+- Revisar e aplicar as migrations no ambiente Supabase conectado.
+- Ampliar testes de fluxos reais de usuario quando uma biblioteca de testes for adicionada.
+- Reorganizar modulos por dominio conforme novos ajustes forem feitos.
 
 ## Observacoes De Manutencao
 
