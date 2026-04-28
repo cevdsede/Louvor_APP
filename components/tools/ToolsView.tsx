@@ -3,7 +3,6 @@ import { supabase } from '../../supabaseClient';
 import LocalStorageStatus from './LocalStorageStatus';
 import { clearImageCache, getImageCacheSize, cleanupOrphanedImages } from '../../utils/teamUtils';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
-import SyncService from '../../services/SyncService';
 import { showSuccess, showError } from '../../utils/toast';
 import MultiSelect from '../equipe/MultiSelect';
 import { ImageCache } from '../ui/ImageCache';
@@ -1181,8 +1180,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <button 
                     onClick={() => {
-                      // Implementar sincronização de dados
-                      SyncService.forceSync().then(() => {
+                      LocalStorageFirstService.forceSync().then(() => {
                         showSuccess('Dados sincronizados com sucesso!');
                       }).catch(() => {
                         showError('Erro ao sincronizar dados.');

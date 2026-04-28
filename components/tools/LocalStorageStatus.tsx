@@ -1,60 +1,57 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import { getImageCacheSize } from '../../utils/teamUtils';
 import { showConfirmModal } from '../../utils/confirmModal';
+import { showError, showSuccess } from '../../utils/toast';
 
 const LocalStorageStatus: React.FC = () => {
-  const [status, setStatus] = useState({
-    isInitialized: false,
-    isOnline: navigator.onLine,
-    lastSyncTimes: {} as { [table: string]: number },
-    queueStats: { pending: 0, retrying: 0 },
-    cacheStats: {} as { [table: string]: { size: number; timestamp: number; valid: boolean } }
-  });
+  const [status, setStatus] = useState(() => LocalStorageFirstService.getStatus());
+  const [imageCacheInfo, setImageCacheInfo] = useState(() => getImageCacheSize());
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const refreshStatus = () => {
+    setStatus(LocalStorageFirstService.getStatus());
+    setImageCacheInfo(getImageCacheSize());
+  };
 
   useEffect(() => {
-    const updateStatus = () => {
-      const currentStatus = LocalStorageFirstService.getStatus();
-      setStatus(currentStatus);
-    };
-
-    updateStatus();
-    
-    const interval = setInterval(updateStatus, 3000); // Atualizar a cada 3 segundos
-    
+    refreshStatus();
+    const interval = setInterval(refreshStatus, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  const totalCacheSize = useMemo(
+    () => Object.values(status.cacheStats).reduce((total, stat) => total + stat.size, 0),
+    [status.cacheStats]
+  );
+  const tableCount = Object.keys(status.cacheStats).length;
+  const pendingCount = status.queueStats.pending + status.queueStats.retrying;
 
   const formatTime = (timestamp: number) => {
     if (!timestamp) return 'Nunca';
-    return new Date(timestamp).toLocaleTimeString('pt-BR');
+    return new Date(timestamp).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
-
-  const getTotalCacheSize = () => {
-    return Object.values(status.cacheStats).reduce((total, stat) => total + stat.size, 0);
-  };
-
-  const getTableCount = () => {
-    return Object.keys(status.cacheStats).length;
-  };
-
-  const [imageCacheInfo, setImageCacheInfo] = useState(() => getImageCacheSize());
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setImageCacheInfo(getImageCacheSize());
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleForceSync = async () => {
+    if (!status.isOnline || isSyncing) {
+      return;
+    }
+
     try {
+      setIsSyncing(true);
       await LocalStorageFirstService.forceSync();
-      // Forçar atualização do status
-      const currentStatus = LocalStorageFirstService.getStatus();
-      setStatus(currentStatus);
+      refreshStatus();
+      showSuccess('Dados sincronizados com sucesso.');
     } catch (error) {
-      console.error('Erro ao forçar sincronização:', error);
+      console.error('Erro ao forcar sincronizacao:', error);
+      showError('Nao foi possivel sincronizar agora.');
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -77,119 +74,124 @@ const LocalStorageStatus: React.FC = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-100 dark:border-slate-800 overflow-hidden">
-      {/* Header */}
+    <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-900">
       <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-              <i className="fas fa-database text-white text-lg"></i>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
+              <i className="fas fa-database text-lg text-white"></i>
             </div>
             <div>
-              <h3 className="font-black text-white text-sm uppercase tracking-wider">Cache Local</h3>
-              <p className="text-white/80 text-xs">LocalStorage-First</p>
+              <h3 className="text-sm font-black uppercase tracking-wider text-white">Cache Local</h3>
+              <p className="text-xs text-white/80">LocalStorage-first</p>
             </div>
           </div>
-          <div className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-            status.isOnline 
-              ? 'bg-emerald-500 text-white' 
-              : 'bg-red-500 text-white'
-          }`}>
+          <div
+            className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider text-white ${
+              status.isOnline ? 'bg-emerald-500' : 'bg-red-500'
+            }`}
+          >
             {status.isOnline ? 'Online' : 'Offline'}
           </div>
         </div>
       </div>
 
-      {/* Status Cards */}
-      <div className="p-4 space-y-3">
+      <div className="space-y-3 p-4">
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <i className="fas fa-table text-blue-500 text-xs"></i>
+          <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
+            <div className="mb-1 flex items-center gap-2">
+              <i className="fas fa-table text-xs text-blue-500"></i>
               <span className="text-xs text-slate-600 dark:text-slate-400">Tabelas</span>
             </div>
-            <p className="text-lg font-black text-slate-800 dark:text-white">{getTableCount()}</p>
+            <p className="text-lg font-black text-slate-800 dark:text-white">{tableCount}</p>
           </div>
-          
-          <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <i className="fas fa-image text-amber-500 text-xs"></i>
+
+          <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
+            <div className="mb-1 flex items-center gap-2">
+              <i className="fas fa-image text-xs text-amber-500"></i>
               <span className="text-xs text-slate-600 dark:text-slate-400">Imagens</span>
             </div>
             <p className="text-lg font-black text-slate-800 dark:text-white">{imageCacheInfo.count}</p>
           </div>
         </div>
 
-        {/* Cache Size Details */}
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <i className="fas fa-hdd text-purple-500 text-xs"></i>
-            <span className="text-xs text-slate-600 dark:text-slate-400">Uso de Cache</span>
+        <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
+          <div className="mb-2 flex items-center gap-2">
+            <i className="fas fa-hdd text-xs text-purple-500"></i>
+            <span className="text-xs text-slate-600 dark:text-slate-400">Uso de cache</span>
           </div>
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div>
-              <p className="text-slate-500 dark:text-slate-400">Dados:</p>
-              <p className="font-bold text-slate-800 dark:text-white">
-                {(getTotalCacheSize() / 1024).toFixed(1)} KB
-              </p>
+              <p className="text-slate-500 dark:text-slate-400">Dados</p>
+              <p className="font-bold text-slate-800 dark:text-white">{(totalCacheSize / 1024).toFixed(1)} KB</p>
             </div>
             <div>
-              <p className="text-slate-500 dark:text-slate-400">Imagens:</p>
-              <p className="font-bold text-slate-800 dark:text-white">
-                {imageCacheInfo.sizeMB} MB
-              </p>
+              <p className="text-slate-500 dark:text-slate-400">Imagens</p>
+              <p className="font-bold text-slate-800 dark:text-white">{imageCacheInfo.sizeMB} MB</p>
             </div>
           </div>
         </div>
 
-        {/* Pending Operations */}
-        <div className={`rounded-lg p-3 border ${
-          status.queueStats.pending > 0 
-            ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800' 
-            : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
-        }`}>
+        <div
+          className={`rounded-lg border p-3 ${
+            pendingCount > 0
+              ? 'border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20'
+              : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800'
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <i className={`fas fa-clock text-xs ${
-                status.queueStats.pending > 0 ? 'text-orange-500' : 'text-slate-400'
-              }`}></i>
-              <span className="text-xs text-slate-600 dark:text-slate-400">Operações Pendentes</span>
+              <i className={`fas fa-clock text-xs ${pendingCount > 0 ? 'text-orange-500' : 'text-slate-400'}`}></i>
+              <span className="text-xs text-slate-600 dark:text-slate-400">Operacoes pendentes</span>
             </div>
-            <span className={`font-bold text-sm ${
-              status.queueStats.pending > 0 ? 'text-orange-600' : 'text-slate-600'
-            }`}>
-              {status.queueStats.pending + status.queueStats.retrying}
+            <span className={`text-sm font-bold ${pendingCount > 0 ? 'text-orange-600' : 'text-slate-600'}`}>
+              {pendingCount}
             </span>
           </div>
         </div>
 
-        {/* Recent Syncs */}
         {Object.keys(status.lastSyncTimes).length > 0 && (
-          <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <i className="fas fa-sync text-green-500 text-xs"></i>
-              <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                Últimas Sincronizações
+          <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
+            <div className="mb-2 flex items-center gap-2">
+              <i className="fas fa-sync text-xs text-green-500"></i>
+              <span className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                Ultimas sincronizacoes
               </span>
             </div>
             <div className="space-y-1">
-              {Object.entries(status.lastSyncTimes).slice(0, 3).map(([table, time]) => (
+              {Object.entries(status.lastSyncTimes).slice(0, 4).map(([table, time]) => (
                 <div key={table} className="flex items-center justify-between text-xs">
-                  <span className="text-slate-600 dark:text-slate-400 capitalize">{table}</span>
-                  <span className="text-slate-500 dark:text-slate-500 font-medium">
-                    {formatTime(time)}
-                  </span>
+                  <span className="capitalize text-slate-600 dark:text-slate-400">{table}</span>
+                  <span className="font-medium text-slate-500">{formatTime(time)}</span>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Footer */}
-        <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-          <div className="flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+        <div className="border-t border-slate-200 pt-3 dark:border-slate-700">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <button
+              onClick={handleForceSync}
+              disabled={!status.isOnline || isSyncing}
+              className="rounded-xl bg-brand px-3 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-brand/90 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 dark:disabled:bg-slate-700"
+            >
+              <i className={`fas ${isSyncing ? 'fa-spinner animate-spin' : 'fa-sync-alt'} mr-2`}></i>
+              {isSyncing ? 'Sincronizando' : 'Sincronizar'}
+            </button>
+
+            <button
+              onClick={handleClearAll}
+              className="rounded-xl bg-slate-100 px-3 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+            >
+              <i className="fas fa-trash-alt mr-2"></i>
+              Limpar cache
+            </button>
+          </div>
+
+          <div className="mt-3 flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <i className="fas fa-home"></i>
-            <span>Dados sempre disponíveis offline</span>
+            <span>Dados sempre disponiveis offline</span>
           </div>
         </div>
       </div>
