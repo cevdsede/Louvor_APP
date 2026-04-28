@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "verify": "node scripts/verify-critical-contracts.mjs",
     "typecheck": "tsc --noEmit",
     "build": "vite build",
     "preview": "vite preview"

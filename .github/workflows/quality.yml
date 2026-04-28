@@ -29,5 +29,8 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Verify critical contracts
+        run: npm run verify
+
       - name: Build
         run: npm run build
