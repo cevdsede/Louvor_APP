@@ -1,17 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { supabase } from './supabaseClient';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 import Toolbar from './components/layout/Toolbar';
-import NotificationCenterModal from './components/layout/NotificationCenterModal';
-import DashboardView from './components/dashboard/DashboardView';
-import ListView from './components/escalas/ListView';
-import CalendarView from './components/escalas/CalendarView';
-import CleaningView from './components/ui/CleaningView';
-import TeamView from './components/equipe/TeamView';
-import MusicView from './components/musicas/MusicView';
-import ToolsView from './components/tools/ToolsView';
-import AvisoModal from './components/ui/AvisoModal';
 import SplashScreen from './components/auth/SplashScreen';
 import LoginScreen from './components/auth/LoginScreen';
 import { LocalStorageFirstInitializer } from './components/LocalStorageFirstInitializer';
@@ -19,6 +10,25 @@ import { MinistryProvider, useMinistryContext } from './contexts/MinistryContext
 import LocalStorageFirstService from './services/LocalStorageFirstService';
 import { ViewType } from './types';
 import { getDefaultViewForModules, getModuleForView } from './utils/ministry';
+
+type ToolsSubView = 'tools-admin' | 'tools-users' | 'tools-approvals' | 'tools-performance';
+
+const NotificationCenterModal = lazy(() => import('./components/layout/NotificationCenterModal'));
+const DashboardView = lazy(() => import('./components/dashboard/DashboardView'));
+const ListView = lazy(() => import('./components/escalas/ListView'));
+const CalendarView = lazy(() => import('./components/escalas/CalendarView'));
+const CleaningView = lazy(() => import('./components/ui/CleaningView'));
+const TeamView = lazy(() => import('./components/equipe/TeamView'));
+const MusicView = lazy(() => import('./components/musicas/MusicView'));
+const ToolsView = lazy(() => import('./components/tools/ToolsView'));
+const AvisoModal = lazy(() => import('./components/ui/AvisoModal'));
+
+const LoadingBlock = ({ label = 'Carregando...' }: { label?: string }) => (
+  <div className="flex flex-col items-center justify-center py-40">
+    <div className="h-12 w-12 animate-spin rounded-full border-[6px] border-brand border-t-transparent" />
+    <p className="mt-6 text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
+  </div>
+);
 
 type AppState = 'splash' | 'login' | 'main';
 
@@ -154,26 +164,30 @@ const AppContent: React.FC<AppContentProps> = ({
                   </p>
                 </div>
               ) : (
-                <div className="fade-in">
+                <Suspense fallback={<LoadingBlock />}>
+                  <div className="fade-in">
                   {currentView === 'dashboard' && <DashboardView />}
                   {currentView === 'list' && <ListView onReportAbsence={openAviso} />}
                   {currentView === 'calendar' && <CalendarView />}
                   {currentView === 'cleaning' && <CleaningView />}
                   {isTeamView(currentView) && <TeamView currentView={currentView} />}
                   {isMusicView(currentView) && <MusicView subView={currentView} />}
-                  {isToolsView(currentView) && <ToolsView subView={currentView} />}
-                </div>
+                  {isToolsView(currentView) && <ToolsView subView={currentView as ToolsSubView} />}
+                  </div>
+                </Suspense>
               )}
             </div>
           </main>
         </div>
       </div>
 
-      {isAvisoModalOpen && selectedEventId && (
-        <AvisoModal eventId={selectedEventId} onClose={() => setIsAvisoModalOpen(false)} />
-      )}
+      <Suspense fallback={null}>
+        {isAvisoModalOpen && selectedEventId && (
+          <AvisoModal eventId={selectedEventId} onClose={() => setIsAvisoModalOpen(false)} />
+        )}
 
-      {isNotificationsOpen && <NotificationCenterModal onClose={() => setIsNotificationsOpen(false)} />}
+        {isNotificationsOpen && <NotificationCenterModal onClose={() => setIsNotificationsOpen(false)} />}
+      </Suspense>
     </div>
   );
 };

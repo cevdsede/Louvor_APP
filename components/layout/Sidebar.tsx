@@ -7,6 +7,7 @@ import { ViewType } from '../../types';
 import MinistrySwitcher from './MinistrySwitcher';
 import { getDisplayName } from '../../utils/displayName';
 import NotificationButton from './NotificationButton';
+import { showError, showSuccess } from '../../utils/toast';
 
 interface SidebarProps {
   currentView: ViewType;

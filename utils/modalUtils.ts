@@ -15,7 +15,7 @@ export const ModalUtils = {
   /**
    * Modal de confirmação personalizado
    */
-  confirm: (options: ModalOptions): boolean => {
+  confirm: (options: ModalOptions): Promise<boolean> => {
     const {
       title,
       message,

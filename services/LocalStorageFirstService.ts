@@ -433,7 +433,7 @@ class LocalStorageFirstService {
 
       if (error) {
         const fallback = await supabase.from(table).select('*');
-        data = fallback.data as T;
+        data = fallback.data as any[] | null;
         error = fallback.error;
       }
 
@@ -442,7 +442,7 @@ class LocalStorageFirstService {
       }
 
       if (table === 'membros' && Array.isArray(data)) {
-        data = (await this.attachAuthDisplayNames(data as any[])) as T;
+        data = await this.attachAuthDisplayNames(data as any[]);
       }
 
       return (data as T) || null;

@@ -7,6 +7,8 @@ import { showConfirmModal } from '../../utils/confirmModal';
 import { getDisplayName } from '../../utils/displayName';
 import { buildWeeklyScaleItems, formatDateOnly } from '../../utils/weeklyScale';
 
+type GeneralNoticeTarget = Extract<AvisoGeralDestino, 'todos' | 'lideres'>;
+
 interface NotificationCenterModalProps {
   onClose: () => void;
 }
@@ -39,7 +41,7 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
   const { data: funcoesRaw } = useLocalStorageFirst<any>({ table: 'funcao' });
   const [showGeneralNoticeForm, setShowGeneralNoticeForm] = useState(false);
   const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
-  const [target, setTarget] = useState<AvisoGeralDestino>('todos');
+  const [target, setTarget] = useState<GeneralNoticeTarget>('todos');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [readScaleNotifications, setReadScaleNotifications] = useState<Record<string, boolean>>(() => {
@@ -346,7 +348,7 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                   </label>
                   <select
                     value={target}
-                    onChange={(event) => setTarget(event.target.value as AvisoGeralDestino)}
+                    onChange={(event) => setTarget(event.target.value as GeneralNoticeTarget)}
                     className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-900"
                   >
                     <option value="todos">Todos</option>

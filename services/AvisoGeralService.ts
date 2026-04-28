@@ -137,7 +137,7 @@ class AvisoGeralService {
     const createdAt = new Date().toISOString();
 
     return this.uniqueRecipientIds(recipientIds).map((recipientId) =>
-      LocalStorageFirstService.add<AvisoGeral>('aviso_geral', {
+      LocalStorageFirstService.add<Omit<AvisoGeral, 'id'>>('aviso_geral', {
         ...base,
         id_membro: recipientId,
         created_at: createdAt,
@@ -204,14 +204,14 @@ class AvisoGeralService {
   }
 
   static async createAvisoGeral(aviso: Omit<AvisoGeral, 'id' | 'created_at'>): Promise<AvisoGeral> {
-    const created = LocalStorageFirstService.add<AvisoGeral>('aviso_geral', {
+    const created = LocalStorageFirstService.add<Omit<AvisoGeral, 'id'>>('aviso_geral', {
       ...aviso,
       created_at: new Date().toISOString(),
       lida: aviso.lida ?? false
     });
 
     this.emitChange();
-    return created;
+    return created as AvisoGeral;
   }
 
   static async createGeneralNotice({ ministerioId, target, texto }: GeneralNoticeInput): Promise<number> {

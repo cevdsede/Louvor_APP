@@ -11,6 +11,14 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+.vite
+supabase/.temp
+backups
+*.zip
+*.backup
+*.codex.new.*
+*.codex.new
+tmp-*
 *.local
 .env
 *.sql
