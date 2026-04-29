@@ -9,6 +9,7 @@ import { getDisplayName } from '../../utils/displayName';
 import NotificationButton from './NotificationButton';
 import { showError, showSuccess } from '../../utils/toast';
 import { isMusicView, isScaleView, isTeamView, isToolsView } from '../../utils/views';
+import AvailabilityPanel from './AvailabilityPanel';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -487,6 +488,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                 </button>
               </div>
+
+              <AvailabilityPanel memberId={currentUser?.id || null} />
 
               <div className="lg:hidden space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest block ml-1">Temas</label>
