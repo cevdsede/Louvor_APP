@@ -277,8 +277,30 @@ const TeamManager: React.FC<TeamManagerProps> = ({
         scaleData.ministerio_id = ministerioId;
       }
 
-      const { error } = await supabase.from('escalas').insert(scaleData);
+      const { data: insertedScale, error } = await supabase
+        .from('escalas')
+        .insert(scaleData)
+        .select('id')
+        .single();
+
       if (error) throw error;
+
+      if (insertedScale?.id) {
+        const { error: confirmationError } = await supabase
+          .from('escalas_confirmacoes')
+          .upsert(
+            {
+              escala_id: insertedScale.id,
+              membro_id: newMemberFormData.memberId,
+              status: 'pendente'
+            },
+            { onConflict: 'escala_id,membro_id' }
+          );
+
+        if (confirmationError) {
+          logger.error('Erro ao criar confirmacao de escala:', confirmationError, 'database');
+        }
+      }
 
       showSuccess('Membro escalado com sucesso!');
       closeForm();
