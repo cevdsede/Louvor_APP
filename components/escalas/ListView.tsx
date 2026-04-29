@@ -315,7 +315,8 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
             upcomingScales: [],
             songHistory: [],
             roles: [],
-            roleIds: []
+            roleIds: [],
+            scaleIds: []
           });
         }
         
