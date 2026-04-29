@@ -215,8 +215,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
       // Atualizar o membro com a nova foto
       const updatedMember = { ...editingMember, foto: publicUrl };
       setEditingMember(updatedMember);
-      
-      console.log('Foto enviada com sucesso');
     } catch (error) {
       console.error('Erro ao enviar foto:', error);
     } finally {
@@ -233,7 +231,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
       hydrateUserManagementState();
       
       setEditingProfile(null); // Fechar o dropdown
-      console.log(`Perfil atualizado para ${newProfile} com sucesso`);
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);
     }
@@ -1091,13 +1088,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                   <button 
                     onClick={() => {
                       // Verificar localStorage primeiro
-                      console.log('🔍 Verificando localStorage...');
                       const allKeys = Object.keys(localStorage);
-                      console.log('📋 Chaves encontradas:', allKeys);
-                      allKeys.forEach(key => {
-                        const value = localStorage.getItem(key);
-                        console.log(`📁 ${key}:`, value ? `${value.substring(0, 100)}${value.length > 100 ? '...' : ''}` : 'vazio');
-                      });
                       
                       // Implementar backup manual
                       try {
@@ -1130,13 +1121,10 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                             try {
                               const parsedData = JSON.parse(data);
                               allData.data[table] = parsedData;
-                              console.log(`✅ Encontrados ${parsedData.length || 0} registros na tabela: ${table}`);
                             } catch (parseError) {
                               console.warn(`⚠️ Erro ao parsear tabela ${table}:`, parseError);
                               allData.data[table] = null;
                             }
-                          } else {
-                            console.log(`❌ Tabela não encontrada no localStorage: ${table}`);
                           }
                         });
 
@@ -1155,12 +1143,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                             }
                           });
                         }
-
-                        console.log('📊 Resumo do backup:', {
-                          tabelasEncontradas: Object.keys(allData.data).length,
-                          totalKeys: allKeys.length,
-                          outrasChaves: otherKeys.length
-                        });
 
                         // Criar e baixar arquivo JSON
                         const blob = new Blob([JSON.stringify(allData, null, 2)], {

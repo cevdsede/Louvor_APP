@@ -15,7 +15,6 @@ const AvisoModal: React.FC<AvisoModalProps> = ({ eventId, onClose }) => {
 
   useEffect(() => {
     if (!navigator.onLine) {
-      console.log('📶 Offline: Pulando carregamento de usuário no modal.');
       return;
     }
 

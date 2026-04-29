@@ -32,8 +32,6 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
   ministerioId,
   onSongAdded
 }) => {
-  console.log('RepertoireManager - allSongs:', allSongs);
-  console.log('RepertoireManager - allSongs.length:', allSongs?.length);
   const [showAddSong, setShowAddSong] = useState(false);
   const [editingSongId, setEditingSongId] = useState<{ eventId: string, songId: string } | null>(null);
   const [isSavingSong, setIsSavingSong] = useState(false);

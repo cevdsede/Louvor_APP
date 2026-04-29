@@ -36,12 +36,10 @@ class CacheService {
     // Tentar obter do cache primeiro
     const cached = LocalStorageService.get<T[]>(table);
     if (cached) {
-      console.log(`Dados obtidos do cache: ${table}`);
       return cached;
     }
 
     // Se não tiver cache, buscar do Supabase
-    console.log(`Buscando dados do Supabase: ${table}`);
     const { data, error } = await supabase
       .from(table)
       .select('*')
@@ -69,12 +67,10 @@ class CacheService {
     // Tentar obter do cache primeiro
     const cached = LocalStorageService.get<T[]>(cacheKey);
     if (cached) {
-      console.log(`Dados obtidos do cache: ${cacheKey}`);
       return cached;
     }
 
     // Se não tiver cache, buscar do Supabase
-    console.log(`Buscando dados do Supabase: ${cacheKey}`);
     const { data, error } = await supabase
       .from(table)
       .select(query);
@@ -111,8 +107,6 @@ class CacheService {
       // Atualizar cache imediatamente
       const cached = LocalStorageService.get<T[]>(table) || [];
       LocalStorageService.set(table, [result, ...cached]);
-
-      console.log(`Registro criado na tabela ${table}:`, result);
       return result;
     } catch (error) {
       console.error(`Erro ao criar registro na tabela ${table}:`, error);
@@ -160,8 +154,6 @@ class CacheService {
         (item as any).id === id ? result : item
       );
       LocalStorageService.set(table, updated);
-
-      console.log(`Registro atualizado na tabela ${table}:`, result);
       return result;
     } catch (error) {
       console.error(`Erro ao atualizar registro na tabela ${table}:`, error);
@@ -204,8 +196,6 @@ class CacheService {
       const cached = LocalStorageService.get<any[]>(table) || [];
       const filtered = cached.filter(item => item.id !== id);
       LocalStorageService.set(table, filtered);
-
-      console.log(`Registro deletado da tabela ${table}:`, id);
     } catch (error) {
       console.error(`Erro ao deletar registro na tabela ${table}:`, error);
       
@@ -225,7 +215,6 @@ class CacheService {
   // Forçar sincronização de uma tabela
   static async forceSync(table: string): Promise<void> {
     try {
-      console.log(`Forçando sincronização da tabela: ${table}`);
       
       // Buscar dados atualizados do Supabase
       const { data, error } = await supabase
@@ -237,8 +226,6 @@ class CacheService {
 
       // Atualizar cache
       LocalStorageService.set(table, data || []);
-
-      console.log(`Tabela ${table} sincronizada com sucesso`);
     } catch (error) {
       console.error(`Erro ao sincronizar tabela ${table}:`, error);
       throw error;
@@ -269,8 +256,6 @@ class CacheService {
       this.lastImageDownloadSignature = signature;
       this.lastImageDownloadAt = Date.now();
 
-      console.log('Baixando imagens do sistema para cache...');
-      console.log(`${imageEntries.length} URLs de imagem encontradas para cache`);
       let downloaded = 0;
 
       for (const imageEntry of imageEntries) {
@@ -307,7 +292,6 @@ class CacheService {
               try {
                 localStorage.setItem(cacheKey, serializedImage);
                 downloaded++;
-                console.log('Imagem salva após limpeza do cache');
               } catch (retryError) {
                 console.warn('Erro ao salvar imagem mesmo após limpeza:', retryError);
               }
@@ -320,7 +304,6 @@ class CacheService {
         }
       }
 
-      console.log(`${downloaded} imagens do sistema baixadas para cache`);
     } catch (error) {
       console.error('Erro ao baixar imagens do sistema:', error);
     }
@@ -367,8 +350,6 @@ class CacheService {
 
   private static async downloadMemberImagesLegacy(): Promise<void> {
     try {
-      console.log('Baixando imagens dos membros para cache...');
-      
       const membros = LocalStorageService.get<any[]>('membros') || [];
       let downloaded = 0;
       
@@ -405,7 +386,6 @@ class CacheService {
         }
       }
       
-      console.log(`${downloaded} imagens de membros baixadas para cache`);
     } catch (error) {
       console.error('Erro ao baixar imagens dos membros:', error);
     }
@@ -475,28 +455,22 @@ class CacheService {
     const cacheStatus = LocalStorageService.getCacheStatus();
     const tables = Object.keys(cacheStatus);
 
-    console.log(`Sincronizando ${tables.length} tabelas...`);
-
     await Promise.allSettled(
       tables.map(table => this.forceSync(table))
     );
 
     // Após sincronizar, baixar imagens do sistema
     await this.downloadAppImages();
-
-    console.log('Sincronização de todas as tabelas concluída');
   }
 
   // Limpar cache de uma tabela específica
   static clearCache(table: string): void {
     LocalStorageService.remove(table);
-    console.log(`Cache limpo para tabela: ${table}`);
   }
 
   // Limpar todos os caches
   static clearAllCache(): void {
     LocalStorageService.clear();
-    console.log('Todos os caches foram limpos');
   }
 
   // Verificar se tabela tem cache válido
@@ -642,8 +616,6 @@ class CacheService {
       keysToRemove.forEach((key) => {
         localStorage.removeItem(key);
       });
-
-      console.log(`Cache limpo: ${keysToRemove.length} imagens removidas, ${(clearedSize / 1024 / 1024).toFixed(2)} MB liberados`);
     } catch (error) {
       console.error('Erro ao limpar cache antigo:', error);
     }

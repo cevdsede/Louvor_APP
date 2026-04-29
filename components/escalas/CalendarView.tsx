@@ -210,7 +210,6 @@ const CalendarView: React.FC = () => {
   useEffect(() => {
     const checkAuth = async () => {
       if (!navigator.onLine) {
-        console.log('📶 Offline: Pulando check de auth.');
         return;
       }
 

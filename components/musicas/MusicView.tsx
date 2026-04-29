@@ -475,7 +475,6 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
   const openEditEscalaModal = (item: any) => {
     setEditingEscala(item);
     // TODO: Implementar modal de edição de escala
-    console.log('Editar escala:', item);
   };
 
   const handleDeleteEscala = (item: any) => {
@@ -736,7 +735,6 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
               onChange={(selectedOption) => {
                 if (selectedOption) {
                   // Implementar lógica para destacar a música selecionada
-                  console.log('Música selecionada:', selectedOption);
                 }
               }}
               className="w-full"

@@ -222,12 +222,10 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
             );
             setIsAdminOrLeader(isAdmin);
             setIsMember(true);
-            logger.auth('ListView - Usuário autenticado:', { email: userEmail, perfil: memberData.perfil, isMember: true, isAdminOrLeader: isAdmin });
           } else {
             setCurrentUser(null);
             setIsMember(false);
             setIsAdminOrLeader(false);
-            logger.auth('ListView - Membro não encontrado pelo email:', { email: userEmail });
           }
         } else if (!userEmail) {
           setCurrentUser(null);
@@ -246,7 +244,6 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
 
     // Escutar mudanças na autenticação apenas se online
     if (!navigator.onLine) {
-      console.log('📶 Offline: Pulando listener de auth em ListView.');
       return;
     }
 

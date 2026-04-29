@@ -195,7 +195,6 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
 
   const openScaleDetail = (eventId: string) => {
     // Mock function - implementar lógica real
-    console.log('Opening scale detail for:', eventId);
   };
 
   // Handlers para eventos

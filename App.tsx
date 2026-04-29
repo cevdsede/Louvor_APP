@@ -333,7 +333,7 @@ const App: React.FC = () => {
         enableBackgroundSync: true,
         priorityLocal: true
       }}
-      onReady={() => console.log('Sistema localStorage-first pronto!')}
+      onReady={() => undefined}
       onError={(error) => console.error('Erro na inicializacao:', error)}
     >
       <MinistryProvider>

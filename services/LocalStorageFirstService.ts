@@ -97,7 +97,6 @@ class LocalStorageFirstService {
       this.isInitialized = true;
       this.initializedAt = Date.now();
       this.attachConnectionListeners();
-      console.log('LocalStorageFirstService inicializado');
     }
 
     if (this.config.enableBackgroundSync) {
