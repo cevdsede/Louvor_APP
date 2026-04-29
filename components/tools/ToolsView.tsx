@@ -10,7 +10,6 @@ import { compressImageFile } from '../../utils/imageCompression';
 import { getMemberMemberships as getMemberMinistryMemberships } from '../../utils/memberMinistry';
 import {
   ChartInstance,
-  SolicitacaoAprovacao,
   Funcao,
   SupabaseMinisterio,
   SupabaseMembroMinisterio,
@@ -70,11 +69,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
   const [userMinisterioFilter, setUserMinisterioFilter] = useState('all');
   const [userPerfilFilter, setUserPerfilFilter] = useState('all');
 
-  // Estados para Aprovações
-  const [solicitacoes, setSolicitacoes] = useState<SolicitacaoAprovacao[]>([]);
   const [funcoes, setFuncoes] = useState<Funcao[]>([]);
-  const [loadingAprovacoes, setLoadingAprovacoes] = useState(false);
-  const [funcoesSelecionadas, setFuncoesSelecionadas] = useState<Record<string, string[]>>({});
 
   // Funções para os botões de acesso rápido
   const hydrateUserManagementState = () => {
@@ -452,102 +447,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
       })
     : [];
 
-  // Funções para Aprovações
-  const fetchFuncoes = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('funcao')
-        .select('id, nome_funcao, created_at, ministerio_id')
-        .order('nome_funcao');
-
-      if (error) throw error;
-      setFuncoes(
-        data?.map((f) => ({
-          id: f.id.toString(),
-          nome_funcao: f.nome_funcao,
-          created_at: f.created_at,
-          ministerio_id: f.ministerio_id
-        })) || []
-      );
-    } catch (error) {
-      console.error('Erro ao buscar funções:', error);
-    }
-  };
-
-  const fetchSolicitacoes = async () => {
-    try {
-      setLoadingAprovacoes(true);
-      const { data, error } = await supabase
-        .from('solicitacoes_membro')
-        .select(`
-          id,
-          user_id,
-          status,
-          created_at,
-          nome,
-          email,
-          aprovado
-        `)
-        .eq('status', 'pendente')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setSolicitacoes(data?.map(s => ({
-        id: s.id,
-        nome: s.nome || '',
-        email: s.email || '',
-        status: s.status,
-        createdAt: s.created_at
-      })) || []);
-      
-      // Inicializar funções selecionadas para cada solicitação
-      const inicialFuncoes: Record<string, string[]> = {};
-      data?.forEach(solicitacao => {
-        inicialFuncoes[solicitacao.id] = [];
-      });
-      setFuncoesSelecionadas(inicialFuncoes);
-    } catch (error) {
-      console.error('Erro ao buscar solicitações:', error);
-    } finally {
-      setLoadingAprovacoes(false);
-    }
-  };
-
-  const aprovarMembro = async (userId: string, funcoesIds: string[]) => {
-    try {
-      const { data, error } = await supabase.rpc('aprovar_membro', {
-        user_id: userId,
-        ids_selecionados: funcoesIds
-      });
-
-      if (error) throw error;
-
-      // Atualizar status da solicitação
-      await supabase
-        .from('solicitacoes_membro')
-        .update({ status: 'aprovado' })
-        .eq('id', userId);
-
-      // Recarregar solicitações
-      await fetchSolicitacoes();
-      
-      showSuccess('Membro aprovado com sucesso!');
-      
-      return { success: true };
-    } catch (error) {
-      console.error('Erro ao aprovar membro:', error);
-      showError('Erro ao aprovar membro. Tente novamente.');
-      return { success: false, error };
-    }
-  };
-
-  const handleFuncoesChange = (solicitacaoId: string, funcoesIds: string[]) => {
-    setFuncoesSelecionadas(prev => ({
-      ...prev,
-      [solicitacaoId]: funcoesIds
-    }));
-  };
-
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -566,10 +465,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
             syncUserManagementState().catch(() => {});
             break;
           case 'tools-approvals':
-            // Carregar dados reais de aprovações
-            await fetchFuncoes();
-            await fetchSolicitacoes();
-            setData(null); // Não usar dados mockados para aprovações
+            setData(null);
             break;
           case 'tools-performance':
             setData({
