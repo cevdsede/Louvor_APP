@@ -12,6 +12,7 @@ const CalendarView: React.FC = () => {
   const { activeMinisterio, activeMinisterioId, activeModules } = useMinistryContext();
   const [selectedDateEvents, setSelectedDateEvents] = useState<ScheduleEvent[] | null>(null);
   const [currentBaseDate, setCurrentBaseDate] = useState(new Date());
+  const [memberSearchTerm, setMemberSearchTerm] = useState('');
   const canManageRepertoire = activeModules.includes('music');
   const activeMinisterioSlug = activeMinisterio?.slug
     ?.normalize('NFD')
@@ -32,6 +33,13 @@ const CalendarView: React.FC = () => {
   const [tones, setTones] = useState<any[]>([]);
   const [isMember, setIsMember] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ id: string, name: string } | null>(null);
+
+  const normalizeSearch = (value?: string | null) =>
+    (value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
 
   // Função para agrupar membros com múltiplas funções
   const groupMembersByPerson = (escalas: any[]) => {
@@ -254,6 +262,12 @@ const CalendarView: React.FC = () => {
     setCurrentBaseDate(new Date(currentBaseDate.getFullYear(), currentBaseDate.getMonth() + 1, 1));
   };
 
+  const filteredEvents = events.filter((event) => {
+    const search = normalizeSearch(memberSearchTerm);
+    if (!search) return true;
+    return event.members.some((member) => normalizeSearch(member.name).includes(search));
+  });
+
   const renderMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -264,7 +278,7 @@ const CalendarView: React.FC = () => {
 
     const getEventsForDate = (day: number) => {
       const dateStr = day.toString().padStart(2, '0') + '/' + (month + 1).toString().padStart(2, '0');
-      return events.filter(e => e.date === dateStr);
+      return filteredEvents.filter(e => e.date === dateStr);
     };
 
     return (
@@ -320,20 +334,47 @@ const CalendarView: React.FC = () => {
   return (
     <div className="fade-in max-w-7xl mx-auto space-y-8 pb-20">
       {/* Header Compacto */}
-      <div className="flex items-center justify-between px-4">
+      <div className="flex flex-col gap-4 px-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter uppercase">Cronograma <span className="text-brand">Bimensal</span></h2>
           <p className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest text-[9px] mt-1">Visão Geral da Equipe</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={handlePrevMonth} className="bg-white dark:bg-slate-800 text-slate-400 w-10 h-10 rounded-xl flex items-center justify-center border border-slate-100 dark:border-slate-700 hover:text-brand transition-all">
-            <i className="fas fa-chevron-left text-xs"></i>
-          </button>
-          <button onClick={handleNextMonth} className="bg-white dark:bg-slate-800 text-slate-400 w-10 h-10 rounded-xl flex items-center justify-center border border-slate-100 dark:border-slate-700 hover:text-brand transition-all">
-            <i className="fas fa-chevron-right text-xs"></i>
-          </button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:w-72">
+            <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+            <input
+              type="text"
+              value={memberSearchTerm}
+              onChange={(event) => setMemberSearchTerm(event.target.value)}
+              placeholder="Pesquisar membro..."
+              className="w-full rounded-xl border border-slate-100 bg-white py-3 pl-9 pr-9 text-xs font-bold text-slate-700 outline-none transition-all focus:border-brand focus:ring-2 focus:ring-brand/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            />
+            {memberSearchTerm && (
+              <button
+                type="button"
+                onClick={() => setMemberSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-red-500"
+              >
+                <i className="fas fa-times text-xs"></i>
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:flex">
+            <button onClick={handlePrevMonth} className="bg-white dark:bg-slate-800 text-slate-400 h-10 rounded-xl flex items-center justify-center border border-slate-100 dark:border-slate-700 hover:text-brand transition-all sm:w-10">
+              <i className="fas fa-chevron-left text-xs"></i>
+            </button>
+            <button onClick={handleNextMonth} className="bg-white dark:bg-slate-800 text-slate-400 h-10 rounded-xl flex items-center justify-center border border-slate-100 dark:border-slate-700 hover:text-brand transition-all sm:w-10">
+              <i className="fas fa-chevron-right text-xs"></i>
+            </button>
+          </div>
         </div>
       </div>
+
+      {memberSearchTerm && (
+        <div className="mx-4 rounded-2xl border border-brand/15 bg-brand/5 px-4 py-3 text-xs font-bold text-brand">
+          Mostrando cultos com membro correspondente a "{memberSearchTerm}".
+        </div>
+      )}
 
       {/* Calendários Lado a Lado */}
       <div className="flex flex-col xl:flex-row gap-8">
