@@ -290,6 +290,39 @@ const assertViewRoutingContracts = () => {
   }
 };
 
+const assertApprovalRpcContract = () => {
+  const sourceFiles = walk(root);
+
+  for (const file of sourceFiles) {
+    const content = readFileSync(file, 'utf8');
+    const relativePath = relative(root, file);
+
+    if (content.includes('ids_selecionados')) {
+      failures.push(`${relativePath} usa parametro antigo ids_selecionados no fluxo de aprovacao.`);
+    }
+  }
+
+  const approvalsPath = join(root, 'components', 'tools', 'ApprovalsPanel.tsx');
+
+  if (!existsSync(approvalsPath)) {
+    failures.push('Painel de aprovacoes nao encontrado.');
+    return;
+  }
+
+  const approvalsPanel = readFileSync(approvalsPath, 'utf8');
+  const requiredSnippets = [
+    "supabase.rpc('aprovar_membro'",
+    'ministerio_ids: ministerioIds',
+    'lista_funcao_ids: funcaoIds'
+  ];
+
+  for (const snippet of requiredSnippets) {
+    if (!approvalsPanel.includes(snippet)) {
+      failures.push(`ApprovalsPanel nao contem contrato esperado do RPC de aprovacao: ${snippet}`);
+    }
+  }
+};
+
 assertNoLegacyOfflineLayer();
 assertRlsMigrationExists();
 assertNoTemporaryArtifacts();
@@ -298,6 +331,7 @@ assertSupabaseMigrationsAreAllowed();
 assertRecentSecurityMigrationsExist();
 assertNoPermissiveRlsAfterCorrection();
 assertViewRoutingContracts();
+assertApprovalRpcContract();
 
 if (failures.length > 0) {
   console.error('Contratos criticos falharam:');
