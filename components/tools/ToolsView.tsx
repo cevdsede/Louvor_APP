@@ -8,6 +8,7 @@ import MultiSelect from '../equipe/MultiSelect';
 import { ImageCache } from '../ui/ImageCache';
 import { compressImageFile } from '../../utils/imageCompression';
 import { getMemberMemberships as getMemberMinistryMemberships } from '../../utils/memberMinistry';
+import logger from '../../utils/logger';
 import {
   ChartInstance,
   Funcao,
@@ -58,6 +59,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
   const [editingProfile, setEditingProfile] = useState<string | null>(null);
   const [showCacheManager, setShowCacheManager] = useState(false);
   const [cacheInfo, setCacheInfo] = useState<any>(null);
+  const [recentErrors, setRecentErrors] = useState(() => logger.getRecentErrors());
   const [editingMember, setEditingMember] = useState<EditingMemberState | null>(null);
   const [uploading, setUploading] = useState(false);
   const [savingMember, setSavingMember] = useState(false);
@@ -1176,7 +1178,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
 
                         showSuccess('Backup realizado com sucesso!');
                       } catch (error) {
-                        console.error('Erro ao realizar backup:', error);
+                        logger.error('Erro ao realizar backup', error, 'ui');
                         showError('Erro ao realizar backup. Tente novamente.');
                       }
                     }}
@@ -1200,6 +1202,59 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
               <div>
                 <h4 className="text-sm font-black text-slate-700 dark:text-slate-300 mb-3">Status do Cache Local</h4>
                 <LocalStorageStatus />
+              </div>
+
+              <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-slate-200 dark:border-slate-700">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+                  <div>
+                    <h4 className="text-sm font-black text-slate-700 dark:text-slate-300">Erros Recentes</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Registro local dos ultimos erros tecnicos neste navegador.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setRecentErrors(logger.getRecentErrors())}
+                      className="px-3 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg font-black text-xs uppercase tracking-wider hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      <i className="fas fa-sync mr-2"></i>Atualizar
+                    </button>
+                    <button
+                      onClick={() => {
+                        logger.clearRecentErrors();
+                        setRecentErrors([]);
+                      }}
+                      className="px-3 py-2 bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-300 rounded-lg font-black text-xs uppercase tracking-wider hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                    >
+                      <i className="fas fa-trash mr-2"></i>Limpar
+                    </button>
+                  </div>
+                </div>
+
+                {recentErrors.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-700 px-4 py-5 text-sm text-slate-500 dark:text-slate-400">
+                    Nenhum erro recente registrado neste navegador.
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                    {recentErrors.slice(0, 8).map((entry, index) => (
+                      <div
+                        key={`${entry.timestamp}-${index}`}
+                        className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-3"
+                      >
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                          <p className="text-sm font-black text-slate-700 dark:text-slate-200">{entry.message}</p>
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                            {new Date(entry.timestamp).toLocaleString('pt-BR')}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs font-bold uppercase tracking-wider text-slate-400">
+                          {entry.context}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1262,7 +1317,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                             setCacheInfo(getImageCacheSize());
                             showSuccess(`${cleared} imagens órfãs removidas!`);
                           } catch (error) {
-                            console.error('Erro ao limpar imagens órfãs:', error);
+                            logger.error('Erro ao limpar imagens órfãs', error, 'ui');
                             showError('Erro ao limpar imagens órfãs.');
                           }
                         }}
