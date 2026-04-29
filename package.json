@@ -7,7 +7,7 @@
     "dev": "vite",
     "verify": "node scripts/verify-critical-contracts.mjs",
     "typecheck": "tsc --noEmit",
-    "build": "vite build",
+    "build": "vite build && node scripts/check-build-budget.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
