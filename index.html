@@ -4,72 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Valentes Hub - Ministerios Conectados</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            DEFAULT: 'var(--brand-primary)',
-                            accent: 'var(--brand-accent)',
-                            navy: 'var(--brand-primary)',
-                            gold: 'var(--brand-accent)'
-                        }
-                    },
-                    borderRadius: {
-                        '4xl': '2rem',
-                        '5xl': '2.5rem'
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        :root {
-            --brand-primary: #1e3a8a;
-            --brand-accent: #eab308;
-        }
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            transition: background-color 0.3s ease, color 0.3s ease;
-            -webkit-font-smoothing: antialiased;
-        }
-        .dark body {
-            background-color: #0b1120;
-            color: #f8fafc;
-        }
-        body.modal-open {
-            overflow: hidden !important;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .fade-in {
-            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        }
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        .bg-brand { background-color: var(--brand-primary); }
-        .text-brand { color: var(--brand-primary); }
-        .border-brand { border-color: var(--brand-primary); }
-        .shadow-brand { --tw-shadow-color: var(--brand-primary); }
-        .bg-accent { background-color: var(--brand-accent); }
-        .text-accent { color: var(--brand-accent); }
-        .animate-fade-in {
-            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        }
-    </style>
     <link rel="manifest" href="/manifest.webmanifest">
     <meta name="theme-color" content="#3b82f6">
     <link rel="apple-touch-icon" href="/logo-192.png">
