@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 import Toolbar from './components/layout/Toolbar';
+import OfflineSyncBanner from './components/layout/OfflineSyncBanner';
 import SplashScreen from './components/auth/SplashScreen';
 import LoginScreen from './components/auth/LoginScreen';
 import { LocalStorageFirstInitializer } from './components/LocalStorageFirstInitializer';
@@ -144,6 +145,8 @@ const AppContent: React.FC<AppContentProps> = ({
           />
 
           <Toolbar currentView={currentView} onViewChange={setCurrentView} />
+
+          <OfflineSyncBanner />
 
           <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 dark:bg-slate-800">
             <div className="container mx-auto px-4 py-6 pb-28 sm:px-6 sm:pb-32 lg:px-8 lg:pb-8">
