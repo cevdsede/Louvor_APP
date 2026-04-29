@@ -327,6 +327,10 @@ class LocalStorageFirstService {
     localStorage.removeItem(this.LAST_FULL_SYNC_KEY);
   }
 
+  static async getOfflineStorageUsage(): Promise<{ supported: boolean; usage: number; quota: number }> {
+    return LocalStorageService.getOfflineStorageUsage();
+  }
+
   static clearTable(table: string): void {
     LocalStorageService.remove(table);
   }

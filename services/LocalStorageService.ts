@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient';
+import OfflineStorageService from './OfflineStorageService';
 
 interface CacheItem<T> {
   data: T;
@@ -63,6 +64,7 @@ class LocalStorageService {
       const cached = localStorage.getItem(cacheKey);
 
       if (!cached) {
+        void this.restoreCacheFromIndexedDb(table, cacheKey);
         return null;
       }
 
@@ -85,6 +87,7 @@ class LocalStorageService {
       };
 
       localStorage.setItem(cacheKey, JSON.stringify(cacheItem));
+      void OfflineStorageService.set('cache', cacheKey, cacheItem);
     } catch (error) {
       console.error(`Erro ao salvar cache da tabela ${table}:`, error);
     }
@@ -93,6 +96,7 @@ class LocalStorageService {
   static remove(table: string): void {
     try {
       localStorage.removeItem(this.CACHE_PREFIX + table);
+      void OfflineStorageService.remove('cache', this.CACHE_PREFIX + table);
     } catch (error) {
       console.error(`Erro ao remover cache da tabela ${table}:`, error);
     }
@@ -107,6 +111,7 @@ class LocalStorageService {
       });
 
       localStorage.removeItem(this.SYNC_QUEUE_KEY);
+      void OfflineStorageService.clear();
     } catch (error) {
       console.error('Erro ao limpar cache:', error);
     }
@@ -141,6 +146,7 @@ class LocalStorageService {
       });
 
       localStorage.setItem(this.SYNC_QUEUE_KEY, JSON.stringify(queue));
+      void OfflineStorageService.set('meta', this.SYNC_QUEUE_KEY, queue);
 
       if (this.isOnline) {
         void this.processSyncQueue();
@@ -153,6 +159,9 @@ class LocalStorageService {
   static getSyncQueue(): SyncQueue[] {
     try {
       const queue = localStorage.getItem(this.SYNC_QUEUE_KEY);
+      if (!queue) {
+        void this.restoreSyncQueueFromIndexedDb();
+      }
       return queue ? JSON.parse(queue) : [];
     } catch (error) {
       console.error('Erro ao obter fila de sincronizacao:', error);
@@ -190,6 +199,7 @@ class LocalStorageService {
 
       const nextQueue = queue.filter((_, index) => !processed.has(index));
       localStorage.setItem(this.SYNC_QUEUE_KEY, JSON.stringify(nextQueue));
+      void OfflineStorageService.set('meta', this.SYNC_QUEUE_KEY, nextQueue);
     } catch (error) {
       console.error('Erro ao processar fila de sincronizacao:', error);
     }
@@ -296,6 +306,36 @@ class LocalStorageService {
     const pending = queue.filter((item) => !item.retryCount || item.retryCount === 0).length;
     const retrying = queue.filter((item) => item.retryCount && item.retryCount > 0).length;
     return { pending, retrying };
+  }
+
+  static async getOfflineStorageUsage(): Promise<{ supported: boolean; usage: number; quota: number }> {
+    return OfflineStorageService.getUsage();
+  }
+
+  private static async restoreCacheFromIndexedDb<T>(table: string, cacheKey: string): Promise<void> {
+    const cacheItem = await OfflineStorageService.get<CacheItem<T>>('cache', cacheKey);
+    if (!cacheItem || localStorage.getItem(cacheKey)) {
+      return;
+    }
+
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify(cacheItem));
+    } catch {
+      // Se localStorage estiver cheio, o IndexedDB continua servindo como copia duravel.
+    }
+  }
+
+  private static async restoreSyncQueueFromIndexedDb(): Promise<void> {
+    const queue = await OfflineStorageService.get<SyncQueue[]>('meta', this.SYNC_QUEUE_KEY);
+    if (!queue || localStorage.getItem(this.SYNC_QUEUE_KEY)) {
+      return;
+    }
+
+    try {
+      localStorage.setItem(this.SYNC_QUEUE_KEY, JSON.stringify(queue));
+    } catch {
+      // Se localStorage estiver cheio, a fila permanece preservada no IndexedDB.
+    }
   }
 
   private static getPrimaryKey(table: string): string {

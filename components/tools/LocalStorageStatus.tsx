@@ -7,11 +7,13 @@ import { showError, showSuccess } from '../../utils/toast';
 const LocalStorageStatus: React.FC = () => {
   const [status, setStatus] = useState(() => LocalStorageFirstService.getStatus());
   const [imageCacheInfo, setImageCacheInfo] = useState(() => getImageCacheSize());
+  const [offlineStorage, setOfflineStorage] = useState({ supported: false, usage: 0, quota: 0 });
   const [isSyncing, setIsSyncing] = useState(false);
 
   const refreshStatus = () => {
     setStatus(LocalStorageFirstService.getStatus());
     setImageCacheInfo(getImageCacheSize());
+    void LocalStorageFirstService.getOfflineStorageUsage().then(setOfflineStorage);
   };
 
   useEffect(() => {
@@ -27,6 +29,8 @@ const LocalStorageStatus: React.FC = () => {
   const tableCount = Object.keys(status.cacheStats).length;
   const pendingCount = status.queueStats.pending + status.queueStats.retrying;
   const recentSyncErrors = status.syncErrors.slice(0, 3);
+  const offlineUsageMB = offlineStorage.usage / 1024 / 1024;
+  const offlineQuotaMB = offlineStorage.quota / 1024 / 1024;
   const activeSyncLabel =
     status.activeSyncTables.length > 0
       ? status.activeSyncTables.slice(0, 3).join(', ')
@@ -135,6 +139,27 @@ const LocalStorageStatus: React.FC = () => {
             <div>
               <p className="text-slate-500 dark:text-slate-400">Imagens</p>
               <p className="font-bold text-slate-800 dark:text-white">{imageCacheInfo.sizeMB} MB</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
+          <div className="mb-2 flex items-center gap-2">
+            <i className="fas fa-shield-alt text-xs text-emerald-500"></i>
+            <span className="text-xs text-slate-600 dark:text-slate-400">Armazenamento offline</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <p className="text-slate-500 dark:text-slate-400">IndexedDB</p>
+              <p className="font-bold text-slate-800 dark:text-white">
+                {offlineStorage.supported ? 'Ativo' : 'Indisponivel'}
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-500 dark:text-slate-400">Uso estimado</p>
+              <p className="font-bold text-slate-800 dark:text-white">
+                {offlineStorage.supported ? `${offlineUsageMB.toFixed(1)} / ${offlineQuotaMB.toFixed(0)} MB` : 'N/A'}
+              </p>
             </div>
           </div>
         </div>
