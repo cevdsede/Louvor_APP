@@ -69,6 +69,10 @@ npm run build
 
 O workflow `.github/workflows/quality.yml` roda essas verificacoes em pull requests, pushes para `main`/`dev` e execucao manual.
 
+## Operacao
+
+O checklist de deploy, revisao dos advisors do Supabase e avisos mantidos de forma intencional ficam em `docs/OPERACAO.md`.
+
 ## Plano De Melhorias Em Andamento
 
 Etapas ja aplicadas:
