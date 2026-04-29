@@ -255,7 +255,6 @@ class LocalStorageFirstService {
     const filteredData = currentData.filter((item) => !this.matchesItemId(table, item, id));
 
     if (filteredData.length === currentData.length) {
-      console.warn(`Item nao encontrado para remocao: ${table}.${id}`);
       return false;
     }
 
