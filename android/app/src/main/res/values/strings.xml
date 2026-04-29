@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">My App</string>
-    <string name="title_activity_main">My App</string>
-    <string name="package_name">com.getcapacitor.myapp</string>
-    <string name="custom_url_scheme">com.getcapacitor.myapp</string>
+    <string name="app_name">Valentes Hub</string>
+    <string name="title_activity_main">Valentes Hub</string>
+    <string name="package_name">com.valenteshub.app</string>
+    <string name="custom_url_scheme">com.valenteshub.app</string>
 </resources>
