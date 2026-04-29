@@ -156,6 +156,62 @@ const assertSupabaseMigrationsAreAllowed = () => {
   }
 };
 
+const assertRecentSecurityMigrationsExist = () => {
+  const migrationsDir = join(root, 'supabase', 'migrations');
+  const requiredMigrations = {
+    '20260428162551_restrict_security_definer_execution.sql': [
+      'revoke execute on function public.aprovar_membro(uuid, uuid[], bigint[]) from public, anon',
+      'grant execute on function public.aprovar_membro(uuid, uuid[], bigint[]) to authenticated',
+      'revoke execute on function public.get_auth_display_names() from public, anon',
+      'revoke execute on function public.handle_new_user() from public, anon, authenticated'
+    ],
+    '20260428162944_fix_function_search_paths.sql': [
+      'alter function public.formatar_musica_cantor() set search_path = public, pg_temp',
+      'alter function public.get_user_display_names() set search_path = public, auth, pg_temp'
+    ],
+    '20260428163410_restrict_public_assets_listing.sql': [
+      'drop policy if exists "leitura_publica" on storage.objects',
+      'drop policy if exists "Public Assets Read" on storage.objects'
+    ],
+    '20260428164449_add_missing_foreign_key_indexes.sql': [
+      'create index if not exists aviso_geral_id_culto_idx',
+      'create index if not exists presenca_evento_id_evento_idx',
+      'create index if not exists repertorio_id_musicas_idx'
+    ],
+    '20260428164947_optimize_rls_auth_function_calls.sql': [
+      'using ((select auth.role()) =',
+      'where membros.id = (select auth.uid())'
+    ],
+    '20260428165222_drop_duplicate_event_and_attendance_policies.sql': [
+      'drop policy if exists "Users can view eventos"',
+      'drop policy if exists "Users can insert presencas"'
+    ],
+    '20260428165440_split_manage_policies_from_select.sql': [
+      'drop policy if exists avisos_manage',
+      'create policy avisos_manage_insert',
+      'create policy repertorio_manage_update',
+      'create policy solicitacoes_manage_delete'
+    ]
+  };
+
+  for (const [migrationFile, snippets] of Object.entries(requiredMigrations)) {
+    const migrationPath = join(migrationsDir, migrationFile);
+
+    if (!existsSync(migrationPath) || !statSync(migrationPath).isFile()) {
+      failures.push(`Migration de seguranca/performance nao encontrada: ${migrationFile}`);
+      continue;
+    }
+
+    const migration = readFileSync(migrationPath, 'utf8');
+
+    for (const snippet of snippets) {
+      if (!migration.includes(snippet)) {
+        failures.push(`${relative(root, migrationPath)} nao contem contrato esperado: ${snippet}`);
+      }
+    }
+  }
+};
+
 const assertNoPermissiveRlsAfterCorrection = () => {
   const migrationsDir = join(root, 'supabase', 'migrations');
   const correctionMigration = '20260428161851_tighten_notification_and_repertoire_rls.sql';
@@ -239,6 +295,7 @@ assertRlsMigrationExists();
 assertNoTemporaryArtifacts();
 assertWorkflowRunsCriticalChecks();
 assertSupabaseMigrationsAreAllowed();
+assertRecentSecurityMigrationsExist();
 assertNoPermissiveRlsAfterCorrection();
 assertViewRoutingContracts();
 
