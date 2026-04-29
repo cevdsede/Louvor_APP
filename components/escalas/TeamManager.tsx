@@ -3,6 +3,7 @@ import { supabase } from '../../supabaseClient';
 import { showError, showSuccess } from '../../utils/toast';
 import { showConfirmModal } from '../../utils/confirmModal';
 import { buildLocalAvatar } from '../../utils/avatar';
+import { ImageCache } from '../ui/ImageCache';
 import { logger } from '../../utils/logger';
 import { sortMembersByRole, getRoleIcon } from '../../utils/teamUtils';
 import { Funcao } from '../../types-supabase';
@@ -519,14 +520,11 @@ const TeamManager: React.FC<TeamManagerProps> = ({
                 <div className="relative mb-3">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-gold shadow-lg">
                     {member.avatar ? (
-                      <img
+                      <ImageCache
                         src={member.avatar}
+                        fallbackSrc={buildLocalAvatar(member.name)}
                         alt={member.name}
                         className="h-full w-full rounded-full object-cover"
-                        onError={(event: any) => {
-                          event.target.onerror = null;
-                          event.target.src = buildLocalAvatar(member.name);
-                        }}
                       />
                     ) : (
                       <i className={`fas ${getRoleIcon(member.roles && member.roles.length > 0 ? member.roles[0] : member.role)} text-xl text-white`} />

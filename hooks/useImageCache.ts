@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 
 const FALLBACK_SVG = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjEwMDAiIHZpZXdCb3g9IjAgMCA4MDAgMTAwMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwMCIgaGVpZ2h0PSIxMDAwIiBmaWxsPSIjZGRkIi8+Cjx0ZXh0IHg9IjQwMCIgeT0iNTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjI0Ij5JbWFnZW0gbmFvw6NvIGRpc3BvbsO2dmVsPC90ZXh0Pgo8L3N2Zz4=';
 
@@ -153,6 +153,11 @@ export const useImageCache = (
         return;
       }
 
+      if (url.startsWith('data:') || url.startsWith('blob:')) {
+        setState(url);
+        return;
+      }
+
       const cacheKeyBase = getCacheKeyBase(url, cacheVariant);
       const latestKey = getLatestCacheKey(cacheKeyBase);
       if (latestKey) {
@@ -174,23 +179,17 @@ export const useImageCache = (
         return;
       }
 
-      try {
-        const headResponse = await fetch(url, { method: 'HEAD' });
-        if (!headResponse.ok) {
-          throw new Error(`HTTP ${headResponse.status}`);
-        }
-      } catch (error) {
-        console.warn('Imagem não acessível, usando fallback:', url, error);
-        setState(fallbackUrl || FALLBACK_SVG);
-        return;
-      }
 
       try {
         const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
         const blob = await response.blob();
 
-        if (blob.size > maxBlobSize) {
-          console.warn('Imagem muito grande, pulando cache:', url, blob.size);
+        if (blob.size > 12 * 1024 * 1024) {
+          console.warn('Imagem muito grande para cache local:', url, blob.size);
           setState(url);
           return;
         }
@@ -198,7 +197,7 @@ export const useImageCache = (
         cleanOldCache();
 
         let finalBase64: string;
-        if (blob.size > 100 * 1024) {
+        if (blob.size > 100 * 1024 || blob.size > maxBlobSize) {
           try {
             finalBase64 = await compressImage(new File([blob], 'temp.jpg', { type: 'image/jpeg' }), maxWidth, quality);
           } catch (compressError) {
