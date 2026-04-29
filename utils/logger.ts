@@ -1,10 +1,5 @@
-// Sistema de Logging Controlado para Louvor CEVD
-// Desenvolvimento: mostra logs | Produção: silencioso ou envia para serviço
-
 type LogLevel = 'log' | 'info' | 'warn' | 'error';
 type LogContext = 'auth' | 'database' | 'ui' | 'network' | 'general';
-
-// Tipo genérico para dados de log
 type LogData = Record<string, unknown> | unknown;
 
 interface LogEntry {
@@ -15,11 +10,28 @@ interface LogEntry {
   timestamp: string;
 }
 
+const RECENT_ERRORS_KEY = 'louvor:recent-errors';
+const MAX_RECENT_ERRORS = 50;
+
+const isBrowser = () => typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+
+const serializeError = (data: LogData): LogData => {
+  if (data instanceof Error) {
+    return {
+      name: data.name,
+      message: data.message,
+      stack: data.stack
+    };
+  }
+
+  return data;
+};
+
 class Logger {
   private isDevelopment: boolean;
 
   constructor() {
-    this.isDevelopment = process.env.NODE_ENV === 'development';
+    this.isDevelopment = import.meta.env.DEV;
   }
 
   private formatMessage(level: LogLevel, context: LogContext, message: string, data?: LogData): LogEntry {
@@ -27,16 +39,20 @@ class Logger {
       level,
       context,
       message,
-      data,
+      data: serializeError(data),
       timestamp: new Date().toISOString()
     };
   }
 
   private output(entry: LogEntry) {
+    if (entry.level === 'error') {
+      this.storeRecentError(entry);
+    }
+
     if (!this.isDevelopment) return;
 
     const prefix = `[${entry.timestamp}] [${entry.context.toUpperCase()}]`;
-    
+
     switch (entry.level) {
       case 'log':
         console.log(prefix, entry.message, entry.data || '');
@@ -49,41 +65,56 @@ class Logger {
         break;
       case 'error':
         console.error(prefix, entry.message, entry.data || '');
-        // Em produção, poderia enviar para serviço de logging
-        if (!this.isDevelopment) {
-          this.sendToProductionLogging(entry);
-        }
         break;
     }
   }
 
-  private async sendToProductionLogging(entry: LogEntry) {
-    // Implementar envio para serviço externo (Sentry, LogRocket, etc)
-    // Por enquanto, apenas silencia
+  private storeRecentError(entry: LogEntry) {
+    if (!isBrowser()) return;
+
+    try {
+      const current = window.localStorage.getItem(RECENT_ERRORS_KEY);
+      const errors = current ? (JSON.parse(current) as LogEntry[]) : [];
+      const nextErrors = [entry, ...errors].slice(0, MAX_RECENT_ERRORS);
+
+      window.localStorage.setItem(RECENT_ERRORS_KEY, JSON.stringify(nextErrors));
+    } catch {
+      // Logging must never break the application flow.
+    }
   }
 
-  // Métodos públicos
+  getRecentErrors(): LogEntry[] {
+    if (!isBrowser()) return [];
+
+    try {
+      const current = window.localStorage.getItem(RECENT_ERRORS_KEY);
+      return current ? (JSON.parse(current) as LogEntry[]) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  clearRecentErrors() {
+    if (!isBrowser()) return;
+    window.localStorage.removeItem(RECENT_ERRORS_KEY);
+  }
+
   log(message: string, data?: LogData, context: LogContext = 'general') {
-    const entry = this.formatMessage('log', context, message, data);
-    this.output(entry);
+    this.output(this.formatMessage('log', context, message, data));
   }
 
   info(message: string, data?: LogData, context: LogContext = 'general') {
-    const entry = this.formatMessage('info', context, message, data);
-    this.output(entry);
+    this.output(this.formatMessage('info', context, message, data));
   }
 
   warn(message: string, data?: LogData, context: LogContext = 'general') {
-    const entry = this.formatMessage('warn', context, message, data);
-    this.output(entry);
+    this.output(this.formatMessage('warn', context, message, data));
   }
 
   error(message: string, error?: LogData, context: LogContext = 'general') {
-    const entry = this.formatMessage('error', context, message, error);
-    this.output(entry);
+    this.output(this.formatMessage('error', context, message, error));
   }
 
-  // Métodos específicos para contexto
   auth(message: string, data?: LogData) {
     this.log(message, data, 'auth');
   }
@@ -101,8 +132,5 @@ class Logger {
   }
 }
 
-// Exportar instância singleton
 export const logger = new Logger();
-
-// Exportar padrão
 export default logger;
