@@ -32,28 +32,18 @@ const OfflineSyncBanner: React.FC = () => {
       };
     }
 
-    if (status.isSyncing) {
-      return {
-        icon: 'fa-sync-alt animate-spin',
-        label: 'Sincronizando',
-        detail: status.activeSyncTables.length > 0 ? status.activeSyncTables.slice(0, 2).join(', ') : 'Atualizando dados',
-        className:
-          'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900/70 dark:bg-blue-950/40 dark:text-blue-200'
-      };
-    }
-
     if (pendingCount > 0) {
       return {
-        icon: 'fa-clock',
-        label: 'Sincronizacao pendente',
-        detail: `${pendingCount} alteracoes na fila`,
+        icon: status.isSyncing ? 'fa-sync-alt animate-spin' : 'fa-clock',
+        label: status.isSyncing ? 'Enviando alteracoes' : 'Sincronizacao pendente',
+        detail: status.isSyncing ? `${pendingCount} alteracoes sendo enviadas` : `${pendingCount} alteracoes na fila`,
         className:
           'border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-900/70 dark:bg-orange-950/40 dark:text-orange-200'
       };
     }
 
     return null;
-  }, [pendingCount, status.activeSyncTables, status.isOnline, status.isSyncing]);
+  }, [pendingCount, status.isOnline, status.isSyncing]);
 
   if (!state) {
     return null;

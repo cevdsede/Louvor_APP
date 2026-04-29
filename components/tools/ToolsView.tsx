@@ -1076,7 +1076,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                   <button 
                     onClick={() => {
                       LocalStorageFirstService.forceSync().then(() => {
-                        showSuccess('Dados sincronizados com sucesso!');
+                        showSuccess('Sincronizacao concluida.');
                       }).catch(() => {
                         showError('Erro ao sincronizar dados.');
                       });
