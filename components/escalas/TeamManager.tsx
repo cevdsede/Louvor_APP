@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../../supabaseClient';
 import { showError, showSuccess } from '../../utils/toast';
 import { showConfirmModal } from '../../utils/confirmModal';
+import { buildLocalAvatar } from '../../utils/avatar';
 import { logger } from '../../utils/logger';
 import { sortMembersByRole, getRoleIcon } from '../../utils/teamUtils';
 import { Funcao } from '../../types-supabase';
@@ -524,7 +525,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
                         className="h-full w-full rounded-full object-cover"
                         onError={(event: any) => {
                           event.target.onerror = null;
-                          event.target.src = `https://ui-avatars.com/api/?name=${member.name}&background=random`;
+                          event.target.src = buildLocalAvatar(member.name);
                         }}
                       />
                     ) : (

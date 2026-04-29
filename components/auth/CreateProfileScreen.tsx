@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../../supabaseClient';
 import { logger } from '../../utils/logger';
+import { buildLocalAvatar } from '../../utils/avatar';
 
 interface CreateProfileScreenProps {
   onBack: () => void;
@@ -91,7 +92,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
             }
           }
 
-          const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.nome)}&background=random`;
+          const defaultAvatar = buildLocalAvatar(formData.nome);
           const { error: membroError } = await supabase
             .from('membros')
             .update({
@@ -162,7 +163,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
             email: formData.email,
             genero: formData.genero,
             telefone: formData.telefone,
-            foto: fotoUrl || `https://ui-avatars.com/api/?name=${formData.nome}&background=random`,
+            foto: fotoUrl || buildLocalAvatar(formData.nome),
             funcoes: [], // Será definido pelo admin na aprovação
             ativo: false // Apenas será ativado após aprovação
           });

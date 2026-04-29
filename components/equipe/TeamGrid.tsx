@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Member } from '../../types';
 import { sortMembersAlphabetically } from '../../utils/teamUtils';
 import { ImageCache } from '../ui/ImageCache';
+import { buildLocalAvatar } from '../../utils/avatar';
 
 interface TeamGridProps {
   members: Member[];
@@ -15,7 +16,7 @@ interface TeamMemberCardProps {
 }
 
 const TeamMemberCard = React.memo(({ member, onMemberClick }: TeamMemberCardProps) => {
-  const fallbackSrc = `https://ui-avatars.com/api/?name=${member.name}&background=random`;
+  const fallbackSrc = buildLocalAvatar(member.name);
 
   return (
     <div

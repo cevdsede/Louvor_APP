@@ -16,6 +16,7 @@ import TeamManager from './TeamManager';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import { getMemberIdsForMinisterio } from '../../utils/memberMinistry';
 import { getDisplayName } from '../../utils/displayName';
+import { buildLocalAvatar } from '../../utils/avatar';
 
 interface ListViewProps {
   onReportAbsence: (id: string) => void;
@@ -307,7 +308,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
             id: memberId,
             name: memberName,
             gender: escala.membros?.genero === 'Homem' ? 'M' : 'F',
-            avatar: escala.membros?.foto || `https://ui-avatars.com/api/?name=${memberName}&background=random`,
+            avatar: escala.membros?.foto || buildLocalAvatar(memberName),
             status: 'confirmed',
             upcomingScales: [],
             songHistory: [],

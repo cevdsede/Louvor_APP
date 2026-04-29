@@ -9,6 +9,7 @@ import EventCard from '../escalas/EventCard';
 import { sortMembersByRole, getRoleIcon } from '../../utils/teamUtils';
 import { getDisplayName } from '../../utils/displayName';
 import { getMemberIdsForMinisterio } from '../../utils/memberMinistry';
+import { buildLocalAvatar } from '../../utils/avatar';
 
 const DashboardView: React.FC = () => {
   const { activeMinisterio, activeMinisterioId, activeModules } = useMinistryContext();
@@ -180,7 +181,7 @@ const DashboardView: React.FC = () => {
             id: memberId,
             name: memberName,
             gender: escala.membros?.genero === 'Homem' ? 'M' : 'F',
-            avatar: escala.membros?.foto || `https://ui-avatars.com/api/?name=${memberName}&background=random`,
+            avatar: escala.membros?.foto || buildLocalAvatar(memberName),
             status: 'confirmed',
             upcomingScales: [],
             songHistory: [],

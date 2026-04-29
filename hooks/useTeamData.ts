@@ -72,8 +72,16 @@ export const useTeamData = ({ currentView }: UseTeamDataProps) => {
         ? escalasData.filter((escala: any) => escala.ministerio_id === activeMinisterioId)
         : escalasData;
 
-      const { data } = await supabase.auth.getUser();
-      const user = data.user;
+      let user: any = null;
+      const savedSession = localStorage.getItem('supabase_session_cache');
+      if (savedSession) {
+        user = JSON.parse(savedSession)?.user || null;
+      }
+
+      if (!user && navigator.onLine) {
+        const { data } = await supabase.auth.getUser();
+        user = data.user;
+      }
 
       const mappedMembers: Member[] = scopedMembersData.map((member: any) => {
         const memberFuncaoIds = membrosFuncoesData
@@ -304,6 +312,10 @@ export const useTeamData = ({ currentView }: UseTeamDataProps) => {
   };
 
   useEffect(() => {
+    if (!navigator.onLine) {
+      return;
+    }
+
     const channel = supabase
       .channel('team-view-channel')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'membros' }, () => fetchMembers())

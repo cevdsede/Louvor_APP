@@ -7,6 +7,7 @@ import { showConfirmModal } from '../../utils/confirmModal';
 import { useMinistryContext } from '../../contexts/MinistryContext';
 import { getMemberIdsForMinisterio } from '../../utils/memberMinistry';
 import { getDisplayName } from '../../utils/displayName';
+import { buildLocalAvatar } from '../../utils/avatar';
 
 interface AttendanceViewProps {
   evento: Evento;
@@ -402,10 +403,10 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
                 >
                   <div className="flex items-center gap-4">
                     <ImageCache
-                      src={presenca.membros?.foto || `https://ui-avatars.com/api/?name=${getDisplayName(presenca.membros)}&background=random`}
+                      src={presenca.membros?.foto || buildLocalAvatar(getDisplayName(presenca.membros))}
                       alt={getDisplayName(presenca.membros)}
                       className={`w-10 h-10 rounded-full border-2 ${getStatusStyles(presenca.presenca).avatar}`}
-                      fallbackSrc={`https://ui-avatars.com/api/?name=${getDisplayName(presenca.membros)}&background=random`}
+                      fallbackSrc={buildLocalAvatar(getDisplayName(presenca.membros))}
                     />
                     <div>
                       <div className="flex items-center gap-2">
@@ -550,10 +551,10 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
                     >
                       <div className="flex items-center gap-3">
                         <ImageCache
-                          src={membro.foto || `https://ui-avatars.com/api/?name=${getDisplayName(membro)}&background=random`}
+                          src={membro.foto || buildLocalAvatar(getDisplayName(membro))}
                           alt={getDisplayName(membro)}
                           className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-700"
-                          fallbackSrc={`https://ui-avatars.com/api/?name=${getDisplayName(membro)}&background=random`}
+                          fallbackSrc={buildLocalAvatar(getDisplayName(membro))}
                         />
                         <div>
                           <div className="font-medium text-slate-800 dark:text-white text-sm">

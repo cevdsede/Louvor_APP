@@ -7,6 +7,7 @@ import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import EventCard from './EventCard';
 import { getMemberIdsForMinisterio } from '../../utils/memberMinistry';
 import { getDisplayName } from '../../utils/displayName';
+import { buildLocalAvatar } from '../../utils/avatar';
 
 const CalendarView: React.FC = () => {
   const { activeMinisterio, activeMinisterioId, activeModules } = useMinistryContext();
@@ -58,7 +59,7 @@ const CalendarView: React.FC = () => {
             id: memberId,
             name: memberName,
             gender: escala.membros?.genero === 'Homem' ? 'M' : 'F',
-            avatar: escala.membros?.foto || `https://ui-avatars.com/api/?name=${memberName}&background=random`,
+            avatar: escala.membros?.foto || buildLocalAvatar(memberName),
             status: 'confirmed',
             upcomingScales: [],
             songHistory: [],
@@ -136,7 +137,7 @@ const CalendarView: React.FC = () => {
       name: getDisplayName(m),
       role: 'Membro',
       gender: m.genero === 'Homem' ? 'M' : 'F',
-      avatar: m.foto || `https://ui-avatars.com/api/?name=${getDisplayName(m)}&background=random`,
+      avatar: m.foto || buildLocalAvatar(getDisplayName(m)),
       status: 'confirmed',
       upcomingScales: [],
       songHistory: []

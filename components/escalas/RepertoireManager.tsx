@@ -56,35 +56,45 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
 
     try {
       // Find existing music by ID
-      const { data: musicData, error: musicError } = await supabase.from('musicas').select('*').eq('id', newSongData.song).single();
+      const cachedMusic = allSongs.find((song) => song.id === newSongData.song);
+      let musicData = cachedMusic;
+
+      if (!musicData && navigator.onLine) {
+        const { data, error: musicError } = await supabase.from('musicas').select('*').eq('id', newSongData.song).single();
+        if (musicError) {
+          logger.error('Erro ao buscar musica:', musicError, 'database');
+        }
+        musicData = data || undefined;
+      }
       
-      if (musicError || !musicData) {
-        logger.error('Erro ao buscar música:', musicError, 'database');
-        showError('Música não encontrada.');
+      if (!musicData) {
+        showError('Musica nao encontrada no cache local.');
         setIsSavingSong(false);
         return;
       }
 
       let musicId = musicData.id;
-      logger.info('Música encontrada:', { musicId, musicData }, 'database');
 
       // Get tone ID (opcional)
       let toneId = null;
       if (newSongData.key) {
-        const { data: toneData, error: toneError } = await supabase.from('tons').select('id').eq('nome_tons', newSongData.key).single();
-        if (toneError) {
-          logger.warn('Tom não encontrado:', toneError, 'database');
-        } else if (toneData) {
-          toneId = toneData.id;
+        const cachedTons = LocalStorageFirstService.get<any>('tons');
+        const cachedTone = cachedTons.find((tone: any) => tone.nome_tons === newSongData.key);
+        toneId = cachedTone?.id || null;
+
+        if (!toneId && navigator.onLine) {
+          const { data: toneData } = await supabase.from('tons').select('id').eq('nome_tons', newSongData.key).single();
+          toneId = toneData?.id || null;
         }
       }
 
       // Validate singer ID if provided
       if (newSongData.singer) {
-        const { data: singerData, error: singerError } = await supabase.from('membros').select('id').eq('id', newSongData.singer).single();
-        if (singerError || !singerData) {
-          logger.error('Cantor não encontrado:', singerError, 'database');
-          showError('Cantor não encontrado na base de dados.');
+        const cachedMembers = LocalStorageFirstService.get<any>('membros');
+        const singerData = cachedMembers.find((member: any) => member.id === newSongData.singer);
+
+        if (!singerData) {
+          showError('Cantor nao encontrado no cache local.');
           setIsSavingSong(false);
           return;
         }

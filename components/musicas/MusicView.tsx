@@ -77,6 +77,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
 
   // --- STATES ---
   const [songs, setSongs] = useState<Music[]>([]);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [repertoires, setRepertoires] = useState<RepertoireSet[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,6 +126,19 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
   useEffect(() => {
     fetchData();
   }, [activeMinisterioId, subView]);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Filtrar músicas baseado na busca
   useEffect(() => {
@@ -550,6 +564,10 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
 
   // Realtime subscription
   useEffect(() => {
+    if (!isOnline) {
+      return;
+    }
+
     const channels = supabase.channel('custom-all-channel')
       .on(
         'postgres_changes',
@@ -573,7 +591,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
     return () => {
       supabase.removeChannel(channels);
     };
-  }, []);
+  }, [isOnline]);
 
   useEffect(() => {
     if (!loading && (subView === 'music-list' || subView === 'music-repertoire')) {
