@@ -302,6 +302,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
       const memberName = getDisplayName(escala.membros);
       const memberRole = escala.funcao?.nome_funcao;
       const roleId = escala.funcao?.id;
+      const scaleId = escala.escalaId;
       
       if (memberId && memberName) {
         if (!memberMap.has(memberId)) {
@@ -322,6 +323,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
         if (memberRole && !member.roles.includes(memberRole)) {
           member.roles.push(memberRole);
           member.roleIds.push(roleId);
+          member.scaleIds.push(scaleId);
         }
       }
     });
@@ -338,7 +340,8 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
         ...member,
         role: sortedRoles.join(' / '), // Usar " / " como separador
         roles: sortedRoles,
-        roleIds: member.roleIds
+        roleIds: member.roleIds,
+        scaleIds: member.scaleIds
       };
     });
   };
@@ -402,6 +405,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
           const membro = (scopedMembros || []).find((m: any) => m.id === e.id_membros);
           const funcao = (scopedFuncoes || []).find((f: any) => f.id === e.id_funcao);
           return {
+            escalaId: e.id,
             membros: membro,
             funcao: funcao
           };

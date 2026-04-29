@@ -62,6 +62,8 @@ export interface Member {
   role: string;
   roles?: string[];
   roleIds?: number[];
+  scaleIds?: string[];
+  confirmationStatus?: 'pendente' | 'confirmado' | 'recusado';
   funcaoIds?: string[];
   activeMinisterioMembershipId?: string;
   activeMinisterioStatus?: boolean;

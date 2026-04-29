@@ -42,6 +42,7 @@ const CalendarView: React.FC = () => {
       const memberName = getDisplayName(escala.membros);
       const memberRole = escala.funcao?.nome_funcao;
       const roleId = escala.funcao?.id;
+      const scaleId = escala.escalaId;
       
       if (memberId && memberName) {
         if (!memberMap.has(memberId)) {
@@ -54,7 +55,8 @@ const CalendarView: React.FC = () => {
             upcomingScales: [],
             songHistory: [],
             roles: [],
-            roleIds: []
+            roleIds: [],
+            scaleIds: []
           });
         }
         
@@ -62,6 +64,7 @@ const CalendarView: React.FC = () => {
         if (memberRole && !member.roles.includes(memberRole)) {
           member.roles.push(memberRole);
           member.roleIds.push(roleId);
+          member.scaleIds.push(scaleId);
         }
       }
     });
@@ -78,7 +81,8 @@ const CalendarView: React.FC = () => {
         ...member,
         role: sortedRoles.join(' / '), // Usar " / " como separador
         roles: sortedRoles,
-        roleIds: member.roleIds
+        roleIds: member.roleIds,
+        scaleIds: member.scaleIds
       };
     });
   };
@@ -158,6 +162,7 @@ const CalendarView: React.FC = () => {
       // Local Join: Escalas
       const cEscalas = (scopedEscalas || []).filter((e: any) => e.id_culto === c.id);
       const eventMembrosRaw = cEscalas.map((e: any) => ({
+        escalaId: e.id,
         membros: (scopedMembros || []).find((m: any) => m.id === e.id_membros),
         funcao: (scopedFuncoes || []).find((f: any) => f.id === e.id_funcao)
       }));
