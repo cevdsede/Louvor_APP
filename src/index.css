@@ -1,6 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.js";
+@source "../index.html";
+@source "../App.tsx";
+@source "../components";
 
 :root {
   --brand-primary: #1e3a8a;
