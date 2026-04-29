@@ -9,6 +9,7 @@ import { Member as AppMember } from '../../types';
 
 interface TeamManagerProps {
   eventId: string;
+  eventDate?: string;
   members: AppMember[];
   allRegisteredMembers: AppMember[];
   canManageTeam: boolean;
@@ -24,6 +25,7 @@ interface EditingMember {
 
 const TeamManager: React.FC<TeamManagerProps> = ({
   eventId,
+  eventDate,
   members,
   allRegisteredMembers,
   canManageTeam,
@@ -34,6 +36,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
   const [newMemberFormData, setNewMemberFormData] = useState({ memberId: '', roleId: '' });
   const [editingMember, setEditingMember] = useState<EditingMember | null>(null);
   const [functions, setFunctions] = useState<Funcao[]>([]);
+  const [unavailableMembers, setUnavailableMembers] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchFunctions = async () => {
@@ -59,6 +62,47 @@ const TeamManager: React.FC<TeamManagerProps> = ({
 
     fetchFunctions();
   }, [ministerioId]);
+
+  useEffect(() => {
+    const fetchUnavailableMembers = async () => {
+      if (!eventDate || !navigator.onLine) {
+        setUnavailableMembers({});
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('membros_indisponibilidades')
+          .select('membro_id, data_inicio, data_fim, motivo, recorrencia')
+          .lte('data_inicio', eventDate)
+          .or(`data_fim.gte.${eventDate},recorrencia.eq.semanal`);
+
+        if (error) throw error;
+
+        const eventDay = new Date(`${eventDate}T12:00:00`).getUTCDay();
+        const unavailable = (data || []).reduce<Record<string, string>>((accumulator, item: any) => {
+          const isRangeMatch = item.data_inicio <= eventDate && item.data_fim >= eventDate;
+          const isWeeklyMatch =
+            item.recorrencia === 'semanal' &&
+            item.data_inicio <= eventDate &&
+            new Date(`${item.data_inicio}T12:00:00`).getUTCDay() === eventDay;
+
+          if (isRangeMatch || isWeeklyMatch) {
+            accumulator[item.membro_id] = item.motivo || 'Indisponivel nesta data';
+          }
+
+          return accumulator;
+        }, {});
+
+        setUnavailableMembers(unavailable);
+      } catch (error) {
+        logger.error('Erro ao buscar indisponibilidades da escala:', error, 'database');
+        setUnavailableMembers({});
+      }
+    };
+
+    fetchUnavailableMembers();
+  }, [eventDate]);
 
   const sortedMembers = sortMembersByRole(members);
 
@@ -207,6 +251,21 @@ const TeamManager: React.FC<TeamManagerProps> = ({
       return;
     }
 
+    const unavailableReason = unavailableMembers[newMemberFormData.memberId];
+    if (unavailableReason) {
+      const selectedMember = allRegisteredMembers.find((member) => member.id === newMemberFormData.memberId);
+      const confirmed = await showConfirmModal({
+        title: 'Membro indisponivel',
+        message: `${selectedMember?.name || 'Este membro'} marcou indisponibilidade para esta data. Motivo: ${unavailableReason}. Deseja escalar mesmo assim?`,
+        confirmText: 'Escalar mesmo assim',
+        cancelText: 'Cancelar',
+        type: 'warning',
+        icon: 'fa-calendar-xmark'
+      });
+
+      if (!confirmed) return;
+    }
+
     try {
       const scaleData: Record<string, string | number> = {
         id_culto: eventId,
@@ -266,10 +325,16 @@ const TeamManager: React.FC<TeamManagerProps> = ({
                 <option value="">Selecionar membro...</option>
                 {allRegisteredMembers.map((member) => (
                   <option key={member.id} value={member.id}>
-                    {member.name}
+                    {member.name}{unavailableMembers[member.id] ? ' - indisponivel' : ''}
                   </option>
                 ))}
               </select>
+              {newMemberFormData.memberId && unavailableMembers[newMemberFormData.memberId] && (
+                <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-bold text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/15 dark:text-amber-300">
+                  <i className="fas fa-calendar-xmark mr-1"></i>
+                  Indisponivel: {unavailableMembers[newMemberFormData.memberId]}
+                </div>
+              )}
             </div>
 
             <div>

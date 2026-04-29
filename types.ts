@@ -91,6 +91,7 @@ export interface ScheduleEvent {
   id: string;
   title: string;
   date: string;
+  dateIso?: string;
   dayOfWeek: string;
   time: string;
   members: Member[];

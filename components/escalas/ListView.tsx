@@ -419,6 +419,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
           id: c.id,
           title: nomeCultosRaw.find((n: any) => n.id === c.id_nome_cultos)?.nome_culto || 'CULTO',
           date: formattedDate,
+          dateIso: c.data_culto,
           dayOfWeek: dayOfWeek,
           time: c.horario ? c.horario.substring(0, 5) : '19:00',
           members: groupedMembers,
@@ -890,6 +891,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
                   allRegisteredMembers={allRegisteredMembers}
                   canManageTeam={canManageTeamForEvent(event)}
                   ministerioId={activeMinisterioId}
+                  eventDate={event.dateIso}
                   onTeamUpdated={fetchEvents}
                 />
               )}
