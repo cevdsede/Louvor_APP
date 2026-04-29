@@ -539,8 +539,9 @@ const TeamModals: React.FC<TeamModalsProps> = ({
               <div className="text-center space-y-4">
                 <div className="relative inline-block">
                   <div className="absolute inset-0 bg-brand/20 rounded-full blur-xl animate-pulse"></div>
-                  <img 
+                  <ImageCache
                     src={selectedMember.avatar} 
+                    fallbackSrc={buildLocalAvatar(selectedMember.name)}
                     alt={selectedMember.name}
                     className="relative w-24 h-24 rounded-full border-4 border-white shadow-2xl ring-4 ring-brand/10"
                   />
@@ -911,7 +912,12 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                             <div className="relative mb-3">
                               <div className="w-16 h-16 bg-gradient-to-br from-brand to-brand-gold rounded-full flex items-center justify-center shadow-lg">
                                 {member.avatar ? (
-                                  <img src={member.avatar} alt={member.name} className="w-full h-full rounded-full object-cover" />
+                                  <ImageCache
+                                    src={member.avatar}
+                                    fallbackSrc={buildLocalAvatar(member.name)}
+                                    alt={member.name}
+                                    className="w-full h-full rounded-full object-cover"
+                                  />
                                 ) : (
                                   <i className={`fas ${getRoleIcon(member.roles && member.roles.length > 0 ? member.roles[0] : member.role)} text-white text-xl`}></i>
                                 )}

@@ -158,6 +158,11 @@ export const useImageCache = (
         return;
       }
 
+      if (url.includes('ui-avatars.com')) {
+        setState(fallbackUrl || FALLBACK_SVG);
+        return;
+      }
+
       const cacheKeyBase = getCacheKeyBase(url, cacheVariant);
       const latestKey = getLatestCacheKey(cacheKeyBase);
       if (latestKey) {

@@ -3,6 +3,7 @@ import { supabase } from '../../supabaseClient';
 import MultiSelect from '../equipe/MultiSelect';
 import { showError, showSuccess } from '../../utils/toast';
 import { SupabaseMinisterio, Funcao } from '../../types-supabase';
+import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 
 interface SolicitacaoPendente {
   id: string;
@@ -24,6 +25,25 @@ const ApprovalsPanel: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+
+      if (!navigator.onLine) {
+        const cachedSolicitacoes = LocalStorageFirstService
+          .get<SolicitacaoPendente>('solicitacoes_membro')
+          .filter((solicitacao) => solicitacao.status === 'pendente')
+          .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+        const cachedMinisterios = LocalStorageFirstService
+          .get<SupabaseMinisterio>('ministerios')
+          .filter((ministerio) => ministerio.ativo !== false)
+          .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+        const cachedFuncoes = LocalStorageFirstService
+          .get<Funcao>('funcao')
+          .sort((a, b) => (a.nome_funcao || '').localeCompare(b.nome_funcao || '', 'pt-BR'));
+
+        setSolicitacoes(cachedSolicitacoes);
+        setMinisterios(cachedMinisterios);
+        setFuncoes(cachedFuncoes);
+        return;
+      }
 
       const [{ data: solicitacoesData, error: solicitacoesError }, { data: ministeriosData, error: ministeriosError }, { data: funcoesData, error: funcoesError }] = await Promise.all([
         supabase
@@ -77,7 +97,9 @@ const ApprovalsPanel: React.FC = () => {
       });
     } catch (error) {
       console.error('Erro ao carregar aprovacoes:', error);
-      showError('Nao foi possivel carregar as solicitacoes pendentes.');
+      if (navigator.onLine) {
+        showError('Nao foi possivel carregar as solicitacoes pendentes.');
+      }
     } finally {
       setLoading(false);
     }
@@ -108,6 +130,11 @@ const ApprovalsPanel: React.FC = () => {
   };
 
   const handleApprove = async (solicitacao: SolicitacaoPendente) => {
+    if (!navigator.onLine) {
+      showError('Aprovacoes precisam de internet para serem aplicadas com seguranca.');
+      return;
+    }
+
     const ministerioIds = selectedMinisterios[solicitacao.id] || [];
     const funcaoIds = (selectedFuncoes[solicitacao.id] || []).map((id) => Number(id)).filter(Number.isFinite);
 

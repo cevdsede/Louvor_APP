@@ -454,6 +454,10 @@ class LocalStorageFirstService {
   }
 
   private static async fetchFromServer<T>(table: string): Promise<T | null> {
+    if (!navigator.onLine) {
+      return null;
+    }
+
     try {
       const baseQuery = supabase.from(table).select('*');
       const orderedQuery =

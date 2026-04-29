@@ -10,6 +10,7 @@ import { sortMembersByRole, getRoleIcon } from '../../utils/teamUtils';
 import { getDisplayName } from '../../utils/displayName';
 import { getMemberIdsForMinisterio } from '../../utils/memberMinistry';
 import { buildLocalAvatar } from '../../utils/avatar';
+import { ImageCache } from '../ui/ImageCache';
 
 const DashboardView: React.FC = () => {
   const { activeMinisterio, activeMinisterioId, activeModules } = useMinistryContext();
@@ -1037,7 +1038,12 @@ const DashboardView: React.FC = () => {
                                 <div className="relative mb-3">
                                   <div className="w-16 h-16 bg-gradient-to-br from-brand to-brand-gold rounded-full flex items-center justify-center shadow-lg">
                                     {member.avatar ? (
-                                      <img src={member.avatar} alt={member.name} className="w-full h-full rounded-full object-cover" />
+                                      <ImageCache
+                                        src={member.avatar}
+                                        fallbackSrc={buildLocalAvatar(member.name)}
+                                        alt={member.name}
+                                        className="w-full h-full rounded-full object-cover"
+                                      />
                                     ) : (
                                       <i className={`fas ${getRoleIcon(member.roles && member.roles.length > 0 ? member.roles[0] : member.role)} text-white text-xl`}></i>
                                     )}

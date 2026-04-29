@@ -5,6 +5,8 @@ import { logger } from '../../utils/logger';
 import { confirmDelete } from '../../utils/confirmModal';
 import { AttendanceEvent, AttendanceStatus, Member } from '../../types';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
+import { ImageCache } from './ImageCache';
+import { buildLocalAvatar } from '../../utils/avatar';
 
 const AttendanceView: React.FC = () => {
   const [view, setView] = useState<'list' | 'marking'>('list');
@@ -98,7 +100,12 @@ const AttendanceView: React.FC = () => {
           {members.map(member => (
             <div key={member.id} className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center justify-between group hover:border-blue-200 dark:hover:border-blue-900 transition-all">
               <div className="flex items-center gap-4">
-                <img src={member.avatar} alt={member.name} className="w-12 h-12 rounded-full border-2 border-slate-50 dark:border-slate-800" />
+                <ImageCache
+                  src={member.avatar || buildLocalAvatar(member.name)}
+                  fallbackSrc={buildLocalAvatar(member.name)}
+                  alt={member.name}
+                  className="w-12 h-12 rounded-full border-2 border-slate-50 dark:border-slate-800"
+                />
                 <div>
                   <h4 className="font-black text-slate-800 dark:text-white text-sm tracking-tight">{member.name}</h4>
                   <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{member.role}</p>

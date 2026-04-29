@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { showSuccess, showError } from '../../utils/toast';
 import { showConfirmModal } from '../../utils/confirmModal';
+import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 
 interface NomeCulto {
   id: string;
@@ -24,6 +25,14 @@ const NomeCultosManager: React.FC = () => {
   const loadNomeCultos = async () => {
     try {
       setLoading(true);
+      if (!navigator.onLine) {
+        const cachedData = LocalStorageFirstService
+          .get<NomeCulto>('nome_cultos')
+          .sort((a, b) => (a.nome_culto || '').localeCompare(b.nome_culto || '', 'pt-BR'));
+        setNomeCultos(cachedData);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('nome_cultos')
         .select('*')
@@ -33,7 +42,9 @@ const NomeCultosManager: React.FC = () => {
       setNomeCultos(data || []);
     } catch (error) {
       console.error('Erro ao carregar nomes de cultos:', error);
-      showError('Erro ao carregar nomes de cultos');
+      if (navigator.onLine) {
+        showError('Erro ao carregar nomes de cultos');
+      }
     } finally {
       setLoading(false);
     }
@@ -48,6 +59,11 @@ const NomeCultosManager: React.FC = () => {
     }
 
     try {
+      if (!navigator.onLine) {
+        showError('Esta alteracao precisa de internet.');
+        return;
+      }
+
       if (editingItem) {
         // Editar
         const { error } = await supabase
@@ -96,6 +112,11 @@ const NomeCultosManager: React.FC = () => {
     }
 
     try {
+      if (!navigator.onLine) {
+        showError('Esta exclusao precisa de internet.');
+        return;
+      }
+
       // Verificar se está sendo usado em algum culto
       const { data: cultosUsing, error: checkError } = await supabase
         .from('cultos')
