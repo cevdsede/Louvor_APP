@@ -115,3 +115,26 @@ body.modal-open {
   image-rendering: crisp-edges;
   transform: translateZ(0);
 }
+
+button,
+a[role='button'] {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font-size: 0.875rem;
+  }
+
+  button {
+    line-height: 1.15;
+  }
+}

@@ -8,6 +8,8 @@ import { logger } from '../../utils/logger';
 import { sortMembersByRole, getRoleIcon } from '../../utils/teamUtils';
 import { Funcao } from '../../types-supabase';
 import { Member as AppMember } from '../../types';
+import AvisoGeralService from '../../services/AvisoGeralService';
+import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 
 interface TeamManagerProps {
   eventId: string;
@@ -52,6 +54,15 @@ const TeamManager: React.FC<TeamManagerProps> = ({
   useEffect(() => {
     const fetchFunctions = async () => {
       try {
+        if (!navigator.onLine) {
+          const cachedFunctions = LocalStorageFirstService
+            .get<Funcao>('funcao')
+            .filter((funcao) => !ministerioId || funcao.ministerio_id === ministerioId)
+            .sort((a, b) => (a.nome_funcao || '').localeCompare(b.nome_funcao || '', 'pt-BR'));
+          setFunctions(cachedFunctions);
+          return;
+        }
+
         let query = supabase.from('funcao').select('*').order('nome_funcao');
 
         if (ministerioId) {
@@ -412,6 +423,25 @@ const TeamManager: React.FC<TeamManagerProps> = ({
 
       if (error) throw error;
 
+      setConfirmations((prev) => ({
+        ...prev,
+        [`${scaleId}:${member.id}`]: {
+          escala_id: scaleId,
+          membro_id: member.id,
+          status
+        }
+      }));
+
+      AvisoGeralService.notifyScaleConfirmation({
+        cultoId: eventId,
+        ministerioId,
+        senderId: member.id,
+        memberName: member.name,
+        status
+      }).catch((notificationError) => {
+        logger.warn('Nao foi possivel notificar a resposta da escala:', notificationError, 'database');
+      });
+
       showSuccess(status === 'confirmado' ? 'Presenca confirmada.' : 'Escala recusada.');
       await fetchConfirmations();
     } catch (error) {
@@ -428,6 +458,9 @@ const TeamManager: React.FC<TeamManagerProps> = ({
     return 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-300';
   };
 
+  const compactActionButtonClass =
+    'min-w-0 rounded-lg px-1.5 py-1.5 text-[7px] font-black uppercase leading-tight tracking-normal text-white disabled:opacity-60 sm:px-2 sm:py-2 sm:text-[8px] sm:tracking-wider';
+
   return (
     <div>
       {!showAddMember && canManageTeam && (
@@ -437,7 +470,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
               setShowAddMember(true);
               setNewMemberFormData({ memberId: '', roleId: '' });
             }}
-            className="flex items-center gap-2 rounded-lg px-3 py-1 text-[9px] font-black uppercase tracking-widest text-slate-400 transition-all hover:bg-brand/5 hover:text-brand"
+            className="flex min-w-0 items-center justify-center gap-2 rounded-lg px-3 py-1 text-center text-[8px] font-black uppercase leading-tight tracking-normal text-slate-400 transition-all hover:bg-brand/5 hover:text-brand sm:text-[9px] sm:tracking-widest"
           >
             <i className="fas fa-plus text-[8px]" /> Adicionar Membro
           </button>
@@ -498,13 +531,13 @@ const TeamManager: React.FC<TeamManagerProps> = ({
           <div className="mt-4 flex gap-2">
             <button
               onClick={closeForm}
-              className="flex-1 rounded-xl bg-slate-100 py-2 text-[9px] font-black uppercase tracking-widest text-slate-500 dark:bg-slate-700"
+              className="min-w-0 flex-1 rounded-xl bg-slate-100 px-2 py-2 text-center text-[8px] font-black uppercase leading-tight tracking-normal text-slate-500 dark:bg-slate-700 sm:text-[9px] sm:tracking-widest"
             >
               Cancelar
             </button>
             <button
               onClick={editingMember ? handleUpdateMemberRole : handleAddMemberToScale}
-              className="flex-1 rounded-xl bg-brand py-2 text-[9px] font-black uppercase tracking-widest text-white shadow-md transition-colors hover:bg-brand/90"
+              className="min-w-0 flex-1 rounded-xl bg-brand px-2 py-2 text-center text-[8px] font-black uppercase leading-tight tracking-normal text-white shadow-md transition-colors hover:bg-brand/90 sm:text-[9px] sm:tracking-widest"
             >
               {editingMember ? 'Atualizar' : 'Escalar'}
             </button>
@@ -512,10 +545,10 @@ const TeamManager: React.FC<TeamManagerProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
         {sortedMembers.map((member, index) => (
           <div key={`${member.id}-${(member as any).roleId || index}`} className="group relative">
-            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 transition-all duration-300 hover:border-brand/20 dark:border-slate-700 dark:bg-slate-800/30">
+            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 transition-all duration-300 hover:border-brand/20 dark:border-slate-700 dark:bg-slate-800/30 sm:p-4">
               <div className="flex flex-col items-center text-center">
                 <div className="relative mb-3">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-gold shadow-lg">
@@ -536,10 +569,10 @@ const TeamManager: React.FC<TeamManagerProps> = ({
                   </div>
                 </div>
 
-                <h5 className="w-full truncate text-[11px] font-black uppercase text-slate-800 dark:text-white">
+                <h5 className="w-full truncate text-[10px] font-black uppercase text-slate-800 dark:text-white sm:text-[11px]">
                   {member.name}
                 </h5>
-                <p className="w-full truncate text-[9px] font-bold uppercase text-slate-400">
+                <p className="w-full truncate text-[8px] font-bold uppercase text-slate-400 sm:text-[9px]">
                   {member.roles && member.roles.length > 1 ? member.roles.join(' / ') : member.role}
                 </p>
                 <div className="mt-2 flex items-center gap-1">
@@ -551,13 +584,13 @@ const TeamManager: React.FC<TeamManagerProps> = ({
                 <span className={`mt-2 rounded-full px-2 py-1 text-[7px] font-black uppercase tracking-wider ${confirmationBadgeClass(getMemberConfirmationStatus(member))}`}>
                   {getMemberConfirmationStatus(member)}
                 </span>
-                {currentUserId === member.id && (
+                {currentUserId === member.id && getMemberConfirmationStatus(member) === 'pendente' && (
                   <div className="mt-3 grid w-full grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => updateConfirmation(member, 'confirmado')}
                       disabled={savingConfirmationId === member.scaleIds?.[0]}
-                      className="rounded-lg bg-emerald-500 px-2 py-2 text-[8px] font-black uppercase tracking-wider text-white disabled:opacity-60"
+                      className={`${compactActionButtonClass} bg-emerald-500`}
                     >
                       Confirmar
                     </button>
@@ -565,7 +598,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
                       type="button"
                       onClick={() => updateConfirmation(member, 'recusado')}
                       disabled={savingConfirmationId === member.scaleIds?.[0]}
-                      className="rounded-lg bg-red-500 px-2 py-2 text-[8px] font-black uppercase tracking-wider text-white disabled:opacity-60"
+                      className={`${compactActionButtonClass} bg-red-500`}
                     >
                       Recusar
                     </button>

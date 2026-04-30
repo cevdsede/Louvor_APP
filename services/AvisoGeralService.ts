@@ -36,6 +36,14 @@ interface GeneralNoticeInput {
   texto: string;
 }
 
+interface ScaleConfirmationNotificationInput {
+  cultoId: string;
+  ministerioId?: string | null;
+  senderId: string;
+  memberName: string;
+  status: 'confirmado' | 'recusado';
+}
+
 const normalizeText = (value?: string | null) =>
   (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
@@ -274,6 +282,41 @@ class AvisoGeralService {
       texto,
       titulo: this.buildScaleTitle(tipo, cultoId),
       tipo,
+      remetente_id: senderId,
+      ministerio_id: ministerioId || null,
+      destino: 'escala',
+      id_culto: cultoId
+    });
+
+    this.emitChange();
+    return created.length;
+  }
+
+  static async notifyScaleConfirmation({
+    cultoId,
+    ministerioId,
+    senderId,
+    memberName,
+    status
+  }: ScaleConfirmationNotificationInput): Promise<number> {
+    const escalas = this.getEscalasStore().filter(
+      (escala: any) =>
+        escala.id_culto === cultoId && (!ministerioId || !escala.ministerio_id || escala.ministerio_id === ministerioId)
+    );
+
+    const recipientIds = escalas
+      .map((escala: any) => escala.id_membros)
+      .filter((recipientId: string) => recipientId !== senderId);
+
+    if (recipientIds.length === 0) {
+      return 0;
+    }
+
+    const actionText = status === 'confirmado' ? 'confirmou presenca' : 'recusou a escala';
+    const created = this.createRecords(recipientIds, {
+      texto: `${memberName} ${actionText}.`,
+      titulo: `Resposta da escala - ${this.buildCultoLabel(cultoId)}`,
+      tipo: 'escala_aviso',
       remetente_id: senderId,
       ministerio_id: ministerioId || null,
       destino: 'escala',
