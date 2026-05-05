@@ -705,8 +705,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                       <th className="px-4 sm:px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Nome</th>
                       <th className="px-4 sm:px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Ministerio</th>
                       <th className="px-4 sm:px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Perfil</th>
-                      <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Sexo</th>
-                      <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Data de Nascimento</th>
                       <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Status</th>
                       <th className="px-4 sm:px-6 py-3 text-center text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Acoes</th>
                     </tr>
@@ -714,7 +712,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {filteredMembersTableData.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="px-4 sm:px-6 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                        <td colSpan={5} className="px-4 sm:px-6 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
                           Nenhum usuario encontrado com os filtros atuais.
                         </td>
                       </tr>
@@ -809,26 +807,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                               </div>
                             </div>
                           )}
-                        </td>
-                        <td className="hidden md:table-cell px-6 py-4">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black ${
-                            member.genero === 'Mulher'
-                              ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/20 dark:text-pink-300'
-                              : 'bg-sky-100 text-sky-700 dark:bg-sky-900/20 dark:text-sky-300'
-                          }`}>
-                            {member.genero || 'Homem'}
-                          </span>
-                        </td>
-                        <td className="hidden md:table-cell px-6 py-4">
-                          <span className="text-sm text-slate-700 dark:text-slate-300">
-                            {member.data_nasc
-                              ? new Date(member.data_nasc).toLocaleDateString('pt-BR', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric'
-                                })
-                              : 'Nao informado'}
-                          </span>
                         </td>
                         <td className="hidden md:table-cell px-6 py-4">
                           <span className={`px-2 py-1 text-xs font-black rounded-full ${
