@@ -2,6 +2,7 @@ import { supabase } from '../supabaseClient';
 import LocalStorageFirstService from './LocalStorageFirstService';
 import { getMemberIdsForMinisterio } from '../utils/memberMinistry';
 import { getDisplayName } from '../utils/displayName';
+import AvisoGeralService from './AvisoGeralService';
 
 export interface Evento {
   id_evento: string | number;
@@ -38,6 +39,16 @@ const generateUuid = () => {
     const value = char === 'x' ? random : (random & 0x3) | 0x8;
     return value.toString(16);
   });
+};
+
+const getCachedUserId = (): string | null => {
+  try {
+    const cachedSession = localStorage.getItem('supabase_session_cache');
+    if (!cachedSession) return null;
+    return JSON.parse(cachedSession)?.user?.id || null;
+  } catch {
+    return null;
+  }
 };
 
 class EventService {
@@ -77,6 +88,7 @@ class EventService {
       );
 
       await this.criarListaPresenca(savedEvento.id_evento, ministerioId);
+      await this.scheduleEventNotifications(savedEvento, ministerioId);
       void LocalStorageFirstService.forceSync('presenca_evento');
       return savedEvento;
     }
@@ -92,6 +104,7 @@ class EventService {
 
     const result = await LocalStorageFirstService.add<Evento>('eventos', eventoData);
     await this.criarListaPresenca(id_evento, ministerioId);
+    await this.scheduleEventNotifications(result, ministerioId);
     return result;
   }
 
@@ -134,8 +147,8 @@ class EventService {
     }
 
     relatedPresencas.forEach((presenca) => {
-        LocalStorageFirstService.remove('presenca_evento', String(presenca.id_chamada));
-      });
+      LocalStorageFirstService.remove('presenca_evento', String(presenca.id_chamada));
+    });
     LocalStorageFirstService.remove('eventos', String(id_evento));
   }
 
@@ -228,6 +241,31 @@ class EventService {
         created_at: new Date().toISOString()
       });
     });
+  }
+
+  private static async scheduleEventNotifications(evento: Evento, ministerioId?: string | null): Promise<void> {
+    const senderId = await this.getCurrentUserId();
+    await AvisoGeralService.scheduleEventReminders({
+      eventoId: evento.id_evento,
+      ministerioId,
+      senderId,
+      tema: evento.tema,
+      dataEvento: evento.data_evento,
+      horarioEvento: evento.horario_evento
+    });
+  }
+
+  private static async getCurrentUserId(): Promise<string | null> {
+    if (!navigator.onLine) {
+      return getCachedUserId();
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user?.id || getCachedUserId();
+    } catch {
+      return getCachedUserId();
+    }
   }
 
   static async addMembroToEvento(id_evento: string | number, id_membro: string): Promise<PresencaEvento> {

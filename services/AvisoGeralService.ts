@@ -1,7 +1,7 @@
 import { supabase } from '../supabaseClient';
 import LocalStorageFirstService from './LocalStorageFirstService';
 
-export type AvisoGeralTipo = 'aviso_geral' | 'escala_aviso' | 'escala_musica';
+export type AvisoGeralTipo = 'aviso_geral' | 'escala_aviso' | 'escala_musica' | 'evento_aviso';
 export type AvisoGeralDestino = 'todos' | 'lideres' | 'escala';
 
 export interface AvisoGeral {
@@ -34,6 +34,15 @@ interface GeneralNoticeInput {
   ministerioId?: string | null;
   target: Extract<AvisoGeralDestino, 'todos' | 'lideres'>;
   texto: string;
+}
+
+interface EventReminderInput {
+  eventoId: string | number;
+  ministerioId?: string | null;
+  senderId?: string | null;
+  tema: string;
+  dataEvento: string;
+  horarioEvento?: string | null;
 }
 
 interface ScaleConfirmationNotificationInput {
@@ -90,6 +99,11 @@ class AvisoGeralService {
     return LocalStorageFirstService.get<any>('cultos');
   }
 
+  private static getVisibleDate(aviso: AvisoGeral) {
+    const timestamp = aviso.created_at ? new Date(aviso.created_at).getTime() : 0;
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  }
+
   private static getNomeCultosStore() {
     return LocalStorageFirstService.get<any>('nome_cultos');
   }
@@ -101,6 +115,10 @@ class AvisoGeralService {
   private static getVisibleNotifications(userId: string, ministerioId?: string | null) {
     return this.getAvisosStore()
       .filter((aviso) => {
+        if (this.getVisibleDate(aviso) > Date.now()) {
+          return false;
+        }
+
         if (aviso.id_membro !== userId) {
           return false;
         }
@@ -141,8 +159,11 @@ class AvisoGeralService {
     return [...new Set(recipientIds.filter(Boolean))];
   }
 
-  private static createRecords(recipientIds: string[], base: Omit<AvisoGeral, 'id' | 'created_at' | 'id_membro'>) {
-    const createdAt = new Date().toISOString();
+  private static createRecords(
+    recipientIds: string[],
+    base: Omit<AvisoGeral, 'id' | 'created_at' | 'id_membro'>,
+    createdAt = new Date().toISOString()
+  ) {
 
     return this.uniqueRecipientIds(recipientIds).map((recipientId) =>
       LocalStorageFirstService.add<Omit<AvisoGeral, 'id'>>('aviso_geral', {
@@ -325,6 +346,95 @@ class AvisoGeralService {
 
     this.emitChange();
     return created.length;
+  }
+
+  static async scheduleEventReminders({
+    eventoId,
+    ministerioId,
+    senderId,
+    tema,
+    dataEvento,
+    horarioEvento
+  }: EventReminderInput): Promise<number> {
+    const eventDate = new Date(`${dataEvento}T${horarioEvento ? String(horarioEvento).slice(0, 5) : '00:00'}:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (!dataEvento || Number.isNaN(eventDate.getTime()) || eventDate <= today) {
+      return 0;
+    }
+
+    const memberships = this.getMembrosMinisteriosStore().filter(
+      (membership: any) => (!ministerioId || membership.ministerio_id === ministerioId) && membership.ativo !== false
+    );
+    const activeMembers = new Set(
+      this.getMembrosStore()
+        .filter((member: any) => member.ativo === true)
+        .map((member: any) => member.id)
+    );
+    const recipientIds = memberships
+      .map((membership: any) => membership.membro_id)
+      .filter((memberId: string) => activeMembers.has(memberId));
+
+    if (recipientIds.length === 0) {
+      return 0;
+    }
+
+    const eventLabel = eventDate.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+    const hourLabel = horarioEvento ? ` as ${String(horarioEvento).slice(0, 5)}` : '';
+    const title = `Evento do ministerio - ${eventLabel}`;
+    const reminders = [
+      {
+        createdAt: new Date().toISOString(),
+        texto: `Novo evento criado: ${tema} em ${eventLabel}${hourLabel}.`
+      },
+      {
+        createdAt: this.addDays(dataEvento, -7),
+        texto: `Lembrete: falta 1 semana para o evento ${tema}, em ${eventLabel}${hourLabel}.`
+      },
+      {
+        createdAt: this.addDays(dataEvento, -2),
+        texto: `Lembrete: falta 2 dias para o evento ${tema}, em ${eventLabel}${hourLabel}.`
+      },
+      {
+        createdAt: `${dataEvento}T00:00:00.000`,
+        texto: `Hoje tem evento: ${tema}${hourLabel}.`
+      }
+    ].filter((reminder) => new Date(reminder.createdAt).getTime() >= today.getTime());
+
+    let createdCount = 0;
+    reminders.forEach((reminder) => {
+      const created = this.createRecords(
+        recipientIds,
+        {
+          texto: reminder.texto,
+          titulo: title,
+          tipo: 'evento_aviso',
+          remetente_id: senderId || null,
+          ministerio_id: ministerioId || null,
+          destino: 'todos',
+          id_culto: null
+        },
+        reminder.createdAt
+      );
+      createdCount += created.length;
+    });
+
+    if (createdCount > 0) {
+      this.emitChange();
+    }
+
+    return createdCount;
+  }
+
+  private static addDays(dateString: string, amount: number) {
+    const date = new Date(`${dateString}T00:00:00`);
+    date.setDate(date.getDate() + amount);
+    return date.toISOString();
   }
 
   static async updateAvisoGeral(id: string | number, aviso: Partial<AvisoGeral>): Promise<AvisoGeral | null> {
