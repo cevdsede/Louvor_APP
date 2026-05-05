@@ -1247,16 +1247,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Data de Nascimento</label>
-                  <input
-                    type="date"
-                    value={editingMember.data_nasc ? editingMember.data_nasc.split('T')[0] : ''}
-                    onChange={(e) => setEditingMember({ ...editingMember, data_nasc: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
-                  />
-                </div>
-
-                <div>
                   <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Status</label>
                   <select
                     value={editingMember.ativo ? 'ativo' : 'inativo'}
