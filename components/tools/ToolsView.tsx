@@ -50,6 +50,13 @@ const normalizeSearchValue = (value?: string | null) =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
 
+const profileOptions = [
+  { value: 'User', label: 'User' },
+  { value: 'Admin', label: 'Admin' },
+  { value: 'Lider', label: 'Lider' },
+  { value: 'Advanced', label: 'Advanced' }
+];
+
 const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
@@ -319,13 +326,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
       setSavingMember(false);
     }
   };
-
-  const profileOptions = [
-    { value: 'User', label: 'User' },
-    { value: 'Admin', label: 'Admin' },
-    { value: 'Lider', label: 'Lider' },
-    { value: 'Advanced', label: 'Advanced' }
-  ];
 
   useEffect(() => {
     const loadData = async () => {
@@ -1259,51 +1259,11 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
               {/* Campos de Edição */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Nome base</label>
-                  <input
-                    type="text"
-                    value={editingMember.nome || ''}
-                    onChange={(e) => setEditingMember({ ...editingMember, nome: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
-                  />
-                </div>
-
-                <div>
                   <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Nome de exibicao</label>
                   <input
                     type="text"
                     value={editingMember.display_name || ''}
                     onChange={(e) => setEditingMember({ ...editingMember, display_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Nome na planilha</label>
-                  <input
-                    type="text"
-                    value={editingMember.nome_planilha || ''}
-                    onChange={(e) => setEditingMember({ ...editingMember, nome_planilha: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={editingMember.email || ''}
-                    onChange={(e) => setEditingMember({ ...editingMember, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Telefone</label>
-                  <input
-                    type="tel"
-                    value={editingMember.telefone || ''}
-                    onChange={(e) => setEditingMember({ ...editingMember, telefone: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
                   />
                 </div>
@@ -1316,33 +1276,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                     onChange={(e) => setEditingMember({ ...editingMember, data_nasc: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Sexo</label>
-                  <select
-                    value={editingMember.genero || 'Homem'}
-                    onChange={(e) => setEditingMember({ ...editingMember, genero: e.target.value as 'Homem' | 'Mulher' })}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
-                  >
-                    <option value="Homem">Homem</option>
-                    <option value="Mulher">Mulher</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Perfil</label>
-                  <select
-                    value={editingMember.perfil || 'User'}
-                    onChange={(e) => setEditingMember({ ...editingMember, perfil: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
-                  >
-                    {profileOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
                 </div>
 
                 <div>
