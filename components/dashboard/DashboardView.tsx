@@ -79,6 +79,7 @@ const DashboardView: React.FC = () => {
     [activeMinisterioId, funcoesRaw]
   );
   const canManageRepertoire = activeModules.includes('music');
+  const activeModulesKey = activeModules.join('|');
   const activeMinisterioSlug = activeMinisterio?.slug
     ?.normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -100,7 +101,7 @@ const DashboardView: React.FC = () => {
   // Carregar dados do dashboard apenas uma vez ao montar
   useEffect(() => {
     loadDashboardData();
-  }, [activeMinisterioId, activeModules, membrosMinisteriosRaw]);
+  }, [activeMinisterioId, activeModulesKey, memberIds.join('|')]);
 
   const loadDashboardData = async () => {
     try {
@@ -332,11 +333,11 @@ const DashboardView: React.FC = () => {
         chartInstance.current.destroy();
         chartInstance.current = null;
       }
-      setChartAvailable(false);
+      setChartAvailable((current) => (current ? false : current));
       return;
     }
 
-    setChartAvailable(true);
+    setChartAvailable((current) => (current ? current : true));
 
     if (!escalaChartRef.current || frequenciaMembros.length === 0) {
       if (chartInstance.current) {

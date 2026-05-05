@@ -100,14 +100,43 @@ class EventService {
   }
 
   static async deleteEvento(id_evento: string | number): Promise<void> {
-    LocalStorageFirstService.remove('eventos', String(id_evento));
-
     const presencas = LocalStorageFirstService.get<PresencaEvento>('presenca_evento');
-    presencas
-      .filter((presenca) => String(presenca.id_evento) === String(id_evento))
-      .forEach((presenca) => {
+    const relatedPresencas = presencas.filter((presenca) => String(presenca.id_evento) === String(id_evento));
+
+    if (navigator.onLine) {
+      const { error: presencaError } = await supabase
+        .from('presenca_evento')
+        .delete()
+        .eq('id_evento', id_evento);
+
+      if (presencaError) {
+        throw presencaError;
+      }
+
+      const { error: eventoError } = await supabase
+        .from('eventos')
+        .delete()
+        .eq('id_evento', id_evento);
+
+      if (eventoError) {
+        throw eventoError;
+      }
+
+      LocalStorageFirstService.set(
+        'presenca_evento',
+        presencas.filter((presenca) => String(presenca.id_evento) !== String(id_evento))
+      );
+      LocalStorageFirstService.set(
+        'eventos',
+        LocalStorageFirstService.get<Evento>('eventos').filter((evento) => String(evento.id_evento) !== String(id_evento))
+      );
+      return;
+    }
+
+    relatedPresencas.forEach((presenca) => {
         LocalStorageFirstService.remove('presenca_evento', String(presenca.id_chamada));
       });
+    LocalStorageFirstService.remove('eventos', String(id_evento));
   }
 
   static async getPresencasByEvento(id_evento: string | number): Promise<PresencaEvento[]> {
