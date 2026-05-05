@@ -331,6 +331,16 @@ class LocalStorageFirstService {
     return LocalStorageService.getOfflineStorageUsage();
   }
 
+  static getSyncQueue(): Array<{
+    table: string;
+    action: 'create' | 'update' | 'delete';
+    data: any;
+    timestamp: number;
+    retryCount?: number;
+  }> {
+    return LocalStorageService.getSyncQueue();
+  }
+
   static clearTable(table: string): void {
     LocalStorageService.remove(table);
   }

@@ -179,6 +179,28 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
   };
 
   const handleEditSong = async (song: RepertoireItem) => {
+    const cachedRepertoire = LocalStorageFirstService.get<any>('repertorio');
+    const localRepertoireData = cachedRepertoire.find((item: any) => item.id === song.id);
+    const cachedTons = LocalStorageFirstService.get<any>('tons');
+
+    if (localRepertoireData) {
+      const localMusic = allSongs.find((item) => item.id === localRepertoireData.id_musicas);
+      const localTone = cachedTons.find((item: any) => item.id === localRepertoireData.id_tons);
+
+      setEditingSongId({ eventId, songId: song.id });
+      setNewSongData({
+        song: localMusic?.id || localRepertoireData.id_musicas || '',
+        singer: localRepertoireData.id_membros || '',
+        key: localTone?.nome_tons || song.key || ''
+      });
+      setShowAddSong(true);
+      return;
+    }
+
+    if (!navigator.onLine) {
+      showError('Musica nao encontrada no cache local para edicao offline.');
+      return;
+    }
     // Buscar dados completos da música no repertório
     const { data: repertoireData } = await supabase
       .from('repertorio')
@@ -348,7 +370,7 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
       {/* Song List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {repertoire.map((item, index) => (
-          <div key={`${eventId}-rep-${index}`} className="group bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+          <div key={`${eventId}-rep-${item.id || `${item.musica}-${item.cantor}-${item.key}-${item.minister}-${index}`}`} className="group bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
             {/* Header com Tom e Informações da Música */}
             <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700 relative">
               <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">

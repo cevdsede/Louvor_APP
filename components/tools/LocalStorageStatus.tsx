@@ -6,12 +6,15 @@ import { showError, showSuccess } from '../../utils/toast';
 
 const LocalStorageStatus: React.FC = () => {
   const [status, setStatus] = useState(() => LocalStorageFirstService.getStatus());
+  const [syncQueue, setSyncQueue] = useState(() => LocalStorageFirstService.getSyncQueue());
   const [imageCacheInfo, setImageCacheInfo] = useState(() => getImageCacheSize());
   const [offlineStorage, setOfflineStorage] = useState({ supported: false, usage: 0, quota: 0 });
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showQueueDetails, setShowQueueDetails] = useState(false);
 
   const refreshStatus = () => {
     setStatus(LocalStorageFirstService.getStatus());
+    setSyncQueue(LocalStorageFirstService.getSyncQueue());
     setImageCacheInfo(getImageCacheSize());
     void LocalStorageFirstService.getOfflineStorageUsage().then(setOfflineStorage);
   };
@@ -47,6 +50,23 @@ const LocalStorageStatus: React.FC = () => {
       minute: '2-digit'
     });
   };
+
+  const formatQueueAction = (action: string) => {
+    const labels: Record<string, string> = {
+      create: 'Criacao',
+      update: 'Atualizacao',
+      delete: 'Remocao'
+    };
+    return labels[action] || action;
+  };
+
+  const formatQueueTable = (table: string) =>
+    table
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+  const getQueueItemId = (data: any) =>
+    data?.id || data?.id_evento || data?.id_culto || data?.id_chamada || data?.id_lembrete || data?.tempId || null;
 
   const handleForceSync = async () => {
     if (!status.isOnline || isSyncing) {
@@ -171,15 +191,60 @@ const LocalStorageStatus: React.FC = () => {
               : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800'
           }`}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <i className={`fas fa-clock text-xs ${pendingCount > 0 ? 'text-orange-500' : 'text-slate-400'}`}></i>
               <span className="text-xs text-slate-600 dark:text-slate-400">Operacoes pendentes</span>
             </div>
-            <span className={`text-sm font-bold ${pendingCount > 0 ? 'text-orange-600' : 'text-slate-600'}`}>
-              {pendingCount}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={`text-sm font-bold ${pendingCount > 0 ? 'text-orange-600' : 'text-slate-600'}`}>
+                {pendingCount}
+              </span>
+              {syncQueue.length > 0 && (
+                <button
+                  onClick={() => setShowQueueDetails((value) => !value)}
+                  className="rounded-lg border border-orange-200 bg-white px-2 py-1 text-[10px] font-black uppercase tracking-wider text-orange-600 dark:border-orange-800 dark:bg-orange-950/40 dark:text-orange-200"
+                >
+                  {showQueueDetails ? 'Ocultar' : 'Ver fila'}
+                </button>
+              )}
+            </div>
           </div>
+
+          {showQueueDetails && syncQueue.length > 0 && (
+            <div className="mt-3 max-h-56 space-y-2 overflow-y-auto pr-1">
+              {syncQueue.slice(0, 12).map((item, index) => {
+                const itemId = getQueueItemId(item.data);
+                return (
+                  <div
+                    key={`${item.table}-${item.action}-${item.timestamp}-${index}`}
+                    className="rounded-lg bg-white/80 p-2 text-xs dark:bg-slate-900/50"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-black text-slate-700 dark:text-slate-100">
+                          {formatQueueTable(item.table)}
+                        </p>
+                        <p className="text-slate-500 dark:text-slate-400">
+                          {formatQueueAction(item.action)}
+                          {itemId ? ` - ${String(itemId).slice(0, 8)}` : ''}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold text-orange-700 dark:bg-orange-900/40 dark:text-orange-200">
+                        {item.retryCount ? `${item.retryCount} tent.` : 'novo'}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[10px] font-medium text-slate-400">{formatTime(item.timestamp)}</p>
+                  </div>
+                );
+              })}
+              {syncQueue.length > 12 && (
+                <p className="text-center text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-200">
+                  +{syncQueue.length - 12} itens na fila
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">

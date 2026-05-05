@@ -18,6 +18,7 @@ const DashboardView: React.FC = () => {
   const escalaChartRef = useRef<HTMLCanvasElement>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<ChartInstance | null>(null);
+  const [chartAvailable, setChartAvailable] = useState(() => typeof window !== 'undefined' && Boolean(window.Chart));
   const [isDevocionalModalOpen, setIsDevocionalModalOpen] = useState(false);
   const [devocionalInput, setDevocionalInput] = useState('');
   const [currentDevocional, setCurrentDevocional] = useState('Porque, onde estiverem dois ou três reunidos em meu nome, ali estou eu no meio deles. (Mateus 18:20)');
@@ -83,6 +84,18 @@ const DashboardView: React.FC = () => {
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
   const canViewRepertoire = canManageRepertoire || activeMinisterioSlug === 'midia' || activeMinisterioSlug === 'media';
+  const maxFrequenciaQuantidade = Math.max(...frequenciaMembros.map((member) => member.quantidade), 1);
+
+  const getCachedUserId = (): string | null => {
+    try {
+      const cachedSession = localStorage.getItem('supabase_session_cache');
+      if (!cachedSession) return null;
+      const parsedSession = JSON.parse(cachedSession);
+      return parsedSession?.user?.id || null;
+    } catch {
+      return null;
+    }
+  };
 
   // Carregar dados do dashboard apenas uma vez ao montar
   useEffect(() => {
@@ -97,9 +110,7 @@ const DashboardView: React.FC = () => {
         memberIds,
         canAccessMusic: activeModules.includes('music')
       };
-      let userId: string | null = null;
-      const { data: { session } } = await supabase.auth.getSession();
-      userId = session?.user?.id ?? null;
+      let userId: string | null = getCachedUserId();
 
       // Se offline, pular busca do usuário
       if (!userId && navigator.onLine) {
@@ -130,6 +141,7 @@ const DashboardView: React.FC = () => {
       // Ordenar frequencia por quantidade
       const sortedFrequencia = [...frequenciaData].sort((a, b) => b.quantidade - a.quantidade);
       setFrequenciaMembros(sortedFrequencia);
+      setAniversariantes(niverData);
       
       // Atualizar versículo diário (automático)
       if (versiculoData) {
@@ -315,6 +327,17 @@ const DashboardView: React.FC = () => {
 
   // Função isolada para atualizar o gráfico
   const updateChart = useCallback(() => {
+    if (!window.Chart) {
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+        chartInstance.current = null;
+      }
+      setChartAvailable(false);
+      return;
+    }
+
+    setChartAvailable(true);
+
     if (!escalaChartRef.current || frequenciaMembros.length === 0) {
       if (chartInstance.current) {
         chartInstance.current.destroy();
@@ -887,7 +910,28 @@ const DashboardView: React.FC = () => {
                     </div>
                   </div>
                 ) : frequenciaMembros.length > 0 ? (
-                  <canvas ref={escalaChartRef}></canvas>
+                  chartAvailable ? (
+                    <canvas ref={escalaChartRef}></canvas>
+                  ) : (
+                    <div className="flex h-full flex-col justify-center gap-3">
+                      {frequenciaMembros.slice(0, 8).map((member, index) => (
+                        <div key={`${member.nome}-${index}`} className="space-y-1">
+                          <div className="flex items-center justify-between gap-3 text-xs">
+                            <span className="min-w-0 truncate font-bold text-slate-700 dark:text-slate-200">
+                              {member.nome}
+                            </span>
+                            <span className="shrink-0 font-black text-brand">{member.quantidade}</span>
+                          </div>
+                          <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
+                            <div
+                              className="h-full rounded-full bg-brand"
+                              style={{ width: `${Math.max((member.quantidade / maxFrequenciaQuantidade) * 100, 8)}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
                 ) : (
                   <div className="flex items-center justify-center h-full text-slate-400">
                     <div className="text-center">
