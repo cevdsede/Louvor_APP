@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import { useMinistryContext } from '../../contexts/MinistryContext';
-import AvisoGeralService, { AvisoGeral, AvisoGeralDestino } from '../../services/AvisoGeralService';
+import AvisoGeralService, { AvisoGeral, AvisoGeralDestino, isAvisoGeralVisible } from '../../services/AvisoGeralService';
 import { showError, showSuccess } from '../../utils/toast';
 import { showConfirmModal } from '../../utils/confirmModal';
 import { getDisplayName } from '../../utils/displayName';
@@ -58,6 +58,7 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
       .filter(
         (aviso) =>
           aviso.id_membro === currentMember.id &&
+          isAvisoGeralVisible(aviso) &&
           (!activeMinisterioId || !aviso.ministerio_id || aviso.ministerio_id === activeMinisterioId)
       )
       .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));

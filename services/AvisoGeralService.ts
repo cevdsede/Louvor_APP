@@ -18,6 +18,11 @@ export interface AvisoGeral {
   lida?: boolean | null;
 }
 
+export const isAvisoGeralVisible = (aviso: Pick<AvisoGeral, 'created_at'>, now = Date.now()) => {
+  const timestamp = aviso.created_at ? new Date(aviso.created_at).getTime() : 0;
+  return !Number.isFinite(timestamp) || timestamp <= now;
+};
+
 interface CurrentUserContext {
   userId: string;
 }
@@ -99,11 +104,6 @@ class AvisoGeralService {
     return LocalStorageFirstService.get<any>('cultos');
   }
 
-  private static getVisibleDate(aviso: AvisoGeral) {
-    const timestamp = aviso.created_at ? new Date(aviso.created_at).getTime() : 0;
-    return Number.isFinite(timestamp) ? timestamp : 0;
-  }
-
   private static getNomeCultosStore() {
     return LocalStorageFirstService.get<any>('nome_cultos');
   }
@@ -115,7 +115,7 @@ class AvisoGeralService {
   private static getVisibleNotifications(userId: string, ministerioId?: string | null) {
     return this.getAvisosStore()
       .filter((aviso) => {
-        if (this.getVisibleDate(aviso) > Date.now()) {
+        if (!isAvisoGeralVisible(aviso)) {
           return false;
         }
 

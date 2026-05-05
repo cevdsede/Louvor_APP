@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import { useMinistryContext } from '../../contexts/MinistryContext';
-import { AvisoGeral } from '../../services/AvisoGeralService';
+import { AvisoGeral, isAvisoGeralVisible } from '../../services/AvisoGeralService';
 import { buildWeeklyScaleItems } from '../../utils/weeklyScale';
 
 interface NotificationButtonProps {
@@ -48,6 +48,7 @@ const NotificationButton: React.FC<NotificationButtonProps> = ({
     const unreadStoredCount = (avisosRaw || []).filter(
       (aviso) =>
         aviso.id_membro === currentMember.id &&
+        isAvisoGeralVisible(aviso) &&
         !aviso.lida &&
         (!activeMinisterioId || !aviso.ministerio_id || aviso.ministerio_id === activeMinisterioId)
     ).length;
