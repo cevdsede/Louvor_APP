@@ -38,6 +38,9 @@ const normalizeRow = (row: PublicScaleRow): PublicScaleRow => ({
   data_ensaio: row.data_ensaio ? String(row.data_ensaio).slice(0, 10) : ''
 });
 
+const rowsSignature = (rows: PublicScaleRow[]) =>
+  rows.map((row) => `${row.id}:${row.updated_at || ''}:${row.data}:${row.horario}`).join('|');
+
 const PublicScaleView: React.FC<PublicScaleViewProps> = ({ publicMode = false }) => {
   const ministry = publicMode ? null : useMinistryContext();
   const activeMinisterioId = ministry?.activeMinisterioId || null;
@@ -84,9 +87,11 @@ const PublicScaleView: React.FC<PublicScaleViewProps> = ({ publicMode = false })
   }, [activeMinisterioId, membrosMinisteriosRaw, membrosRaw]);
 
   const rows = useMemo(() => {
-    const source = publicMode ? publicRows : PublicScaleService.getRows(activeMinisterioId);
+    const source = publicMode
+      ? publicRows
+      : rowsRaw.filter((row) => !activeMinisterioId || !row.ministerio_id || row.ministerio_id === activeMinisterioId);
     return source.map(normalizeRow);
-  }, [activeMinisterioId, publicMode, publicRows, rowsRaw]);
+  }, [activeMinisterioId, publicMode, publicRows, rowsSignature(rowsRaw)]);
 
   const updateRow = async (row: PublicScaleRow, updates: Partial<PublicScaleRow>) => {
     if (!canEdit) return;
@@ -94,7 +99,6 @@ const PublicScaleView: React.FC<PublicScaleViewProps> = ({ publicMode = false })
     try {
       PublicScaleService.saveRow({ ...row, ...updates });
       showSuccess('Linha salva.');
-      await forceSync();
     } catch (error) {
       showError(error instanceof Error ? error.message : 'Nao foi possivel salvar a linha.');
     }
@@ -132,9 +136,9 @@ const PublicScaleView: React.FC<PublicScaleViewProps> = ({ publicMode = false })
   const renderInput = (row: PublicScaleRow, field: keyof PublicScaleRow, type = 'text') => (
     <input
       type={type}
-      value={String(row[field] || '')}
+      defaultValue={String(row[field] || '')}
       disabled={!canEdit}
-      onChange={(event) => updateRow(row, { [field]: event.target.value } as Partial<PublicScaleRow>)}
+      onBlur={(event) => updateRow(row, { [field]: event.target.value } as Partial<PublicScaleRow>)}
       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-bold text-slate-700 outline-none disabled:border-transparent disabled:bg-transparent disabled:px-0 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:disabled:bg-transparent"
     />
   );

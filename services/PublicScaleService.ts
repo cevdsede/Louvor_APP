@@ -70,7 +70,42 @@ const setSuggestedFields = (date: Date) => {
     : { dia_semana: 'dom.', horario: '17:30', culto: 'Celebracao' };
 };
 
+const nullableFields: Array<keyof PublicScaleRow> = [
+  'ministro_1',
+  'ministro_2',
+  'back_1',
+  'back_2',
+  'back_3',
+  'violao',
+  'teclado',
+  'guitarra',
+  'baixo',
+  'bateria',
+  'data_ensaio',
+  'horario_ensaio'
+];
+
 class PublicScaleService {
+  static sanitizeRow(row: Partial<PublicScaleRow>): Partial<PublicScaleRow> {
+    const sanitized = { ...row };
+
+    nullableFields.forEach((field) => {
+      if (sanitized[field] === '') {
+        sanitized[field] = null as never;
+      }
+    });
+
+    if (sanitized.horario) {
+      sanitized.horario = String(sanitized.horario).slice(0, 5);
+    }
+
+    if (sanitized.horario_ensaio) {
+      sanitized.horario_ensaio = String(sanitized.horario_ensaio).slice(0, 5);
+    }
+
+    return sanitized;
+  }
+
   static getRows(ministerioId?: string | null): PublicScaleRow[] {
     return LocalStorageFirstService.get<PublicScaleRow>('escala_publica')
       .filter((row) => !ministerioId || !row.ministerio_id || row.ministerio_id === ministerioId)
@@ -130,7 +165,7 @@ class PublicScaleService {
       ministerio_id: ministerioId || null,
       data: formatIsoDate(nextDate),
       ...suggested,
-      data_ensaio: '',
+      data_ensaio: null,
       horario_ensaio: '19:00',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -138,17 +173,17 @@ class PublicScaleService {
   }
 
   static saveRow(row: PublicScaleRow): PublicScaleRow {
-    const payload = {
+    const payload = this.sanitizeRow({
       ...row,
       dia_semana: row.dia_semana || dayLabels[getLocalDate(row.data).getDay()] || '',
       updated_at: new Date().toISOString()
-    };
+    }) as PublicScaleRow;
 
     return LocalStorageFirstService.update<PublicScaleRow>('escala_publica', row.id, payload) || payload;
   }
 
   static addRow(row: Omit<PublicScaleRow, 'id'>): PublicScaleRow {
-    return LocalStorageFirstService.add<PublicScaleRow>('escala_publica', row as PublicScaleRow);
+    return LocalStorageFirstService.add<PublicScaleRow>('escala_publica', this.sanitizeRow(row) as PublicScaleRow);
   }
 
   static deleteRow(id: string): void {

@@ -667,6 +667,14 @@ class LocalStorageFirstService {
       delete payload.texto;
     }
 
+    if (table === 'escala_publica') {
+      ['data_ensaio', 'horario_ensaio'].forEach((column) => {
+        if (payload[column] === '') {
+          payload[column] = null;
+        }
+      });
+    }
+
     if (primaryKey !== 'id') {
       delete payload.id;
     }
