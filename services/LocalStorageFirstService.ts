@@ -33,7 +33,8 @@ type ManagedTable =
   | 'limpeza'
   | 'solicitacoes_membro'
   | 'aviso_geral'
-  | 'presenca_evento';
+  | 'presenca_evento'
+  | 'escala_publica';
 
 class LocalStorageFirstService {
   private static readonly MANAGED_TABLES: ManagedTable[] = [
@@ -55,7 +56,8 @@ class LocalStorageFirstService {
     'limpeza',
     'solicitacoes_membro',
     'aviso_geral',
-    'presenca_evento'
+    'presenca_evento',
+    'escala_publica'
   ];
 
   private static readonly FULL_SYNC_REQUEST_KEY = 'louvor_force_full_sync';

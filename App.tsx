@@ -17,6 +17,7 @@ const NotificationCenterModal = lazy(() => import('./components/layout/Notificat
 const DashboardView = lazy(() => import('./components/dashboard/DashboardView'));
 const ListView = lazy(() => import('./components/escalas/ListView'));
 const CalendarView = lazy(() => import('./components/escalas/CalendarView'));
+const PublicScaleView = lazy(() => import('./components/escalas/PublicScaleView'));
 const CleaningView = lazy(() => import('./components/ui/CleaningView'));
 const TeamView = lazy(() => import('./components/equipe/TeamView'));
 const MusicView = lazy(() => import('./components/musicas/MusicView'));
@@ -163,6 +164,7 @@ const AppContent: React.FC<AppContentProps> = ({
                   {currentView === 'dashboard' && <DashboardView />}
                   {currentView === 'list' && <ListView onReportAbsence={openAviso} />}
                   {currentView === 'calendar' && <CalendarView />}
+                  {currentView === 'public-scale' && <PublicScaleView />}
                   {currentView === 'cleaning' && <CleaningView />}
                   {isTeamView(currentView) && <TeamView currentView={currentView} />}
                   {isMusicView(currentView) && <MusicView subView={currentView} />}
@@ -320,6 +322,14 @@ const App: React.FC = () => {
   const toggleDarkMode = () => {
     setIsDarkMode((previous) => !previous);
   };
+
+  if (typeof window !== 'undefined' && window.location.pathname === '/escala-publica') {
+    return (
+      <Suspense fallback={<LoadingBlock />}>
+        <PublicScaleView publicMode />
+      </Suspense>
+    );
+  }
 
   if (appState === 'splash') {
     return <SplashScreen onComplete={handleSplashContinue} />;
