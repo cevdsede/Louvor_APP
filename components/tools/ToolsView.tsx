@@ -11,10 +11,8 @@ import { getMemberMemberships as getMemberMinistryMemberships } from '../../util
 import logger from '../../utils/logger';
 import {
   ChartInstance,
-  Funcao,
   SupabaseMinisterio,
-  SupabaseMembroMinisterio,
-  SupabaseMembroFuncao
+  SupabaseMembroMinisterio
 } from '../../types-supabase';
 import ApprovalsPanel from './ApprovalsPanel';
 import MinisterioManager from './MinisterioManager';
@@ -40,7 +38,6 @@ interface EditingMemberState {
   perfil?: string;
   foto?: string;
   ministerioIds: string[];
-  funcaoIds: string[];
   ministerioStatusById: Record<string, boolean>;
   principalMinisterioId: string | null;
 }
@@ -66,34 +63,19 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
   const [ministerios, setMinisterios] = useState<SupabaseMinisterio[]>([]);
   const [adminSubView, setAdminSubView] = useState<'members' | 'nome-cultos' | 'temas'>('members');
   const [membrosMinisterios, setMembrosMinisterios] = useState<SupabaseMembroMinisterio[]>([]);
-  const [membrosFuncoes, setMembrosFuncoes] = useState<SupabaseMembroFuncao[]>([]);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [userMinisterioFilter, setUserMinisterioFilter] = useState('all');
   const [userPerfilFilter, setUserPerfilFilter] = useState('all');
-
-  const [funcoes, setFuncoes] = useState<Funcao[]>([]);
 
   // Funções para os botões de acesso rápido
   const hydrateUserManagementState = () => {
     const membersData = LocalStorageFirstService.get<any>('membros');
     const ministeriosData = LocalStorageFirstService.get<SupabaseMinisterio>('ministerios');
     const membrosMinisteriosData = LocalStorageFirstService.get<SupabaseMembroMinisterio>('membros_ministerios');
-    const membrosFuncoesData = LocalStorageFirstService.get<SupabaseMembroFuncao>('membros_funcoes');
-    const funcoesData = LocalStorageFirstService.get<Funcao>('funcao');
 
     setData(Array.isArray(membersData) ? membersData : []);
     setMinisterios(Array.isArray(ministeriosData) ? ministeriosData : []);
     setMembrosMinisterios(Array.isArray(membrosMinisteriosData) ? membrosMinisteriosData : []);
-    setMembrosFuncoes(Array.isArray(membrosFuncoesData) ? membrosFuncoesData : []);
-    setFuncoes(
-      Array.isArray(funcoesData)
-        ? funcoesData.map((funcao) => ({
-            ...funcao,
-            id: String(funcao.id),
-            ministerio_id: funcao.ministerio_id
-          }))
-        : []
-    );
   };
 
   const syncUserManagementState = async () => {
@@ -105,9 +87,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
     await Promise.allSettled([
       LocalStorageFirstService.forceSync('membros'),
       LocalStorageFirstService.forceSync('ministerios'),
-      LocalStorageFirstService.forceSync('membros_ministerios'),
-      LocalStorageFirstService.forceSync('membros_funcoes'),
-      LocalStorageFirstService.forceSync('funcao')
+      LocalStorageFirstService.forceSync('membros_ministerios')
     ]);
 
     hydrateUserManagementState();
@@ -139,36 +119,9 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
         return (a.nome || '').localeCompare(b.nome || '');
       });
 
-  const getAvailableFuncoesForMinisterios = (ministerioIds: string[]) =>
-    funcoes
-      .filter((funcao) => !funcao.ministerio_id || ministerioIds.includes(funcao.ministerio_id))
-      .sort((a, b) => {
-        const ministerioA = ministerios.find((item) => item.id === a.ministerio_id)?.nome || '';
-        const ministerioB = ministerios.find((item) => item.id === b.ministerio_id)?.nome || '';
-
-        const ministerioCompare = ministerioA.localeCompare(ministerioB, 'pt-BR');
-        if (ministerioCompare !== 0) {
-          return ministerioCompare;
-        }
-
-        return (a.nome_funcao || '').localeCompare(b.nome_funcao || '', 'pt-BR');
-      });
-
-  const getAllowedFuncaoIds = (ministerioIds: string[]) =>
-    new Set(getAvailableFuncoesForMinisterios(ministerioIds).map((funcao) => String(funcao.id)));
-
   const handleEditMember = (member: any) => {
     const memberships = getMemberMemberships(member.id);
     const ministerioIds = uniqueIds(memberships.map((membership) => membership.ministerio_id));
-    const allowedFuncaoIds = getAllowedFuncaoIds(ministerioIds);
-    const funcaoIds = uniqueIds(
-      membrosFuncoes
-        .filter(
-          (membership) =>
-            membership.id_membro === member.id && allowedFuncaoIds.has(String(membership.id_funcao))
-        )
-        .map((membership) => String(membership.id_funcao))
-    );
     const ministerioStatusById = memberships.reduce<Record<string, boolean>>((accumulator, membership) => {
       accumulator[membership.ministerio_id] = membership.ativo !== false;
       return accumulator;
@@ -183,7 +136,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
       ...member,
       genero: member.genero || 'Homem',
       ministerioIds,
-      funcaoIds,
       ministerioStatusById,
       principalMinisterioId
     });
@@ -240,7 +192,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
     if (!editingMember) return;
 
     const nextMinisterioIds = uniqueIds(ministerioIds);
-    const allowedFuncaoIds = getAllowedFuncaoIds(nextMinisterioIds);
     const nextStatusById = nextMinisterioIds.reduce<Record<string, boolean>>((accumulator, ministerioId) => {
       accumulator[ministerioId] = editingMember.ministerioStatusById?.[ministerioId] !== false;
       return accumulator;
@@ -254,29 +205,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
     setEditingMember({
       ...editingMember,
       ministerioIds: nextMinisterioIds,
-      funcaoIds: (editingMember.funcaoIds || []).filter((funcaoId) => allowedFuncaoIds.has(funcaoId)),
-      ministerioStatusById: nextStatusById,
-      principalMinisterioId: nextPrincipalId
-    });
-  };
-
-  const handleEditingMemberMinisterioStatusChange = (ministerioId: string, ativo: boolean) => {
-    if (!editingMember) return;
-
-    const nextStatusById = {
-      ...editingMember.ministerioStatusById,
-      [ministerioId]: ativo
-    };
-    const nextActiveMinisterioIds = (editingMember.ministerioIds || []).filter(
-      (itemId) => nextStatusById[itemId] !== false
-    );
-    const nextPrincipalId =
-      editingMember.principalMinisterioId && nextActiveMinisterioIds.includes(editingMember.principalMinisterioId)
-        ? editingMember.principalMinisterioId
-        : nextActiveMinisterioIds[0] || null;
-
-    setEditingMember({
-      ...editingMember,
       ministerioStatusById: nextStatusById,
       principalMinisterioId: nextPrincipalId
     });
@@ -298,13 +226,10 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
         updatedMember.principalMinisterioId && activeMinisterioIds.includes(updatedMember.principalMinisterioId)
           ? updatedMember.principalMinisterioId
           : activeMinisterioIds[0] || null;
-      const allowedFuncaoIds = getAllowedFuncaoIds(desiredMinisterioIds);
-      const desiredFuncaoIds = uniqueIds((updatedMember.funcaoIds || []).filter((funcaoId) => allowedFuncaoIds.has(funcaoId)));
 
       const currentMemberships = membrosMinisterios.filter(
         (membership) => membership.membro_id === updatedMember.id
       );
-      const currentMemberFuncoes = membrosFuncoes.filter((membership) => membership.id_membro === updatedMember.id);
 
       const { error: memberError } = await supabase
         .from('membros')
@@ -379,39 +304,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
         }
       }
 
-      const funcoesToDelete = currentMemberFuncoes.filter(
-        (membership) => !desiredFuncaoIds.includes(String(membership.id_funcao))
-      );
-
-      if (funcoesToDelete.length > 0) {
-        const memberFuncaoIds = funcoesToDelete.map((membership) => membership.id).filter(Boolean);
-
-        if (memberFuncaoIds.length > 0) {
-          const { error: deleteFuncoesError } = await supabase
-            .from('membros_funcoes')
-            .delete()
-            .in('id', memberFuncaoIds);
-
-          if (deleteFuncoesError) throw deleteFuncoesError;
-        }
-      }
-
-      const currentFuncaoIds = new Set(currentMemberFuncoes.map((membership) => String(membership.id_funcao)));
-      const funcoesToInsert = desiredFuncaoIds.filter((funcaoId) => !currentFuncaoIds.has(funcaoId));
-
-      if (funcoesToInsert.length > 0) {
-        const { error: insertFuncoesError } = await supabase
-          .from('membros_funcoes')
-          .insert(
-            funcoesToInsert.map((funcaoId) => ({
-              id_membro: updatedMember.id,
-              id_funcao: Number(funcaoId)
-            }))
-          );
-
-        if (insertFuncoesError) throw insertFuncoesError;
-      }
-
       await syncUserManagementState();
 
       setEditingMember(null);
@@ -434,17 +326,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
     { value: 'Lider', label: 'Lider' },
     { value: 'Advanced', label: 'Advanced' }
   ];
-
-  const editingMemberFuncoesOptions = editingMember
-    ? getAvailableFuncoesForMinisterios(editingMember.ministerioIds || []).map((funcao) => {
-        const ministerioNome = ministerios.find((item) => item.id === funcao.ministerio_id)?.nome;
-
-        return {
-          id: String(funcao.id),
-          label: ministerioNome ? `${funcao.nome_funcao} - ${ministerioNome}` : funcao.nome_funcao
-        };
-      })
-    : [];
 
   useEffect(() => {
     const loadData = async () => {
@@ -1503,81 +1384,18 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                       <div className="mt-4 space-y-3">
                         {(editingMember.ministerioIds || []).map((ministerioId) => {
                           const ministerio = ministerios.find((item) => item.id === ministerioId);
-                          const ministerioAtivo = editingMember.ministerioStatusById?.[ministerioId] !== false;
 
                           return (
                             <div
                               key={ministerioId}
-                              className="flex flex-col gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/40 p-3 sm:flex-row sm:items-center sm:justify-between"
+                              className="rounded-xl border border-slate-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/40"
                             >
-                              <div>
-                                <p className="text-sm font-black text-slate-800 dark:text-white">
-                                  {ministerio?.nome || 'Ministerio'}
-                                </p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                  {ministerioAtivo ? 'Ativo neste ministerio' : 'Inativo neste ministerio'}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => handleEditingMemberMinisterioStatusChange(ministerioId, true)}
-                                  className={`px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-colors ${
-                                    ministerioAtivo
-                                      ? 'bg-emerald-500 text-white'
-                                      : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
-                                  }`}
-                                >
-                                  Ativo
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleEditingMemberMinisterioStatusChange(ministerioId, false)}
-                                  className={`px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-colors ${
-                                    !ministerioAtivo
-                                      ? 'bg-red-500 text-white'
-                                      : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
-                                  }`}
-                                >
-                                  Inativo
-                                </button>
-                              </div>
+                              <p className="text-sm font-black text-slate-800 dark:text-white">
+                                {ministerio?.nome || 'Ministerio'}
+                              </p>
                             </div>
                           );
                         })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="md:col-span-2">
-                  <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/40 p-4">
-                    <div className="flex items-center justify-between gap-3 mb-3">
-                      <div>
-                        <label className="block text-sm font-black text-slate-700 dark:text-slate-300">Funcoes do membro</label>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          Defina em quais funcoes este membro pode servir nos ministerios selecionados.
-                        </p>
-                      </div>
-                      <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
-                        {(editingMember.funcaoIds || []).length} selecionada(s)
-                      </span>
-                    </div>
-
-                    {(editingMember.ministerioIds || []).length === 0 ? (
-                      <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-700 px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
-                        Selecione ao menos um ministerio para liberar as funcoes disponiveis.
-                      </div>
-                    ) : editingMemberFuncoesOptions.length > 0 ? (
-                      <MultiSelect
-                        options={editingMemberFuncoesOptions}
-                        value={editingMember.funcaoIds || []}
-                        onChange={(funcaoIds) => setEditingMember({ ...editingMember, funcaoIds })}
-                        placeholder="Selecione as funcoes..."
-                      />
-                    ) : (
-                      <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-700 px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
-                        Ainda nao existem funcoes cadastradas para os ministerios selecionados.
                       </div>
                     )}
                   </div>
@@ -1608,14 +1426,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                     </p>
                   </div>
                 )}
-                {(editingMember.ministerioIds || []).length > 0 &&
-                  (editingMember.ministerioIds || []).every(
-                    (ministerioId) => editingMember.ministerioStatusById?.[ministerioId] === false
-                  ) && (
-                    <div className="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-300">
-                      Este membro continuara vinculado aos ministerios selecionados, mas ficara inativo em todos eles.
-                    </div>
-                  )}
               </div>
 
               {/* Botões de Ação */}
