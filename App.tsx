@@ -366,7 +366,13 @@ const App: React.FC = () => {
       <MinistryProvider>
         {activeArea === 'church' ? (
           <Suspense fallback={<LoadingBlock />}>
-            <ChurchShell onOpenMinistry={() => setActiveArea('ministry')} />
+            <ChurchShell
+              onOpenMinistry={() => setActiveArea('ministry')}
+              isDarkMode={isDarkMode}
+              onToggleTheme={toggleDarkMode}
+              brandColor={brandColor}
+              onColorChange={setBrandColor}
+            />
           </Suspense>
         ) : (
           <AppContent
