@@ -14,6 +14,7 @@ import { getDefaultViewForModules, getModuleForView } from './utils/ministry';
 import { isMusicView, isTeamView, isToolsView } from './utils/views';
 
 const NotificationCenterModal = lazy(() => import('./components/layout/NotificationCenterModal'));
+const PublicMemberRegistration = lazy(() => import('./components/auth/PublicMemberRegistration'));
 const DashboardView = lazy(() => import('./components/dashboard/DashboardView'));
 const ListView = lazy(() => import('./components/escalas/ListView'));
 const CalendarView = lazy(() => import('./components/escalas/CalendarView'));
@@ -187,6 +188,8 @@ const AppContent: React.FC<AppContentProps> = ({
 };
 
 const App: React.FC = () => {
+  const isPublicRegistrationRoute = typeof window !== 'undefined' && window.location.pathname === '/cadastro';
+
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window === 'undefined') return false;
     const saved = localStorage.getItem('darkMode');
@@ -320,6 +323,14 @@ const App: React.FC = () => {
   const toggleDarkMode = () => {
     setIsDarkMode((previous) => !previous);
   };
+
+  if (isPublicRegistrationRoute) {
+    return (
+      <Suspense fallback={<LoadingBlock label="Carregando cadastro..." />}>
+        <PublicMemberRegistration />
+      </Suspense>
+    );
+  }
 
   if (appState === 'splash') {
     return <SplashScreen onComplete={handleSplashContinue} />;
