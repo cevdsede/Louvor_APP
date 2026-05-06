@@ -119,6 +119,32 @@ const AppContent: React.FC<AppContentProps> = ({
     );
   }
 
+  if (currentView === 'public-scale') {
+    return (
+      <div
+        className={`min-h-screen bg-slate-50 transition-colors duration-300 dark:bg-slate-900 ${
+          isDarkMode ? 'dark' : ''
+        }`}
+      >
+        <div className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-3 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:px-5">
+          <button
+            onClick={() => setCurrentView('list')}
+            className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+          >
+            <i className="fas fa-arrow-left text-xs" />
+            Voltar para o app
+          </button>
+        </div>
+
+        <main className="px-3 py-4 sm:px-5 lg:px-6">
+          <Suspense fallback={<LoadingBlock />}>
+            <PublicScaleView />
+          </Suspense>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 transition-colors duration-300 ${
@@ -164,7 +190,6 @@ const AppContent: React.FC<AppContentProps> = ({
                   {currentView === 'dashboard' && <DashboardView />}
                   {currentView === 'list' && <ListView onReportAbsence={openAviso} />}
                   {currentView === 'calendar' && <CalendarView />}
-                  {currentView === 'public-scale' && <PublicScaleView />}
                   {currentView === 'cleaning' && <CleaningView />}
                   {isTeamView(currentView) && <TeamView currentView={currentView} />}
                   {isMusicView(currentView) && <MusicView subView={currentView} />}
