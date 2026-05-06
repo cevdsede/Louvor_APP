@@ -10,9 +10,9 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
   const [fade, setFade] = useState(true);
 
   const inspiringMessages = [
-    "Seus ministerios, suas escalas e sua comunicacao. Conectados.",
+    "Valentes conectados para servir melhor.",
     "Tecnologia a servico do Reino.",
-    "Organizacao que fortalece cada ministerio.",
+    "Organizacao que fortalece.",
     "Onde excelencia e servico caminham juntos."
   ];
 
