@@ -18,8 +18,7 @@ interface ToolbarTab {
 const SCALE_TABS: ToolbarTab[] = [
   { view: 'list', label: 'Lista' },
   { view: 'calendar', label: 'Calendario' },
-  { view: 'cleaning', label: 'Limpeza' },
-  { view: 'public-scale', label: 'Planilha', icon: 'fas fa-table' }
+  { view: 'cleaning', label: 'Limpeza' }
 ];
 
 const MUSIC_TABS: ToolbarTab[] = [

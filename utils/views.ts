@@ -1,6 +1,6 @@
 import { ViewType } from '../types';
 
-export const SCALE_VIEWS = ['list', 'calendar', 'cleaning', 'public-scale'] as const;
+export const SCALE_VIEWS = ['list', 'calendar', 'cleaning'] as const;
 export const MUSIC_VIEWS = [
   'music-stats',
   'music-list',

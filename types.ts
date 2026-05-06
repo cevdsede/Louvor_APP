@@ -1,7 +1,7 @@
 
 export type ViewType =
   | 'dashboard'
-  | 'list' | 'calendar' | 'cleaning' | 'public-scale'
+  | 'list' | 'calendar' | 'cleaning'
   | 'team' | 'attendance'
   | 'music-stats' | 'music-list' | 'music-repertoire' | 'music-create' | 'music-history' | 'music-escalas'
   | 'tools-admin' | 'tools-users' | 'tools-approvals' | 'tools-performance';

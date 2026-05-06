@@ -33,8 +33,7 @@ type ManagedTable =
   | 'limpeza'
   | 'solicitacoes_membro'
   | 'aviso_geral'
-  | 'presenca_evento'
-  | 'escala_publica';
+  | 'presenca_evento';
 
 class LocalStorageFirstService {
   private static readonly MANAGED_TABLES: ManagedTable[] = [
@@ -56,8 +55,7 @@ class LocalStorageFirstService {
     'limpeza',
     'solicitacoes_membro',
     'aviso_geral',
-    'presenca_evento',
-    'escala_publica'
+    'presenca_evento'
   ];
 
   private static readonly FULL_SYNC_REQUEST_KEY = 'louvor_force_full_sync';
@@ -665,14 +663,6 @@ class LocalStorageFirstService {
     if (table === 'avisos_cultos') {
       delete payload.id_culto;
       delete payload.texto;
-    }
-
-    if (table === 'escala_publica') {
-      ['data_ensaio', 'horario_ensaio'].forEach((column) => {
-        if (payload[column] === '') {
-          payload[column] = null;
-        }
-      });
     }
 
     if (primaryKey !== 'id') {
