@@ -94,6 +94,37 @@ export interface SupabaseMembroMinisterio {
   created_at?: string;
 }
 
+export type ChurchEventRecurrenceType = 'diaria' | 'semanal' | 'mensal_dia_mes' | 'mensal_ordem_semana';
+
+export interface SupabaseEventoIgreja {
+  id: string;
+  titulo: string;
+  descricao?: string | null;
+  local?: string | null;
+  imagem_url?: string | null;
+  categoria?: string | null;
+  cor?: string | null;
+  data_inicio: string;
+  data_fim?: string | null;
+  horario_inicio?: string | null;
+  horario_fim?: string | null;
+  ativo: boolean;
+  visivel_dashboard: boolean;
+  visivel_agenda: boolean;
+  recorrente: boolean;
+  recorrencia_tipo?: ChurchEventRecurrenceType | null;
+  recorrencia_intervalo: number;
+  recorrencia_dias_semana?: number[] | null;
+  recorrencia_dia_mes?: number | null;
+  recorrencia_ordem_semana?: number | null;
+  recorrencia_data_fim?: string | null;
+  prioridade: number;
+  substitui_eventos_menor_prioridade: boolean;
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SupabaseMembroFuncao {
   id: string;
   id_membro: string;

@@ -19,6 +19,7 @@ type ManagedTable =
   | 'ministerios'
   | 'membros_ministerios'
   | 'cultos'
+  | 'eventos_igreja'
   | 'eventos'
   | 'musicas'
   | 'escalas'
@@ -41,6 +42,7 @@ class LocalStorageFirstService {
     'ministerios',
     'membros_ministerios',
     'cultos',
+    'eventos_igreja',
     'eventos',
     'musicas',
     'escalas',
