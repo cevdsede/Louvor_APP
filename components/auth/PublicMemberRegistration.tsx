@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../../supabaseClient';
 import { buildLocalAvatar } from '../../utils/avatar';
+import { compressImageFile } from '../../utils/imageCompression';
 import { logger } from '../../utils/logger';
 
 type FormState = {
@@ -137,11 +138,19 @@ const PublicMemberRegistration: React.FC = () => {
       return buildLocalAvatar(form.nome);
     }
 
-    const fileExt = form.foto.name.split('.').pop() || 'jpg';
-    const filePath = `membros/${userId}.${fileExt}`;
+    const compressedPhoto = await compressImageFile(form.foto, {
+      maxWidth: 720,
+      maxHeight: 720,
+      quality: 0.72
+    });
+    const filePath = `membros/${userId}.jpg`;
     const { error: uploadError } = await supabase.storage
       .from('public-assets')
-      .upload(filePath, form.foto, { upsert: true });
+      .upload(filePath, compressedPhoto, {
+        cacheControl: '31536000',
+        contentType: compressedPhoto.type,
+        upsert: true
+      });
 
     if (uploadError) {
       logger.warn('Erro ao enviar foto do cadastro publico:', uploadError, 'database');
