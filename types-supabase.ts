@@ -21,6 +21,37 @@ export interface SupabaseMembro {
   foto?: string;
   perfil?: string;
   ativo?: boolean;
+  endereco?: string | null;
+  numero_casa?: string | null;
+  cep?: string | null;
+  bairro?: string | null;
+  data_nasc?: string | null;
+  nome_pai?: string | null;
+  nome_mae?: string | null;
+  data_batismo?: string | null;
+  igreja_batismo?: string | null;
+  estado_civil?: 'Solteiro(a)' | 'Casado(a)' | 'Viúvo(a)' | 'Divorciado(a)' | 'Concubinato' | null;
+  nome_conjuge?: string | null;
+  profissao?: string | null;
+  escolaridade?:
+    | 'Nenhuma'
+    | 'Ensino Fundamental'
+    | 'Ensino Fundamental Incompleto'
+    | 'Ensino Médio'
+    | 'Ensino Médio Incompleto'
+    | 'Superior'
+    | 'Superior Incompleto'
+    | null;
+  telefone?: string | null;
+  telefone_residencial?: string | null;
+  telefone_comercial?: string | null;
+  telefone_celular?: string | null;
+  telefone_recados?: string | null;
+  posicao_igreja?: 'Pastor(a)' | 'Levita' | 'Membro' | 'Secretario(a)' | 'Tesoureiro(a)' | 'Missionário' | null;
+  nome_discipulador?: string | null;
+  esta_em_celula?: boolean | null;
+  qual_celula?: string | null;
+  dados_atualizados_em?: string | null;
   created_at: string;
 }
 
