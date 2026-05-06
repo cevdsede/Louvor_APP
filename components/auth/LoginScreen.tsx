@@ -132,7 +132,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
             </div>
           </div>
           <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter text-center leading-none">
-            Valentes <span className="text-brand">Hub</span>
+            Valentes <span className="text-brand">Connected</span>
           </h2>
           <p className="text-slate-400 dark:text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-3">Acesso Administrativo</p>
         </div>

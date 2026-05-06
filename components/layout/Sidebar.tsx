@@ -328,7 +328,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <i className="fa-solid fa-crown absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[55%] text-brand-gold text-base"></i>
           </div>
           <h2 className="text-xl font-extrabold tracking-tighter leading-none text-slate-800 dark:text-white uppercase text-center mt-2">
-            Valentes <span className="text-brand">Hub</span>
+            Valentes <span className="text-brand">Connected</span>
           </h2>
         </div>
       </div>

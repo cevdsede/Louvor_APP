@@ -52,8 +52,8 @@ export default defineConfig(({ mode }) => {
             ]
           },
           manifest: {
-            name: 'Valentes Hub',
-            short_name: 'Valentes Hub',
+            name: 'Valentes Connected',
+            short_name: 'Valentes',
             description: 'Sistema de gerenciamento de ministerios conectados',
             theme_color: '#3b82f6',
             background_color: '#ffffff',

@@ -54,10 +54,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
         </div>
 
         <h1 className="text-5xl lg:text-6xl font-black text-white uppercase tracking-tighter mb-3 drop-shadow-lg">
-          Valentes <span className="text-brand">Hub</span>
+          Valentes <span className="text-brand">Connected</span>
         </h1>
         <p className="text-brand-gold font-bold uppercase tracking-[0.4em] text-[12px] mb-12 drop-shadow">
-          Ministerios Conectados
+          Ministerios conectados
         </p>
 
         {/* Mensagens Inspiradoras Rotativas */}
