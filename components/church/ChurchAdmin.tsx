@@ -52,10 +52,32 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
   const { data: permissionsRaw } = useLocalStorageFirst<SupabasePermissaoIgreja>({ table: 'permissoes_igreja' });
   const [form, setForm] = useState<EventForm>(INITIAL_FORM);
   const [saving, setSaving] = useState(false);
+  const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
+  const [permissionSearch, setPermissionSearch] = useState('');
 
   const managersByMemberId = useMemo(
     () => new Map((permissionsRaw || []).map((permission) => [permission.membro_id, permission])),
     [permissionsRaw]
+  );
+  const activeManagers = useMemo(
+    () =>
+      (permissionsRaw || [])
+        .filter((permission) => permission.gerenciar_eventos_igreja)
+        .map((permission) => ({
+          permission,
+          member: (membersRaw || []).find((member) => member.id === permission.membro_id)
+        }))
+        .filter((item): item is { permission: SupabasePermissaoIgreja; member: SupabaseMembro } => Boolean(item.member)),
+    [membersRaw, permissionsRaw]
+  );
+  const availableManagers = useMemo(
+    () =>
+      (membersRaw || [])
+        .filter((member) => member.ativo !== false)
+        .filter((member) => !managersByMemberId.get(member.id)?.gerenciar_eventos_igreja)
+        .filter((member) => getDisplayName(member).toLowerCase().includes(permissionSearch.toLowerCase()))
+        .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b))),
+    [managersByMemberId, membersRaw, permissionSearch]
   );
 
   const uploadCardImage = async (eventId: string) => {
@@ -160,6 +182,10 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
     }
 
     await LocalStorageFirstService.forceSync('permissoes_igreja');
+    if (allowed) {
+      setIsPermissionModalOpen(false);
+      setPermissionSearch('');
+    }
   };
 
   return (
@@ -200,22 +226,43 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
       </form>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="mb-4 text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
-          Quem pode alterar agenda/cards
-        </h2>
-        <div className="grid gap-2 md:grid-cols-2">
-          {(membersRaw || []).filter((member) => member.ativo !== false).map((member) => (
-            <label key={member.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
-              <span className="truncate text-sm font-bold text-slate-700 dark:text-slate-200">{getDisplayName(member)}</span>
-              <input
-                type="checkbox"
-                disabled={!isAdmin}
-                checked={managersByMemberId.get(member.id)?.gerenciar_eventos_igreja || false}
-                onChange={(event) => toggleManager(member, event.target.checked)}
-                className="h-5 w-5 rounded border-slate-300 text-brand focus:ring-brand"
-              />
-            </label>
-          ))}
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
+            Quem pode alterar agenda/cards
+          </h2>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setIsPermissionModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20"
+            >
+              <i className="fas fa-user-plus" />
+              Adicionar pessoa
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          {activeManagers.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:text-slate-400">
+              Nenhuma pessoa liberada ainda.
+            </div>
+          ) : (
+            activeManagers.map(({ member }) => (
+              <div key={member.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
+                <span className="truncate text-sm font-bold text-slate-700 dark:text-slate-200">{getDisplayName(member)}</span>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => toggleManager(member, false)}
+                    className="rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  >
+                    Remover
+                  </button>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -232,6 +279,53 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
           ))}
         </div>
       </div>
+
+      {isPermissionModalOpen && (
+        <div className="fixed inset-0 z-[720] overflow-y-auto bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
+          <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-brand">Permissao</p>
+                <h2 className="text-xl font-black text-slate-900 dark:text-white">Adicionar pessoa</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPermissionModalOpen(false)}
+                className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-red-500 dark:hover:bg-slate-800"
+              >
+                <i className="fas fa-times" />
+              </button>
+            </div>
+
+            <input
+              value={permissionSearch}
+              onChange={(event) => setPermissionSearch(event.target.value)}
+              placeholder="Buscar membro"
+              className={inputClass}
+            />
+
+            <div className="mt-4 max-h-[55vh] space-y-2 overflow-y-auto">
+              {availableManagers.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                  Nenhum membro disponivel.
+                </div>
+              ) : (
+                availableManagers.map((member) => (
+                  <button
+                    key={member.id}
+                    type="button"
+                    onClick={() => toggleManager(member, true)}
+                    className="flex w-full items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 text-left hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800"
+                  >
+                    <span className="truncate text-sm font-bold text-slate-700 dark:text-slate-200">{getDisplayName(member)}</span>
+                    <i className="fas fa-plus text-brand" />
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
