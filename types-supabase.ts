@@ -125,6 +125,14 @@ export interface SupabaseEventoIgreja {
   updated_at: string;
 }
 
+export interface SupabasePermissaoIgreja {
+  id: string;
+  membro_id: string;
+  gerenciar_eventos_igreja: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SupabaseMembroFuncao {
   id: string;
   id_membro: string;

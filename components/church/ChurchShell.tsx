@@ -1,6 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { supabase } from '../../supabaseClient';
 import { useMinistryContext } from '../../contexts/MinistryContext';
+import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
+import { SupabasePermissaoIgreja } from '../../types-supabase';
+import ChurchAdmin from './ChurchAdmin';
 import ChurchAgenda from './ChurchAgenda';
 import ChurchDashboard from './ChurchDashboard';
 import ChurchMembers from './ChurchMembers';
@@ -13,11 +16,15 @@ const normalize = (value?: string | null) =>
 const ChurchShell: React.FC<{ onOpenMinistry: () => void }> = ({ onOpenMinistry }) => {
   const [currentView, setCurrentView] = useState<ChurchView>('dashboard');
   const { currentMember, userMinisterios, isGlobalAdmin } = useMinistryContext();
+  const { data: permissionsRaw } = useLocalStorageFirst<SupabasePermissaoIgreja>({ table: 'permissoes_igreja' });
 
   const canOpenAdmin = useMemo(() => {
     const profile = normalize(currentMember?.perfil);
-    return isGlobalAdmin || profile.includes('pastor') || profile.includes('admin');
-  }, [currentMember?.perfil, isGlobalAdmin]);
+    const explicitPermission = (permissionsRaw || []).some(
+      (permission) => permission.membro_id === currentMember?.id && permission.gerenciar_eventos_igreja
+    );
+    return isGlobalAdmin || profile.includes('pastor') || profile.includes('admin') || explicitPermission;
+  }, [currentMember?.id, currentMember?.perfil, isGlobalAdmin, permissionsRaw]);
 
   const menuItems: Array<{ id: ChurchView; label: string; icon: string; visible: boolean }> = [
     { id: 'dashboard', label: 'Inicio', icon: 'fas fa-house', visible: true },
@@ -108,13 +115,7 @@ const ChurchShell: React.FC<{ onOpenMinistry: () => void }> = ({ onOpenMinistry 
           {currentView === 'dashboard' && <ChurchDashboard />}
           {currentView === 'agenda' && <ChurchAgenda />}
           {currentView === 'members' && <ChurchMembers />}
-          {currentView === 'admin' && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                Administracao de agenda e cards sera carregada nesta area.
-              </p>
-            </div>
-          )}
+          {currentView === 'admin' && <ChurchAdmin currentUserId={currentMember?.id || null} isAdmin={isGlobalAdmin} />}
         </div>
       </main>
     </div>
