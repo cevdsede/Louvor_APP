@@ -173,13 +173,17 @@ class PublicScaleService {
   }
 
   static saveRow(row: PublicScaleRow): PublicScaleRow {
-    const payload = this.sanitizeRow({
+    const payload = this.prepareRowForSave(row);
+
+    return LocalStorageFirstService.update<PublicScaleRow>('escala_publica', row.id, payload) || payload;
+  }
+
+  static prepareRowForSave(row: PublicScaleRow): PublicScaleRow {
+    return this.sanitizeRow({
       ...row,
       dia_semana: row.dia_semana || dayLabels[getLocalDate(row.data).getDay()] || '',
       updated_at: new Date().toISOString()
     }) as PublicScaleRow;
-
-    return LocalStorageFirstService.update<PublicScaleRow>('escala_publica', row.id, payload) || payload;
   }
 
   static addRow(row: Omit<PublicScaleRow, 'id'>): PublicScaleRow {
