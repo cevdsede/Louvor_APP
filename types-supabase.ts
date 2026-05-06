@@ -21,6 +21,37 @@ export interface SupabaseMembro {
   foto?: string;
   perfil?: string;
   ativo?: boolean;
+  endereco?: string | null;
+  numero_casa?: string | null;
+  cep?: string | null;
+  bairro?: string | null;
+  data_nasc?: string | null;
+  nome_pai?: string | null;
+  nome_mae?: string | null;
+  data_batismo?: string | null;
+  igreja_batismo?: string | null;
+  estado_civil?: 'Solteiro(a)' | 'Casado(a)' | 'Viúvo(a)' | 'Divorciado(a)' | 'Concubinato' | null;
+  nome_conjuge?: string | null;
+  profissao?: string | null;
+  escolaridade?:
+    | 'Nenhuma'
+    | 'Ensino Fundamental'
+    | 'Ensino Fundamental Incompleto'
+    | 'Ensino Médio'
+    | 'Ensino Médio Incompleto'
+    | 'Superior'
+    | 'Superior Incompleto'
+    | null;
+  telefone?: string | null;
+  telefone_residencial?: string | null;
+  telefone_comercial?: string | null;
+  telefone_celular?: string | null;
+  telefone_recados?: string | null;
+  posicao_igreja?: 'Pastor(a)' | 'Levita' | 'Membro' | 'Secretario(a)' | 'Tesoureiro(a)' | 'Missionário' | null;
+  nome_discipulador?: string | null;
+  esta_em_celula?: boolean | null;
+  qual_celula?: string | null;
+  dados_atualizados_em?: string | null;
   created_at: string;
 }
 
@@ -61,6 +92,45 @@ export interface SupabaseMembroMinisterio {
   ativo?: boolean;
   papel?: string | null;
   created_at?: string;
+}
+
+export type ChurchEventRecurrenceType = 'diaria' | 'semanal' | 'mensal_dia_mes' | 'mensal_ordem_semana';
+
+export interface SupabaseEventoIgreja {
+  id: string;
+  titulo: string;
+  descricao?: string | null;
+  local?: string | null;
+  imagem_url?: string | null;
+  categoria?: string | null;
+  cor?: string | null;
+  data_inicio: string;
+  data_fim?: string | null;
+  horario_inicio?: string | null;
+  horario_fim?: string | null;
+  ativo: boolean;
+  visivel_dashboard: boolean;
+  visivel_agenda: boolean;
+  recorrente: boolean;
+  recorrencia_tipo?: ChurchEventRecurrenceType | null;
+  recorrencia_intervalo: number;
+  recorrencia_dias_semana?: number[] | null;
+  recorrencia_dia_mes?: number | null;
+  recorrencia_ordem_semana?: number | null;
+  recorrencia_data_fim?: string | null;
+  prioridade: number;
+  substitui_eventos_menor_prioridade: boolean;
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SupabasePermissaoIgreja {
+  id: string;
+  membro_id: string;
+  gerenciar_eventos_igreja: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface SupabaseMembroFuncao {

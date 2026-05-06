@@ -14,6 +14,8 @@ import { getDefaultViewForModules, getModuleForView } from './utils/ministry';
 import { isMusicView, isTeamView, isToolsView } from './utils/views';
 
 const NotificationCenterModal = lazy(() => import('./components/layout/NotificationCenterModal'));
+const PublicMemberRegistration = lazy(() => import('./components/auth/PublicMemberRegistration'));
+const ChurchShell = lazy(() => import('./components/church/ChurchShell'));
 const DashboardView = lazy(() => import('./components/dashboard/DashboardView'));
 const ListView = lazy(() => import('./components/escalas/ListView'));
 const CalendarView = lazy(() => import('./components/escalas/CalendarView'));
@@ -46,6 +48,7 @@ interface AppContentProps {
   isNotificationsOpen: boolean;
   setIsNotificationsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   selectedEventId: string | null;
+  onBackToChurch: () => void;
   openAviso: (eventId: string) => void;
   handleSync: () => Promise<void>;
   isLoading: boolean;
@@ -79,6 +82,7 @@ const AppContent: React.FC<AppContentProps> = ({
   isNotificationsOpen,
   setIsNotificationsOpen,
   selectedEventId,
+  onBackToChurch,
   openAviso,
   handleSync,
   isLoading
@@ -138,6 +142,15 @@ const AppContent: React.FC<AppContentProps> = ({
         />
 
         <div className="flex flex-1 flex-col overflow-hidden pt-16 lg:ml-[280px] lg:pt-0">
+          <button
+            type="button"
+            onClick={onBackToChurch}
+            className="fixed right-4 top-20 z-[120] hidden rounded-xl border border-slate-200 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 shadow-lg transition hover:text-brand dark:border-slate-700 dark:bg-slate-900 lg:block"
+          >
+            <i className="fas fa-arrow-left mr-2" />
+            Igreja
+          </button>
+
           <Header
             onSync={handleSync}
             onOpenProfile={() => setIsProfileModalOpen(true)}
@@ -187,6 +200,8 @@ const AppContent: React.FC<AppContentProps> = ({
 };
 
 const App: React.FC = () => {
+  const isPublicRegistrationRoute = typeof window !== 'undefined' && window.location.pathname === '/cadastro';
+
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window === 'undefined') return false;
     const saved = localStorage.getItem('darkMode');
@@ -200,6 +215,7 @@ const App: React.FC = () => {
 
   const [appState, setAppState] = useState<AppState>('splash');
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
+  const [activeArea, setActiveArea] = useState<'church' | 'ministry'>('church');
   const [isAvisoModalOpen, setIsAvisoModalOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -321,6 +337,14 @@ const App: React.FC = () => {
     setIsDarkMode((previous) => !previous);
   };
 
+  if (isPublicRegistrationRoute) {
+    return (
+      <Suspense fallback={<LoadingBlock label="Carregando cadastro..." />}>
+        <PublicMemberRegistration />
+      </Suspense>
+    );
+  }
+
   if (appState === 'splash') {
     return <SplashScreen onComplete={handleSplashContinue} />;
   }
@@ -340,24 +364,37 @@ const App: React.FC = () => {
       onError={(error) => console.error('Erro na inicializacao:', error)}
     >
       <MinistryProvider>
-        <AppContent
-          currentView={currentView}
-          setCurrentView={setCurrentView}
-          isDarkMode={isDarkMode}
-          toggleDarkMode={toggleDarkMode}
-          brandColor={brandColor}
-          setBrandColor={setBrandColor}
-          isProfileModalOpen={isProfileModalOpen}
-          setIsProfileModalOpen={setIsProfileModalOpen}
-          isAvisoModalOpen={isAvisoModalOpen}
-          setIsAvisoModalOpen={setIsAvisoModalOpen}
-          isNotificationsOpen={isNotificationsOpen}
-          setIsNotificationsOpen={setIsNotificationsOpen}
-          selectedEventId={selectedEventId}
-          openAviso={openAviso}
-          handleSync={handleSync}
-          isLoading={isLoading}
-        />
+        {activeArea === 'church' ? (
+          <Suspense fallback={<LoadingBlock />}>
+            <ChurchShell
+              onOpenMinistry={() => setActiveArea('ministry')}
+              isDarkMode={isDarkMode}
+              onToggleTheme={toggleDarkMode}
+              brandColor={brandColor}
+              onColorChange={setBrandColor}
+            />
+          </Suspense>
+        ) : (
+          <AppContent
+            currentView={currentView}
+            setCurrentView={setCurrentView}
+            isDarkMode={isDarkMode}
+            toggleDarkMode={toggleDarkMode}
+            brandColor={brandColor}
+            setBrandColor={setBrandColor}
+            isProfileModalOpen={isProfileModalOpen}
+            setIsProfileModalOpen={setIsProfileModalOpen}
+            isAvisoModalOpen={isAvisoModalOpen}
+            setIsAvisoModalOpen={setIsAvisoModalOpen}
+            isNotificationsOpen={isNotificationsOpen}
+            setIsNotificationsOpen={setIsNotificationsOpen}
+            selectedEventId={selectedEventId}
+            onBackToChurch={() => setActiveArea('church')}
+            openAviso={openAviso}
+            handleSync={handleSync}
+            isLoading={isLoading}
+          />
+        )}
       </MinistryProvider>
     </LocalStorageFirstInitializer>
   );

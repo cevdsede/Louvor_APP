@@ -59,6 +59,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
   const canEditMember = (member: Member) => isAdmin || isLeader || member.id === currentMember?.id;
   const canEditBasic = Boolean(editingMember && (isAdmin || editingMember.id === currentMember?.id));
   const canEditMinistry = Boolean(editingMember && activeMinisterioId && (isAdmin || isLeader));
+  const canManageCurrentMinistry = Boolean(activeMinisterioId && (isAdmin || isLeader));
   const activeFuncoes = (funcoesRaw || []).filter((funcao: any) =>
     activeMinisterioId ? funcao.ministerio_id === activeMinisterioId : true
   );
@@ -204,6 +205,69 @@ const TeamModals: React.FC<TeamModalsProps> = ({
     // Fecha o modal atual e abre o modal de edição
     onSelectedMemberChange(null);
     onEditingMemberChange(member);
+  };
+
+  const handleRemoveFromCurrentMinisterio = async (member: Member) => {
+    if (!activeMinisterioId || !canManageCurrentMinistry) {
+      showError('Voce nao tem permissao para remover membros deste ministerio.');
+      return;
+    }
+
+    try {
+      const existingMembership = (membrosMinisteriosRaw || []).find(
+        (membership: any) => membership.membro_id === member.id && membership.ministerio_id === activeMinisterioId
+      );
+
+      if (existingMembership?.id) {
+        const { error } = await supabase
+          .from('membros_ministerios')
+          .update({ ativo: false, principal: false })
+          .eq('id', existingMembership.id);
+        if (error) throw error;
+      }
+
+      const scopedFuncaoIds = new Set(activeFuncoes.map((funcao: any) => String(funcao.id)));
+      const scopedMemberFunctionIds = (membrosFuncoesRaw || [])
+        .filter(
+          (membership: any) =>
+            membership.id_membro === member.id && scopedFuncaoIds.has(String(membership.id_funcao))
+        )
+        .map((membership: any) => membership.id)
+        .filter(Boolean);
+
+      if (scopedMemberFunctionIds.length > 0) {
+        const { error } = await supabase.from('membros_funcoes').delete().in('id', scopedMemberFunctionIds);
+        if (error) throw error;
+      }
+
+      const hasOtherActiveMinisterio = (membrosMinisteriosRaw || []).some(
+        (membership: any) =>
+          membership.membro_id === member.id &&
+          membership.ministerio_id !== activeMinisterioId &&
+          membership.ativo !== false
+      );
+      const protectedPositions = ['Pastor(a)', 'Secretario(a)', 'Tesoureiro(a)', 'Missionário'];
+      const rawMember = (membrosRaw || []).find((item: any) => item.id === member.id);
+
+      if (!hasOtherActiveMinisterio && !protectedPositions.includes(rawMember?.posicao_igreja || '')) {
+        const { error } = await supabase.from('membros').update({ posicao_igreja: 'Membro' }).eq('id', member.id);
+        if (error) throw error;
+      }
+
+      await Promise.allSettled([
+        LocalStorageFirstService.forceSync('membros'),
+        LocalStorageFirstService.forceSync('membros_ministerios'),
+        LocalStorageFirstService.forceSync('membros_funcoes')
+      ]);
+
+      onMembersChange((previous) => previous.filter((item) => item.id !== member.id));
+      onSelectedMemberChange(null);
+      onEditingMemberChange(null);
+      showSuccess('Membro removido apenas deste ministerio.');
+    } catch (error) {
+      logger.error('Erro ao remover membro do ministerio:', error, 'database');
+      showError('Erro ao remover membro do ministerio.');
+    }
   };
 
   // Função para fazer upload da foto
@@ -676,6 +740,14 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                   className="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl font-black uppercase tracking-widest text-[9px] hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                 >
                   Editar
+                </button>
+              )}
+              {canManageCurrentMinistry && selectedMember.id !== currentMember?.id && (
+                <button
+                  onClick={() => handleRemoveFromCurrentMinisterio(selectedMember)}
+                  className="flex-1 py-4 bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-300 rounded-2xl font-black uppercase tracking-widest text-[9px] hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"
+                >
+                  Remover
                 </button>
               )}
             </div>

@@ -74,8 +74,35 @@ export interface Member {
   status: 'confirmed' | 'pending' | 'absent';
   avatar: string;
   telefone?: string;
+  telefone_residencial?: string;
+  telefone_comercial?: string;
+  telefone_celular?: string;
+  telefone_recados?: string;
   email?: string;
   data_nasc?: string;
+  endereco?: string;
+  numero_casa?: string;
+  cep?: string;
+  bairro?: string;
+  nome_pai?: string;
+  nome_mae?: string;
+  data_batismo?: string;
+  igreja_batismo?: string;
+  estado_civil?: 'Solteiro(a)' | 'Casado(a)' | 'Viúvo(a)' | 'Divorciado(a)' | 'Concubinato';
+  nome_conjuge?: string;
+  profissao?: string;
+  escolaridade?:
+    | 'Nenhuma'
+    | 'Ensino Fundamental'
+    | 'Ensino Fundamental Incompleto'
+    | 'Ensino Médio'
+    | 'Ensino Médio Incompleto'
+    | 'Superior'
+    | 'Superior Incompleto';
+  posicao_igreja?: 'Pastor(a)' | 'Levita' | 'Membro' | 'Secretario(a)' | 'Tesoureiro(a)' | 'Missionário';
+  nome_discipulador?: string;
+  esta_em_celula?: boolean;
+  qual_celula?: string;
   foto?: string;
   icon?: string;
   upcomingScales?: MemberScale[];
