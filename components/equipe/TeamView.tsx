@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { supabase } from '../../supabaseClient';
 import { ViewType } from '../../types';
 import { ChartInstance } from '../../types-supabase';
 import AttendanceView from './AttendanceView';
@@ -9,8 +10,14 @@ import TeamModals from './TeamModals';
 import MultiSelect from './MultiSelect';
 import { ImageCache } from '../ui/ImageCache';
 import { useTeamData } from '../../hooks/useTeamData';
+import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
+import { useMinistryContext } from '../../contexts/MinistryContext';
 import { sortMembersByRole } from '../../utils/teamUtils';
 import EventService, { Evento } from '../../services/EventService';
+import LocalStorageFirstService from '../../services/LocalStorageFirstService';
+import { getDisplayName } from '../../utils/displayName';
+import { buildLocalAvatar } from '../../utils/avatar';
+import { showError, showSuccess } from '../../utils/toast';
 
 interface TeamViewProps {
   currentView: ViewType;
@@ -19,6 +26,12 @@ interface TeamViewProps {
 const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
   const [selectedEvento, setSelectedEvento] = useState<Evento | null>(null);
   const [showAttendance, setShowAttendance] = useState(false);
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [memberSearch, setMemberSearch] = useState('');
+  const [isAddingMember, setIsAddingMember] = useState(false);
+  const { activeMinisterioId, canManageCurrentMinisterio } = useMinistryContext();
+  const { data: allChurchMembers } = useLocalStorageFirst<any>({ table: 'membros' });
+  const { data: membrosMinisteriosRaw } = useLocalStorageFirst<any>({ table: 'membros_ministerios' });
 
   const {
     selectedMember,
@@ -38,6 +51,76 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
     fetchMemberUpcomingScales,
     fetchMemberSongHistory
   } = useTeamData({ currentView });
+
+  const availableChurchMembers = useMemo(() => {
+    const activeMemberIds = new Set(
+      (membrosMinisteriosRaw || [])
+        .filter((membership: any) => membership.ministerio_id === activeMinisterioId && membership.ativo !== false)
+        .map((membership: any) => membership.membro_id)
+    );
+
+    return (allChurchMembers || [])
+      .filter((member: any) => member.ativo !== false)
+      .filter((member: any) => !activeMemberIds.has(member.id))
+      .filter((member: any) => getDisplayName(member).toLowerCase().includes(memberSearch.toLowerCase()))
+      .sort((a: any, b: any) => getDisplayName(a).localeCompare(getDisplayName(b)));
+  }, [activeMinisterioId, allChurchMembers, memberSearch, membrosMinisteriosRaw]);
+
+  const handleAddMemberToMinisterio = async (member: any) => {
+    if (!activeMinisterioId || !canManageCurrentMinisterio) {
+      showError('Voce nao tem permissao para adicionar membros neste ministerio.');
+      return;
+    }
+
+    setIsAddingMember(true);
+
+    try {
+      const existingMembership = (membrosMinisteriosRaw || []).find(
+        (membership: any) => membership.membro_id === member.id && membership.ministerio_id === activeMinisterioId
+      );
+
+      if (existingMembership?.id) {
+        const { error } = await supabase
+          .from('membros_ministerios')
+          .update({ ativo: true })
+          .eq('id', existingMembership.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('membros_ministerios').insert({
+          membro_id: member.id,
+          ministerio_id: activeMinisterioId,
+          ativo: true,
+          principal: false,
+          papel: null
+        });
+        if (error) throw error;
+      }
+
+      const protectedPositions = ['Pastor(a)', 'Secretario(a)', 'Tesoureiro(a)', 'Missionário'];
+      if (!protectedPositions.includes(member.posicao_igreja || '')) {
+        const { error } = await supabase
+          .from('membros')
+          .update({ posicao_igreja: 'Levita' })
+          .eq('id', member.id);
+        if (error) throw error;
+      }
+
+      await Promise.allSettled([
+        LocalStorageFirstService.forceSync('membros'),
+        LocalStorageFirstService.forceSync('membros_ministerios')
+      ]);
+
+      await fetchMembers();
+      setIsAddMemberOpen(false);
+      setMemberSearch('');
+      showSuccess('Membro adicionado ao ministerio.');
+    } catch (error) {
+      console.error('Erro ao adicionar membro ao ministerio:', error);
+      showError('Erro ao adicionar membro ao ministerio.');
+    } finally {
+      setIsAddingMember(false);
+    }
+  };
 
   // Gerar KPIs dinamicamente baseados nas funções existentes no banco
   const generateKPIs = () => {
@@ -234,6 +317,19 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
 
           
           {/* Grid de Membros */}
+          {canManageCurrentMinisterio && activeMinisterioId && (
+            <div className="mb-5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsAddMemberOpen(true)}
+                className="inline-flex items-center gap-2 rounded-2xl bg-brand px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20 transition hover:brightness-110"
+              >
+                <i className="fas fa-user-plus" />
+                Adicionar Membro
+              </button>
+            </div>
+          )}
+
           <TeamGrid 
             members={members}
             activeFilter={activeFilter}
@@ -252,6 +348,65 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
         onViewingEventChange={setViewingEvent}
         onMembersChange={setMembers}
       />
+
+      {isAddMemberOpen && (
+        <div className="fixed inset-0 z-[650] overflow-y-auto bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
+          <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-brand">Ministerio</p>
+                <h2 className="text-xl font-black text-slate-900 dark:text-white">Adicionar membro cadastrado</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddMemberOpen(false)}
+                className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-red-500 dark:hover:bg-slate-800"
+              >
+                <i className="fas fa-times" />
+              </button>
+            </div>
+
+            <input
+              value={memberSearch}
+              onChange={(event) => setMemberSearch(event.target.value)}
+              placeholder="Buscar membro da igreja"
+              className="mb-4 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            />
+
+            <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+              {availableChurchMembers.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                  Nenhum membro disponivel para adicionar.
+                </div>
+              ) : (
+                availableChurchMembers.map((member: any) => {
+                  const name = getDisplayName(member);
+                  const photo = member.foto || buildLocalAvatar(name);
+
+                  return (
+                    <button
+                      key={member.id}
+                      type="button"
+                      disabled={isAddingMember}
+                      onClick={() => handleAddMemberToMinisterio(member)}
+                      className="flex w-full items-center gap-3 rounded-xl border border-slate-200 p-3 text-left transition hover:border-brand/40 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-800 dark:hover:bg-slate-800/60"
+                    >
+                      <img src={photo} alt={name} className="h-12 w-12 rounded-full object-cover" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-black text-slate-900 dark:text-white">{name}</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                          {member.posicao_igreja || 'Membro'}
+                        </p>
+                      </div>
+                      <i className="fas fa-plus text-brand" />
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
