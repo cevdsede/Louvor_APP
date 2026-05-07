@@ -173,6 +173,37 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white transition-colors duration-300 dark:from-slate-900 dark:to-slate-800">
+      <header className="fixed inset-x-0 top-0 z-[90] flex items-center justify-between border-b border-slate-100 bg-white/95 px-4 py-3 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-[#0f172a]/95 lg:hidden">
+        <div className="min-w-0">
+          <p className="text-[8px] font-black uppercase tracking-[0.28em] text-brand">Valentes</p>
+          <p className="truncate text-sm font-black uppercase tracking-tight text-slate-800 dark:text-white">
+            {currentMember?.nome || 'Membro'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsProfileOpen(true)}
+            className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-800"
+            aria-label="Abrir perfil"
+          >
+            <img
+              src={profilePhoto || buildLocalAvatar(currentMember?.nome || 'Usuario')}
+              alt={currentMember?.nome || 'Usuario'}
+              className="h-full w-full object-cover"
+            />
+          </button>
+          <button
+            type="button"
+            onClick={onToggleTheme}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300"
+            aria-label="Alternar tema"
+          >
+            <i className={isDarkMode ? 'fas fa-sun text-brand-gold' : 'fas fa-moon text-brand'} />
+          </button>
+        </div>
+      </header>
+
       <aside className="fixed inset-x-0 bottom-2 z-[100] mx-auto flex min-h-16 w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] rounded-2xl border border-slate-100 bg-white shadow-xl transition-all dark:border-slate-800 dark:bg-[#0f172a] sm:bottom-3 sm:w-[calc(100%-1.5rem)] sm:max-w-[720px] lg:inset-x-auto lg:bottom-0 lg:left-0 lg:mx-0 lg:h-full lg:w-[280px] lg:max-w-none lg:flex-col lg:rounded-none lg:border-r lg:border-b-0 lg:border-l-0 lg:border-t-0 lg:shadow-none">
         <div className="hidden flex-col items-center px-6 py-10 lg:flex">
           <div className="flex flex-col items-center gap-2">
@@ -186,7 +217,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
           </div>
         </div>
 
-        <nav className="flex w-full flex-1 items-center justify-center gap-1 px-1.5 lg:w-auto lg:flex-col lg:items-stretch lg:justify-start lg:gap-1.5 lg:overflow-y-auto lg:px-4 lg:py-2">
+        <nav className="flex w-full flex-1 items-stretch justify-start gap-1 overflow-x-auto px-1.5 py-1 no-scrollbar lg:w-auto lg:flex-col lg:items-stretch lg:justify-start lg:gap-1.5 lg:overflow-y-auto lg:px-4 lg:py-2">
           {menuItems
             .filter((item) => item.visible)
             .map((item) => (
@@ -194,7 +225,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
                 key={item.id}
                 type="button"
                 onClick={() => setCurrentView(item.id)}
-                className={`flex min-w-0 flex-1 max-w-none flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 transition-all lg:flex-none lg:flex-row lg:justify-start lg:gap-4 lg:rounded-2xl lg:px-5 lg:py-4 ${
+                className={`flex min-w-[4.3rem] flex-1 max-w-none flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 transition-all lg:min-w-0 lg:flex-none lg:flex-row lg:justify-start lg:gap-4 lg:rounded-2xl lg:px-5 lg:py-4 ${
                   currentView === item.id
                     ? 'bg-brand text-white shadow-xl shadow-brand/20'
                     : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 lg:hover:bg-slate-50 lg:dark:hover:bg-slate-800/50'
@@ -211,7 +242,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
             <button
               type="button"
               onClick={onOpenMinistry}
-              className="flex min-w-0 flex-1 max-w-none flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 text-slate-400 transition-all hover:text-slate-600 dark:hover:text-slate-200 lg:flex-none lg:flex-row lg:justify-start lg:gap-4 lg:rounded-2xl lg:px-5 lg:py-4 lg:hover:bg-slate-50 lg:dark:hover:bg-slate-800/50"
+              className="flex min-w-[4.8rem] flex-1 max-w-none flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 text-slate-400 transition-all hover:text-slate-600 dark:hover:text-slate-200 lg:min-w-0 lg:flex-none lg:flex-row lg:justify-start lg:gap-4 lg:rounded-2xl lg:px-5 lg:py-4 lg:hover:bg-slate-50 lg:dark:hover:bg-slate-800/50"
             >
               <i className="fas fa-layer-group w-5 text-center text-base lg:w-6 lg:text-lg" />
               <span className="w-full max-w-full whitespace-normal break-words text-center text-[8px] font-bold uppercase leading-[1.05] tracking-normal lg:w-auto lg:break-normal lg:text-sm lg:capitalize">
@@ -276,8 +307,8 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
         </div>
       </aside>
 
-      <main className="min-h-screen bg-slate-50 pb-28 dark:bg-slate-800 sm:pb-32 lg:ml-[280px] lg:pb-0">
-        <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      <main className="min-h-screen bg-slate-50 pb-28 pt-16 dark:bg-slate-800 sm:pb-32 lg:ml-[280px] lg:pb-0 lg:pt-0">
+        <div className="container mx-auto px-3 py-5 sm:px-6 lg:px-8">
           {currentView === 'dashboard' && <ChurchDashboard />}
           {currentView === 'agenda' && <ChurchAgenda />}
           {currentView === 'members' && <ChurchMembers />}
@@ -286,8 +317,8 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
       </main>
 
       {isProfileOpen && (
-        <div className="fixed inset-0 z-[700] overflow-y-auto bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
-          <div className="mx-auto max-w-md rounded-[2rem] border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+        <div className="fixed inset-0 z-[700] overflow-y-auto bg-slate-950/60 px-3 py-4 pb-24 backdrop-blur-sm sm:px-4 sm:py-6">
+          <div className="mx-auto max-w-md rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:rounded-[2rem] sm:p-5">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-lg font-black uppercase tracking-tight text-slate-800 dark:text-white">Configuracoes</h2>
               <button type="button" onClick={() => setIsProfileOpen(false)} className="text-slate-400 hover:text-red-500">
@@ -358,7 +389,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
               </div>
             </div>
 
-            <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row">
+            <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <button
                 type="button"
                 onClick={() => setIsProfileOpen(false)}
@@ -380,8 +411,8 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
       )}
 
       {isPasswordOpen && (
-        <div className="fixed inset-0 z-[760] overflow-y-auto bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
-          <div className="mx-auto max-w-md rounded-[2rem] border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+        <div className="fixed inset-0 z-[760] overflow-y-auto bg-slate-950/60 px-3 py-4 pb-24 backdrop-blur-sm sm:px-4 sm:py-6">
+          <div className="mx-auto max-w-md rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:rounded-[2rem] sm:p-5">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-lg font-black uppercase tracking-tight text-slate-800 dark:text-white">Alterar Senha</h2>
               <button type="button" onClick={() => setIsPasswordOpen(false)} className="text-slate-400 hover:text-red-500">
@@ -404,7 +435,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
                 className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-800"
               />
             </div>
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row">
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <button type="button" onClick={() => setIsPasswordOpen(false)} className="flex-1 rounded-xl bg-slate-100 py-3.5 text-[9px] font-black uppercase tracking-widest text-slate-500 dark:bg-slate-800">
                 Cancelar
               </button>

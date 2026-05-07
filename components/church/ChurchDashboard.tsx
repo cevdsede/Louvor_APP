@@ -43,7 +43,7 @@ const ChurchDashboard: React.FC = () => {
     <div className="space-y-6">
       <div>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand">Igreja</p>
-        <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+        <h1 className="mt-2 text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
           Eventos da semana
         </h1>
       </div>
@@ -59,11 +59,11 @@ const ChurchDashboard: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="flex snap-x gap-4 overflow-x-auto pb-2">
+        <div className="flex snap-x gap-3 overflow-x-auto pb-2 sm:gap-4">
           {weekEvents.map((event, index) => (
             <article
               key={event.id}
-              className="relative h-72 min-w-[280px] snap-start overflow-hidden rounded-2xl bg-slate-900 shadow-xl sm:min-w-[360px]"
+              className="relative h-64 min-w-[82vw] snap-start overflow-hidden rounded-2xl bg-slate-900 shadow-xl sm:h-72 sm:min-w-[360px]"
             >
               {event.imagem_url ? (
                 <img src={event.imagem_url} alt={event.titulo} className="absolute inset-0 h-full w-full object-cover" />
@@ -75,7 +75,7 @@ const ChurchDashboard: React.FC = () => {
                 <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-white/70">
                   {formatDate(event.startsAt)}
                 </p>
-                <h2 className="text-2xl font-black tracking-tight">{event.titulo}</h2>
+                <h2 className="text-xl font-black tracking-tight sm:text-2xl">{event.titulo}</h2>
                 {event.local && <p className="mt-2 text-sm font-semibold text-white/80">{event.local}</p>}
               </div>
             </article>

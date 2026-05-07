@@ -29,7 +29,7 @@ const ChurchAgenda: React.FC = () => {
     <div className="space-y-6">
       <div>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand">Agenda</p>
-        <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+        <h1 className="mt-2 text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
           Eventos do mês
         </h1>
       </div>
@@ -46,13 +46,13 @@ const ChurchAgenda: React.FC = () => {
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {monthEvents.map((event) => (
-              <div key={event.id} className="flex gap-4 p-4 sm:p-5">
-                <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl bg-brand/10 text-brand">
+              <div key={event.id} className="flex gap-3 p-3 sm:gap-4 sm:p-5">
+                <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-brand/10 text-brand sm:h-16 sm:w-16">
                   <span className="text-xs font-black uppercase">{formatDay(event.startsAt)}</span>
                   <span className="text-[10px] font-bold">{formatTime(event.startsAt)}</span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-base font-black text-slate-900 dark:text-white">{event.titulo}</h2>
+                  <h2 className="text-sm font-black text-slate-900 dark:text-white sm:text-base">{event.titulo}</h2>
                   {event.local && <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">{event.local}</p>}
                   {event.descricao && <p className="mt-2 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{event.descricao}</p>}
                 </div>

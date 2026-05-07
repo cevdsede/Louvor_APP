@@ -192,13 +192,13 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
     <div className="space-y-6">
       <div>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand">Administracao</p>
-        <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+        <h1 className="mt-2 text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
           Agenda e cards da igreja
         </h1>
       </div>
 
-      <form onSubmit={saveEvent} className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-        <div className="grid gap-4 md:grid-cols-2">
+      <form onSubmit={saveEvent} className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+        <div className="grid gap-3 md:grid-cols-2 md:gap-4">
           <input className={inputClass} placeholder="Titulo do evento/card" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
           <input className={inputClass} placeholder="Local" value={form.local} onChange={(e) => setForm({ ...form, local: e.target.value })} />
           <input type="date" className={inputClass} value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
@@ -211,21 +211,21 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
           </select>
         </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
           <Toggle label="Recorrente" checked={form.recorrente} onChange={(value) => setForm({ ...form, recorrente: value })} />
           <Toggle label="Mostrar no inicio" checked={form.visivel_dashboard} onChange={(value) => setForm({ ...form, visivel_dashboard: value })} />
           <Toggle label="Mostrar na agenda" checked={form.visivel_agenda} onChange={(value) => setForm({ ...form, visivel_agenda: value })} />
           <Toggle label="Substituir menor prioridade" checked={form.substitui_eventos_menor_prioridade} onChange={(value) => setForm({ ...form, substitui_eventos_menor_prioridade: value })} />
         </div>
 
-        <div className="mt-4 flex justify-end">
-          <button disabled={saving} className="rounded-2xl bg-brand px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20 disabled:opacity-60">
+        <div className="mt-4">
+          <button disabled={saving} className="w-full rounded-2xl bg-brand px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20 disabled:opacity-60 sm:w-auto">
             {saving ? 'Salvando...' : 'Adicionar a agenda'}
           </button>
         </div>
       </form>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:p-5">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
             Quem pode alterar agenda/cards
@@ -266,7 +266,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:p-5">
         <h2 className="mb-4 text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">Eventos cadastrados</h2>
         <div className="space-y-2">
           {(eventsRaw || []).slice(0, 10).map((event) => (
@@ -281,8 +281,8 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
       </div>
 
       {isPermissionModalOpen && (
-        <div className="fixed inset-0 z-[720] overflow-y-auto bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
-          <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+        <div className="fixed inset-0 z-[720] overflow-y-auto bg-slate-950/60 px-3 py-4 pb-24 backdrop-blur-sm sm:px-4 sm:py-6">
+          <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-brand">Permissao</p>

@@ -41,7 +41,7 @@ const ChurchMembers: React.FC = () => {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand">Membros</p>
-          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+          <h1 className="mt-2 text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
             Cadastro da igreja
           </h1>
         </div>
@@ -60,7 +60,7 @@ const ChurchMembers: React.FC = () => {
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent" />
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
           {members.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 sm:col-span-2 lg:col-span-3">
               Nenhum membro disponivel para visualizacao.
@@ -75,11 +75,11 @@ const ChurchMembers: React.FC = () => {
                   key={member.id}
                   type="button"
                   onClick={() => setSelectedMember(member)}
-                  className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-brand/40 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+                  className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 text-left transition hover:border-brand/40 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-4"
                 >
-                  <img src={photo} alt={name} className="h-14 w-14 rounded-full object-cover" />
+                  <img src={photo} alt={name} className="h-12 w-12 rounded-full object-cover sm:h-14 sm:w-14" />
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-black text-slate-900 dark:text-white">{name}</p>
+                    <p className="truncate text-xs font-black text-slate-900 dark:text-white sm:text-sm">{name}</p>
                     <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-brand">
                       {member.posicao_igreja || 'Membro'}
                     </p>
