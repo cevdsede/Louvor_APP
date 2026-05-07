@@ -14,6 +14,7 @@ type FormState = {
   genero: 'Homem' | 'Mulher';
   nome_pai: string;
   nome_mae: string;
+  batizado: boolean;
   data_batismo: string;
   igreja_batismo: string;
   estado_civil: string;
@@ -21,8 +22,6 @@ type FormState = {
   profissao: string;
   escolaridade: string;
   email: string;
-  telefone_residencial: string;
-  telefone_comercial: string;
   telefone_celular: string;
   telefone_recados: string;
   posicao_igreja: string;
@@ -45,6 +44,7 @@ const INITIAL_FORM: FormState = {
   genero: 'Homem',
   nome_pai: '',
   nome_mae: '',
+  batizado: false,
   data_batismo: '',
   igreja_batismo: '',
   estado_civil: 'Solteiro(a)',
@@ -52,8 +52,6 @@ const INITIAL_FORM: FormState = {
   profissao: '',
   escolaridade: 'Ensino Médio',
   email: '',
-  telefone_residencial: '',
-  telefone_comercial: '',
   telefone_celular: '',
   telefone_recados: '',
   posicao_igreja: 'Membro',
@@ -99,6 +97,20 @@ const Field = ({
 const inputClass =
   'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10 dark:border-slate-700 dark:bg-slate-900 dark:text-white';
 
+const onlyDigits = (value: string) => value.replace(/\D/g, '');
+
+const formatCep = (value: string) => {
+  const digits = onlyDigits(value).slice(0, 8);
+  return digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+};
+
+const formatCellphone = (value: string) => {
+  const digits = onlyDigits(value).slice(0, 11);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
+
 const PublicMemberRegistration: React.FC = () => {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [error, setError] = useState('');
@@ -110,8 +122,21 @@ const PublicMemberRegistration: React.FC = () => {
   };
 
   const validate = () => {
-    if (!form.nome.trim() || !form.email.trim() || !form.senha) {
-      return 'Preencha nome, e-mail e senha.';
+    if (
+      !form.nome.trim() ||
+      !form.email.trim() ||
+      !form.data_nasc ||
+      !form.senha ||
+      !form.endereco.trim() ||
+      !form.numero_casa.trim() ||
+      !form.bairro.trim() ||
+      !form.nome_pai.trim() ||
+      !form.nome_mae.trim() ||
+      !form.estado_civil ||
+      !form.escolaridade ||
+      !form.telefone_celular.trim()
+    ) {
+      return 'Preencha todos os campos obrigatorios.';
     }
 
     if (form.senha.length < 6) {
@@ -124,6 +149,14 @@ const PublicMemberRegistration: React.FC = () => {
 
     if (form.posicao_igreja === 'Levita' && !form.ministerio_levita) {
       return 'Informe o ministério quando a posição for Levita.';
+    }
+
+    if (form.batizado && (!form.data_batismo || !form.igreja_batismo.trim())) {
+      return 'Informe data do batismo e igreja onde foi batizado.';
+    }
+
+    if (form.estado_civil === 'Casado(a)' && !form.nome_conjuge.trim()) {
+      return 'Informe o nome do conjuge.';
     }
 
     if (form.esta_em_celula && !form.qual_celula.trim()) {
@@ -195,15 +228,15 @@ const PublicMemberRegistration: React.FC = () => {
         genero: form.genero,
         nome_pai: form.nome_pai.trim() || null,
         nome_mae: form.nome_mae.trim() || null,
-        data_batismo: form.data_batismo || null,
-        igreja_batismo: form.igreja_batismo.trim() || null,
+        data_batismo: form.batizado ? form.data_batismo || null : null,
+        igreja_batismo: form.batizado ? form.igreja_batismo.trim() || null : null,
         estado_civil: form.estado_civil || null,
-        nome_conjuge: form.nome_conjuge.trim() || null,
+        nome_conjuge: form.estado_civil === 'Casado(a)' ? form.nome_conjuge.trim() || null : null,
         profissao: form.profissao.trim() || null,
         escolaridade: form.escolaridade || null,
-        telefone: form.telefone_celular || form.telefone_residencial || null,
-        telefone_residencial: form.telefone_residencial.trim() || null,
-        telefone_comercial: form.telefone_comercial.trim() || null,
+        telefone: form.telefone_celular || null,
+        telefone_residencial: null,
+        telefone_comercial: null,
         telefone_celular: form.telefone_celular.trim() || null,
         telefone_recados: form.telefone_recados.trim() || null,
         posicao_igreja: form.posicao_igreja,
@@ -251,15 +284,15 @@ const PublicMemberRegistration: React.FC = () => {
         genero: form.genero,
         nome_pai: form.nome_pai.trim() || null,
         nome_mae: form.nome_mae.trim() || null,
-        data_batismo: form.data_batismo || null,
-        igreja_batismo: form.igreja_batismo.trim() || null,
+        data_batismo: form.batizado ? form.data_batismo || null : null,
+        igreja_batismo: form.batizado ? form.igreja_batismo.trim() || null : null,
         estado_civil: form.estado_civil || null,
-        nome_conjuge: form.nome_conjuge.trim() || null,
+        nome_conjuge: form.estado_civil === 'Casado(a)' ? form.nome_conjuge.trim() || null : null,
         profissao: form.profissao.trim() || null,
         escolaridade: form.escolaridade || null,
-        telefone: form.telefone_celular || form.telefone_residencial || null,
-        telefone_residencial: form.telefone_residencial.trim() || null,
-        telefone_comercial: form.telefone_comercial.trim() || null,
+        telefone: form.telefone_celular || null,
+        telefone_residencial: null,
+        telefone_comercial: null,
         telefone_celular: form.telefone_celular.trim() || null,
         telefone_recados: form.telefone_recados.trim() || null,
         posicao_igreja: form.posicao_igreja,
@@ -345,7 +378,7 @@ const PublicMemberRegistration: React.FC = () => {
             </Field>
 
             <Field label="Data de nascimento">
-              <input type="date" className={inputClass} value={form.data_nasc} onChange={(event) => updateForm('data_nasc', event.target.value)} />
+              <input type="date" className={inputClass} value={form.data_nasc} onChange={(event) => updateForm('data_nasc', event.target.value)} required />
             </Field>
 
             <Field label="Senha">
@@ -357,14 +390,14 @@ const PublicMemberRegistration: React.FC = () => {
             </Field>
 
             <Field label="Sexo">
-              <select className={inputClass} value={form.genero} onChange={(event) => updateForm('genero', event.target.value as FormState['genero'])}>
+              <select className={inputClass} value={form.genero} onChange={(event) => updateForm('genero', event.target.value as FormState['genero'])} required>
                 <option value="Homem">Masculino</option>
                 <option value="Mulher">Feminino</option>
               </select>
             </Field>
 
             <Field label="Posição na igreja">
-              <select className={inputClass} value={form.posicao_igreja} onChange={(event) => updateForm('posicao_igreja', event.target.value)}>
+              <select className={inputClass} value={form.posicao_igreja} onChange={(event) => updateForm('posicao_igreja', event.target.value)} required>
                 {POSICOES_IGREJA.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </Field>
@@ -379,45 +412,56 @@ const PublicMemberRegistration: React.FC = () => {
             )}
 
             <Field label="Endereço">
-              <input className={inputClass} value={form.endereco} onChange={(event) => updateForm('endereco', event.target.value)} />
+              <input className={inputClass} value={form.endereco} onChange={(event) => updateForm('endereco', event.target.value)} required />
             </Field>
 
             <Field label="Nº da casa">
-              <input className={inputClass} value={form.numero_casa} onChange={(event) => updateForm('numero_casa', event.target.value)} />
+              <input className={inputClass} value={form.numero_casa} onChange={(event) => updateForm('numero_casa', event.target.value)} required />
             </Field>
 
             <Field label="CEP">
-              <input className={inputClass} value={form.cep} onChange={(event) => updateForm('cep', event.target.value)} />
+              <input className={inputClass} inputMode="numeric" value={form.cep} onChange={(event) => updateForm('cep', formatCep(event.target.value))} placeholder="00000-000" />
             </Field>
 
             <Field label="Bairro">
-              <input className={inputClass} value={form.bairro} onChange={(event) => updateForm('bairro', event.target.value)} />
+              <input className={inputClass} value={form.bairro} onChange={(event) => updateForm('bairro', event.target.value)} required />
             </Field>
 
             <Field label="Nome do pai">
-              <input className={inputClass} value={form.nome_pai} onChange={(event) => updateForm('nome_pai', event.target.value)} />
+              <input className={inputClass} value={form.nome_pai} onChange={(event) => updateForm('nome_pai', event.target.value)} required />
             </Field>
 
             <Field label="Nome da mãe">
-              <input className={inputClass} value={form.nome_mae} onChange={(event) => updateForm('nome_mae', event.target.value)} />
+              <input className={inputClass} value={form.nome_mae} onChange={(event) => updateForm('nome_mae', event.target.value)} required />
             </Field>
 
-            <Field label="Data do batismo">
-              <input type="date" className={inputClass} value={form.data_batismo} onChange={(event) => updateForm('data_batismo', event.target.value)} />
+            <Field label="E batizado?">
+              <select className={inputClass} value={form.batizado ? 'sim' : 'nao'} onChange={(event) => updateForm('batizado', event.target.value === 'sim')}>
+                <option value="nao">Nao</option>
+                <option value="sim">Sim</option>
+              </select>
             </Field>
 
-            <Field label="Igreja que foi batizado">
-              <input className={inputClass} value={form.igreja_batismo} onChange={(event) => updateForm('igreja_batismo', event.target.value)} />
-            </Field>
+            {form.batizado && (
+              <>
+                <Field label="Data do batismo">
+                  <input type="date" className={inputClass} value={form.data_batismo} onChange={(event) => updateForm('data_batismo', event.target.value)} required />
+                </Field>
+
+                <Field label="Igreja que foi batizado">
+                  <input className={inputClass} value={form.igreja_batismo} onChange={(event) => updateForm('igreja_batismo', event.target.value)} required />
+                </Field>
+              </>
+            )}
 
             <Field label="Estado civil">
-              <select className={inputClass} value={form.estado_civil} onChange={(event) => updateForm('estado_civil', event.target.value)}>
+              <select className={inputClass} value={form.estado_civil} onChange={(event) => updateForm('estado_civil', event.target.value)} required>
                 {ESTADOS_CIVIS.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </Field>
 
-            <Field label="Nome do cônjuge">
-              <input className={inputClass} value={form.nome_conjuge} onChange={(event) => updateForm('nome_conjuge', event.target.value)} />
+            <Field label="Nome do conjuge" className={form.estado_civil === 'Casado(a)' ? '' : 'hidden'}>
+              <input className={inputClass} value={form.nome_conjuge} onChange={(event) => updateForm('nome_conjuge', event.target.value)} required={form.estado_civil === 'Casado(a)'} />
             </Field>
 
             <Field label="Profissão">
@@ -425,21 +469,13 @@ const PublicMemberRegistration: React.FC = () => {
             </Field>
 
             <Field label="Escolaridade">
-              <select className={inputClass} value={form.escolaridade} onChange={(event) => updateForm('escolaridade', event.target.value)}>
+              <select className={inputClass} value={form.escolaridade} onChange={(event) => updateForm('escolaridade', event.target.value)} required>
                 {ESCOLARIDADES.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </Field>
 
-            <Field label="Telefone residencial">
-              <input className={inputClass} value={form.telefone_residencial} onChange={(event) => updateForm('telefone_residencial', event.target.value)} />
-            </Field>
-
-            <Field label="Telefone comercial">
-              <input className={inputClass} value={form.telefone_comercial} onChange={(event) => updateForm('telefone_comercial', event.target.value)} />
-            </Field>
-
             <Field label="Telefone celular">
-              <input className={inputClass} value={form.telefone_celular} onChange={(event) => updateForm('telefone_celular', event.target.value)} />
+              <input className={inputClass} inputMode="tel" value={form.telefone_celular} onChange={(event) => updateForm('telefone_celular', formatCellphone(event.target.value))} placeholder="(00) 00000-0000" required />
             </Field>
 
             <Field label="Telefone para recados">
