@@ -233,6 +233,10 @@ export const useImageCache = (
         }
       } catch (error) {
         console.warn('Erro ao carregar imagem:', error);
+        if (url.startsWith('http')) {
+          setState(url);
+          return;
+        }
         setState(fallbackUrl || FALLBACK_SVG);
       }
     };

@@ -4,6 +4,7 @@ import { useMinistryContext } from '../../contexts/MinistryContext';
 import { SupabaseMembro } from '../../types-supabase';
 import { buildLocalAvatar } from '../../utils/avatar';
 import { getDisplayName } from '../../utils/displayName';
+import { ImageCache } from '../ui/ImageCache';
 
 const normalize = (value?: string | null) =>
   (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -87,7 +88,13 @@ const ChurchMembers: React.FC = () => {
                   onClick={() => setSelectedMember(member)}
                   className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 text-left transition hover:border-brand/40 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-4"
                 >
-                  <img src={photo} alt={name} className="h-12 w-12 rounded-full object-cover sm:h-14 sm:w-14" />
+                  <ImageCache
+                    src={photo}
+                    fallbackSrc={buildLocalAvatar(name)}
+                    alt={name}
+                    className="h-12 w-12 rounded-full object-cover sm:h-14 sm:w-14"
+                    disableCompression
+                  />
                   <div className="min-w-0">
                     <p className="truncate text-xs font-black text-slate-900 dark:text-white sm:text-sm">{name}</p>
                     {canSeeMemberDetails && (
@@ -108,14 +115,16 @@ const ChurchMembers: React.FC = () => {
           <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
-                <img
+                <ImageCache
                   src={
                     typeof selectedMember.foto === 'string' && selectedMember.foto
                       ? withImageCacheBust(selectedMember.foto, selectedMember)
                       : buildLocalAvatar(getDisplayName(selectedMember))
                   }
+                  fallbackSrc={buildLocalAvatar(getDisplayName(selectedMember))}
                   alt={getDisplayName(selectedMember)}
                   className="h-16 w-16 rounded-full object-cover"
+                  disableCompression
                 />
                 <div>
                   <h2 className="text-xl font-black text-slate-900 dark:text-white">
