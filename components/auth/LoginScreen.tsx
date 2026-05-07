@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../supabaseClient';
 import { logger } from '../../utils/logger';
-import CreateProfileScreen from './CreateProfileScreen';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 
 interface LoginScreenProps {
@@ -12,7 +11,6 @@ interface LoginScreenProps {
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showCreateProfile, setShowCreateProfile] = useState(false);
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [loadingMessage, setLoadingMessage] = useState('Entrando...');
@@ -94,28 +92,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   };
 
   const handleCreateProfile = () => {
-    setShowCreateProfile(true);
+    window.location.href = '/cadastro';
   };
-
-  const handleBackToLogin = () => {
-    setShowCreateProfile(false);
-    setError('');
-  };
-
-  const handleProfileCreated = () => {
-    setShowCreateProfile(false);
-    setError('');
-    // Opcional: mostrar mensagem de sucesso
-  };
-
-  if (showCreateProfile) {
-    return (
-      <CreateProfileScreen
-        onBack={handleBackToLogin}
-        onSuccess={handleProfileCreated}
-      />
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0b1120] flex items-center justify-center p-6 relative transition-colors duration-300">
