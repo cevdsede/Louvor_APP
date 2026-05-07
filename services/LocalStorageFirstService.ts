@@ -547,11 +547,12 @@ class LocalStorageFirstService {
       const byId = new Map(membros.filter((membro) => membro?.id).map((membro) => [membro.id, membro]));
 
       data.forEach((publicMember: any) => {
-        if (!publicMember?.id || byId.has(publicMember.id)) {
+        if (!publicMember?.id) {
           return;
         }
 
-        byId.set(publicMember.id, {
+        const existing = byId.get(publicMember.id) || {};
+        const publicData = {
           id: publicMember.id,
           nome: publicMember.nome,
           display_name: publicMember.display_name,
@@ -560,6 +561,18 @@ class LocalStorageFirstService {
           ativo: publicMember.ativo,
           created_at: publicMember.created_at,
           perfil: 'public'
+        };
+
+        byId.set(publicMember.id, {
+          ...publicData,
+          ...existing,
+          nome: existing.nome || publicData.nome,
+          display_name: existing.display_name || publicData.display_name,
+          nome_planilha: existing.nome_planilha || publicData.nome_planilha,
+          foto: publicData.foto || existing.foto,
+          ativo: existing.ativo ?? publicData.ativo,
+          created_at: existing.created_at || publicData.created_at,
+          perfil: existing.perfil || publicData.perfil
         });
       });
 

@@ -16,6 +16,16 @@ const canViewFullMember = (viewer: SupabaseMembro | null, target: SupabaseMembro
   return profile.includes('admin') || profile.includes('pastor');
 };
 
+const withImageCacheBust = (src: string, member: SupabaseMembro) => {
+  if (!src || src.startsWith('data:') || src.startsWith('blob:')) return src;
+
+  const version = member.created_at || member.id;
+  if (!version) return src;
+
+  const separator = src.includes('?') ? '&' : '?';
+  return `${src}${separator}v=${encodeURIComponent(version)}`;
+};
+
 const ChurchMembers: React.FC = () => {
   const { currentMember } = useMinistryContext();
   const { data: membersRaw, loading } = useLocalStorageFirst<SupabaseMembro>({ table: 'membros' });
@@ -64,7 +74,10 @@ const ChurchMembers: React.FC = () => {
           ) : (
             members.map((member) => {
               const name = getDisplayName(member);
-              const photo = typeof member.foto === 'string' && member.foto ? member.foto : buildLocalAvatar(name);
+              const photo =
+                typeof member.foto === 'string' && member.foto
+                  ? withImageCacheBust(member.foto, member)
+                  : buildLocalAvatar(name);
               const canSeeMemberDetails = canViewFullMember(viewer, member);
 
               return (
@@ -98,7 +111,7 @@ const ChurchMembers: React.FC = () => {
                 <img
                   src={
                     typeof selectedMember.foto === 'string' && selectedMember.foto
-                      ? selectedMember.foto
+                      ? withImageCacheBust(selectedMember.foto, selectedMember)
                       : buildLocalAvatar(getDisplayName(selectedMember))
                   }
                   alt={getDisplayName(selectedMember)}
