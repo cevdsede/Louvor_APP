@@ -133,7 +133,7 @@ const PublicMemberRegistration: React.FC = () => {
     return '';
   };
 
-  const uploadPhoto = async (userId: string) => {
+  const uploadPhoto = async () => {
     if (!form.foto) {
       return buildLocalAvatar(form.nome);
     }
@@ -143,13 +143,16 @@ const PublicMemberRegistration: React.FC = () => {
       maxHeight: 720,
       quality: 0.72
     });
-    const filePath = `membros/${userId}.jpg`;
+    const photoId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const filePath = `membros/cadastros/${photoId}.jpg`;
     const { error: uploadError } = await supabase.storage
       .from('public-assets')
       .upload(filePath, compressedPhoto, {
         cacheControl: '31536000',
         contentType: compressedPhoto.type,
-        upsert: true
+        upsert: false
       });
 
     if (uploadError) {
@@ -178,36 +181,8 @@ const PublicMemberRegistration: React.FC = () => {
 
     try {
       const email = form.email.trim().toLowerCase();
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password: form.senha,
-        options: {
-          data: {
-            nome: form.nome.trim(),
-            display_name: form.nome.trim(),
-            genero: form.genero,
-            telefone: form.telefone_celular || form.telefone_residencial,
-            posicao_igreja: form.posicao_igreja
-          }
-        }
-      });
-
-      if (authError) {
-        if (authError.message.includes('already registered')) {
-          setError('Este e-mail já está cadastrado. Tente fazer login.');
-        } else {
-          setError(`Erro ao criar cadastro: ${authError.message}`);
-        }
-        return;
-      }
-
-      if (!authData.user) {
-        setError('Cadastro criado, mas não foi possível localizar o usuário.');
-        return;
-      }
-
-      const fotoUrl = await uploadPhoto(authData.user.id);
-      const payload = {
+      const fotoUrl = await uploadPhoto();
+      const profilePayload = {
         nome: form.nome.trim(),
         display_name: form.nome.trim(),
         nome_planilha: form.nome.trim(),
@@ -232,6 +207,7 @@ const PublicMemberRegistration: React.FC = () => {
         telefone_celular: form.telefone_celular.trim() || null,
         telefone_recados: form.telefone_recados.trim() || null,
         posicao_igreja: form.posicao_igreja,
+        ministerio_levita: form.posicao_igreja === 'Levita' ? form.ministerio_levita || null : null,
         nome_discipulador: form.nome_discipulador.trim() || null,
         esta_em_celula: form.esta_em_celula,
         qual_celula: form.esta_em_celula ? form.qual_celula.trim() || null : null,
@@ -239,13 +215,66 @@ const PublicMemberRegistration: React.FC = () => {
         perfil: 'user',
         ativo: true
       };
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password: form.senha,
+        options: {
+          data: profilePayload
+        }
+      });
+
+      if (authError) {
+        if (authError.message.includes('already registered')) {
+          setError('Este e-mail já está cadastrado. Tente fazer login.');
+        } else {
+          setError(`Erro ao criar cadastro: ${authError.message}`);
+        }
+        return;
+      }
+
+      if (!authData.user) {
+        setError('Cadastro criado, mas não foi possível localizar o usuário.');
+        return;
+      }
+
+      const payload = {
+        ...profilePayload,
+        nome: form.nome.trim(),
+        display_name: form.nome.trim(),
+        nome_planilha: form.nome.trim(),
+        email,
+        endereco: form.endereco.trim() || null,
+        numero_casa: form.numero_casa.trim() || null,
+        cep: form.cep.trim() || null,
+        bairro: form.bairro.trim() || null,
+        data_nasc: form.data_nasc || null,
+        genero: form.genero,
+        nome_pai: form.nome_pai.trim() || null,
+        nome_mae: form.nome_mae.trim() || null,
+        data_batismo: form.data_batismo || null,
+        igreja_batismo: form.igreja_batismo.trim() || null,
+        estado_civil: form.estado_civil || null,
+        nome_conjuge: form.nome_conjuge.trim() || null,
+        profissao: form.profissao.trim() || null,
+        escolaridade: form.escolaridade || null,
+        telefone: form.telefone_celular || form.telefone_residencial || null,
+        telefone_residencial: form.telefone_residencial.trim() || null,
+        telefone_comercial: form.telefone_comercial.trim() || null,
+        telefone_celular: form.telefone_celular.trim() || null,
+        telefone_recados: form.telefone_recados.trim() || null,
+        posicao_igreja: form.posicao_igreja,
+        ministerio_levita: form.posicao_igreja === 'Levita' ? form.ministerio_levita || null : null,
+        nome_discipulador: form.nome_discipulador.trim() || null,
+        esta_em_celula: form.esta_em_celula,
+        qual_celula: form.esta_em_celula ? form.qual_celula.trim() || null : null,
+        perfil: 'user',
+        ativo: true
+      };
 
       const { error: updateError } = await supabase.from('membros').update(payload).eq('id', authData.user.id);
 
       if (updateError) {
-        logger.error('Erro ao salvar ficha completa do membro:', updateError, 'database');
-        setError('A conta foi criada, mas houve erro ao salvar a ficha completa. Faça login e complete seus dados.');
-        return;
+        logger.warn('Ficha completa sera mantida pelo trigger de cadastro:', updateError, 'database');
       }
 
       setSuccess(true);
