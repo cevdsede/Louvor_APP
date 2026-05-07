@@ -31,6 +31,15 @@ const ImageCacheComponent: React.FC<ImageCacheProps> = ({
   const [hasError, setHasError] = useState(false);
 
   const handleError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    console.log('[ImageCache] img-error', {
+      originalSrc: src,
+      renderedSrc: event.currentTarget.src,
+      fallbackSrc,
+      hasError,
+      naturalWidth: event.currentTarget.naturalWidth,
+      naturalHeight: event.currentTarget.naturalHeight
+    });
+
     if (!hasError && fallbackSrc && event.currentTarget.src !== fallbackSrc) {
       setHasError(true);
     }
@@ -43,9 +52,18 @@ const ImageCacheComponent: React.FC<ImageCacheProps> = ({
 
   return (
     <img
-      src={displaySrc || null}
-      onError={handleError}
       {...props}
+      src={displaySrc || null}
+      onLoad={(event) => {
+        console.log('[ImageCache] img-load', {
+          originalSrc: src,
+          renderedSrc: event.currentTarget.src,
+          naturalWidth: event.currentTarget.naturalWidth,
+          naturalHeight: event.currentTarget.naturalHeight
+        });
+        props.onLoad?.(event);
+      }}
+      onError={handleError}
       style={{ opacity: loading ? 0.5 : 1, ...props.style }}
     />
   );

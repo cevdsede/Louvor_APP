@@ -64,6 +64,10 @@ const getLatestCacheKey = (cacheKeyBase: string) => {
     })[0];
 };
 
+const logImageDebug = (stage: string, detail: Record<string, unknown>) => {
+  console.log(`[ImageCache] ${stage}`, detail);
+};
+
 const pruneDuplicateCacheEntries = (cacheKeyBase: string) => {
   const cachedKeys = Object.keys(localStorage).filter(key => key.startsWith(cacheKeyBase));
   if (cachedKeys.length <= 1) return;
@@ -148,17 +152,28 @@ export const useImageCache = (
     };
 
     const loadImage = async () => {
+      logImageDebug('start', {
+        url,
+        fallbackUrl,
+        disableCompression,
+        cacheVariant,
+        online: navigator.onLine
+      });
+
       if (!url) {
+        logImageDebug('empty-url', { fallbackUrl });
         setState(fallbackUrl || '');
         return;
       }
 
       if (url.startsWith('data:') || url.startsWith('blob:')) {
+        logImageDebug('inline-url', { urlType: url.startsWith('data:') ? 'data' : 'blob' });
         setState(url);
         return;
       }
 
       if (url.includes('ui-avatars.com')) {
+        logImageDebug('blocked-ui-avatars', { url, fallbackUrl: Boolean(fallbackUrl) });
         setState(fallbackUrl || FALLBACK_SVG);
         return;
       }
@@ -168,6 +183,7 @@ export const useImageCache = (
       if (latestKey) {
         const cached = localStorage.getItem(latestKey);
         if (cached) {
+          logImageDebug('cache-hit', { url, latestKey, cachedLength: cached.length });
           pruneDuplicateCacheEntries(cacheKeyBase);
           setState(cached);
           return;
@@ -175,26 +191,31 @@ export const useImageCache = (
       }
 
       if (disableCompression) {
+        logImageDebug('direct-url-disable-compression', { url });
         setState(url);
         return;
       }
 
       if (!navigator.onLine) {
+        logImageDebug('offline-fallback', { url, fallbackUrl: Boolean(fallbackUrl) });
         setState(fallbackUrl || FALLBACK_SVG);
         return;
       }
 
 
       try {
+        logImageDebug('fetch-start', { url });
         const response = await fetch(url);
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
 
         const blob = await response.blob();
+        logImageDebug('fetch-ok', { url, type: blob.type, size: blob.size });
 
         if (blob.size > 12 * 1024 * 1024) {
           console.warn('Imagem muito grande para cache local:', url, blob.size);
+          logImageDebug('too-large-direct-url', { url, size: blob.size });
           setState(url);
           return;
         }
@@ -226,17 +247,25 @@ export const useImageCache = (
         const cacheKey = `${cacheKeyBase}_${Date.now()}`;
         const saved = trySaveToCache(cacheKey, finalBase64);
         if (saved) {
+          logImageDebug('cache-save-ok', { url, cacheKey, size: finalBase64.length });
           pruneDuplicateCacheEntries(cacheKeyBase);
           setState(finalBase64);
         } else {
+          logImageDebug('cache-save-failed-direct-url', { url });
           setState(url);
         }
       } catch (error) {
         console.warn('Erro ao carregar imagem:', error);
+        logImageDebug('fetch-error', {
+          url,
+          error: error instanceof Error ? error.message : String(error)
+        });
         if (url.startsWith('http')) {
+          logImageDebug('fallback-to-direct-url', { url });
           setState(url);
           return;
         }
+        logImageDebug('fallback-image', { fallbackUrl: Boolean(fallbackUrl) });
         setState(fallbackUrl || FALLBACK_SVG);
       }
     };
