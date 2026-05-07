@@ -74,8 +74,6 @@ export interface Member {
   status: 'confirmed' | 'pending' | 'absent';
   avatar: string;
   telefone?: string;
-  telefone_residencial?: string;
-  telefone_comercial?: string;
   telefone_celular?: string;
   telefone_recados?: string;
   email?: string;

@@ -23,16 +23,14 @@ const ChurchMembers: React.FC = () => {
   const [selectedMember, setSelectedMember] = useState<SupabaseMembro | null>(null);
 
   const viewer = currentMember as SupabaseMembro | null;
-  const canSeeAllMembers = normalize(viewer?.perfil).includes('admin') || normalize(viewer?.perfil).includes('pastor');
   const members = useMemo(() => {
     if (!viewer) return [];
 
     return (membersRaw || [])
       .filter((member) => member.ativo !== false)
-      .filter((member) => canSeeAllMembers || member.id === viewer.id)
       .filter((member) => getDisplayName(member).toLowerCase().includes(searchTerm.toLowerCase()))
       .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b)));
-  }, [canSeeAllMembers, membersRaw, searchTerm, viewer]);
+  }, [membersRaw, searchTerm, viewer]);
 
   const showFullDetails = canViewFullMember(viewer, selectedMember);
 
@@ -45,14 +43,12 @@ const ChurchMembers: React.FC = () => {
             Cadastro da igreja
           </h1>
         </div>
-        {canSeeAllMembers && (
-          <input
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Buscar membro"
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 dark:border-slate-700 dark:bg-slate-900 dark:text-white sm:max-w-xs"
-          />
-        )}
+        <input
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+          placeholder="Buscar membro"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 dark:border-slate-700 dark:bg-slate-900 dark:text-white sm:max-w-xs"
+        />
       </div>
 
       {loading ? (
@@ -69,6 +65,7 @@ const ChurchMembers: React.FC = () => {
             members.map((member) => {
               const name = getDisplayName(member);
               const photo = typeof member.foto === 'string' && member.foto ? member.foto : buildLocalAvatar(name);
+              const canSeeMemberDetails = canViewFullMember(viewer, member);
 
               return (
                 <button
@@ -80,9 +77,11 @@ const ChurchMembers: React.FC = () => {
                   <img src={photo} alt={name} className="h-12 w-12 rounded-full object-cover sm:h-14 sm:w-14" />
                   <div className="min-w-0">
                     <p className="truncate text-xs font-black text-slate-900 dark:text-white sm:text-sm">{name}</p>
-                    <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-brand">
-                      {member.posicao_igreja || 'Membro'}
-                    </p>
+                    {canSeeMemberDetails && (
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-brand">
+                        {member.posicao_igreja || 'Membro'}
+                      </p>
+                    )}
                   </div>
                 </button>
               );
@@ -109,9 +108,11 @@ const ChurchMembers: React.FC = () => {
                   <h2 className="text-xl font-black text-slate-900 dark:text-white">
                     {getDisplayName(selectedMember)}
                   </h2>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-brand">
-                    {selectedMember.posicao_igreja || 'Membro'}
-                  </p>
+                  {showFullDetails && (
+                    <p className="text-[10px] font-black uppercase tracking-widest text-brand">
+                      {selectedMember.posicao_igreja || 'Membro'}
+                    </p>
+                  )}
                 </div>
               </div>
               <button

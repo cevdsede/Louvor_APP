@@ -43,8 +43,6 @@ export interface SupabaseMembro {
     | 'Superior Incompleto'
     | null;
   telefone?: string | null;
-  telefone_residencial?: string | null;
-  telefone_comercial?: string | null;
   telefone_celular?: string | null;
   telefone_recados?: string | null;
   posicao_igreja?: 'Pastor(a)' | 'Levita' | 'Membro' | 'Secretario(a)' | 'Tesoureiro(a)' | 'Missionário' | null;
