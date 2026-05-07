@@ -493,6 +493,7 @@ class LocalStorageFirstService {
 
       if (table === 'membros' && Array.isArray(data)) {
         data = await this.attachAuthDisplayNames(data as any[]);
+        data = await this.mergePublicChurchMembers(data as any[]);
       }
 
       return (data as T) || null;
@@ -532,6 +533,39 @@ class LocalStorageFirstService {
       }));
     } catch (error) {
       console.warn('Nao foi possivel anexar display_name do Auth:', error);
+      return membros;
+    }
+  }
+
+  private static async mergePublicChurchMembers(membros: any[]): Promise<any[]> {
+    try {
+      const { data, error } = await supabase.rpc('get_membros_igreja_publicos');
+      if (error || !Array.isArray(data)) {
+        return membros;
+      }
+
+      const byId = new Map(membros.filter((membro) => membro?.id).map((membro) => [membro.id, membro]));
+
+      data.forEach((publicMember: any) => {
+        if (!publicMember?.id || byId.has(publicMember.id)) {
+          return;
+        }
+
+        byId.set(publicMember.id, {
+          id: publicMember.id,
+          nome: publicMember.nome,
+          display_name: publicMember.display_name,
+          nome_planilha: publicMember.nome_planilha,
+          foto: publicMember.foto,
+          ativo: publicMember.ativo,
+          created_at: publicMember.created_at,
+          perfil: 'public'
+        });
+      });
+
+      return [...byId.values()];
+    } catch (error) {
+      console.warn('Nao foi possivel anexar membros publicos da igreja:', error);
       return membros;
     }
   }
