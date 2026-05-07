@@ -37,6 +37,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
   const [currentView, setCurrentView] = useState<ChurchView>('dashboard');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
+  const [isThemeExpanded, setIsThemeExpanded] = useState(false);
   const [profileName, setProfileName] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
   const [profilePhoto, setProfilePhoto] = useState('');
@@ -217,7 +218,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
           </div>
         </div>
 
-        <nav className="flex w-full flex-1 items-stretch justify-start gap-1 overflow-x-auto px-1.5 py-1 no-scrollbar lg:w-auto lg:flex-col lg:items-stretch lg:justify-start lg:gap-1.5 lg:overflow-y-auto lg:px-4 lg:py-2">
+        <nav className="flex w-full flex-1 items-center justify-center gap-1 px-1.5 no-scrollbar lg:w-auto lg:flex-col lg:items-stretch lg:justify-start lg:gap-1.5 lg:overflow-y-auto lg:px-4 lg:py-2">
           {menuItems
             .filter((item) => item.visible)
             .map((item) => (
@@ -225,7 +226,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
                 key={item.id}
                 type="button"
                 onClick={() => setCurrentView(item.id)}
-                className={`flex min-w-[4.3rem] flex-1 max-w-none flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 transition-all lg:min-w-0 lg:flex-none lg:flex-row lg:justify-start lg:gap-4 lg:rounded-2xl lg:px-5 lg:py-4 ${
+                className={`flex min-w-0 flex-1 max-w-none flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 transition-all lg:flex-none lg:flex-row lg:justify-start lg:gap-4 lg:rounded-2xl lg:px-5 lg:py-4 ${
                   currentView === item.id
                     ? 'bg-brand text-white shadow-xl shadow-brand/20'
                     : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 lg:hover:bg-slate-50 lg:dark:hover:bg-slate-800/50'
@@ -242,7 +243,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
             <button
               type="button"
               onClick={onOpenMinistry}
-              className="flex min-w-[4.8rem] flex-1 max-w-none flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 text-slate-400 transition-all hover:text-slate-600 dark:hover:text-slate-200 lg:min-w-0 lg:flex-none lg:flex-row lg:justify-start lg:gap-4 lg:rounded-2xl lg:px-5 lg:py-4 lg:hover:bg-slate-50 lg:dark:hover:bg-slate-800/50"
+              className="flex min-w-0 flex-1 max-w-none flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 text-slate-400 transition-all hover:text-slate-600 dark:hover:text-slate-200 lg:flex-none lg:flex-row lg:justify-start lg:gap-4 lg:rounded-2xl lg:px-5 lg:py-4 lg:hover:bg-slate-50 lg:dark:hover:bg-slate-800/50"
             >
               <i className="fas fa-layer-group w-5 text-center text-base lg:w-6 lg:text-lg" />
               <span className="w-full max-w-full whitespace-normal break-words text-center text-[8px] font-bold uppercase leading-[1.05] tracking-normal lg:w-auto lg:break-normal lg:text-sm lg:capitalize">
@@ -253,41 +254,60 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
         </nav>
 
         <div className="mt-auto hidden flex-col gap-3 border-t border-slate-50 px-4 pb-6 pt-4 dark:border-slate-800 lg:flex">
-          <button
-            type="button"
-            onClick={() => setIsProfileOpen(true)}
-            className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 text-left transition hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/30 dark:hover:bg-slate-800"
-          >
-            <img
-              src={profilePhoto || buildLocalAvatar(currentMember?.nome || 'Usuario')}
-              alt={currentMember?.nome || 'Usuario'}
-              className="h-9 w-9 rounded-full object-cover"
-            />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[11px] font-black text-slate-800 dark:text-white">
-                {currentMember?.nome || 'Membro'}
-              </p>
-              <p className="text-[7px] font-bold uppercase tracking-widest text-brand">{currentMember?.perfil || 'user'}</p>
-            </div>
-          </button>
-          <div className="rounded-2xl border border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/30">
-            <div className="px-4 py-2.5">
+          <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/30">
+            <button
+              type="button"
+              onClick={() => setIsThemeExpanded(!isThemeExpanded)}
+              className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/50"
+            >
               <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Temas</span>
-            </div>
-            <div className="flex justify-between gap-1 px-4 pb-3">
-              {themeColors.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => onColorChange(color)}
-                  className={`h-6 w-6 rounded-lg border-2 transition-all ${
-                    brandColor === color ? 'scale-110 border-brand/50' : 'border-transparent opacity-70 hover:opacity-100'
-                  }`}
-                  style={{ backgroundColor: color }}
-                />
-              ))}
-            </div>
+              <i className={`fas fa-chevron-up text-[9px] text-slate-400 transition-transform ${isThemeExpanded ? 'rotate-180' : ''}`} />
+            </button>
+            {isThemeExpanded && (
+              <div className="flex justify-between gap-1 px-4 pb-3 animate-fade-in">
+                {themeColors.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => onColorChange(color)}
+                    className={`h-6 w-6 rounded-lg border-2 transition-all ${
+                      brandColor === color ? 'scale-110 border-brand/50' : 'border-transparent opacity-60 hover:opacity-100'
+                    }`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsProfileOpen(true)}
+              className="group flex flex-1 cursor-pointer items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 text-left transition-all hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/30 dark:hover:bg-slate-800"
+            >
+              <img
+                src={profilePhoto || buildLocalAvatar(currentMember?.nome || 'Usuario')}
+                alt={currentMember?.nome || 'Usuario'}
+                className="h-9 w-9 rounded-full object-cover shadow-sm transition-transform group-hover:scale-105"
+              />
+              <div className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-[11px] font-black text-slate-800 dark:text-white">
+                  {currentMember?.nome || 'Membro'}
+                </span>
+                <span className="text-[7px] font-bold uppercase tracking-widest text-brand">{currentMember?.perfil || 'user'}</span>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="group flex h-[60px] w-12 items-center justify-center rounded-2xl border border-red-100 bg-red-50 text-red-500 transition-all hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20"
+              title="Sair do Sistema"
+            >
+              <i className="fas fa-sign-out-alt text-lg transition-transform group-hover:scale-110" />
+            </button>
+          </div>
+
           <button
             type="button"
             onClick={onToggleTheme}
@@ -295,14 +315,6 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
           >
             <i className={isDarkMode ? 'fas fa-sun text-brand-gold' : 'fas fa-moon text-brand'} />
             {isDarkMode ? 'Modo Claro' : 'Modo Escuro'}
-          </button>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 text-[9px] font-black uppercase tracking-widest text-red-500 transition-all hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20"
-          >
-            <i className="fas fa-sign-out-alt" />
-            Sair
           </button>
         </div>
       </aside>
@@ -317,131 +329,183 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
       </main>
 
       {isProfileOpen && (
-        <div className="fixed inset-0 z-[700] overflow-y-auto bg-slate-950/60 px-3 py-4 pb-24 backdrop-blur-sm sm:px-4 sm:py-6">
-          <div className="mx-auto max-w-md rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:rounded-[2rem] sm:p-5">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-lg font-black uppercase tracking-tight text-slate-800 dark:text-white">Configuracoes</h2>
-              <button type="button" onClick={() => setIsProfileOpen(false)} className="text-slate-400 hover:text-red-500">
-                <i className="fas fa-times" />
-              </button>
-            </div>
+        <div className="fixed inset-0 z-[700] overflow-y-auto px-3 py-4 pb-24 sm:p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsProfileOpen(false)} />
+          <div className="flex min-h-full items-start justify-center sm:items-center">
+            <div className="relative mx-auto mt-2 max-h-[calc(100dvh-7rem)] w-full max-w-md overflow-y-auto rounded-[2rem] border border-slate-100 bg-white p-5 shadow-2xl animate-fade-in no-scrollbar dark:border-slate-800 dark:bg-slate-900 sm:max-h-[90vh] sm:rounded-[2.5rem] sm:p-6 lg:p-8">
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-lg font-black uppercase tracking-tighter text-slate-800 dark:text-white">Configuracoes</h2>
+                <button type="button" onClick={() => setIsProfileOpen(false)} className="text-slate-400 transition-colors hover:text-red-500">
+                  <i className="fas fa-times text-lg" />
+                </button>
+              </div>
 
-            <div className="mb-6 flex flex-col items-center">
-              <img
-                src={profilePhoto || buildLocalAvatar(profileName || 'Usuario')}
-                alt={profileName || 'Usuario'}
-                className="h-20 w-20 rounded-full border-4 border-slate-50 object-cover shadow-xl dark:border-slate-800"
-              />
-              <label className="mt-3 cursor-pointer rounded-xl bg-brand px-4 py-2 text-[9px] font-black uppercase tracking-widest text-white">
-                Alterar Foto
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(event) => handleProfilePhotoChange(event.target.files?.[0] || null)}
-                />
-              </label>
-            </div>
-
-            <div className="space-y-4">
-              <label className="block">
-                <span className="mb-1 block text-[8px] font-black uppercase tracking-widest text-slate-400">Nome</span>
-                <input
-                  value={profileName}
-                  onChange={(event) => setProfileName(event.target.value)}
-                  className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-800"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-[8px] font-black uppercase tracking-widest text-slate-400">Email de Login</span>
-                <input
-                  type="email"
-                  value={profileEmail}
-                  onChange={(event) => setProfileEmail(event.target.value)}
-                  className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-800"
-                />
-              </label>
-
-              <button
-                type="button"
-                onClick={() => setIsPasswordOpen(true)}
-                className="w-full rounded-xl border border-brand/30 bg-brand/10 px-4 py-3 text-left text-xs font-bold text-brand"
-              >
-                <i className="fas fa-lock mr-2" />
-                Alterar senha
-              </button>
-
-              <div>
-                <span className="mb-2 block text-[8px] font-black uppercase tracking-widest text-slate-400">Temas</span>
-                <div className="flex justify-between">
-                  {themeColors.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => onColorChange(color)}
-                      className={`h-8 w-8 rounded-xl border-4 transition-all ${
-                        brandColor === color ? 'scale-110 border-brand/30' : 'border-transparent opacity-80'
-                      }`}
-                      style={{ backgroundColor: color }}
+              <div className="mb-6 flex flex-col items-center">
+                <div className="relative mb-2">
+                  <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-slate-50 bg-slate-100 shadow-xl dark:border-slate-800 dark:bg-slate-800">
+                    <img
+                      src={profilePhoto || buildLocalAvatar(profileName || 'Usuario')}
+                      alt={profileName || 'Usuario'}
+                      className="h-full w-full object-cover"
                     />
-                  ))}
+                  </div>
+                  <label className="absolute -bottom-1 -right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-brand text-white shadow-lg shadow-brand/20 transition hover:brightness-110">
+                    <i className="fas fa-camera text-xs" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) => handleProfilePhotoChange(event.target.files?.[0] || null)}
+                    />
+                  </label>
+                </div>
+                <p className="text-[9px] font-black uppercase tracking-widest text-brand">{currentMember?.perfil || 'user'}</p>
+              </div>
+
+              <div className="space-y-4">
+                <label className="block">
+                  <span className="mb-1 ml-1 block text-[8px] font-black uppercase tracking-widest text-slate-400">Nome</span>
+                  <input
+                    value={profileName}
+                    onChange={(event) => setProfileName(event.target.value)}
+                    className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-800"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 ml-1 block text-[8px] font-black uppercase tracking-widest text-slate-400">Email de Login</span>
+                  <input
+                    type="email"
+                    value={profileEmail}
+                    onChange={(event) => setProfileEmail(event.target.value)}
+                    className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-800"
+                  />
+                </label>
+
+                <div>
+                  <label className="mb-1 ml-1 block text-[8px] font-black uppercase tracking-widest text-slate-400">Alterar Senha</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsPasswordOpen(true)}
+                    className="group relative w-full overflow-hidden rounded-xl border border-brand/30 bg-gradient-to-r from-brand/10 to-brand/20 px-4 py-3 text-left text-xs font-bold text-brand outline-none transition-all duration-300 hover:from-brand/20 hover:to-brand/30 focus:ring-2 focus:ring-brand/50 dark:border-brand/40 dark:from-brand/20 dark:to-brand/30 dark:text-brand/90 dark:hover:from-brand/30 dark:hover:to-brand/40"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-brand/5 to-brand/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-brand/10 dark:to-brand/20" />
+                    <div className="relative flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <i className="fas fa-lock text-brand/70 transition-transform duration-300 group-hover:scale-110 dark:text-brand/80" />
+                        <span className="transition-colors duration-300 group-hover:text-brand dark:group-hover:text-brand">Alterar senha</span>
+                      </span>
+                      <i className="fas fa-arrow-right text-brand/50 transition-transform duration-300 group-hover:translate-x-1 dark:text-brand/60" />
+                    </div>
+                  </button>
+                </div>
+
+                <div className="space-y-4 border-t border-slate-100 pt-4 dark:border-slate-800 lg:hidden">
+                  <label className="ml-1 block text-[8px] font-black uppercase tracking-widest text-slate-400">Temas</label>
+                  <div className="flex justify-between">
+                    {themeColors.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => onColorChange(color)}
+                        className={`h-8 w-8 rounded-xl border-4 transition-all ${
+                          brandColor === color ? 'scale-110 border-brand/30 shadow-lg' : 'border-transparent opacity-80'
+                        }`}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onToggleTheme}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-100 bg-slate-50 py-3 text-[8px] font-black uppercase tracking-widest text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                  >
+                    <i className={`fas ${isDarkMode ? 'fa-sun text-brand-gold' : 'fa-moon text-brand'}`} />
+                    Alternar Modo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 py-3 text-[8px] font-black uppercase tracking-widest text-red-500 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400"
+                  >
+                    <i className="fas fa-sign-out-alt" />
+                    Sair do Sistema
+                  </button>
                 </div>
               </div>
-            </div>
 
-            <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => setIsProfileOpen(false)}
-                className="flex-1 rounded-xl bg-slate-100 py-3.5 text-[9px] font-black uppercase tracking-widest text-slate-500 dark:bg-slate-800"
-              >
-                Fechar
-              </button>
-              <button
-                type="button"
-                disabled={isSavingProfile}
-                onClick={handleSaveProfile}
-                className="flex-1 rounded-xl bg-brand py-3.5 text-[9px] font-black uppercase tracking-widest text-white disabled:opacity-60"
-              >
-                {isSavingProfile ? 'Salvando...' : 'Salvar'}
-              </button>
+              <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:gap-4">
+                <button
+                  type="button"
+                  onClick={() => setIsProfileOpen(false)}
+                  className="flex-1 rounded-xl bg-slate-100 py-3.5 text-[9px] font-black uppercase tracking-widest text-slate-500 dark:bg-slate-800"
+                >
+                  Fechar
+                </button>
+                <button
+                  type="button"
+                  disabled={isSavingProfile}
+                  onClick={handleSaveProfile}
+                  className="flex-1 rounded-xl bg-brand py-3.5 text-[9px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20 transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSavingProfile ? 'Salvando...' : 'Salvar'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {isPasswordOpen && (
-        <div className="fixed inset-0 z-[760] overflow-y-auto bg-slate-950/60 px-3 py-4 pb-24 backdrop-blur-sm sm:px-4 sm:py-6">
-          <div className="mx-auto max-w-md rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:rounded-[2rem] sm:p-5">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-lg font-black uppercase tracking-tight text-slate-800 dark:text-white">Alterar Senha</h2>
-              <button type="button" onClick={() => setIsPasswordOpen(false)} className="text-slate-400 hover:text-red-500">
-                <i className="fas fa-times" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(event) => setNewPassword(event.target.value)}
-                placeholder="Nova senha"
-                className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-800"
-              />
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                placeholder="Confirmar senha"
-                className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-800"
-              />
-            </div>
-            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <button type="button" onClick={() => setIsPasswordOpen(false)} className="flex-1 rounded-xl bg-slate-100 py-3.5 text-[9px] font-black uppercase tracking-widest text-slate-500 dark:bg-slate-800">
-                Cancelar
-              </button>
-              <button type="button" disabled={isSavingProfile} onClick={handleChangePassword} className="flex-1 rounded-xl bg-brand py-3.5 text-[9px] font-black uppercase tracking-widest text-white disabled:opacity-60">
-                Salvar
-              </button>
+        <div className="fixed inset-0 z-[760] overflow-y-auto px-3 py-4 pb-24 sm:p-4 lg:p-8">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsPasswordOpen(false)} />
+          <div className="flex min-h-full items-start justify-center sm:items-center">
+            <div className="relative mx-auto mt-2 max-h-[calc(100dvh-7rem)] w-full max-w-md overflow-y-auto rounded-[2rem] border border-slate-100 bg-white p-5 shadow-2xl animate-fade-in no-scrollbar dark:border-slate-800 dark:bg-slate-900 sm:max-h-[90vh] sm:rounded-[2.5rem] sm:p-6 lg:p-8">
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-lg font-black uppercase tracking-tighter text-slate-800 dark:text-white">Alterar Senha</h2>
+                <button type="button" onClick={() => setIsPasswordOpen(false)} className="text-slate-400 transition-colors hover:text-red-500">
+                  <i className="fas fa-times text-lg" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <label className="block">
+                  <span className="mb-1 ml-1 block text-[8px] font-black uppercase tracking-widest text-slate-400">Nova Senha</span>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    placeholder="Digite a nova senha"
+                    className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-800"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 ml-1 block text-[8px] font-black uppercase tracking-widest text-slate-400">Confirmar Senha</span>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    placeholder="Confirme a nova senha"
+                    className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-800"
+                  />
+                </label>
+              </div>
+              <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setIsPasswordOpen(false)}
+                  disabled={isSavingProfile}
+                  className="flex-1 rounded-xl border border-slate-200 bg-slate-100 py-3.5 text-[9px] font-black uppercase tracking-widest text-slate-600 transition-all hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={isSavingProfile}
+                  onClick={handleChangePassword}
+                  className="flex-1 rounded-xl bg-brand py-3.5 text-[9px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20 transition-all hover:bg-brand/90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSavingProfile ? 'Salvando...' : 'Salvar'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
