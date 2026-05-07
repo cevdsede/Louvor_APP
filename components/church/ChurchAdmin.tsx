@@ -17,7 +17,9 @@ type EventForm = {
   recorrente: boolean;
   recorrencia_tipo: string;
   recorrencia_dias_semana: number[];
+  recorrencia_dia_mes: number;
   recorrencia_ordem_semana: number;
+  recorrencia_data_fim: string;
   prioridade: number;
   substitui_eventos_menor_prioridade: boolean;
   visivel_dashboard: boolean;
@@ -35,7 +37,9 @@ const INITIAL_FORM: EventForm = {
   recorrente: false,
   recorrencia_tipo: 'semanal',
   recorrencia_dias_semana: [0],
+  recorrencia_dia_mes: 1,
   recorrencia_ordem_semana: 1,
+  recorrencia_data_fim: '',
   prioridade: 0,
   substitui_eventos_menor_prioridade: false,
   visivel_dashboard: true,
@@ -51,6 +55,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
   const { data: membersRaw } = useLocalStorageFirst<SupabaseMembro>({ table: 'membros' });
   const { data: permissionsRaw } = useLocalStorageFirst<SupabasePermissaoIgreja>({ table: 'permissoes_igreja' });
   const [form, setForm] = useState<EventForm>(INITIAL_FORM);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
   const [permissionSearch, setPermissionSearch] = useState('');
@@ -78,6 +83,13 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
         .filter((member) => getDisplayName(member).toLowerCase().includes(permissionSearch.toLowerCase()))
         .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b))),
     [managersByMemberId, membersRaw, permissionSearch]
+  );
+  const orderedEvents = useMemo(
+    () =>
+      [...(eventsRaw || [])].sort(
+        (a, b) => new Date(b.data_inicio).getTime() - new Date(a.data_inicio).getTime()
+      ),
+    [eventsRaw]
   );
 
   const uploadCardImage = async (eventId: string) => {
@@ -115,31 +127,40 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
 
     try {
       const startsAt = `${form.data}T${form.horario || '19:30'}:00`;
-      const { data, error } = await supabase
-        .from('eventos_igreja')
-        .insert({
-          titulo: form.titulo.trim(),
-          descricao: form.descricao.trim() || null,
-          local: form.local.trim() || null,
-          categoria: form.categoria.trim() || null,
-          data_inicio: startsAt,
-          horario_inicio: form.horario || null,
-          recorrente: form.recorrente,
-          recorrencia_tipo: form.recorrente ? form.recorrencia_tipo : null,
-          recorrencia_intervalo: 1,
-          recorrencia_dias_semana: form.recorrente ? form.recorrencia_dias_semana : null,
-          recorrencia_ordem_semana:
-            form.recorrente && form.recorrencia_tipo === 'mensal_ordem_semana'
-              ? form.recorrencia_ordem_semana
-              : null,
-          prioridade: form.prioridade,
-          substitui_eventos_menor_prioridade: form.substitui_eventos_menor_prioridade,
-          visivel_dashboard: form.visivel_dashboard,
-          visivel_agenda: form.visivel_agenda,
-          created_by: currentUserId || null
-        })
-        .select('id')
-        .single();
+      const payload = {
+        titulo: form.titulo.trim(),
+        descricao: form.descricao.trim() || null,
+        local: form.local.trim() || null,
+        categoria: form.categoria.trim() || null,
+        data_inicio: startsAt,
+        horario_inicio: form.horario || null,
+        recorrente: form.recorrente,
+        recorrencia_tipo: form.recorrente ? form.recorrencia_tipo : null,
+        recorrencia_intervalo: 1,
+        recorrencia_dias_semana:
+          form.recorrente && ['semanal', 'mensal_ordem_semana'].includes(form.recorrencia_tipo)
+            ? form.recorrencia_dias_semana
+            : null,
+        recorrencia_dia_mes:
+          form.recorrente && form.recorrencia_tipo === 'mensal_dia_mes' ? form.recorrencia_dia_mes : null,
+        recorrencia_ordem_semana:
+          form.recorrente && form.recorrencia_tipo === 'mensal_ordem_semana'
+            ? form.recorrencia_ordem_semana
+            : null,
+        recorrencia_data_fim: form.recorrente && form.recorrencia_data_fim ? form.recorrencia_data_fim : null,
+        prioridade: form.prioridade,
+        substitui_eventos_menor_prioridade: form.substitui_eventos_menor_prioridade,
+        visivel_dashboard: form.visivel_dashboard,
+        visivel_agenda: form.visivel_agenda,
+        ativo: true,
+        ...(editingEventId ? {} : { created_by: currentUserId || null })
+      };
+
+      const request = editingEventId
+        ? supabase.from('eventos_igreja').update(payload).eq('id', editingEventId).select('id').single()
+        : supabase.from('eventos_igreja').insert(payload).select('id').single();
+
+      const { data, error } = await request;
 
       if (error) throw error;
 
@@ -154,13 +175,68 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
 
       await LocalStorageFirstService.forceSync('eventos_igreja');
       setForm(INITIAL_FORM);
-      showSuccess('Evento salvo na agenda.');
+      setEditingEventId(null);
+      showSuccess(editingEventId ? 'Evento atualizado.' : 'Evento salvo na agenda.');
     } catch (error) {
       console.error('Erro ao salvar evento da igreja:', error);
       showError('Erro ao salvar evento.');
     } finally {
       setSaving(false);
     }
+  };
+
+  const editEvent = (event: SupabaseEventoIgreja) => {
+    const start = new Date(event.data_inicio);
+    const fallbackDate = event.data_inicio.slice(0, 10);
+    setEditingEventId(event.id);
+    setForm({
+      titulo: event.titulo || '',
+      descricao: event.descricao || '',
+      local: event.local || '',
+      data: Number.isNaN(start.getTime()) ? fallbackDate : start.toISOString().slice(0, 10),
+      horario: event.horario_inicio?.slice(0, 5) || '19:30',
+      categoria: event.categoria || 'Culto',
+      recorrente: Boolean(event.recorrente),
+      recorrencia_tipo: event.recorrencia_tipo || 'semanal',
+      recorrencia_dias_semana: event.recorrencia_dias_semana?.length ? event.recorrencia_dias_semana : [0],
+      recorrencia_dia_mes: event.recorrencia_dia_mes || 1,
+      recorrencia_ordem_semana: event.recorrencia_ordem_semana || 1,
+      recorrencia_data_fim: event.recorrencia_data_fim || '',
+      prioridade: event.prioridade || 0,
+      substitui_eventos_menor_prioridade: Boolean(event.substitui_eventos_menor_prioridade),
+      visivel_dashboard: event.visivel_dashboard !== false,
+      visivel_agenda: event.visivel_agenda !== false,
+      imagem: null
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingEventId(null);
+    setForm(INITIAL_FORM);
+  };
+
+  const deleteEvent = async (event: SupabaseEventoIgreja) => {
+    const confirmed = window.confirm(`Excluir "${event.titulo}" da agenda e dos cards?`);
+    if (!confirmed) return;
+
+    const { error } = await supabase.from('eventos_igreja').delete().eq('id', event.id);
+    if (error) {
+      showError('Erro ao excluir evento.');
+      return;
+    }
+
+    if (editingEventId === event.id) cancelEdit();
+    await LocalStorageFirstService.forceSync('eventos_igreja');
+    showSuccess('Evento excluido.');
+  };
+
+  const toggleWeekDay = (day: number) => {
+    const exists = form.recorrencia_dias_semana.includes(day);
+    const next = exists
+      ? form.recorrencia_dias_semana.filter((item) => item !== day)
+      : [...form.recorrencia_dias_semana, day].sort((a, b) => a - b);
+    setForm({ ...form, recorrencia_dias_semana: next.length ? next : [day] });
   };
 
   const toggleManager = async (member: SupabaseMembro, allowed: boolean) => {
@@ -198,6 +274,14 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
       </div>
 
       <form onSubmit={saveEvent} className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+        {editingEventId && (
+          <div className="mb-4 flex flex-col gap-3 rounded-xl bg-brand/10 p-3 text-sm font-bold text-brand sm:flex-row sm:items-center sm:justify-between">
+            <span>Editando evento cadastrado</span>
+            <button type="button" onClick={cancelEdit} className="rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-white/60 dark:hover:bg-slate-900/40">
+              Cancelar
+            </button>
+          </div>
+        )}
         <div className="grid gap-3 md:grid-cols-2 md:gap-4">
           <input className={inputClass} placeholder="Titulo do evento/card" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
           <input className={inputClass} placeholder="Local" value={form.local} onChange={(e) => setForm({ ...form, local: e.target.value })} />
@@ -206,10 +290,63 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
           <textarea className={`${inputClass} md:col-span-2`} placeholder="Descricao" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
           <input type="file" accept="image/*" className={inputClass} onChange={(e) => setForm({ ...form, imagem: e.target.files?.[0] || null })} />
           <select className={inputClass} value={form.recorrencia_tipo} onChange={(e) => setForm({ ...form, recorrencia_tipo: e.target.value })}>
+            <option value="diaria">Todo dia</option>
             <option value="semanal">Toda semana</option>
+            <option value="mensal_dia_mes">Todo mes no mesmo dia</option>
             <option value="mensal_ordem_semana">Todo primeiro/segundo domingo do mes</option>
           </select>
         </div>
+
+        {form.recorrente && (
+          <div className="mt-4 grid gap-3 rounded-2xl bg-slate-50 p-3 dark:bg-slate-800/60 md:grid-cols-2">
+            {['semanal', 'mensal_ordem_semana'].includes(form.recorrencia_tipo) && (
+              <div className="md:col-span-2">
+                <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-500">Dias da semana</p>
+                <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
+                  {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'].map((day, index) => (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => toggleWeekDay(index)}
+                      className={`rounded-xl px-2 py-3 text-[10px] font-black uppercase tracking-widest transition ${
+                        form.recorrencia_dias_semana.includes(index)
+                          ? 'bg-brand text-white shadow-lg shadow-brand/20'
+                          : 'bg-white text-slate-500 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      {day}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {form.recorrencia_tipo === 'mensal_ordem_semana' && (
+              <select className={inputClass} value={form.recorrencia_ordem_semana} onChange={(e) => setForm({ ...form, recorrencia_ordem_semana: Number(e.target.value) })}>
+                <option value={1}>Primeiro da semana no mes</option>
+                <option value={2}>Segundo da semana no mes</option>
+                <option value={3}>Terceiro da semana no mes</option>
+                <option value={4}>Quarto da semana no mes</option>
+                <option value={5}>Quinto da semana no mes</option>
+              </select>
+            )}
+
+            {form.recorrencia_tipo === 'mensal_dia_mes' && (
+              <input
+                type="number"
+                min={1}
+                max={31}
+                className={inputClass}
+                value={form.recorrencia_dia_mes}
+                onChange={(e) => setForm({ ...form, recorrencia_dia_mes: Number(e.target.value) })}
+                placeholder="Dia do mes"
+              />
+            )}
+
+            <input type="date" className={inputClass} value={form.recorrencia_data_fim} onChange={(e) => setForm({ ...form, recorrencia_data_fim: e.target.value })} />
+            <input type="number" className={inputClass} value={form.prioridade} onChange={(e) => setForm({ ...form, prioridade: Number(e.target.value) })} placeholder="Prioridade" />
+          </div>
+        )}
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
           <Toggle label="Recorrente" checked={form.recorrente} onChange={(value) => setForm({ ...form, recorrente: value })} />
@@ -220,7 +357,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
 
         <div className="mt-4">
           <button disabled={saving} className="w-full rounded-2xl bg-brand px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20 disabled:opacity-60 sm:w-auto">
-            {saving ? 'Salvando...' : 'Adicionar a agenda'}
+            {saving ? 'Salvando...' : editingEventId ? 'Atualizar evento' : 'Adicionar a agenda'}
           </button>
         </div>
       </form>
@@ -269,12 +406,30 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
       <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:p-5">
         <h2 className="mb-4 text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">Eventos cadastrados</h2>
         <div className="space-y-2">
-          {(eventsRaw || []).slice(0, 10).map((event) => (
-            <div key={event.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
-              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{event.titulo}</span>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                {event.visivel_dashboard ? 'Card' : 'Agenda'}
-              </span>
+          {orderedEvents.slice(0, 20).map((event) => (
+            <div key={event.id} className="flex flex-col gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800/60 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <span className="block truncate text-sm font-bold text-slate-700 dark:text-slate-200">{event.titulo}</span>
+                <span className="mt-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  {new Date(event.data_inicio).toLocaleDateString('pt-BR')} · {event.recorrente ? 'Recorrente' : 'Unico'} · {event.visivel_dashboard ? 'Card' : 'Agenda'}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+                <button
+                  type="button"
+                  onClick={() => editEvent(event)}
+                  className="rounded-lg bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700"
+                >
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => deleteEvent(event)}
+                  className="rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                >
+                  Excluir
+                </button>
+              </div>
             </div>
           ))}
         </div>
