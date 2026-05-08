@@ -12,7 +12,7 @@ import { getDisplayName } from '../../utils/displayName';
 import { sortMembersByRole, getRoleIcon } from '../../utils/teamUtils';
 import EventCard from '../escalas/EventCard';
 import { buildLocalAvatar } from '../../utils/avatar';
-import { sanitizeImageUrl } from '../../utils/imageUrl';
+import { getPublicAssetsPathFromUrl, sanitizeImageUrl } from '../../utils/imageUrl';
 import { compressImageFile } from '../../utils/imageCompression';
 
 interface TeamModalsProps {
@@ -310,6 +310,14 @@ const TeamModals: React.FC<TeamModalsProps> = ({
       const { data: { publicUrl } } = supabase.storage
         .from('public-assets')
         .getPublicUrl(filePath);
+
+      const previousPhotoPath = getPublicAssetsPathFromUrl(editingMember.avatar);
+      if (previousPhotoPath && previousPhotoPath !== filePath) {
+        const { error: removeError } = await supabase.storage.from('public-assets').remove([previousPhotoPath]);
+        if (removeError) {
+          logger.warn('Não foi possível apagar a foto antiga do membro:', removeError, 'ui');
+        }
+      }
 
       // Atualizar o avatar no estado do modal
       onEditingMemberChange({

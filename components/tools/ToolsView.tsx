@@ -8,6 +8,7 @@ import MultiSelect from '../equipe/MultiSelect';
 import { ImageCache } from '../ui/ImageCache';
 import { compressImageFile } from '../../utils/imageCompression';
 import { getMemberMemberships as getMemberMinistryMemberships } from '../../utils/memberMinistry';
+import { getPublicAssetsPathFromUrl } from '../../utils/imageUrl';
 import logger from '../../utils/logger';
 import {
   ChartInstance,
@@ -169,6 +170,14 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
       const { data: { publicUrl } } = supabase.storage
         .from('public-assets')
         .getPublicUrl(filePath);
+
+      const previousPhotoPath = getPublicAssetsPathFromUrl(editingMember.foto);
+      if (previousPhotoPath && previousPhotoPath !== filePath) {
+        const { error: removeError } = await supabase.storage.from('public-assets').remove([previousPhotoPath]);
+        if (removeError) {
+          logger.warn('Não foi possível apagar a foto antiga do membro:', removeError, 'database');
+        }
+      }
 
       const updatedMember = { ...editingMember, foto: publicUrl };
       setEditingMember(updatedMember);
