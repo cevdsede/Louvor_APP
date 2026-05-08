@@ -60,7 +60,6 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
     );
 
     return (allChurchMembers || [])
-      .filter((member: any) => member.ativo !== false)
       .filter((member: any) => !activeMemberIds.has(member.id))
       .filter((member: any) => getDisplayName(member).toLowerCase().includes(memberSearch.toLowerCase()))
       .sort((a: any, b: any) => getDisplayName(a).localeCompare(getDisplayName(b)));

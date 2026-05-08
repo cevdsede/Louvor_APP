@@ -102,8 +102,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
               email: formData.email.toLowerCase(),
               genero: formData.genero,
               telefone: formData.telefone,
-              foto: nextFotoUrl || defaultAvatar,
-              ativo: false
+              foto: nextFotoUrl || defaultAvatar
             })
             .eq('id', authData.user.id);
 
@@ -152,7 +151,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
           }
         }
 
-        // 4. Criar registro básico na tabela membros (inativo)
+        // 4. Criar registro básico na tabela membros
         const { error: membroError } = await supabase
           .from('membros')
           .insert({
@@ -164,8 +163,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
             genero: formData.genero,
             telefone: formData.telefone,
             foto: fotoUrl || buildLocalAvatar(formData.nome),
-            funcoes: [], // Será definido pelo admin na aprovação
-            ativo: false // Apenas será ativado após aprovação
+            funcoes: [] // Será definido pelo admin na aprovação
           });
 
         if (membroError) {

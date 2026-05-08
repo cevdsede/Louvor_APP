@@ -224,7 +224,6 @@ class EventService {
     );
     const ativos = membros.filter(
       (membro: any) =>
-        membro.ativo === true &&
         (!ministerioId || activeMemberIdsInMinisterio.has(membro.id)) &&
         !getDisplayName(membro).toLowerCase().includes('convidado') &&
         !presencasExistentes.has(membro.id)
@@ -297,7 +296,7 @@ class EventService {
 
   static async getAllMembros(
     ministerioId?: string | null
-  ): Promise<Array<{ id: string; nome: string; foto?: string; ativo: boolean }>> {
+  ): Promise<Array<{ id: string; nome: string; foto?: string }>> {
     const membros = LocalStorageFirstService.get<any>('membros');
     const membrosMinisterios = LocalStorageFirstService.get<any>('membros_ministerios');
     const activeMemberIdsInMinisterio = getMemberIdsForMinisterio(
@@ -311,8 +310,7 @@ class EventService {
       .map((membro: any) => ({
       id: membro.id,
       nome: getDisplayName(membro),
-      foto: sanitizeImageUrl(membro.foto),
-      ativo: membro.ativo
+      foto: sanitizeImageUrl(membro.foto)
       }));
   }
 

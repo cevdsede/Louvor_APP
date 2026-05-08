@@ -216,7 +216,6 @@ class DashboardService {
       const shouldFilterByMembers = this.hasExplicitMemberScope(scope);
 
       return membros.filter((membro: any) => {
-        if (!membro.ativo) return false;
         if (!shouldFilterByMembers) return true;
         return memberIds.has(membro.id);
       }).length;
@@ -293,7 +292,7 @@ class DashboardService {
 
       return membros
         .filter((membro: any) => {
-          if (!membro.ativo || !membro.data_nasc) return false;
+          if (!membro.data_nasc) return false;
           if (shouldFilterByMembers && !memberIds.has(membro.id)) return false;
 
           const mesMembro = new Date(`${membro.data_nasc}T12:00:00`).getMonth() + 1;

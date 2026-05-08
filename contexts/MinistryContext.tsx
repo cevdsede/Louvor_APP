@@ -30,7 +30,6 @@ interface CurrentMember {
   nome: string;
   email?: string | null;
   perfil?: string | null;
-  ativo?: boolean;
 }
 
 interface MinistryContextValue {

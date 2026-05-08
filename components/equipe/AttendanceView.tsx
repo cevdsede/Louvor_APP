@@ -202,7 +202,6 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
   const membrosDisponiveis = allMembros.filter(
     (m) =>
       !membrosNaChamada.includes(m.id) &&
-      m.ativo !== false &&
       (!currentMinisterioId || activeMemberIdsInMinisterio.has(m.id)) &&
       !getDisplayName(m).toLowerCase().includes('convidado')
   ).sort((a, b) =>

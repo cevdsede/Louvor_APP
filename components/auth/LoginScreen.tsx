@@ -35,21 +35,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
           setError('Erro ao fazer login: ' + error.message);
         }
       } else {
-        const { data: memberData, error: memberError } = await supabase
+        const { error: memberError } = await supabase
           .from('membros')
-          .select('id, ativo, nome')
+          .select('id, nome')
           .eq('id', data.user.id)
           .maybeSingle();
 
         if (memberError) {
-          logger.warn('Login autenticado, mas nao foi possivel validar o status do membro:', memberError, 'database');
-        }
-
-        if (memberData && memberData.ativo === false) {
-          await supabase.auth.signOut();
-          setError('Seu cadastro ainda esta pendente de aprovacao. Aguarde a liberacao de um administrador.');
-          setIsLoading(false);
-          return;
+          logger.warn('Login autenticado, mas nao foi possivel carregar o cadastro do membro:', memberError, 'database');
         }
 
         LocalStorageFirstService.requestFullSync();

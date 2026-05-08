@@ -241,10 +241,8 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
         ? (membrosData || []).filter((member: any) => linkedMemberIdsInMinisterio.has(member.id))
         : membrosData;
       const scopedActiveMembersData = activeMinisterioId
-        ? (membrosData || []).filter(
-            (member: any) => activeMemberIdsInMinisterio.has(member.id) && member.ativo !== false
-          )
-        : (membrosData || []).filter((member: any) => member.ativo !== false);
+        ? (membrosData || []).filter((member: any) => activeMemberIdsInMinisterio.has(member.id))
+        : (membrosData || []);
       const scopedEscalasData = activeMinisterioId
         ? (escalasData || []).filter((escala: any) => escala.ministerio_id === activeMinisterioId)
         : escalasData;

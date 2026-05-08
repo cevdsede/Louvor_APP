@@ -94,10 +94,8 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
   const scopedActiveMembros = useMemo(
     () =>
       activeMinisterioId
-        ? (membrosRaw || []).filter(
-            (member: any) => activeMemberIdsInMinisterio.has(member.id) && member.ativo !== false
-          )
-        : (membrosRaw || []).filter((member: any) => member.ativo !== false),
+        ? (membrosRaw || []).filter((member: any) => activeMemberIdsInMinisterio.has(member.id))
+        : (membrosRaw || []),
     [activeMemberIdsInMinisterio, activeMinisterioId, membrosRaw]
   );
   const scopedEscalas = useMemo(

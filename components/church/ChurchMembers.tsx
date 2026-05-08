@@ -47,7 +47,6 @@ const ChurchMembers: React.FC = () => {
     if (!viewer) return [];
 
     return (membersRaw || [])
-      .filter((member) => member.ativo !== false)
       .filter((member) => getDisplayName(member).toLowerCase().includes(searchTerm.toLowerCase()))
       .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b)));
   }, [membersRaw, searchTerm, viewer]);

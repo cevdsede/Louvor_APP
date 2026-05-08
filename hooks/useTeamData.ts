@@ -163,7 +163,7 @@ export const useTeamData = ({ currentView }: UseTeamDataProps) => {
           : null;
         const isActiveInCurrentMinisterio = activeMinisterioId
           ? isMemberActiveInMinisterio(member, memberMembership)
-          : member.ativo !== false;
+          : true;
 
         return {
           id: member.id,

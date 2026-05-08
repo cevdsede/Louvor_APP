@@ -78,7 +78,6 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
   const availableManagers = useMemo(
     () =>
       (membersRaw || [])
-        .filter((member) => member.ativo !== false)
         .filter((member) => !managersByMemberId.get(member.id)?.gerenciar_eventos_igreja)
         .filter((member) => getDisplayName(member).toLowerCase().includes(permissionSearch.toLowerCase()))
         .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b))),

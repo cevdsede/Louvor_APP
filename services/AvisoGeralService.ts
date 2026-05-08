@@ -326,7 +326,6 @@ class AvisoGeralService {
     );
     const activeMembers = new Set(
       this.getMembrosStore()
-        .filter((member: any) => member.ativo === true)
         .map((member: any) => member.id)
     );
     const recipientIds = memberships

@@ -114,10 +114,8 @@ const CalendarView: React.FC = () => {
     ? (membrosRaw || []).filter((member: any) => linkedMemberIdsInMinisterio.has(member.id))
     : membrosRaw;
   const scopedActiveMembros = activeMinisterioId
-    ? (membrosRaw || []).filter(
-        (member: any) => activeMemberIdsInMinisterio.has(member.id) && member.ativo !== false
-      )
-    : (membrosRaw || []).filter((member: any) => member.ativo !== false);
+    ? (membrosRaw || []).filter((member: any) => activeMemberIdsInMinisterio.has(member.id))
+    : (membrosRaw || []);
   const scopedEscalas = activeMinisterioId
     ? (escalasRaw || []).filter((escala: any) => escala.ministerio_id === activeMinisterioId)
     : escalasRaw;

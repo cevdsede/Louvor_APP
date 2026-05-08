@@ -20,7 +20,6 @@ export interface SupabaseMembro {
   genero: 'Homem' | 'Mulher';
   foto?: string;
   perfil?: string;
-  ativo?: boolean;
   endereco?: string | null;
   numero_casa?: string | null;
   cep?: string | null;

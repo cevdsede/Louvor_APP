@@ -243,8 +243,7 @@ const PublicMemberRegistration: React.FC = () => {
         esta_em_celula: form.esta_em_celula,
         qual_celula: form.esta_em_celula ? form.qual_celula.trim() || null : null,
         foto: fotoUrl,
-        perfil: 'user',
-        ativo: true
+        perfil: 'user'
       };
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -296,8 +295,7 @@ const PublicMemberRegistration: React.FC = () => {
         nome_discipulador: form.nome_discipulador.trim() || null,
         esta_em_celula: form.esta_em_celula,
         qual_celula: form.esta_em_celula ? form.qual_celula.trim() || null : null,
-        perfil: 'user',
-        ativo: true
+        perfil: 'user'
       };
 
       const { error: updateError } = await supabase.from('membros').update(payload).eq('id', authData.user.id);
