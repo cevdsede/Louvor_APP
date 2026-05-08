@@ -153,29 +153,29 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
     
     setUploading(true);
     try {
-      const compressedFile = await compressImageFile(file, { maxWidth: 640, quality: 0.74 });
-      const fileExt = compressedFile.name.split('.').pop() || 'jpg';
-      const fileName = `${editingMember.id}_${Date.now()}.${fileExt}`;
-      const filePath = `members/${fileName}`;
+      const compressedFile = await compressImageFile(file, { maxWidth: 720, maxHeight: 720, quality: 0.72 });
+      const filePath = `membros/${editingMember.id}-${Date.now()}.jpg`;
 
       const { error: uploadError } = await supabase.storage
-        .from('avatars')
+        .from('public-assets')
         .upload(filePath, compressedFile, {
+          cacheControl: '31536000',
           contentType: compressedFile.type || 'image/jpeg',
-          upsert: true
+          upsert: false
         });
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
+        .from('public-assets')
         .getPublicUrl(filePath);
 
-      // Atualizar o membro com a nova foto
       const updatedMember = { ...editingMember, foto: publicUrl };
       setEditingMember(updatedMember);
+      showSuccess('Foto enviada com sucesso.');
     } catch (error) {
-      console.error('Erro ao enviar foto:', error);
+      logger.error('Erro ao enviar foto do membro:', error, 'database');
+      showError('Erro ao enviar foto.');
     } finally {
       setUploading(false);
     }

@@ -13,6 +13,7 @@ import { sortMembersByRole, getRoleIcon } from '../../utils/teamUtils';
 import EventCard from '../escalas/EventCard';
 import { buildLocalAvatar } from '../../utils/avatar';
 import { sanitizeImageUrl } from '../../utils/imageUrl';
+import { compressImageFile } from '../../utils/imageCompression';
 
 interface TeamModalsProps {
   selectedMember: Member | null;
@@ -291,49 +292,23 @@ const TeamModals: React.FC<TeamModalsProps> = ({
     setUploadProgress(0);
 
     try {
-      // Limpar o nome do arquivo para remover caracteres especiais
-      const sanitizedName = editingMember.name
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-        .replace(/[^a-zA-Z0-9]/g, '_') // Substitui caracteres especiais por _
-        .toLowerCase();
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${sanitizedName}.${fileExt}`;
-      const filePath = `membros/${fileName}`;
-
-      // Apagar foto antiga se existir
-      if (editingMember.avatar && !editingMember.avatar.includes('freepik.com')) {
-        try {
-          // Extrair o path da URL antiga
-          const oldUrl = new URL(editingMember.avatar);
-          const oldPath = oldUrl.pathname.split('/').slice(-2).join('/'); // pega "membros/nome_arquivo.ext"
-          
-          const { error: deleteError } = await supabase.storage
-            .from('public')
-            .remove([oldPath]);
-          
-          if (deleteError) {
-            logger.warn('Não foi possível apagar a foto antiga:', deleteError, 'ui');
-          }
-        } catch (deleteError) {
-          logger.warn('Erro ao tentar apagar foto antiga:', deleteError, 'ui');
-        }
-      }
+      const compressedFile = await compressImageFile(file, { maxWidth: 720, maxHeight: 720, quality: 0.72 });
+      const filePath = `membros/${editingMember.id}-${Date.now()}.jpg`;
 
       // Fazer upload para o Supabase Storage
       const { error: uploadError } = await supabase.storage
-        .from('public')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
+        .from('public-assets')
+        .upload(filePath, compressedFile, {
+          cacheControl: '31536000',
+          contentType: compressedFile.type || 'image/jpeg',
+          upsert: false
         });
 
       if (uploadError) throw uploadError;
 
       // Obter URL pública
       const { data: { publicUrl } } = supabase.storage
-        .from('public')
+        .from('public-assets')
         .getPublicUrl(filePath);
 
       // Atualizar o avatar no estado do modal
