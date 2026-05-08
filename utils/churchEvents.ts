@@ -34,7 +34,12 @@ const addMonths = (date: Date, months: number) => {
 
 const combineDateAndTime = (date: Date, source: Date) => {
   const next = new Date(date);
-  next.setHours(source.getHours(), source.getMinutes(), source.getSeconds(), source.getMilliseconds());
+  // Preservar o horário exato do source sem conversões de timezone
+  const hours = source.getHours();
+  const minutes = source.getMinutes();
+  const seconds = source.getSeconds();
+  const milliseconds = source.getMilliseconds();
+  next.setHours(hours, minutes, seconds, milliseconds);
   return next;
 };
 
@@ -46,9 +51,26 @@ const getDurationMs = (event: SupabaseEventoIgreja) => {
 const buildOccurrence = (event: SupabaseEventoIgreja, startsAt: Date): ChurchEventOccurrence => {
   const durationMs = getDurationMs(event);
   const endsAt = durationMs > 0 ? new Date(startsAt.getTime() + durationMs) : null;
+  
+  // Preservar o horário exato do campo horario_inicio ou data_inicio
+  const finalDate = new Date(startsAt);
+  
+  // Usar o horário do horario_inicio se disponível, senão do data_inicio
+  let hours = 19, minutes = 0;
+  if (event.horario_inicio) {
+    const timeParts = event.horario_inicio.split(':');
+    hours = parseInt(timeParts[0], 10);
+    minutes = parseInt(timeParts[1], 10);
+  } else {
+    const eventDate = new Date(event.data_inicio);
+    hours = eventDate.getHours();
+    minutes = eventDate.getMinutes();
+  }
+  
+  finalDate.setHours(hours, minutes, 0, 0);
 
   return {
-    id: `${event.id}:${startsAt.toISOString()}`,
+    id: `${event.id}:${finalDate.toISOString()}`,
     eventId: event.id,
     titulo: event.titulo,
     descricao: event.descricao,
@@ -56,7 +78,7 @@ const buildOccurrence = (event: SupabaseEventoIgreja, startsAt: Date): ChurchEve
     imagem_url: event.imagem_url,
     categoria: event.categoria,
     cor: event.cor,
-    startsAt: startsAt.toISOString(),
+    startsAt: finalDate.toISOString(),
     endsAt: endsAt?.toISOString() || null,
     prioridade: event.prioridade || 0,
     substitui_eventos_menor_prioridade: Boolean(event.substitui_eventos_menor_prioridade),

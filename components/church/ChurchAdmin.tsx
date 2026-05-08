@@ -288,19 +288,37 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
           <input type="time" className={inputClass} value={form.horario} onChange={(e) => setForm({ ...form, horario: e.target.value })} />
           <textarea className={`${inputClass} md:col-span-2`} placeholder="Descricao" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
           <input type="file" accept="image/*" className={inputClass} onChange={(e) => setForm({ ...form, imagem: e.target.files?.[0] || null })} />
-          <select className={inputClass} value={form.recorrencia_tipo} onChange={(e) => setForm({ ...form, recorrencia_tipo: e.target.value })}>
-            <option value="diaria">Todo dia</option>
-            <option value="semanal">Toda semana</option>
-            <option value="mensal_dia_mes">Todo mes no mesmo dia</option>
-            <option value="mensal_ordem_semana">Todo primeiro/segundo domingo do mes</option>
-          </select>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Tipo de recorrência</label>
+            <select className={inputClass} value={form.recorrencia_tipo} onChange={(e) => setForm({ ...form, recorrencia_tipo: e.target.value })}>
+              <option value="diaria">📅 Todo dia</option>
+              <option value="semanal">📆 Toda semana</option>
+              <option value="mensal_dia_mes">🗓️ Todo mês no mesmo dia</option>
+              <option value="mensal_ordem_semana">📊 Todo primeiro/segundo domingo do mês</option>
+            </select>
+            {form.recorrencia_tipo === 'diaria' && (
+              <p className="text-[10px] text-slate-400">Evento se repete todos os dias. Útil para eventos diários como devocionais.</p>
+            )}
+            {form.recorrencia_tipo === 'semanal' && (
+              <p className="text-[10px] text-slate-400">Evento se repete toda semana nos dias selecionados. Ex: toda quinta-feira.</p>
+            )}
+            {form.recorrencia_tipo === 'mensal_dia_mes' && (
+              <p className="text-[10px] text-slate-400">Evento se repete todo mês no mesmo dia. Ex: todo dia 15.</p>
+            )}
+            {form.recorrencia_tipo === 'mensal_ordem_semana' && (
+              <p className="text-[10px] text-slate-400">Evento se repete toda semana específica do mês. Ex: primeira sexta de cada mês.</p>
+            )}
+          </div>
         </div>
 
         {form.recorrente && (
           <div className="mt-4 grid gap-3 rounded-2xl bg-slate-50 p-3 dark:bg-slate-800/60 md:grid-cols-2">
             {['semanal', 'mensal_ordem_semana'].includes(form.recorrencia_tipo) && (
-              <div className="md:col-span-2">
-                <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-500">Dias da semana</p>
+              <div className="md:col-span-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Dias da semana</p>
+                  <span className="text-[9px] text-slate-400">(selecione um ou mais dias)</span>
+                </div>
                 <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
                   {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'].map((day, index) => (
                     <button
@@ -312,38 +330,75 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
                           ? 'bg-brand text-white shadow-lg shadow-brand/20'
                           : 'bg-white text-slate-500 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
                       }`}
+                      title={form.recorrencia_tipo === 'semanal' ? `Evento se repete toda ${day.toLowerCase()}` : `Evento se repete toda ${day.toLowerCase()} selecionada`}
                     >
                       {day}
                     </button>
                   ))}
                 </div>
+                <p className="text-[9px] text-slate-400">
+                  {form.recorrencia_tipo === 'semanal' 
+                    ? 'Evento ocorrerá toda semana nos dias selecionados acima'
+                    : 'Evento ocorrerá toda semana selecionada acima (primeira, segunda, etc.)'
+                  }
+                </p>
               </div>
             )}
 
             {form.recorrencia_tipo === 'mensal_ordem_semana' && (
-              <select className={inputClass} value={form.recorrencia_ordem_semana} onChange={(e) => setForm({ ...form, recorrencia_ordem_semana: Number(e.target.value) })}>
-                <option value={1}>Primeiro da semana no mes</option>
-                <option value={2}>Segundo da semana no mes</option>
-                <option value={3}>Terceiro da semana no mes</option>
-                <option value={4}>Quarto da semana no mes</option>
-                <option value={5}>Quinto da semana no mes</option>
-              </select>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Ordem da semana</label>
+                <select className={inputClass} value={form.recorrencia_ordem_semana} onChange={(e) => setForm({ ...form, recorrencia_ordem_semana: Number(e.target.value) })}>
+                  <option value={1}>🥇 Primeira semana do mês</option>
+                  <option value={2}>🥈 Segunda semana do mês</option>
+                  <option value={3}>🥉 Terceira semana do mês</option>
+                  <option value={4}>🏅 Quarta semana do mês</option>
+                  <option value={5}>⭐ Quinta semana do mês</option>
+                </select>
+                <p className="text-[9px] text-slate-400">Evento ocorrerá na semana selecionada, combinada com o dia da semana escolhido acima</p>
+              </div>
             )}
 
             {form.recorrencia_tipo === 'mensal_dia_mes' && (
-              <input
-                type="number"
-                min={1}
-                max={31}
-                className={inputClass}
-                value={form.recorrencia_dia_mes}
-                onChange={(e) => setForm({ ...form, recorrencia_dia_mes: Number(e.target.value) })}
-                placeholder="Dia do mes"
-              />
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Dia do mês</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={31}
+                  className={inputClass}
+                  value={form.recorrencia_dia_mes}
+                  onChange={(e) => setForm({ ...form, recorrencia_dia_mes: Number(e.target.value) })}
+                  placeholder="Dia do mês (1-31)"
+                />
+                <p className="text-[9px] text-slate-400">Evento ocorrerá todo mês neste dia específico. Se o mês não tiver este dia, o evento não ocorrerá.</p>
+              </div>
             )}
 
-            <input type="date" className={inputClass} value={form.recorrencia_data_fim} onChange={(e) => setForm({ ...form, recorrencia_data_fim: e.target.value })} />
-            <input type="number" className={inputClass} value={form.prioridade} onChange={(e) => setForm({ ...form, prioridade: Number(e.target.value) })} placeholder="Prioridade" />
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Data limite da recorrência</label>
+              <input 
+                type="date" 
+                className={inputClass} 
+                value={form.recorrencia_data_fim} 
+                onChange={(e) => setForm({ ...form, recorrencia_data_fim: e.target.value })} 
+                placeholder="Data final (opcional)"
+              />
+              <p className="text-[9px] text-slate-400">Opcional. Se definida, as repetições pararão nesta data. Deixe em branco para repetir indefinidamente.</p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Prioridade do evento</label>
+              <input 
+                type="number" 
+                className={inputClass} 
+                value={form.prioridade} 
+                onChange={(e) => setForm({ ...form, prioridade: Number(e.target.value) })} 
+                placeholder="Prioridade (0-10)"
+                min={0}
+                max={10}
+              />
+              <p className="text-[9px] text-slate-400">Números maiores = maior prioridade. Eventos com maior prioridade podem substituir eventos de menor prioridade no mesmo dia.</p>
+            </div>
           </div>
         )}
 
