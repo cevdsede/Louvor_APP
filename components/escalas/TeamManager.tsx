@@ -8,7 +8,6 @@ import { logger } from '../../utils/logger';
 import { sortMembersByRole, getRoleIcon } from '../../utils/teamUtils';
 import { Funcao } from '../../types-supabase';
 import { Member as AppMember } from '../../types';
-import AvisoGeralService from '../../services/AvisoGeralService';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 
 interface TeamManagerProps {
@@ -27,12 +26,6 @@ interface EditingMember {
   roleId: string;
 }
 
-interface ScaleConfirmation {
-  escala_id: string;
-  membro_id: string;
-  status: 'pendente' | 'confirmado' | 'recusado';
-}
-
 const TeamManager: React.FC<TeamManagerProps> = ({
   eventId,
   eventDate,
@@ -47,9 +40,6 @@ const TeamManager: React.FC<TeamManagerProps> = ({
   const [editingMember, setEditingMember] = useState<EditingMember | null>(null);
   const [functions, setFunctions] = useState<Funcao[]>([]);
   const [unavailableMembers, setUnavailableMembers] = useState<Record<string, string>>({});
-  const [confirmations, setConfirmations] = useState<Record<string, ScaleConfirmation>>({});
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [savingConfirmationId, setSavingConfirmationId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchFunctions = async () => {
@@ -84,56 +74,6 @@ const TeamManager: React.FC<TeamManagerProps> = ({
 
     fetchFunctions();
   }, [ministerioId]);
-
-  useEffect(() => {
-    const loadCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUserId(user?.id || null);
-    };
-
-    if (navigator.onLine) {
-      loadCurrentUser().catch((error) => {
-        logger.error('Erro ao identificar usuario da confirmacao:', error, 'auth');
-      });
-    }
-  }, []);
-
-  const fetchConfirmations = async () => {
-    if (!navigator.onLine) {
-      setConfirmations({});
-      return;
-    }
-
-    try {
-      const scaleIds = members.flatMap((member) => member.scaleIds || []);
-
-      if (scaleIds.length === 0) {
-        setConfirmations({});
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('escalas_confirmacoes')
-        .select('escala_id, membro_id, status')
-        .in('escala_id', scaleIds);
-
-      if (error) throw error;
-
-      const nextConfirmations = (data || []).reduce<Record<string, ScaleConfirmation>>((accumulator, item: any) => {
-        accumulator[`${item.escala_id}:${item.membro_id}`] = item;
-        return accumulator;
-      }, {});
-
-      setConfirmations(nextConfirmations);
-    } catch (error) {
-      logger.error('Erro ao buscar confirmacoes da escala:', error, 'database');
-      setConfirmations({});
-    }
-  };
-
-  useEffect(() => {
-    fetchConfirmations();
-  }, [eventId, members]);
 
   useEffect(() => {
     const fetchUnavailableMembers = async () => {
@@ -349,30 +289,12 @@ const TeamManager: React.FC<TeamManagerProps> = ({
         scaleData.ministerio_id = ministerioId;
       }
 
-      const { data: insertedScale, error } = await supabase
+      const { error } = await supabase
         .from('escalas')
         .insert(scaleData)
-        .select('id')
-        .single();
+        .select('id');
 
       if (error) throw error;
-
-      if (insertedScale?.id) {
-        const { error: confirmationError } = await supabase
-          .from('escalas_confirmacoes')
-          .upsert(
-            {
-              escala_id: insertedScale.id,
-              membro_id: newMemberFormData.memberId,
-              status: 'pendente'
-            },
-            { onConflict: 'escala_id,membro_id' }
-          );
-
-        if (confirmationError) {
-          logger.error('Erro ao criar confirmacao de escala:', confirmationError, 'database');
-        }
-      }
 
       showSuccess('Membro escalado com sucesso!');
       closeForm();
@@ -382,84 +304,6 @@ const TeamManager: React.FC<TeamManagerProps> = ({
       showError(`Erro ao escalar membro: ${error?.message || 'erro desconhecido'}`);
     }
   };
-
-  const getMemberConfirmationStatus = (member: AppMember) => {
-    const scaleIds = member.scaleIds || [];
-    const memberConfirmations = scaleIds
-      .map((scaleId) => confirmations[`${scaleId}:${member.id}`]?.status)
-      .filter(Boolean);
-
-    if (memberConfirmations.includes('recusado')) return 'recusado';
-    if (memberConfirmations.includes('confirmado')) return 'confirmado';
-    return 'pendente';
-  };
-
-  const updateConfirmation = async (member: AppMember, status: 'confirmado' | 'recusado') => {
-    const scaleId = member.scaleIds?.[0];
-
-    if (!scaleId || !currentUserId || member.id !== currentUserId) {
-      showError('Nao foi possivel identificar sua escala.');
-      return;
-    }
-
-    if (!navigator.onLine) {
-      showError('Conecte-se a internet para confirmar a escala.');
-      return;
-    }
-
-    try {
-      setSavingConfirmationId(scaleId);
-      const { error } = await supabase
-        .from('escalas_confirmacoes')
-        .upsert(
-          {
-            escala_id: scaleId,
-            membro_id: member.id,
-            status,
-            responded_at: new Date().toISOString()
-          },
-          { onConflict: 'escala_id,membro_id' }
-        );
-
-      if (error) throw error;
-
-      setConfirmations((prev) => ({
-        ...prev,
-        [`${scaleId}:${member.id}`]: {
-          escala_id: scaleId,
-          membro_id: member.id,
-          status
-        }
-      }));
-
-      AvisoGeralService.notifyScaleConfirmation({
-        cultoId: eventId,
-        ministerioId,
-        senderId: member.id,
-        memberName: member.name,
-        status
-      }).catch((notificationError) => {
-        logger.warn('Nao foi possivel notificar a resposta da escala:', notificationError, 'database');
-      });
-
-      showSuccess(status === 'confirmado' ? 'Presenca confirmada.' : 'Escala recusada.');
-      await fetchConfirmations();
-    } catch (error) {
-      logger.error('Erro ao atualizar confirmacao de escala:', error, 'database');
-      showError('Nao foi possivel atualizar sua confirmacao.');
-    } finally {
-      setSavingConfirmationId(null);
-    }
-  };
-
-  const confirmationBadgeClass = (status: string) => {
-    if (status === 'confirmado') return 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300';
-    if (status === 'recusado') return 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-300';
-    return 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-300';
-  };
-
-  const compactActionButtonClass =
-    'min-w-0 rounded-lg px-1.5 py-1.5 text-[7px] font-black uppercase leading-tight tracking-normal text-white disabled:opacity-60 sm:px-2 sm:py-2 sm:text-[8px] sm:tracking-wider';
 
   return (
     <div>
@@ -581,29 +425,6 @@ const TeamManager: React.FC<TeamManagerProps> = ({
                     {member.status === 'confirmed' ? 'Presente' : 'Ausente'}
                   </span>
                 </div>
-                <span className={`mt-2 rounded-full px-2 py-1 text-[7px] font-black uppercase tracking-wider ${confirmationBadgeClass(getMemberConfirmationStatus(member))}`}>
-                  {getMemberConfirmationStatus(member)}
-                </span>
-                {currentUserId === member.id && getMemberConfirmationStatus(member) === 'pendente' && (
-                  <div className="mt-3 grid w-full grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => updateConfirmation(member, 'confirmado')}
-                      disabled={savingConfirmationId === member.scaleIds?.[0]}
-                      className={`${compactActionButtonClass} bg-emerald-500`}
-                    >
-                      Confirmar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => updateConfirmation(member, 'recusado')}
-                      disabled={savingConfirmationId === member.scaleIds?.[0]}
-                      className={`${compactActionButtonClass} bg-red-500`}
-                    >
-                      Recusar
-                    </button>
-                  </div>
-                )}
               </div>
 
               <div className="absolute right-2 top-2 flex gap-1">
