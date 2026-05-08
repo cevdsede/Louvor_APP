@@ -84,11 +84,11 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
     setIsSavingProfile(true);
     try {
       const compressed = await compressImageFile(file, { maxWidth: 720, maxHeight: 720, quality: 0.72 });
-      const filePath = `membros/${currentMember.id}.jpg`;
+      const filePath = `membros/${currentMember.id}-${Date.now()}.jpg`;
       const { error: uploadError } = await supabase.storage.from('public-assets').upload(filePath, compressed, {
         cacheControl: '31536000',
         contentType: compressed.type,
-        upsert: true
+        upsert: false
       });
       if (uploadError) throw uploadError;
 
