@@ -14,6 +14,7 @@ import AvailabilityPanel from './AvailabilityPanel';
 interface SidebarProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
+  onBackToChurch: () => void;
   isDarkMode: boolean;
   onToggleTheme: () => void;
   brandColor: string;
@@ -26,6 +27,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({
   currentView,
   onViewChange,
+  onBackToChurch,
   isDarkMode,
   onToggleTheme,
   brandColor,
@@ -291,6 +293,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   }, [isProfileModalOpen]);
 
   const menuItems = [
+    { id: 'church', default: null, label: 'Igreja', icon: 'fas fa-church' },
     { id: 'dashboard', default: 'dashboard', label: 'Início', icon: 'fas fa-th-large' },
     { id: 'scales', default: 'list', label: 'Escalas', icon: 'fas fa-calendar-alt' },
     { id: 'music', default: 'music-list', label: 'Músicas', icon: 'fas fa-music' },
@@ -301,6 +304,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const themeColors = ['#3b82f6', '#ef4444', '#f59e0b', '#10b981', '#ec4899', '#6366f1'];
 
   const visibleMenuItems = menuItems.filter((item) => {
+    if (item.id === 'church') return true;
     if (item.id === 'dashboard') return activeModules.includes('dashboard');
     if (item.id === 'scales') return activeModules.includes('scales');
     if (item.id === 'music') return activeModules.includes('music');
@@ -310,6 +314,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   });
 
   const isActive = (id: string) => {
+    if (id === 'church') return false;
     if (id === 'dashboard') return currentView === 'dashboard';
     if (id === 'scales') return isScaleView(currentView);
     if (id === 'music') return isMusicView(currentView);
@@ -338,7 +343,13 @@ const Sidebar: React.FC<SidebarProps> = ({
         {visibleMenuItems.map((item) => (
           <button
             key={item.id}
-            onClick={() => onViewChange(item.default as ViewType)}
+            onClick={() => {
+              if (item.id === 'church') {
+                onBackToChurch();
+                return;
+              }
+              onViewChange(item.default as ViewType);
+            }}
             className={`
               flex min-w-0 flex-1 max-w-none flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 transition-all lg:flex-none lg:flex-row lg:justify-start lg:gap-4 lg:rounded-2xl lg:px-5 lg:py-4
               ${isActive(item.id)

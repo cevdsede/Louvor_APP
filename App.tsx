@@ -132,6 +132,7 @@ const AppContent: React.FC<AppContentProps> = ({
         <Sidebar
           currentView={currentView}
           onViewChange={setCurrentView}
+          onBackToChurch={onBackToChurch}
           isDarkMode={isDarkMode}
           onToggleTheme={toggleDarkMode}
           brandColor={brandColor}
@@ -142,15 +143,6 @@ const AppContent: React.FC<AppContentProps> = ({
         />
 
         <div className="flex flex-1 flex-col overflow-hidden pt-16 lg:ml-[280px] lg:pt-0">
-          <button
-            type="button"
-            onClick={onBackToChurch}
-            className="fixed right-4 top-20 z-[120] hidden rounded-xl border border-slate-200 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 shadow-lg transition hover:text-brand dark:border-slate-700 dark:bg-slate-900 lg:block"
-          >
-            <i className="fas fa-arrow-left mr-2" />
-            Igreja
-          </button>
-
           <Header
             onSync={handleSync}
             onOpenProfile={() => setIsProfileModalOpen(true)}
