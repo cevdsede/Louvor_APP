@@ -312,6 +312,12 @@ const TeamModals: React.FC<TeamModalsProps> = ({
         .from('public-assets')
         .getPublicUrl(filePath);
 
+      const { error: updateError } = await supabase
+        .from('membros')
+        .update({ foto: publicUrl })
+        .eq('id', editingMember.id);
+      if (updateError) throw updateError;
+
       const previousPhotoPath = getPublicAssetsPathFromUrl(editingMember.avatar);
       if (previousPhotoPath && previousPhotoPath !== filePath) {
         const { error: removeError } = await supabase.storage.from('public-assets').remove([previousPhotoPath]);
@@ -325,6 +331,10 @@ const TeamModals: React.FC<TeamModalsProps> = ({
         ...editingMember,
         avatar: publicUrl
       });
+      onMembersChange((previous) =>
+        previous.map((member) => (member.id === editingMember.id ? { ...member, avatar: publicUrl } : member))
+      );
+      await LocalStorageFirstService.forceSync('membros');
 
       showSuccess('Foto enviada com sucesso!');
     } catch (error) {

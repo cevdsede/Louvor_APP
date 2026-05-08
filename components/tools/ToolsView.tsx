@@ -172,6 +172,12 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
         .from('public-assets')
         .getPublicUrl(filePath);
 
+      const { error: updateError } = await supabase
+        .from('membros')
+        .update({ foto: publicUrl })
+        .eq('id', editingMember.id);
+      if (updateError) throw updateError;
+
       const previousPhotoPath = getPublicAssetsPathFromUrl(editingMember.foto);
       if (previousPhotoPath && previousPhotoPath !== filePath) {
         const { error: removeError } = await supabase.storage.from('public-assets').remove([previousPhotoPath]);
@@ -182,6 +188,8 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
 
       const updatedMember = { ...editingMember, foto: publicUrl };
       setEditingMember(updatedMember);
+      await LocalStorageFirstService.forceSync('membros');
+      hydrateUserManagementState();
       showSuccess('Foto enviada com sucesso.');
     } catch (error) {
       logger.error('Erro ao enviar foto do membro:', error, 'database');

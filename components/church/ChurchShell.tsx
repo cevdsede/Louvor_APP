@@ -10,6 +10,8 @@ import ChurchDashboard from './ChurchDashboard';
 import ChurchMembers from './ChurchMembers';
 import { buildLocalAvatar } from '../../utils/avatar';
 import { compressImageFile } from '../../utils/imageCompression';
+import { buildMemberPhotoPath, getPublicAssetsPathFromUrl, sanitizeImageUrl } from '../../utils/imageUrl';
+import logger from '../../utils/logger';
 import { showError, showSuccess } from '../../utils/toast';
 
 type ChurchView = 'dashboard' | 'agenda' | 'members' | 'admin';
@@ -75,7 +77,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
     if (!currentMemberRecord) return;
     setProfileName(currentMemberRecord.nome || '');
     setProfileEmail(currentMemberRecord.email || '');
-    setProfilePhoto(typeof currentMemberRecord.foto === 'string' ? currentMemberRecord.foto : '');
+    setProfilePhoto(sanitizeImageUrl(currentMemberRecord.foto));
   }, [currentMemberRecord]);
 
   const handleProfilePhotoChange = async (file: File | null) => {
@@ -84,7 +86,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
     setIsSavingProfile(true);
     try {
       const compressed = await compressImageFile(file, { maxWidth: 720, maxHeight: 720, quality: 0.72 });
-      const filePath = `membros/${currentMember.id}-${Date.now()}.jpg`;
+      const filePath = buildMemberPhotoPath(currentMember.id, profileName || currentMemberRecord?.nome);
       const { error: uploadError } = await supabase.storage.from('public-assets').upload(filePath, compressed, {
         cacheControl: '31536000',
         contentType: compressed.type,
@@ -98,6 +100,14 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
 
       const { error: updateError } = await supabase.from('membros').update({ foto: publicUrl }).eq('id', currentMember.id);
       if (updateError) throw updateError;
+
+      const previousPhotoPath = getPublicAssetsPathFromUrl(profilePhoto || currentMemberRecord?.foto);
+      if (previousPhotoPath && previousPhotoPath !== filePath) {
+        const { error: removeError } = await supabase.storage.from('public-assets').remove([previousPhotoPath]);
+        if (removeError) {
+          logger.warn('Não foi possível apagar a foto antiga do perfil:', removeError, 'database');
+        }
+      }
 
       setProfilePhoto(publicUrl);
       await LocalStorageFirstService.forceSync('membros');
