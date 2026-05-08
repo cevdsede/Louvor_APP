@@ -266,7 +266,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
           telefone: updatedMember.telefone,
           data_nasc: updatedMember.data_nasc,
           genero: updatedMember.genero || 'Homem',
-          ativo: updatedMember.ativo,
           perfil: updatedMember.perfil,
           foto: updatedMember.foto
         })
@@ -538,7 +537,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
         sensitivity: 'base'
       })
     );
-  const activeUsersCount = membersData.filter((member: any) => member.ativo).length;
+  const totalMembersCount = membersData.length;
   const usersWithoutMinisterio = membersTableData.filter(({ memberMinisterios }) => memberMinisterios.length === 0).length;
   const usersInMultipleMinisterios = membersTableData.filter(({ memberMinisterios }) => memberMinisterios.length > 1).length;
 
@@ -627,9 +626,9 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Usuarios Ativos</p>
-                <p className="text-2xl font-black text-slate-800 dark:text-white">{activeUsersCount}</p>
-                <p className="text-xs text-slate-500 mt-1">Membros liberados para usar o app.</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Membros</p>
+                <p className="text-2xl font-black text-slate-800 dark:text-white">{totalMembersCount}</p>
+                <p className="text-xs text-slate-500 mt-1">Cadastros disponíveis para os ministérios.</p>
               </div>
               <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
                 <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Sem Ministerio</p>
@@ -723,7 +722,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                       <th className="px-4 sm:px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Nome</th>
                       <th className="px-4 sm:px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Ministerio</th>
                       <th className="px-4 sm:px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Perfil</th>
-                      <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Status</th>
                       <th className="px-4 sm:px-6 py-3 text-center text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Acoes</th>
                     </tr>
                   </thead>
@@ -825,15 +823,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                               </div>
                             </div>
                           )}
-                        </td>
-                        <td className="hidden md:table-cell px-6 py-4">
-                          <span className={`px-2 py-1 text-xs font-black rounded-full ${
-                            member.ativo
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400'
-                              : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                          }`}>
-                            {member.ativo ? 'Ativo' : 'Inativo'}
-                          </span>
                         </td>
                         <td className="px-4 sm:px-6 py-4">
                           <div className="flex items-center justify-center gap-2">
@@ -1264,17 +1253,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Status</label>
-                  <select
-                    value={editingMember.ativo ? 'ativo' : 'inativo'}
-                    onChange={(e) => setEditingMember({ ...editingMember, ativo: e.target.value === 'ativo' })}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
-                  >
-                    <option value="ativo">Ativo</option>
-                    <option value="inativo">Inativo</option>
-                  </select>
-                </div>
                 <div className="md:col-span-2">
                   <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/40 p-4">
                     <div className="flex items-center justify-between gap-3 mb-3">
@@ -1309,9 +1287,65 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                               key={ministerioId}
                               className="rounded-xl border border-slate-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/40"
                             >
-                              <p className="text-sm font-black text-slate-800 dark:text-white">
-                                {ministerio?.nome || 'Ministerio'}
-                              </p>
+                              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                  <p className="text-sm font-black text-slate-800 dark:text-white">
+                                    {ministerio?.nome || 'Ministerio'}
+                                  </p>
+                                  <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                                    Status do membro neste ministerio
+                                  </p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 sm:w-48">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setEditingMember({
+                                        ...editingMember,
+                                        ministerioStatusById: {
+                                          ...editingMember.ministerioStatusById,
+                                          [ministerioId]: true
+                                        },
+                                        principalMinisterioId: editingMember.principalMinisterioId || ministerioId
+                                      })
+                                    }
+                                    className={`rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-colors ${
+                                      editingMember.ministerioStatusById?.[ministerioId] !== false
+                                        ? 'bg-emerald-500 text-white'
+                                        : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                                    }`}
+                                  >
+                                    Ativo
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const nextStatusById = {
+                                        ...editingMember.ministerioStatusById,
+                                        [ministerioId]: false
+                                      };
+                                      const nextActiveIds = (editingMember.ministerioIds || []).filter(
+                                        (id) => nextStatusById[id] !== false
+                                      );
+                                      setEditingMember({
+                                        ...editingMember,
+                                        ministerioStatusById: nextStatusById,
+                                        principalMinisterioId:
+                                          editingMember.principalMinisterioId === ministerioId
+                                            ? nextActiveIds[0] || null
+                                            : editingMember.principalMinisterioId
+                                      });
+                                    }}
+                                    className={`rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-colors ${
+                                      editingMember.ministerioStatusById?.[ministerioId] === false
+                                        ? 'bg-red-500 text-white'
+                                        : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                                    }`}
+                                  >
+                                    Inativo
+                                  </button>
+                                </div>
+                              </div>
                             </div>
                           );
                         })}
