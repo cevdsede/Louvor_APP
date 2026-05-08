@@ -12,7 +12,7 @@ import { getDisplayName } from '../../utils/displayName';
 import { sortMembersByRole, getRoleIcon } from '../../utils/teamUtils';
 import EventCard from '../escalas/EventCard';
 import { buildLocalAvatar } from '../../utils/avatar';
-import { getPublicAssetsPathFromUrl, sanitizeImageUrl } from '../../utils/imageUrl';
+import { buildMemberPhotoPath, getPublicAssetsPathFromUrl, sanitizeImageUrl } from '../../utils/imageUrl';
 import { compressImageFile } from '../../utils/imageCompression';
 
 interface TeamModalsProps {
@@ -293,7 +293,8 @@ const TeamModals: React.FC<TeamModalsProps> = ({
 
     try {
       const compressedFile = await compressImageFile(file, { maxWidth: 720, maxHeight: 720, quality: 0.72 });
-      const filePath = `membros/${editingMember.id}-${Date.now()}.jpg`;
+      const memberName = editingMember.displayName || editingMember.display_name || editingMember.nome || editingMember.name;
+      const filePath = buildMemberPhotoPath(editingMember.id, memberName);
 
       // Fazer upload para o Supabase Storage
       const { error: uploadError } = await supabase.storage

@@ -23,3 +23,19 @@ export const getPublicAssetsPathFromUrl = (value?: string | null): string => {
     return '';
   }
 };
+
+export const toStorageSlug = (value?: string | null): string => {
+  const slug = (value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return slug || 'membro';
+};
+
+export const buildMemberPhotoPath = (memberId: string, memberName?: string | null): string => {
+  const memberFolder = `${toStorageSlug(memberName)}-${memberId}`;
+  return `membros/${memberFolder}/perfil-${Date.now()}.jpg`;
+};

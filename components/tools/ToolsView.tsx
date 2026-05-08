@@ -8,7 +8,7 @@ import MultiSelect from '../equipe/MultiSelect';
 import { ImageCache } from '../ui/ImageCache';
 import { compressImageFile } from '../../utils/imageCompression';
 import { getMemberMemberships as getMemberMinistryMemberships } from '../../utils/memberMinistry';
-import { getPublicAssetsPathFromUrl } from '../../utils/imageUrl';
+import { buildMemberPhotoPath, getPublicAssetsPathFromUrl } from '../../utils/imageUrl';
 import logger from '../../utils/logger';
 import {
   ChartInstance,
@@ -155,7 +155,8 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
     setUploading(true);
     try {
       const compressedFile = await compressImageFile(file, { maxWidth: 720, maxHeight: 720, quality: 0.72 });
-      const filePath = `membros/${editingMember.id}-${Date.now()}.jpg`;
+      const memberName = editingMember.display_name || editingMember.nome || editingMember.nome_planilha;
+      const filePath = buildMemberPhotoPath(editingMember.id, memberName);
 
       const { error: uploadError } = await supabase.storage
         .from('public-assets')
