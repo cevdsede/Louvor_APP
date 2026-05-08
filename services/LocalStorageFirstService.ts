@@ -559,6 +559,8 @@ class LocalStorageFirstService {
           display_name: publicMember.display_name,
           nome_planilha: publicMember.nome_planilha,
           foto: sanitizeImageUrl(publicMember.foto),
+          posicao_igreja: publicMember.posicao_igreja,
+          ministerio_levita: publicMember.ministerio_levita,
           ativo: publicMember.ativo,
           created_at: publicMember.created_at,
           perfil: 'public'
@@ -571,6 +573,8 @@ class LocalStorageFirstService {
           display_name: existing.display_name || publicData.display_name,
           nome_planilha: existing.nome_planilha || publicData.nome_planilha,
           foto: publicData.foto || sanitizeImageUrl(existing.foto),
+          posicao_igreja: existing.posicao_igreja || publicData.posicao_igreja,
+          ministerio_levita: existing.ministerio_levita || publicData.ministerio_levita,
           ativo: existing.ativo ?? publicData.ativo,
           created_at: existing.created_at || publicData.created_at,
           perfil: existing.perfil || publicData.perfil

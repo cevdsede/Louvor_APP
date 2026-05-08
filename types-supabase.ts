@@ -46,6 +46,7 @@ export interface SupabaseMembro {
   telefone_celular?: string | null;
   telefone_recados?: string | null;
   posicao_igreja?: 'Pastor(a)' | 'Levita' | 'Membro' | 'Secretario(a)' | 'Tesoureiro(a)' | 'Missionário' | null;
+  ministerio_levita?: string | null;
   nome_discipulador?: string | null;
   esta_em_celula?: boolean | null;
   qual_celula?: string | null;

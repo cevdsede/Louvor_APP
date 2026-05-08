@@ -29,6 +29,13 @@ const withImageCacheBust = (src: string, member: SupabaseMembro) => {
   return `${cleanSrc}${separator}v=${encodeURIComponent(version)}`;
 };
 
+const getPublicRole = (member: SupabaseMembro) => member.posicao_igreja || 'Membro';
+
+const getPublicMinistry = (member: SupabaseMembro) => {
+  if (normalize(member.posicao_igreja) !== 'levita') return '';
+  return member.ministerio_levita || '';
+};
+
 const ChurchMembers: React.FC = () => {
   const { currentMember } = useMinistryContext();
   const { data: membersRaw, loading } = useLocalStorageFirst<SupabaseMembro>({ table: 'membros' });
@@ -81,7 +88,8 @@ const ChurchMembers: React.FC = () => {
                 typeof member.foto === 'string' && member.foto
                   ? withImageCacheBust(member.foto, member)
                   : buildLocalAvatar(name);
-              const canSeeMemberDetails = canViewFullMember(viewer, member);
+              const publicRole = getPublicRole(member);
+              const publicMinistry = getPublicMinistry(member);
 
               return (
                 <button
@@ -99,9 +107,12 @@ const ChurchMembers: React.FC = () => {
                   />
                   <div className="min-w-0">
                     <p className="truncate text-xs font-black text-slate-900 dark:text-white sm:text-sm">{name}</p>
-                    {canSeeMemberDetails && (
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-brand">
-                        {member.posicao_igreja || 'Membro'}
+                    <p className="mt-1 truncate text-[10px] font-black uppercase tracking-widest text-brand">
+                      {publicRole}
+                    </p>
+                    {publicMinistry && (
+                      <p className="mt-0.5 truncate text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                        {publicMinistry}
                       </p>
                     )}
                   </div>
@@ -132,9 +143,12 @@ const ChurchMembers: React.FC = () => {
                   <h2 className="text-xl font-black text-slate-900 dark:text-white">
                     {getDisplayName(selectedMember)}
                   </h2>
-                  {showFullDetails && (
-                    <p className="text-[10px] font-black uppercase tracking-widest text-brand">
-                      {selectedMember.posicao_igreja || 'Membro'}
+                  <p className="text-[10px] font-black uppercase tracking-widest text-brand">
+                    {getPublicRole(selectedMember)}
+                  </p>
+                  {getPublicMinistry(selectedMember) && (
+                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                      {getPublicMinistry(selectedMember)}
                     </p>
                   )}
                 </div>
