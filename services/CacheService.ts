@@ -1,5 +1,6 @@
 import { supabase } from '../supabaseClient';
 import LocalStorageService from './LocalStorageService';
+import { sanitizeImageUrl } from '../utils/imageUrl';
 
 interface CacheConfig {
   ttl?: number; // Time to live em milissegundos
@@ -320,8 +321,9 @@ class CacheService {
     if (tables.includes('membros')) {
       const membros = LocalStorageService.get<any[]>('membros') || [];
       membros.forEach(membro => {
-        if (membro?.foto && typeof membro.foto === 'string' && membro.foto.startsWith('http')) {
-          entries.set(membro.foto, { url: membro.foto });
+        const foto = sanitizeImageUrl(membro?.foto);
+        if (foto.startsWith('http')) {
+          entries.set(foto, { url: foto });
         }
       });
     }
@@ -329,9 +331,10 @@ class CacheService {
     if (tables.includes('limpeza')) {
       const limpezas = LocalStorageService.get<any[]>('limpeza') || [];
       limpezas.forEach(item => {
-        if (item?.foto && typeof item.foto === 'string' && item.foto.startsWith('http')) {
-          entries.set(`limpeza-hq:${item.foto}`, {
-            url: item.foto,
+        const foto = sanitizeImageUrl(item?.foto);
+        if (foto.startsWith('http')) {
+          entries.set(`limpeza-hq:${foto}`, {
+            url: foto,
             maxWidth: 1200,
             quality: 0.88,
             variant: 'limpeza-hq'
@@ -354,14 +357,15 @@ class CacheService {
       let downloaded = 0;
       
       for (const membro of membros) {
-        if (membro.foto && membro.foto.startsWith('http')) {
-          const cacheKeyBase = `${this.IMAGE_CACHE_PREFIX}${btoa(membro.foto)}`;
+        const foto = sanitizeImageUrl(membro?.foto);
+        if (foto.startsWith('http')) {
+          const cacheKeyBase = `${this.IMAGE_CACHE_PREFIX}${btoa(foto)}`;
           
           // Verificar se já está em cache
           const alreadyCached = Object.keys(localStorage).some(key => key.startsWith(cacheKeyBase));
           if (!alreadyCached) {
             try {
-              const response = await fetch(membro.foto);
+              const response = await fetch(foto);
               if (!response.ok) {
                 continue;
               }
@@ -380,7 +384,7 @@ class CacheService {
                 console.warn('Erro ao salvar imagem no cache:', error);
               }
             } catch (error) {
-              console.warn('Erro ao baixar imagem do membro:', membro.foto, error);
+              console.warn('Erro ao baixar imagem do membro:', foto, error);
             }
           }
         }

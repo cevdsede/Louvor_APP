@@ -4,6 +4,7 @@ import { useMinistryContext } from '../../contexts/MinistryContext';
 import { SupabaseMembro } from '../../types-supabase';
 import { buildLocalAvatar } from '../../utils/avatar';
 import { getDisplayName } from '../../utils/displayName';
+import { sanitizeImageUrl } from '../../utils/imageUrl';
 import { ImageCache } from '../ui/ImageCache';
 
 const normalize = (value?: string | null) =>
@@ -18,13 +19,14 @@ const canViewFullMember = (viewer: SupabaseMembro | null, target: SupabaseMembro
 };
 
 const withImageCacheBust = (src: string, member: SupabaseMembro) => {
-  if (!src || src.startsWith('data:') || src.startsWith('blob:')) return src;
+  const cleanSrc = sanitizeImageUrl(src);
+  if (!cleanSrc || cleanSrc.startsWith('data:') || cleanSrc.startsWith('blob:')) return cleanSrc;
 
   const version = member.created_at || member.id;
-  if (!version) return src;
+  if (!version) return cleanSrc;
 
-  const separator = src.includes('?') ? '&' : '?';
-  return `${src}${separator}v=${encodeURIComponent(version)}`;
+  const separator = cleanSrc.includes('?') ? '&' : '?';
+  return `${cleanSrc}${separator}v=${encodeURIComponent(version)}`;
 };
 
 const ChurchMembers: React.FC = () => {

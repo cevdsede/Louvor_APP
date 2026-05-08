@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useImageCache } from '../../hooks/useImageCache';
+import { sanitizeImageUrl } from '../../utils/imageUrl';
 
 interface ImageCacheProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -22,7 +23,9 @@ const ImageCacheComponent: React.FC<ImageCacheProps> = ({
   onError,
   ...props
 }) => {
-  const { imageSrc, loading } = useImageCache(src, fallbackSrc, disableCompression, {
+  const cleanSrc = sanitizeImageUrl(src);
+  const cleanFallbackSrc = sanitizeImageUrl(fallbackSrc) || fallbackSrc;
+  const { imageSrc, loading } = useImageCache(cleanSrc, cleanFallbackSrc, disableCompression, {
     maxWidth: cacheMaxWidth,
     quality: cacheQuality,
     maxBlobSize: maxCacheSize,
@@ -31,16 +34,7 @@ const ImageCacheComponent: React.FC<ImageCacheProps> = ({
   const [hasError, setHasError] = useState(false);
 
   const handleError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    console.log('[ImageCache] img-error', {
-      originalSrc: src,
-      renderedSrc: event.currentTarget.src,
-      fallbackSrc,
-      hasError,
-      naturalWidth: event.currentTarget.naturalWidth,
-      naturalHeight: event.currentTarget.naturalHeight
-    });
-
-    if (!hasError && fallbackSrc && event.currentTarget.src !== fallbackSrc) {
+    if (!hasError && cleanFallbackSrc && event.currentTarget.src !== cleanFallbackSrc) {
       setHasError(true);
     }
     if (onError) {
@@ -48,19 +42,13 @@ const ImageCacheComponent: React.FC<ImageCacheProps> = ({
     }
   };
 
-  const displaySrc = hasError ? fallbackSrc || imageSrc : imageSrc;
+  const displaySrc = hasError ? cleanFallbackSrc || imageSrc : imageSrc;
 
   return (
     <img
       {...props}
       src={displaySrc || null}
       onLoad={(event) => {
-        console.log('[ImageCache] img-load', {
-          originalSrc: src,
-          renderedSrc: event.currentTarget.src,
-          naturalWidth: event.currentTarget.naturalWidth,
-          naturalHeight: event.currentTarget.naturalHeight
-        });
         props.onLoad?.(event);
       }}
       onError={handleError}

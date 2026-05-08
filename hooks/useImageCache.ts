@@ -1,8 +1,8 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { sanitizeImageUrl } from '../utils/imageUrl';
 
 const FALLBACK_SVG = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjEwMDAiIHZpZXdCb3g9IjAgMCA4MDAgMTAwMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwMCIgaGVpZ2h0PSIxMDAwIiBmaWxsPSIjZGRkIi8+Cjx0ZXh0IHg9IjQwMCIgeT0iNTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjI0Ij5JbWFnZW0gbmFvw6NvIGRpc3BvbsO2dmVsPC90ZXh0Pgo8L3N2Zz4=';
 
-// Função para comprimir imagem
 const compressImage = (file: File, maxWidth: number = 300, quality: number = 0.9): Promise<string> => {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
@@ -28,7 +28,7 @@ const compressImage = (file: File, maxWidth: number = 300, quality: number = 0.9
             reader.onerror = reject;
             reader.readAsDataURL(blob);
           } else {
-            reject(new Error('Falha na compressão'));
+            reject(new Error('Falha na compressao'));
           }
         },
         'image/jpeg',
@@ -64,10 +64,6 @@ const getLatestCacheKey = (cacheKeyBase: string) => {
     })[0];
 };
 
-const logImageDebug = (stage: string, detail: Record<string, unknown>) => {
-  console.log(`[ImageCache] ${stage}`, detail);
-};
-
 const pruneDuplicateCacheEntries = (cacheKeyBase: string) => {
   const cachedKeys = Object.keys(localStorage).filter(key => key.startsWith(cacheKeyBase));
   if (cachedKeys.length <= 1) return;
@@ -95,8 +91,6 @@ const cleanOldCache = (aggressive = false) => {
     const keepCount = aggressive ? 3 : 10;
     const toRemove = sortedKeys.slice(0, -keepCount);
     toRemove.forEach(key => localStorage.removeItem(key));
-
-    console.log(`Limpou ${toRemove.length} imagens antigas do cache (${aggressive ? 'agressivo' : 'normal'})`);
   } catch (error) {
     console.warn('Erro ao limpar cache antigo:', error);
   }
@@ -113,7 +107,7 @@ const trySaveToCache = (cacheKey: string, data: string) => {
       localStorage.setItem(cacheKey, data);
       return true;
     } catch (secondError) {
-      console.warn('Ainda não foi possível salvar no cache:', secondError);
+      console.warn('Ainda nao foi possivel salvar no cache:', secondError);
       Object.keys(localStorage)
         .filter(key => key.startsWith('image_cache_'))
         .forEach(key => localStorage.removeItem(key));
@@ -144,6 +138,8 @@ export const useImageCache = (
 
   useEffect(() => {
     let active = true;
+    const cleanUrl = sanitizeImageUrl(url);
+    const cleanFallbackUrl = sanitizeImageUrl(fallbackUrl) || fallbackUrl || '';
 
     const setState = (src: string) => {
       if (!active) return;
@@ -152,38 +148,26 @@ export const useImageCache = (
     };
 
     const loadImage = async () => {
-      logImageDebug('start', {
-        url,
-        fallbackUrl,
-        disableCompression,
-        cacheVariant,
-        online: navigator.onLine
-      });
-
-      if (!url) {
-        logImageDebug('empty-url', { fallbackUrl });
-        setState(fallbackUrl || '');
+      if (!cleanUrl) {
+        setState(cleanFallbackUrl);
         return;
       }
 
-      if (url.startsWith('data:') || url.startsWith('blob:')) {
-        logImageDebug('inline-url', { urlType: url.startsWith('data:') ? 'data' : 'blob' });
-        setState(url);
+      if (cleanUrl.startsWith('data:') || cleanUrl.startsWith('blob:')) {
+        setState(cleanUrl);
         return;
       }
 
-      if (url.includes('ui-avatars.com')) {
-        logImageDebug('blocked-ui-avatars', { url, fallbackUrl: Boolean(fallbackUrl) });
-        setState(fallbackUrl || FALLBACK_SVG);
+      if (cleanUrl.includes('ui-avatars.com')) {
+        setState(cleanFallbackUrl || FALLBACK_SVG);
         return;
       }
 
-      const cacheKeyBase = getCacheKeyBase(url, cacheVariant);
+      const cacheKeyBase = getCacheKeyBase(cleanUrl, cacheVariant);
       const latestKey = getLatestCacheKey(cacheKeyBase);
       if (latestKey) {
         const cached = localStorage.getItem(latestKey);
         if (cached) {
-          logImageDebug('cache-hit', { url, latestKey, cachedLength: cached.length });
           pruneDuplicateCacheEntries(cacheKeyBase);
           setState(cached);
           return;
@@ -191,32 +175,26 @@ export const useImageCache = (
       }
 
       if (disableCompression) {
-        logImageDebug('direct-url-disable-compression', { url });
-        setState(url);
+        setState(cleanUrl);
         return;
       }
 
       if (!navigator.onLine) {
-        logImageDebug('offline-fallback', { url, fallbackUrl: Boolean(fallbackUrl) });
-        setState(fallbackUrl || FALLBACK_SVG);
+        setState(cleanFallbackUrl || FALLBACK_SVG);
         return;
       }
 
-
       try {
-        logImageDebug('fetch-start', { url });
-        const response = await fetch(url);
+        const response = await fetch(cleanUrl);
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
 
         const blob = await response.blob();
-        logImageDebug('fetch-ok', { url, type: blob.type, size: blob.size });
 
         if (blob.size > 12 * 1024 * 1024) {
-          console.warn('Imagem muito grande para cache local:', url, blob.size);
-          logImageDebug('too-large-direct-url', { url, size: blob.size });
-          setState(url);
+          console.warn('Imagem muito grande para cache local:', cleanUrl, blob.size);
+          setState(cleanUrl);
           return;
         }
 
@@ -247,26 +225,18 @@ export const useImageCache = (
         const cacheKey = `${cacheKeyBase}_${Date.now()}`;
         const saved = trySaveToCache(cacheKey, finalBase64);
         if (saved) {
-          logImageDebug('cache-save-ok', { url, cacheKey, size: finalBase64.length });
           pruneDuplicateCacheEntries(cacheKeyBase);
           setState(finalBase64);
         } else {
-          logImageDebug('cache-save-failed-direct-url', { url });
-          setState(url);
+          setState(cleanUrl);
         }
       } catch (error) {
         console.warn('Erro ao carregar imagem:', error);
-        logImageDebug('fetch-error', {
-          url,
-          error: error instanceof Error ? error.message : String(error)
-        });
-        if (url.startsWith('http')) {
-          logImageDebug('fallback-to-direct-url', { url });
-          setState(url);
+        if (cleanUrl.startsWith('http')) {
+          setState(cleanUrl);
           return;
         }
-        logImageDebug('fallback-image', { fallbackUrl: Boolean(fallbackUrl) });
-        setState(fallbackUrl || FALLBACK_SVG);
+        setState(cleanFallbackUrl || FALLBACK_SVG);
       }
     };
 

@@ -12,6 +12,7 @@ import { getDisplayName } from '../../utils/displayName';
 import { sortMembersByRole, getRoleIcon } from '../../utils/teamUtils';
 import EventCard from '../escalas/EventCard';
 import { buildLocalAvatar } from '../../utils/avatar';
+import { sanitizeImageUrl } from '../../utils/imageUrl';
 
 interface TeamModalsProps {
   selectedMember: Member | null;
@@ -93,7 +94,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
           id: memberId,
           name: memberName,
           gender: membro.genero === 'Homem' ? 'M' : 'F',
-          avatar: membro.foto || buildLocalAvatar(memberName),
+          avatar: sanitizeImageUrl(membro.foto) || buildLocalAvatar(memberName),
           status: 'confirmed',
           upcomingScales: [],
           songHistory: [],

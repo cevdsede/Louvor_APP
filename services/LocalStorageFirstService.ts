@@ -1,6 +1,7 @@
 import { supabase } from '../supabaseClient';
 import LocalStorageService from './LocalStorageService';
 import CacheService from './CacheService';
+import { sanitizeImageUrl } from '../utils/imageUrl';
 
 interface LocalStorageConfig {
   syncInterval?: number;
@@ -557,7 +558,7 @@ class LocalStorageFirstService {
           nome: publicMember.nome,
           display_name: publicMember.display_name,
           nome_planilha: publicMember.nome_planilha,
-          foto: publicMember.foto,
+          foto: sanitizeImageUrl(publicMember.foto),
           ativo: publicMember.ativo,
           created_at: publicMember.created_at,
           perfil: 'public'
@@ -569,7 +570,7 @@ class LocalStorageFirstService {
           nome: existing.nome || publicData.nome,
           display_name: existing.display_name || publicData.display_name,
           nome_planilha: existing.nome_planilha || publicData.nome_planilha,
-          foto: publicData.foto || existing.foto,
+          foto: publicData.foto || sanitizeImageUrl(existing.foto),
           ativo: existing.ativo ?? publicData.ativo,
           created_at: existing.created_at || publicData.created_at,
           perfil: existing.perfil || publicData.perfil

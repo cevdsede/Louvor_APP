@@ -2,6 +2,7 @@ import { supabase } from '../supabaseClient';
 import LocalStorageFirstService from './LocalStorageFirstService';
 import { getMemberIdsForMinisterio } from '../utils/memberMinistry';
 import { getDisplayName } from '../utils/displayName';
+import { sanitizeImageUrl } from '../utils/imageUrl';
 import AvisoGeralService from './AvisoGeralService';
 
 export interface Evento {
@@ -310,7 +311,7 @@ class EventService {
       .map((membro: any) => ({
       id: membro.id,
       nome: getDisplayName(membro),
-      foto: membro.foto,
+      foto: sanitizeImageUrl(membro.foto),
       ativo: membro.ativo
       }));
   }
