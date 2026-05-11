@@ -345,23 +345,23 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
             </button>
           </div>
         )}
-        <div className="grid gap-3 md:grid-cols-6 md:gap-4">
-          <Field label="Titulo" className="md:col-span-3">
+        <div className="grid gap-3 md:grid-cols-8 md:gap-4">
+          <Field label="Titulo" className="md:col-span-4">
             <input className={inputClass} placeholder="Ex: Culto de celebracao" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
           </Field>
-          <Field label="Local" className="md:col-span-3">
+          <Field label="Local" className="md:col-span-4">
             <input className={inputClass} placeholder="Ex: Templo sede" value={form.local} onChange={(e) => setForm({ ...form, local: e.target.value })} />
           </Field>
-          <Field label="Data inicial" className="md:col-span-2">
+          <Field label="Data inicial" className="md:col-span-3">
             <input type="date" className={inputClass} value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
           </Field>
           <Field label="Horario inicial" className="md:col-span-2">
             <input type="time" className={inputClass} value={form.horario} onChange={(e) => setForm({ ...form, horario: e.target.value })} />
           </Field>
-          <Field label="Horario final" className="md:col-span-2">
+          <Field label="Horario final" className="md:col-span-3">
             <input type="time" className={inputClass} value={form.horarioFim} onChange={(e) => setForm({ ...form, horarioFim: e.target.value })} />
           </Field>
-          <Field label="Descricao" className="md:col-span-6">
+          <Field label="Descricao" className="md:col-span-8">
             <textarea className={inputClass} placeholder="Resumo curto do evento" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
           </Field>
           <Field label="Imagem desktop 16:9" className="md:col-span-2">

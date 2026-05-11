@@ -240,22 +240,22 @@ const ChurchDashboard: React.FC = () => {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(260px,360px)_minmax(520px,720px)] lg:grid-rows-[auto_1fr] lg:items-center lg:justify-center xl:grid-cols-[minmax(300px,400px)_minmax(620px,820px)]">
-        <div className="order-2 grid grid-cols-2 gap-2 sm:gap-3 lg:order-1 lg:col-start-1 lg:row-start-1 lg:grid-cols-1">
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)] lg:items-stretch">
+        <div className="order-2 grid grid-cols-2 gap-2 sm:gap-3 lg:order-1 lg:col-span-2 lg:grid-cols-3">
           {kpiCards.map(renderKpiCard)}
         </div>
 
-        <div className="order-1 flex min-w-0 flex-col items-center lg:order-2 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+        <div className="order-1 flex min-w-0 flex-col items-center lg:order-2 lg:col-start-1 lg:items-stretch">
           {loading ? (
-            <div className="flex aspect-[9/16] w-full max-w-[360px] items-center justify-center rounded-[1.75rem] border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900 lg:aspect-video lg:max-w-[720px]">
+            <div className="flex aspect-[9/16] w-full max-w-[360px] items-center justify-center rounded-[1.75rem] border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900 lg:aspect-video lg:max-w-none">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent" />
             </div>
           ) : weekEvents.length === 0 ? (
-            <div className="flex aspect-[9/16] w-full max-w-[360px] items-center justify-center rounded-[1.75rem] border border-dashed border-slate-300 bg-white p-8 text-center shadow-xl dark:border-slate-700 dark:bg-slate-900 lg:aspect-video lg:max-w-[720px]">
+            <div className="flex aspect-[9/16] w-full max-w-[360px] items-center justify-center rounded-[1.75rem] border border-dashed border-slate-300 bg-white p-8 text-center shadow-xl dark:border-slate-700 dark:bg-slate-900 lg:aspect-video lg:max-w-none">
               <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Nenhum evento ativo para esta semana.</p>
             </div>
           ) : (
-            <div className="w-full max-w-[360px] space-y-3 lg:max-w-[720px] xl:max-w-[820px]">
+            <div className="w-full max-w-[360px] space-y-3 lg:max-w-none">
               <div className="relative aspect-[9/16] overflow-hidden rounded-[1.75rem] bg-slate-900 shadow-xl lg:aspect-video">
                 {activeEvent && (
                   <button type="button" onClick={() => setExpandedEvent(activeEvent)} className="block h-full w-full text-left">
@@ -308,7 +308,7 @@ const ChurchDashboard: React.FC = () => {
           )}
         </div>
 
-        <div className="order-3 lg:col-start-1 lg:row-start-2 lg:self-stretch">{verseCard}</div>
+        <div className="order-3 lg:col-start-2 lg:row-start-2 lg:self-stretch">{verseCard}</div>
       </section>
 
       {pastors.length > 0 && (
