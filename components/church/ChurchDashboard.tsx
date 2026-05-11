@@ -36,6 +36,21 @@ const formatDate = (isoDate: string) =>
     minute: '2-digit'
   }).format(new Date(isoDate));
 
+const formatGroupedDates = (event: any) => {
+  const occurrences = Array.isArray(event.weekOccurrences) ? event.weekOccurrences : [];
+  if (occurrences.length <= 1) return formatDate(event.startsAt);
+
+  const formatter = new Intl.DateTimeFormat('pt-BR', { weekday: 'short' });
+  const groups = occurrences.map((occurrence: any) => {
+    const date = new Date(occurrence.startsAt);
+    const day = formatter.format(date).replace('.', '');
+    const time = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return `${day} ${time}`;
+  });
+
+  return groups.join(' e ');
+};
+
 const normalize = (value?: string | null) =>
   (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
@@ -50,13 +65,23 @@ const ChurchDashboard: React.FC = () => {
 
   const weekEvents = useMemo(
     () => {
-      const grouped = new Map<string, ReturnType<typeof generateChurchEventOccurrences>[number]>();
+      type ChurchDashboardEvent = ReturnType<typeof generateChurchEventOccurrences>[number] & {
+        weekOccurrences?: ReturnType<typeof generateChurchEventOccurrences>;
+      };
+      const grouped = new Map<string, ChurchDashboardEvent>();
 
       generateChurchEventOccurrences(eventsRaw || [], start, end, { dashboardOnly: true }).forEach((event) => {
         const existing = grouped.get(event.eventId);
-        if (!existing || new Date(event.startsAt).getTime() < new Date(existing.startsAt).getTime()) {
-          grouped.set(event.eventId, event);
+        if (!existing) {
+          grouped.set(event.eventId, { ...event, weekOccurrences: [event] });
+          return;
         }
+
+        const weekOccurrences = [...(existing.weekOccurrences || []), event].sort(
+          (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()
+        );
+        const firstOccurrence = weekOccurrences[0];
+        grouped.set(event.eventId, { ...firstOccurrence, weekOccurrences });
       });
 
       return Array.from(grouped.values())
@@ -275,7 +300,7 @@ const ChurchDashboard: React.FC = () => {
                     <div className="absolute inset-0">{renderEventMedia(activeEvent, activeSlide)}</div>
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-transparent" />
                     <div className="absolute inset-x-0 bottom-0 p-5 text-white">
-                      <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-white/70">{formatDate(activeEvent.startsAt)}</p>
+                      <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-white/70">{formatGroupedDates(activeEvent)}</p>
                       <h2 className="text-2xl font-black tracking-tight">{activeEvent.titulo}</h2>
                       {activeEvent.local && <p className="mt-2 text-sm font-semibold text-white/80">{activeEvent.local}</p>}
                       <span className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 text-[10px] font-black uppercase tracking-widest backdrop-blur">
@@ -363,7 +388,7 @@ const ChurchDashboard: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-5 text-white sm:p-8">
                 <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-white/70">
-                  {formatDate(expandedEvent.startsAt)}
+                  {formatGroupedDates(expandedEvent)}
                 </p>
                 <h2 className="text-3xl font-black tracking-tight sm:text-5xl">{expandedEvent.titulo}</h2>
                 {expandedEvent.local && <p className="mt-3 text-sm font-semibold text-white/80">{expandedEvent.local}</p>}
