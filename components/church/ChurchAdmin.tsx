@@ -57,6 +57,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
   const [form, setForm] = useState<EventForm>(INITIAL_FORM);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
   const [permissionSearch, setPermissionSearch] = useState('');
 
@@ -175,6 +176,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
       await LocalStorageFirstService.forceSync('eventos_igreja');
       setForm(INITIAL_FORM);
       setEditingEventId(null);
+      setIsEventModalOpen(false);
       showSuccess(editingEventId ? 'Evento atualizado.' : 'Evento salvo na agenda.');
     } catch (error) {
       console.error('Erro ao salvar evento da igreja:', error);
@@ -207,12 +209,13 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
       visivel_agenda: event.visivel_agenda !== false,
       imagem: null
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setIsEventModalOpen(true);
   };
 
   const cancelEdit = () => {
     setEditingEventId(null);
     setForm(INITIAL_FORM);
+    setIsEventModalOpen(false);
   };
 
   const deleteEvent = async (event: SupabaseEventoIgreja) => {
@@ -265,14 +268,49 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand">Administracao</p>
-        <h1 className="mt-2 text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-          Agenda e cards da igreja
-        </h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand">Administracao</p>
+          <h1 className="mt-2 text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+            Agenda e cards da igreja
+          </h1>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setEditingEventId(null);
+            setForm(INITIAL_FORM);
+            setIsEventModalOpen(true);
+          }}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand px-5 py-4 text-[11px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20"
+        >
+          <i className="fas fa-plus" />
+          Adicionar evento
+        </button>
       </div>
 
-      <form onSubmit={saveEvent} className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+      {isEventModalOpen && (
+        <div className="fixed inset-0 z-[720] overflow-y-auto bg-slate-950/60 px-3 py-4 pb-24 backdrop-blur-sm sm:px-4 sm:py-6">
+          <form onSubmit={saveEvent} className="mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-3 rounded-t-2xl border-b border-slate-100 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-brand">
+                  {editingEventId ? 'Editar evento' : 'Novo evento'}
+                </p>
+                <h2 className="mt-1 text-xl font-black text-slate-900 dark:text-white">
+                  {editingEventId ? 'Atualizar agenda/card' : 'Adicionar a agenda'}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-red-500 dark:hover:bg-slate-800"
+              >
+                <i className="fas fa-times" />
+              </button>
+            </div>
+
+            <div className="space-y-5 p-4 sm:p-5">
         {editingEventId && (
           <div className="mb-4 flex flex-col gap-3 rounded-xl bg-brand/10 p-3 text-sm font-bold text-brand sm:flex-row sm:items-center sm:justify-between">
             <span>Editando evento cadastrado</span>
@@ -282,12 +320,24 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
           </div>
         )}
         <div className="grid gap-3 md:grid-cols-2 md:gap-4">
-          <input className={inputClass} placeholder="Titulo do evento/card" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
-          <input className={inputClass} placeholder="Local" value={form.local} onChange={(e) => setForm({ ...form, local: e.target.value })} />
-          <input type="date" className={inputClass} value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
-          <input type="time" className={inputClass} value={form.horario} onChange={(e) => setForm({ ...form, horario: e.target.value })} />
-          <textarea className={`${inputClass} md:col-span-2`} placeholder="Descricao" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
-          <input type="file" accept="image/*" className={inputClass} onChange={(e) => setForm({ ...form, imagem: e.target.files?.[0] || null })} />
+          <Field label="Titulo">
+            <input className={inputClass} placeholder="Ex: Culto de celebracao" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
+          </Field>
+          <Field label="Local">
+            <input className={inputClass} placeholder="Ex: Templo sede" value={form.local} onChange={(e) => setForm({ ...form, local: e.target.value })} />
+          </Field>
+          <Field label="Data inicial">
+            <input type="date" className={inputClass} value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
+          </Field>
+          <Field label="Horario">
+            <input type="time" className={inputClass} value={form.horario} onChange={(e) => setForm({ ...form, horario: e.target.value })} />
+          </Field>
+          <Field label="Descricao" className="md:col-span-2">
+            <textarea className={inputClass} placeholder="Resumo curto do evento" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
+          </Field>
+          <Field label="Imagem do card">
+            <input type="file" accept="image/*" className={inputClass} onChange={(e) => setForm({ ...form, imagem: e.target.files?.[0] || null })} />
+          </Field>
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Tipo de recorrência</label>
             <select className={inputClass} value={form.recorrencia_tipo} onChange={(e) => setForm({ ...form, recorrencia_tipo: e.target.value })}>
@@ -414,7 +464,10 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
             {saving ? 'Salvando...' : editingEventId ? 'Atualizar evento' : 'Adicionar a agenda'}
           </button>
         </div>
+            </div>
       </form>
+        </div>
+      )}
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:p-5">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -543,6 +596,21 @@ const Toggle = ({ label, checked, onChange }: { label: string; checked: boolean;
   <label className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
     <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{label}</span>
     <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-5 w-5 rounded border-slate-300 text-brand focus:ring-brand" />
+  </label>
+);
+
+const Field = ({
+  label,
+  className = '',
+  children
+}: {
+  label: string;
+  className?: string;
+  children: React.ReactNode;
+}) => (
+  <label className={`space-y-2 ${className}`}>
+    <span className="block text-[10px] font-black uppercase tracking-widest text-slate-500">{label}</span>
+    {children}
   </label>
 );
 
