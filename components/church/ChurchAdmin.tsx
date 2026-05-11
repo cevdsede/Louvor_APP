@@ -13,6 +13,7 @@ type EventForm = {
   local: string;
   data: string;
   horario: string;
+  horarioFim: string;
   categoria: string;
   recorrente: boolean;
   recorrencia_tipo: string;
@@ -33,6 +34,7 @@ const INITIAL_FORM: EventForm = {
   local: '',
   data: '',
   horario: '19:30',
+  horarioFim: '',
   categoria: 'Culto',
   recorrente: false,
   recorrencia_tipo: 'semanal',
@@ -127,13 +129,16 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
 
     try {
       const startsAt = `${form.data}T${form.horario || '19:30'}:00`;
+      const endsAt = form.horarioFim ? `${form.data}T${form.horarioFim}:00` : null;
       const payload = {
         titulo: form.titulo.trim(),
         descricao: form.descricao.trim() || null,
         local: form.local.trim() || null,
         categoria: form.categoria.trim() || null,
         data_inicio: startsAt,
+        data_fim: endsAt,
         horario_inicio: form.horario || null,
+        horario_fim: form.horarioFim || null,
         recorrente: form.recorrente,
         recorrencia_tipo: form.recorrente ? form.recorrencia_tipo : null,
         recorrencia_intervalo: 1,
@@ -196,6 +201,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
       local: event.local || '',
       data: Number.isNaN(start.getTime()) ? fallbackDate : start.toISOString().slice(0, 10),
       horario: event.horario_inicio?.slice(0, 5) || '19:30',
+      horarioFim: event.horario_fim?.slice(0, 5) || '',
       categoria: event.categoria || 'Culto',
       recorrente: Boolean(event.recorrente),
       recorrencia_tipo: event.recorrencia_tipo || 'semanal',
@@ -329,8 +335,11 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
           <Field label="Data inicial">
             <input type="date" className={inputClass} value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
           </Field>
-          <Field label="Horario">
+          <Field label="Horario inicial">
             <input type="time" className={inputClass} value={form.horario} onChange={(e) => setForm({ ...form, horario: e.target.value })} />
+          </Field>
+          <Field label="Horario final">
+            <input type="time" className={inputClass} value={form.horarioFim} onChange={(e) => setForm({ ...form, horarioFim: e.target.value })} />
           </Field>
           <Field label="Descricao" className="md:col-span-2">
             <textarea className={inputClass} placeholder="Resumo curto do evento" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
@@ -352,7 +361,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
                 });
               }}
             >
-              <option value="unico">Evento unico</option>
+              <option value="unico">📌 Evento unico</option>
               <option value="diaria">📅 Todo dia</option>
               <option value="semanal">📆 Toda semana</option>
               <option value="mensal_dia_mes">🗓️ Todo mês no mesmo dia</option>
@@ -463,19 +472,6 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
                 placeholder="Data final (opcional)"
               />
               <p className="text-[9px] text-slate-400">Opcional. Se definida, as repetições pararão nesta data. Deixe em branco para repetir indefinidamente.</p>
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Prioridade do evento</label>
-              <input 
-                type="number" 
-                className={inputClass} 
-                value={form.prioridade} 
-                onChange={(e) => setForm({ ...form, prioridade: Number(e.target.value) })} 
-                placeholder="Prioridade (0-10)"
-                min={0}
-                max={10}
-              />
-              <p className="text-[9px] text-slate-400">Números maiores = maior prioridade. Eventos com maior prioridade podem substituir eventos de menor prioridade no mesmo dia.</p>
             </div>
           </div>
         )}
