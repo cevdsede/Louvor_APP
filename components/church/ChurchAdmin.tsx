@@ -5,6 +5,7 @@ import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import { SupabaseEventoIgreja, SupabaseMembro, SupabasePermissaoIgreja } from '../../types-supabase';
 import { compressImageFile } from '../../utils/imageCompression';
 import { getDisplayName } from '../../utils/displayName';
+import { getPublicAssetsPathFromUrl } from '../../utils/imageUrl';
 import { showError, showSuccess } from '../../utils/toast';
 
 type EventForm = {
@@ -254,6 +255,19 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
   const deleteEvent = async (event: SupabaseEventoIgreja) => {
     const confirmed = window.confirm(`Excluir "${event.titulo}" da agenda e dos cards?`);
     if (!confirmed) return;
+
+    const imagePaths = Array.from(new Set([
+      getPublicAssetsPathFromUrl(event.imagem_url),
+      getPublicAssetsPathFromUrl(event.imagem_url_desktop),
+      getPublicAssetsPathFromUrl(event.imagem_url_mobile)
+    ].filter(Boolean)));
+
+    if (imagePaths.length > 0) {
+      const { error: removeError } = await supabase.storage.from('public-assets').remove(imagePaths);
+      if (removeError) {
+        console.warn('Erro ao remover imagens do evento:', removeError);
+      }
+    }
 
     const { error } = await supabase.from('eventos_igreja').delete().eq('id', event.id);
     if (error) {
