@@ -58,6 +58,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
   const { data: eventsRaw } = useLocalStorageFirst<SupabaseEventoIgreja>({ table: 'eventos_igreja' });
   const { data: membersRaw } = useLocalStorageFirst<SupabaseMembro>({ table: 'membros' });
   const { data: permissionsRaw } = useLocalStorageFirst<SupabasePermissaoIgreja>({ table: 'permissoes_igreja' });
+  const { data: cultNamesRaw } = useLocalStorageFirst<{ nome_culto: string }>({ table: 'nome_cultos' });
   const [form, setForm] = useState<EventForm>(INITIAL_FORM);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -94,6 +95,12 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
         (a, b) => new Date(b.data_inicio).getTime() - new Date(a.data_inicio).getTime()
       ),
     [eventsRaw]
+  );
+  const cultNameSuggestions = useMemo(
+    () =>
+      Array.from(new Set((cultNamesRaw || []).map((item) => item.nome_culto).filter(Boolean)))
+        .sort((a, b) => a.localeCompare(b)),
+    [cultNamesRaw]
   );
 
   const slugify = (value: string) =>
@@ -347,7 +354,18 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
         )}
         <div className="grid gap-3 md:grid-cols-8 md:gap-4">
           <Field label="Titulo" className="md:col-span-4">
-            <input className={inputClass} placeholder="Ex: Culto de celebracao" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
+            <input
+              className={inputClass}
+              list="church-event-title-suggestions"
+              placeholder="Ex: Culto de celebracao"
+              value={form.titulo}
+              onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+            />
+            <datalist id="church-event-title-suggestions">
+              {cultNameSuggestions.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
           </Field>
           <Field label="Local" className="md:col-span-4">
             <input className={inputClass} placeholder="Ex: Templo sede" value={form.local} onChange={(e) => setForm({ ...form, local: e.target.value })} />
