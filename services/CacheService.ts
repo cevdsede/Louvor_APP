@@ -258,6 +258,7 @@ class CacheService {
       this.lastImageDownloadAt = Date.now();
 
       let downloaded = 0;
+      let skipped = 0;
 
       for (const imageEntry of imageEntries) {
         const cacheKeyBase = this.getImageCacheKeyBase(imageEntry.url, imageEntry.variant);
@@ -268,8 +269,13 @@ class CacheService {
         }
 
         try {
-          const response = await fetch(imageEntry.url);
-          if (!response.ok) {
+          const response = await fetch(imageEntry.url, {
+            cache: 'no-store',
+            credentials: 'omit',
+            mode: 'cors',
+          });
+          if (!response.ok || response.type === 'opaque') {
+            skipped++;
             continue;
           }
 
@@ -300,9 +306,13 @@ class CacheService {
               console.warn('Erro ao salvar imagem no cache:', error);
             }
           }
-        } catch (error) {
-          console.warn('Erro ao baixar imagem para cache:', imageEntry.url, error);
+        } catch {
+          skipped++;
         }
+      }
+
+      if (skipped > 0) {
+        console.debug(`Cache de imagens ignorou ${skipped} arquivo(s) indisponivel(is) ou bloqueado(s).`);
       }
 
     } catch (error) {
