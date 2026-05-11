@@ -190,12 +190,12 @@ const ChurchDashboard: React.FC = () => {
         </h1>
       </div>
 
-      <section className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_minmax(280px,420px)_minmax(260px,1fr)] lg:items-stretch lg:justify-center xl:grid-cols-[280px_minmax(320px,440px)_minmax(300px,1fr)]">
-        <div className="order-1 grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-1 lg:self-center">
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(260px,360px)_minmax(320px,440px)] lg:grid-rows-[auto_1fr] lg:items-center lg:justify-center xl:grid-cols-[minmax(300px,400px)_minmax(360px,460px)]">
+        <div className="order-1 grid grid-cols-3 gap-2 sm:gap-3 lg:col-start-1 lg:row-start-1 lg:grid-cols-1">
           {kpiCards.map(renderKpiCard)}
         </div>
 
-        <div className="order-2 flex min-w-0 flex-col items-center">
+        <div className="order-2 flex min-w-0 flex-col items-center lg:col-start-2 lg:row-span-2 lg:row-start-1">
           {loading ? (
             <div className="flex aspect-[9/16] w-full max-w-[360px] items-center justify-center rounded-[1.75rem] border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent" />
@@ -258,7 +258,7 @@ const ChurchDashboard: React.FC = () => {
           )}
         </div>
 
-        <div className="order-3 lg:self-center">{verseCard}</div>
+        <div className="order-3 lg:col-start-1 lg:row-start-2 lg:self-stretch">{verseCard}</div>
       </section>
 
       {pastors.length > 0 && (
@@ -287,7 +287,7 @@ const ChurchDashboard: React.FC = () => {
 
       {expandedEvent && (
         <div className="fixed inset-0 z-[760] flex items-center justify-center bg-slate-950/80 p-3 backdrop-blur-sm">
-          <div className="relative max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-slate-900 shadow-2xl">
+          <div className="relative aspect-[9/16] h-[92vh] max-h-[920px] max-w-[92vw] overflow-hidden rounded-[1.75rem] bg-slate-900 shadow-2xl">
             <button
               type="button"
               onClick={() => setExpandedEvent(null)}
@@ -295,7 +295,7 @@ const ChurchDashboard: React.FC = () => {
             >
               <i className="fas fa-times" />
             </button>
-            <div className="relative h-[78vh] min-h-[28rem]">
+            <div className="relative h-full w-full">
               {renderEventMedia(expandedEvent, activeSlide)}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-5 text-white sm:p-8">
