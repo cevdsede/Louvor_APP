@@ -111,6 +111,76 @@ const ChurchDashboard: React.FC = () => {
     return <div className={`h-full w-full ${className}`} style={{ background: fallbackImages[index % fallbackImages.length] }} />;
   };
 
+  const kpiCards = [
+    {
+      label: 'Total de membros',
+      value: members.length,
+      detail: 'Cadastros da igreja',
+      icon: 'fas fa-users',
+      className: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+    },
+    {
+      label: 'Aniversariantes',
+      value: birthdays.length,
+      detail: birthdays.length ? birthdays.slice(0, 3).map((member) => getDisplayName(member).split(' ')[0]).join(', ') : 'Nenhum este mes',
+      icon: 'fas fa-birthday-cake',
+      className: 'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400'
+    },
+    {
+      label: 'Eventos da semana',
+      value: weekEvents.length,
+      detail: activeEvent?.titulo || 'Nenhum evento',
+      icon: 'fas fa-calendar-week',
+      className: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
+    }
+  ];
+
+  const renderKpiCard = (card: typeof kpiCards[number]) => (
+    <div key={card.label} className="group rounded-xl border border-slate-200 bg-white p-3 shadow-lg transition-all duration-300 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800/50 sm:rounded-2xl sm:p-4">
+      <div className="flex h-full flex-col items-center justify-center gap-2 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
+        <div className={`order-1 flex h-9 w-9 items-center justify-center rounded-lg transition-transform group-hover:scale-110 sm:order-2 sm:h-12 sm:w-12 sm:rounded-xl ${card.className}`}>
+          <i className={`${card.icon} text-sm sm:text-lg`} />
+        </div>
+        <div className="order-2 min-w-0 sm:order-1">
+          <p className="text-[9px] font-semibold uppercase leading-tight text-slate-600 dark:text-slate-400 sm:text-xs sm:tracking-wider">{card.label}</p>
+          <p className="mt-1 text-lg font-black leading-tight text-slate-800 transition-colors group-hover:text-brand dark:text-white sm:text-2xl">{card.value}</p>
+          <p className="mt-1 hidden truncate text-[10px] font-bold text-slate-400 sm:block">{card.detail}</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const verseCard = (
+    <div className="relative min-h-[320px] overflow-hidden rounded-2xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5 shadow-xl dark:border-gray-700 dark:from-gray-900 dark:to-gray-800 sm:p-6 lg:h-full">
+      <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-brand/20 blur-3xl dark:bg-brand/30" />
+      <div className="absolute bottom-0 left-0 h-40 w-40 rounded-full bg-brand-accent/20 blur-3xl dark:bg-brand-accent/30" />
+      <div className="relative flex h-full flex-col justify-center text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-brand/20 bg-white/80 shadow-lg backdrop-blur dark:bg-gray-800">
+          <i className="fas fa-dove text-2xl text-brand" />
+        </div>
+        <h3 className="mb-4 text-lg font-bold text-gray-800 dark:text-white">Edificacao do Dia</h3>
+        <div className="relative rounded-2xl border border-brand/10 bg-white/60 p-5 shadow-lg backdrop-blur-sm dark:border-brand/20 dark:bg-gray-800/80">
+          <p
+            className="font-serif italic leading-relaxed text-gray-700 dark:text-gray-200"
+            style={{
+              fontSize: dailyVerse.length > 150 ? '0.875rem' : dailyVerse.length > 100 ? '1rem' : '1.125rem',
+              lineHeight: dailyVerse.length > 150 ? '1.4' : '1.5'
+            }}
+          >
+            "{dailyVerse || 'Carregando...'}"
+          </p>
+        </div>
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <div className="h-px w-10 bg-brand/20" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-brand/20 bg-brand/10">
+            <i className="fas fa-cross text-sm text-brand" />
+          </div>
+          <div className="h-px w-10 bg-brand/20" />
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div>
@@ -120,87 +190,75 @@ const ChurchDashboard: React.FC = () => {
         </h1>
       </div>
 
-      {loading ? (
-        <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent" />
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_minmax(280px,420px)_minmax(260px,1fr)] lg:items-stretch lg:justify-center xl:grid-cols-[280px_minmax(320px,440px)_minmax(300px,1fr)]">
+        <div className="order-1 grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-1 lg:self-center">
+          {kpiCards.map(renderKpiCard)}
         </div>
-      ) : weekEvents.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center dark:border-slate-700 dark:bg-slate-900">
-          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-            Nenhum evento ativo para esta semana.
-          </p>
-        </div>
-      ) : (
-        <section className="space-y-3">
-          <div className="relative h-[22rem] overflow-hidden rounded-2xl bg-slate-900 shadow-xl sm:h-[26rem]">
-            {activeEvent && (
-              <button type="button" onClick={() => setExpandedEvent(activeEvent)} className="block h-full w-full text-left">
-                <div className="absolute inset-0">{renderEventMedia(activeEvent, activeSlide)}</div>
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/45 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-5 text-white sm:p-7">
-                  <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-white/70">
-                    {formatDate(activeEvent.startsAt)}
-                  </p>
-                  <h2 className="max-w-3xl text-2xl font-black tracking-tight sm:text-4xl">{activeEvent.titulo}</h2>
-                  {activeEvent.local && <p className="mt-2 text-sm font-semibold text-white/80">{activeEvent.local}</p>}
-                  <span className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 text-[10px] font-black uppercase tracking-widest backdrop-blur">
-                    <i className="fas fa-expand" />
-                    Ver card
-                  </span>
+
+        <div className="order-2 flex min-w-0 flex-col items-center">
+          {loading ? (
+            <div className="flex aspect-[9/16] w-full max-w-[360px] items-center justify-center rounded-[1.75rem] border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent" />
+            </div>
+          ) : weekEvents.length === 0 ? (
+            <div className="flex aspect-[9/16] w-full max-w-[360px] items-center justify-center rounded-[1.75rem] border border-dashed border-slate-300 bg-white p-8 text-center shadow-xl dark:border-slate-700 dark:bg-slate-900">
+              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Nenhum evento ativo para esta semana.</p>
+            </div>
+          ) : (
+            <div className="w-full max-w-[360px] space-y-3 xl:max-w-[400px]">
+              <div className="relative aspect-[9/16] overflow-hidden rounded-[1.75rem] bg-slate-900 shadow-xl">
+                {activeEvent && (
+                  <button type="button" onClick={() => setExpandedEvent(activeEvent)} className="block h-full w-full text-left">
+                    <div className="absolute inset-0">{renderEventMedia(activeEvent, activeSlide)}</div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 p-5 text-white">
+                      <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-white/70">{formatDate(activeEvent.startsAt)}</p>
+                      <h2 className="text-2xl font-black tracking-tight">{activeEvent.titulo}</h2>
+                      {activeEvent.local && <p className="mt-2 text-sm font-semibold text-white/80">{activeEvent.local}</p>}
+                      <span className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 text-[10px] font-black uppercase tracking-widest backdrop-blur">
+                        <i className="fas fa-expand" />
+                        Ver card
+                      </span>
+                    </div>
+                  </button>
+                )}
+                {weekEvents.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSlide((activeSlide - 1 + weekEvents.length) % weekEvents.length)}
+                      className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur hover:bg-white/25"
+                    >
+                      <i className="fas fa-chevron-left text-xs" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSlide((activeSlide + 1) % weekEvents.length)}
+                      className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur hover:bg-white/25"
+                    >
+                      <i className="fas fa-chevron-right text-xs" />
+                    </button>
+                  </>
+                )}
+              </div>
+              {weekEvents.length > 1 && (
+                <div className="flex justify-center gap-2">
+                  {weekEvents.map((event, index) => (
+                    <button
+                      key={event.id}
+                      type="button"
+                      onClick={() => setActiveSlide(index)}
+                      className={`h-2 rounded-full transition-all ${index === activeSlide ? 'w-8 bg-brand' : 'w-2 bg-slate-300 dark:bg-slate-700'}`}
+                      aria-label={`Ir para ${event.titulo}`}
+                    />
+                  ))}
                 </div>
-              </button>
-            )}
-            {weekEvents.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setActiveSlide((activeSlide - 1 + weekEvents.length) % weekEvents.length)}
-                  className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur hover:bg-white/25"
-                >
-                  <i className="fas fa-chevron-left text-xs" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveSlide((activeSlide + 1) % weekEvents.length)}
-                  className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur hover:bg-white/25"
-                >
-                  <i className="fas fa-chevron-right text-xs" />
-                </button>
-              </>
-            )}
-          </div>
-          {weekEvents.length > 1 && (
-            <div className="flex justify-center gap-2">
-              {weekEvents.map((event, index) => (
-                <button
-                  key={event.id}
-                  type="button"
-                  onClick={() => setActiveSlide(index)}
-                  className={`h-2 rounded-full transition-all ${index === activeSlide ? 'w-8 bg-brand' : 'w-2 bg-slate-300 dark:bg-slate-700'}`}
-                  aria-label={`Ir para ${event.titulo}`}
-                />
-              ))}
+              )}
             </div>
           )}
-        </section>
-      )}
+        </div>
 
-      <section className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total de membros</p>
-          <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">{members.length}</p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Aniversariantes</p>
-          <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">{birthdays.length}</p>
-          <p className="mt-1 truncate text-xs font-bold text-slate-500 dark:text-slate-400">
-            {birthdays.length ? birthdays.slice(0, 3).map((member) => getDisplayName(member).split(' ')[0]).join(', ') : 'Nenhum este mes'}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Versiculo do dia</p>
-          <p className="mt-2 line-clamp-3 text-sm font-bold leading-relaxed text-slate-700 dark:text-slate-200">{dailyVerse || 'Carregando...'}</p>
-        </div>
+        <div className="order-3 lg:self-center">{verseCard}</div>
       </section>
 
       {pastors.length > 0 && (
