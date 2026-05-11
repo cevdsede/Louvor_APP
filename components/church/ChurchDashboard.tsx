@@ -199,13 +199,13 @@ const ChurchDashboard: React.FC = () => {
 
           <div className="relative px-4 py-6 text-center sm:px-6 sm:py-8 lg:px-8">
             <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl md:text-4xl">
-              Bem-vindo, <span className="relative inline-block">
-                <span className="relative z-10 text-brand-accent">{firstName}</span>
+              Bem-Vindo ao <span className="relative inline-block">
+                <span className="relative z-10 text-brand-accent">Valentes Connected</span>
                 <span className="absolute inset-0 scale-110 bg-brand-accent/20 blur-xl" />
                 <span className="absolute inset-0 scale-125 bg-brand-accent/10 blur-2xl" />
               </span>
             </h1>
-            <p className="mt-2 text-xs font-bold uppercase tracking-[0.24em] text-white/70">Modulo Igreja</p>
+            <p className="mt-2 text-sm font-black text-white/80 sm:text-base">{firstName}</p>
           </div>
         </div>
 
