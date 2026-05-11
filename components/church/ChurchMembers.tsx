@@ -75,9 +75,9 @@ const ChurchMembers: React.FC = () => {
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent" />
         </div>
       ) : (
-        <div className="grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-6">
           {members.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 sm:col-span-2 lg:col-span-3">
+            <div className="col-span-2 rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 lg:col-span-6">
               Nenhum membro disponivel para visualizacao.
             </div>
           ) : (
@@ -95,16 +95,16 @@ const ChurchMembers: React.FC = () => {
                   key={member.id}
                   type="button"
                   onClick={() => setSelectedMember(member)}
-                  className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 text-left transition hover:border-brand/40 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-4"
+                  className="flex min-w-0 flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-center transition hover:border-brand/40 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-4"
                 >
                   <ImageCache
                     src={photo}
                     fallbackSrc={buildLocalAvatar(name)}
                     alt={name}
-                    className="h-12 w-12 rounded-full object-cover sm:h-14 sm:w-14"
+                    className="h-14 w-14 rounded-full object-cover sm:h-16 sm:w-16"
                     disableCompression
                   />
-                  <div className="min-w-0">
+                  <div className="min-w-0 max-w-full">
                     <p className="truncate text-xs font-black text-slate-900 dark:text-white sm:text-sm">{name}</p>
                     <p className="mt-1 truncate text-[10px] font-black uppercase tracking-widest text-brand">
                       {publicRole}
