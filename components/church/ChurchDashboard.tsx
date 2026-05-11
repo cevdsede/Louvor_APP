@@ -49,7 +49,20 @@ const ChurchDashboard: React.FC = () => {
   const [dailyVerse, setDailyVerse] = useState('');
 
   const weekEvents = useMemo(
-    () => generateChurchEventOccurrences(eventsRaw || [], start, end, { dashboardOnly: true }).slice(0, 8),
+    () => {
+      const grouped = new Map<string, ReturnType<typeof generateChurchEventOccurrences>[number]>();
+
+      generateChurchEventOccurrences(eventsRaw || [], start, end, { dashboardOnly: true }).forEach((event) => {
+        const existing = grouped.get(event.eventId);
+        if (!existing || new Date(event.startsAt).getTime() < new Date(existing.startsAt).getTime()) {
+          grouped.set(event.eventId, event);
+        }
+      });
+
+      return Array.from(grouped.values())
+        .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime() || b.prioridade - a.prioridade)
+        .slice(0, 8);
+    },
     [end, eventsRaw, start]
   );
 
