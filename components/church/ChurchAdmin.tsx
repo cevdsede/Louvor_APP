@@ -25,7 +25,8 @@ type EventForm = {
   substitui_eventos_menor_prioridade: boolean;
   visivel_dashboard: boolean;
   visivel_agenda: boolean;
-  imagem: File | null;
+  imagemDesktop: File | null;
+  imagemMobile: File | null;
 };
 
 const INITIAL_FORM: EventForm = {
@@ -46,7 +47,8 @@ const INITIAL_FORM: EventForm = {
   substitui_eventos_menor_prioridade: false,
   visivel_dashboard: true,
   visivel_agenda: true,
-  imagem: null
+  imagemDesktop: null,
+  imagemMobile: null
 };
 
 const inputClass =
@@ -94,15 +96,25 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
     [eventsRaw]
   );
 
-  const uploadCardImage = async (eventId: string) => {
-    if (!form.imagem) return null;
+  const slugify = (value: string) =>
+    value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+      .slice(0, 60) || 'evento';
 
-    const compressed = await compressImageFile(form.imagem, {
-      maxWidth: 1400,
-      maxHeight: 900,
-      quality: 0.76
+  const uploadCardImage = async (eventId: string, file: File | null, variant: 'desktop' | 'mobile') => {
+    if (!file) return null;
+
+    const compressed = await compressImageFile(file, {
+      maxWidth: variant === 'desktop' ? 1600 : 1080,
+      maxHeight: variant === 'desktop' ? 900 : 1920,
+      quality: 0.78
     });
-    const filePath = `eventos-igreja/${eventId}.jpg`;
+    const folder = `${slugify(form.titulo)}-${eventId}`;
+    const filePath = `eventos-igreja/${folder}/${variant}.jpg`;
     const { error } = await supabase.storage.from('public-assets').upload(filePath, compressed, {
       cacheControl: '31536000',
       contentType: compressed.type,
@@ -169,11 +181,18 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
 
       if (error) throw error;
 
-      const imageUrl = await uploadCardImage(data.id);
-      if (imageUrl) {
+      const [desktopImageUrl, mobileImageUrl] = await Promise.all([
+        uploadCardImage(data.id, form.imagemDesktop, 'desktop'),
+        uploadCardImage(data.id, form.imagemMobile, 'mobile')
+      ]);
+      const imagePayload = {
+        ...(desktopImageUrl ? { imagem_url_desktop: desktopImageUrl, imagem_url: desktopImageUrl } : {}),
+        ...(mobileImageUrl ? { imagem_url_mobile: mobileImageUrl, imagem_url: desktopImageUrl || mobileImageUrl } : {})
+      };
+      if (Object.keys(imagePayload).length > 0) {
         const { error: imageError } = await supabase
           .from('eventos_igreja')
-          .update({ imagem_url: imageUrl })
+          .update(imagePayload)
           .eq('id', data.id);
         if (imageError) throw imageError;
       }
@@ -213,7 +232,8 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
       substitui_eventos_menor_prioridade: Boolean(event.substitui_eventos_menor_prioridade),
       visivel_dashboard: event.visivel_dashboard !== false,
       visivel_agenda: event.visivel_agenda !== false,
-      imagem: null
+      imagemDesktop: null,
+      imagemMobile: null
     });
     setIsEventModalOpen(true);
   };
@@ -344,8 +364,13 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
           <Field label="Descricao" className="md:col-span-6">
             <textarea className={inputClass} placeholder="Resumo curto do evento" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
           </Field>
-          <Field label="Imagem do card" className="md:col-span-2">
-            <input type="file" accept="image/*" className={inputClass} onChange={(e) => setForm({ ...form, imagem: e.target.files?.[0] || null })} />
+          <Field label="Imagem desktop 16:9" className="md:col-span-2">
+            <input type="file" accept="image/*" className={inputClass} onChange={(e) => setForm({ ...form, imagemDesktop: e.target.files?.[0] || null })} />
+            <p className="mt-1 text-[9px] font-bold text-slate-400">Usada em computadores. Recomendado: 1920x1080.</p>
+          </Field>
+          <Field label="Imagem celular 9:16" className="md:col-span-2">
+            <input type="file" accept="image/*" className={inputClass} onChange={(e) => setForm({ ...form, imagemMobile: e.target.files?.[0] || null })} />
+            <p className="mt-1 text-[9px] font-bold text-slate-400">Usada em celulares. Recomendado: 1080x1920.</p>
           </Field>
           <div className="space-y-2 md:col-span-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Tipo do evento</label>

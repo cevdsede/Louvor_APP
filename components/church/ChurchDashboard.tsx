@@ -105,14 +105,25 @@ const ChurchDashboard: React.FC = () => {
   const firstName = getDisplayName((currentMember as SupabaseMembro | null) || null).split(' ')[0] || 'Membro';
 
   const renderEventMedia = (event: any, index: number, className = '') => {
-    if (event.imagem_url) {
+    const desktopUrl = event.imagem_url_desktop || event.imagem_url || event.imagem_url_mobile;
+    const mobileUrl = event.imagem_url_mobile || event.imagem_url || event.imagem_url_desktop;
+
+    if (desktopUrl || mobileUrl) {
       return (
-        <ImageCache
-          src={event.imagem_url}
-          alt={event.titulo}
-          className={`h-full w-full object-cover ${className}`}
-          disableCompression
-        />
+        <>
+          <ImageCache
+            src={mobileUrl || ''}
+            alt={event.titulo}
+            className={`h-full w-full object-cover lg:hidden ${className}`}
+            disableCompression
+          />
+          <ImageCache
+            src={desktopUrl || ''}
+            alt={event.titulo}
+            className={`hidden h-full w-full object-cover lg:block ${className}`}
+            disableCompression
+          />
+        </>
       );
     }
 
@@ -229,23 +240,23 @@ const ChurchDashboard: React.FC = () => {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(260px,360px)_minmax(320px,440px)] lg:grid-rows-[auto_1fr] lg:items-center lg:justify-center xl:grid-cols-[minmax(300px,400px)_minmax(360px,460px)]">
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(260px,360px)_minmax(520px,720px)] lg:grid-rows-[auto_1fr] lg:items-center lg:justify-center xl:grid-cols-[minmax(300px,400px)_minmax(620px,820px)]">
         <div className="order-2 grid grid-cols-2 gap-2 sm:gap-3 lg:order-1 lg:col-start-1 lg:row-start-1 lg:grid-cols-1">
           {kpiCards.map(renderKpiCard)}
         </div>
 
         <div className="order-1 flex min-w-0 flex-col items-center lg:order-2 lg:col-start-2 lg:row-span-2 lg:row-start-1">
           {loading ? (
-            <div className="flex aspect-[9/16] w-full max-w-[360px] items-center justify-center rounded-[1.75rem] border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex aspect-[9/16] w-full max-w-[360px] items-center justify-center rounded-[1.75rem] border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900 lg:aspect-video lg:max-w-[720px]">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent" />
             </div>
           ) : weekEvents.length === 0 ? (
-            <div className="flex aspect-[9/16] w-full max-w-[360px] items-center justify-center rounded-[1.75rem] border border-dashed border-slate-300 bg-white p-8 text-center shadow-xl dark:border-slate-700 dark:bg-slate-900">
+            <div className="flex aspect-[9/16] w-full max-w-[360px] items-center justify-center rounded-[1.75rem] border border-dashed border-slate-300 bg-white p-8 text-center shadow-xl dark:border-slate-700 dark:bg-slate-900 lg:aspect-video lg:max-w-[720px]">
               <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Nenhum evento ativo para esta semana.</p>
             </div>
           ) : (
-            <div className="w-full max-w-[360px] space-y-3 xl:max-w-[400px]">
-              <div className="relative aspect-[9/16] overflow-hidden rounded-[1.75rem] bg-slate-900 shadow-xl">
+            <div className="w-full max-w-[360px] space-y-3 lg:max-w-[720px] xl:max-w-[820px]">
+              <div className="relative aspect-[9/16] overflow-hidden rounded-[1.75rem] bg-slate-900 shadow-xl lg:aspect-video">
                 {activeEvent && (
                   <button type="button" onClick={() => setExpandedEvent(activeEvent)} className="block h-full w-full text-left">
                     <div className="absolute inset-0">{renderEventMedia(activeEvent, activeSlide)}</div>
@@ -326,7 +337,7 @@ const ChurchDashboard: React.FC = () => {
 
       {expandedEvent && (
         <div className="fixed inset-0 z-[760] flex items-center justify-center bg-slate-950/80 p-3 backdrop-blur-sm">
-          <div className="relative aspect-[9/16] h-[92vh] max-h-[920px] max-w-[92vw] overflow-hidden rounded-[1.75rem] bg-slate-900 shadow-2xl">
+          <div className="relative aspect-[9/16] h-[92vh] max-h-[920px] max-w-[92vw] overflow-hidden rounded-[1.75rem] bg-slate-900 shadow-2xl lg:aspect-video lg:h-auto lg:w-[92vw] lg:max-w-6xl">
             <button
               type="button"
               onClick={() => setExpandedEvent(null)}

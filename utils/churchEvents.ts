@@ -7,6 +7,8 @@ export interface ChurchEventOccurrence {
   descricao?: string | null;
   local?: string | null;
   imagem_url?: string | null;
+  imagem_url_desktop?: string | null;
+  imagem_url_mobile?: string | null;
   categoria?: string | null;
   cor?: string | null;
   startsAt: string;
@@ -76,6 +78,8 @@ const buildOccurrence = (event: SupabaseEventoIgreja, startsAt: Date): ChurchEve
     descricao: event.descricao,
     local: event.local,
     imagem_url: event.imagem_url,
+    imagem_url_desktop: event.imagem_url_desktop,
+    imagem_url_mobile: event.imagem_url_mobile,
     categoria: event.categoria,
     cor: event.cor,
     startsAt: finalDate.toISOString(),

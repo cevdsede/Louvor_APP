@@ -100,6 +100,8 @@ export interface SupabaseEventoIgreja {
   descricao?: string | null;
   local?: string | null;
   imagem_url?: string | null;
+  imagem_url_desktop?: string | null;
+  imagem_url_mobile?: string | null;
   categoria?: string | null;
   cor?: string | null;
   data_inicio: string;
