@@ -191,18 +191,43 @@ const ChurchDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand">Igreja</p>
-          <h1 className="mt-2 text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-            Inicio
-          </h1>
+      <section className="overflow-hidden rounded-[1.75rem] shadow-xl">
+        <div className="relative overflow-hidden bg-brand dark:bg-brand">
+          <div className="absolute inset-0 bg-black/20" />
+          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-[90px]" />
+          <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-brand-accent/20 blur-[90px]" />
+
+          <div className="relative px-4 py-6 text-center sm:px-6 sm:py-8 lg:px-8">
+            <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl md:text-4xl">
+              Bem-vindo, <span className="relative inline-block">
+                <span className="relative z-10 text-brand-accent">{firstName}</span>
+                <span className="absolute inset-0 scale-110 bg-brand-accent/20 blur-xl" />
+                <span className="absolute inset-0 scale-125 bg-brand-accent/10 blur-2xl" />
+              </span>
+            </h1>
+            <p className="mt-2 text-xs font-bold uppercase tracking-[0.24em] text-white/70">Modulo Igreja</p>
+          </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:text-right">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Bem-vindo</p>
-          <p className="mt-1 text-sm font-black text-slate-900 dark:text-white sm:text-base">{firstName}</p>
+
+        <div className="bg-white p-4 backdrop-blur-xl dark:bg-slate-800/50">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand text-white shadow-lg">
+                <i className="fas fa-church text-lg" />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-slate-800 dark:text-white">Inicio da Igreja</h2>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Resumo geral, avisos e edificacao do dia</p>
+              </div>
+            </div>
+
+            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-brand/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-brand">
+              <i className="fas fa-calendar-day text-xs" />
+              {new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date())}
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(260px,360px)_minmax(320px,440px)] lg:grid-rows-[auto_1fr] lg:items-center lg:justify-center xl:grid-cols-[minmax(300px,400px)_minmax(360px,460px)]">
         <div className="order-2 grid grid-cols-2 gap-2 sm:gap-3 lg:order-1 lg:col-start-1 lg:row-start-1 lg:grid-cols-1">
