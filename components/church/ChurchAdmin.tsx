@@ -339,25 +339,53 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
             <input type="file" accept="image/*" className={inputClass} onChange={(e) => setForm({ ...form, imagem: e.target.files?.[0] || null })} />
           </Field>
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Tipo de recorrência</label>
-            <select className={inputClass} value={form.recorrencia_tipo} onChange={(e) => setForm({ ...form, recorrencia_tipo: e.target.value })}>
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Tipo do evento</label>
+            <select
+              className={inputClass}
+              value={form.recorrente ? form.recorrencia_tipo : 'unico'}
+              onChange={(e) => {
+                const value = e.target.value;
+                setForm({
+                  ...form,
+                  recorrente: value !== 'unico',
+                  recorrencia_tipo: value === 'unico' ? form.recorrencia_tipo : value
+                });
+              }}
+            >
+              <option value="unico">Evento unico</option>
               <option value="diaria">📅 Todo dia</option>
               <option value="semanal">📆 Toda semana</option>
               <option value="mensal_dia_mes">🗓️ Todo mês no mesmo dia</option>
               <option value="mensal_ordem_semana">📊 Todo primeiro/segundo domingo do mês</option>
             </select>
-            {form.recorrencia_tipo === 'diaria' && (
+            {!form.recorrente && (
+              <p className="text-[10px] text-slate-400">Evento acontece somente na data inicial informada.</p>
+            )}
+            {form.recorrente && form.recorrencia_tipo === 'diaria' && (
               <p className="text-[10px] text-slate-400">Evento se repete todos os dias. Útil para eventos diários como devocionais.</p>
             )}
-            {form.recorrencia_tipo === 'semanal' && (
+            {form.recorrente && form.recorrencia_tipo === 'semanal' && (
               <p className="text-[10px] text-slate-400">Evento se repete toda semana nos dias selecionados. Ex: toda quinta-feira.</p>
             )}
-            {form.recorrencia_tipo === 'mensal_dia_mes' && (
+            {form.recorrente && form.recorrencia_tipo === 'mensal_dia_mes' && (
               <p className="text-[10px] text-slate-400">Evento se repete todo mês no mesmo dia. Ex: todo dia 15.</p>
             )}
-            {form.recorrencia_tipo === 'mensal_ordem_semana' && (
+            {form.recorrente && form.recorrencia_tipo === 'mensal_ordem_semana' && (
               <p className="text-[10px] text-slate-400">Evento se repete toda semana específica do mês. Ex: primeira sexta de cada mês.</p>
             )}
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Prioridade do evento</label>
+            <input
+              type="number"
+              className={inputClass}
+              value={form.prioridade}
+              onChange={(e) => setForm({ ...form, prioridade: Number(e.target.value) })}
+              placeholder="Prioridade (0-10)"
+              min={0}
+              max={10}
+            />
+            <p className="text-[9px] text-slate-400">Numeros maiores = maior prioridade. Vale para evento unico e recorrente.</p>
           </div>
         </div>
 
@@ -452,8 +480,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
           </div>
         )}
 
-        <div className="mt-4 grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
-          <Toggle label="Recorrente" checked={form.recorrente} onChange={(value) => setForm({ ...form, recorrente: value })} />
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
           <Toggle label="Mostrar no inicio" checked={form.visivel_dashboard} onChange={(value) => setForm({ ...form, visivel_dashboard: value })} />
           <Toggle label="Mostrar na agenda" checked={form.visivel_agenda} onChange={(value) => setForm({ ...form, visivel_agenda: value })} />
           <Toggle label="Substituir menor prioridade" checked={form.substitui_eventos_menor_prioridade} onChange={(value) => setForm({ ...form, substitui_eventos_menor_prioridade: value })} />
