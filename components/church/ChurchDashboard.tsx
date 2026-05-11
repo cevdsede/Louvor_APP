@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
+import { useMinistryContext } from '../../contexts/MinistryContext';
 import { SupabaseEventoIgreja, SupabaseMembro } from '../../types-supabase';
 import { generateChurchEventOccurrences } from '../../utils/churchEvents';
 import DashboardService from '../../services/DashboardService';
@@ -39,6 +40,7 @@ const normalize = (value?: string | null) =>
   (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 const ChurchDashboard: React.FC = () => {
+  const { currentMember } = useMinistryContext();
   const { data: eventsRaw, loading } = useLocalStorageFirst<SupabaseEventoIgreja>({ table: 'eventos_igreja' });
   const { data: membersRaw } = useLocalStorageFirst<SupabaseMembro>({ table: 'membros' });
   const { start, end } = useMemo(getWeekRange, []);
@@ -100,6 +102,7 @@ const ChurchDashboard: React.FC = () => {
   }, [activeSlide, weekEvents.length]);
 
   const activeEvent = weekEvents[activeSlide];
+  const firstName = getDisplayName((currentMember as SupabaseMembro | null) || null).split(' ')[0] || 'Membro';
 
   const renderEventMedia = (event: any, index: number, className = '') => {
     if (event.imagem_url) {
@@ -188,11 +191,17 @@ const ChurchDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand">Igreja</p>
-        <h1 className="mt-2 text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-          Inicio
-        </h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand">Igreja</p>
+          <h1 className="mt-2 text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+            Inicio
+          </h1>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:text-right">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Bem-vindo</p>
+          <p className="mt-1 text-sm font-black text-slate-900 dark:text-white sm:text-base">{firstName}</p>
+        </div>
       </div>
 
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(260px,360px)_minmax(320px,440px)] lg:grid-rows-[auto_1fr] lg:items-center lg:justify-center xl:grid-cols-[minmax(300px,400px)_minmax(360px,460px)]">
