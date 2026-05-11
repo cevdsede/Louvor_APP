@@ -325,29 +325,29 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
             </button>
           </div>
         )}
-        <div className="grid gap-3 md:grid-cols-2 md:gap-4">
-          <Field label="Titulo">
+        <div className="grid gap-3 md:grid-cols-6 md:gap-4">
+          <Field label="Titulo" className="md:col-span-3">
             <input className={inputClass} placeholder="Ex: Culto de celebracao" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
           </Field>
-          <Field label="Local">
+          <Field label="Local" className="md:col-span-3">
             <input className={inputClass} placeholder="Ex: Templo sede" value={form.local} onChange={(e) => setForm({ ...form, local: e.target.value })} />
           </Field>
-          <Field label="Data inicial">
+          <Field label="Data inicial" className="md:col-span-2">
             <input type="date" className={inputClass} value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
           </Field>
-          <Field label="Horario inicial">
+          <Field label="Horario inicial" className="md:col-span-2">
             <input type="time" className={inputClass} value={form.horario} onChange={(e) => setForm({ ...form, horario: e.target.value })} />
           </Field>
-          <Field label="Horario final">
+          <Field label="Horario final" className="md:col-span-2">
             <input type="time" className={inputClass} value={form.horarioFim} onChange={(e) => setForm({ ...form, horarioFim: e.target.value })} />
           </Field>
-          <Field label="Descricao" className="md:col-span-2">
+          <Field label="Descricao" className="md:col-span-6">
             <textarea className={inputClass} placeholder="Resumo curto do evento" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
           </Field>
-          <Field label="Imagem do card">
+          <Field label="Imagem do card" className="md:col-span-2">
             <input type="file" accept="image/*" className={inputClass} onChange={(e) => setForm({ ...form, imagem: e.target.files?.[0] || null })} />
           </Field>
-          <div className="space-y-2">
+          <div className="space-y-2 md:col-span-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Tipo do evento</label>
             <select
               className={inputClass}
@@ -383,7 +383,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
               <p className="text-[10px] text-slate-400">Evento se repete toda semana específica do mês. Ex: primeira sexta de cada mês.</p>
             )}
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 md:col-span-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Prioridade do evento</label>
             <input
               type="number"
