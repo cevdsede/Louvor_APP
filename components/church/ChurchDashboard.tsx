@@ -74,6 +74,11 @@ const ChurchDashboard: React.FC = () => {
     [members]
   );
 
+  const levites = useMemo(
+    () => members.filter((member) => normalize(member.posicao_igreja) === 'levita'),
+    [members]
+  );
+
   useEffect(() => {
     DashboardService.getVersiculoDiario().then(setDailyVerse).catch(() => setDailyVerse(''));
   }, []);
@@ -127,10 +132,10 @@ const ChurchDashboard: React.FC = () => {
       className: 'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400'
     },
     {
-      label: 'Eventos da semana',
-      value: weekEvents.length,
-      detail: activeEvent?.titulo || 'Nenhum evento',
-      icon: 'fas fa-calendar-week',
+      label: 'Levitas',
+      value: levites.length,
+      detail: 'Membros em ministerios',
+      icon: 'fas fa-music',
       className: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
     }
   ];
@@ -191,11 +196,11 @@ const ChurchDashboard: React.FC = () => {
       </div>
 
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(260px,360px)_minmax(320px,440px)] lg:grid-rows-[auto_1fr] lg:items-center lg:justify-center xl:grid-cols-[minmax(300px,400px)_minmax(360px,460px)]">
-        <div className="order-1 grid grid-cols-3 gap-2 sm:gap-3 lg:col-start-1 lg:row-start-1 lg:grid-cols-1">
+        <div className="order-2 grid grid-cols-2 gap-2 sm:gap-3 lg:order-1 lg:col-start-1 lg:row-start-1 lg:grid-cols-1">
           {kpiCards.map(renderKpiCard)}
         </div>
 
-        <div className="order-2 flex min-w-0 flex-col items-center lg:col-start-2 lg:row-span-2 lg:row-start-1">
+        <div className="order-1 flex min-w-0 flex-col items-center lg:order-2 lg:col-start-2 lg:row-span-2 lg:row-start-1">
           {loading ? (
             <div className="flex aspect-[9/16] w-full max-w-[360px] items-center justify-center rounded-[1.75rem] border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent" />
