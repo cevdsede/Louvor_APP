@@ -52,11 +52,13 @@ $$;
 
 grant execute on function public.get_pastores_inicio_publicos() to anon, authenticated;
 
-create or replace function public.get_inicio_igreja_public_stats()
+drop function if exists public.get_inicio_igreja_public_stats();
+
+create function public.get_inicio_igreja_public_stats()
 returns table (
   total_membros bigint,
   aniversariantes_mes bigint,
-  total_levitas bigint
+  total_servos bigint
 )
 language sql
 security definer
@@ -69,9 +71,66 @@ as $$
         and extract(month from m.data_nasc::date) = extract(month from current_date)
     )::bigint as aniversariantes_mes,
     count(*) filter (
-      where lower(coalesce(m.posicao_igreja, '')) = 'levita'
-    )::bigint as total_levitas
+      where lower(coalesce(m.posicao_igreja, 'membro')) <> 'membro'
+    )::bigint as total_servos
   from public.membros m;
 $$;
 
 grant execute on function public.get_inicio_igreja_public_stats() to anon, authenticated;
+
+create or replace function public.get_aniversariantes_mes_publicos()
+returns table (
+  id uuid,
+  nome text,
+  display_name text,
+  foto jsonb,
+  data_nasc date,
+  posicao_igreja text,
+  ministerio_levita text
+)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    m.id,
+    m.nome,
+    m.display_name,
+    m.foto,
+    m.data_nasc,
+    m.posicao_igreja,
+    m.ministerio_levita
+  from public.membros m
+  where m.data_nasc is not null
+    and extract(month from m.data_nasc::date) = extract(month from current_date)
+  order by extract(day from m.data_nasc::date), coalesce(nullif(m.display_name, ''), m.nome);
+$$;
+
+grant execute on function public.get_aniversariantes_mes_publicos() to anon, authenticated;
+
+create or replace function public.get_servos_igreja_publicos()
+returns table (
+  id uuid,
+  nome text,
+  display_name text,
+  foto jsonb,
+  posicao_igreja text,
+  ministerio_levita text
+)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    m.id,
+    m.nome,
+    m.display_name,
+    m.foto,
+    m.posicao_igreja,
+    m.ministerio_levita
+  from public.membros m
+  where lower(coalesce(m.posicao_igreja, 'membro')) <> 'membro'
+  order by coalesce(nullif(m.display_name, ''), m.nome);
+$$;
+
+grant execute on function public.get_servos_igreja_publicos() to anon, authenticated;

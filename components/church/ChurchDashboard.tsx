@@ -57,7 +57,7 @@ const normalize = (value?: string | null) =>
 type PublicStats = {
   total_membros: number;
   aniversariantes_mes: number;
-  total_levitas: number;
+  total_servos: number;
 };
 
 interface ChurchDashboardProps {
@@ -87,8 +87,11 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
   const [dailyVerse, setDailyVerse] = useState('');
   const [publicEvents, setPublicEvents] = useState<SupabaseEventoIgreja[]>([]);
   const [publicPastors, setPublicPastors] = useState<SupabaseMembro[]>([]);
+  const [publicBirthdays, setPublicBirthdays] = useState<SupabaseMembro[]>([]);
+  const [publicServants, setPublicServants] = useState<SupabaseMembro[]>([]);
   const [publicStats, setPublicStats] = useState<PublicStats | null>(null);
   const [publicLoading, setPublicLoading] = useState(false);
+  const [kpiModal, setKpiModal] = useState<'birthdays' | 'servants' | null>(null);
 
   useEffect(() => {
     if (!publicMode) return;
@@ -96,16 +99,20 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
     let mounted = true;
     const loadPublicData = async () => {
       setPublicLoading(true);
-      const [eventsResponse, pastorsResponse, statsResponse] = await Promise.all([
+      const [eventsResponse, pastorsResponse, statsResponse, birthdaysResponse, servantsResponse] = await Promise.all([
         supabase.rpc('get_eventos_igreja_publicos'),
         supabase.rpc('get_pastores_inicio_publicos'),
-        supabase.rpc('get_inicio_igreja_public_stats')
+        supabase.rpc('get_inicio_igreja_public_stats'),
+        supabase.rpc('get_aniversariantes_mes_publicos'),
+        supabase.rpc('get_servos_igreja_publicos')
       ]);
 
       if (!mounted) return;
       setPublicEvents((eventsResponse.data || []) as SupabaseEventoIgreja[]);
       setPublicPastors((pastorsResponse.data || []) as SupabaseMembro[]);
       setPublicStats(((statsResponse.data || [])[0] || null) as PublicStats | null);
+      setPublicBirthdays((birthdaysResponse.data || []) as SupabaseMembro[]);
+      setPublicServants((servantsResponse.data || []) as SupabaseMembro[]);
       setPublicLoading(false);
     };
 
@@ -180,14 +187,16 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
       .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b)));
   }, [members, permissionsRaw, publicMode, publicPastors]);
 
-  const levites = useMemo(
-    () => members.filter((member) => normalize(member.posicao_igreja) === 'levita'),
+  const servants = useMemo(
+    () => members.filter((member) => normalize(member.posicao_igreja || 'membro') !== 'membro'),
     [members]
   );
 
   const totalMembersCount = publicMode ? publicStats?.total_membros || 0 : members.length;
   const birthdaysCount = publicMode ? publicStats?.aniversariantes_mes || 0 : birthdays.length;
-  const levitesCount = publicMode ? publicStats?.total_levitas || 0 : levites.length;
+  const servantsCount = publicMode ? publicServants.length || publicStats?.total_servos || 0 : servants.length;
+  const birthdayMembers = publicMode ? publicBirthdays : birthdays;
+  const servantMembers = publicMode ? publicServants : servants;
 
   useEffect(() => {
     DashboardService.getVersiculoDiario().then(setDailyVerse).catch(() => setDailyVerse(''));
@@ -255,19 +264,30 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
           ? birthdays.slice(0, 3).map((member) => getDisplayName(member).split(' ')[0]).join(', ')
           : 'Nenhum este mes',
       icon: 'fas fa-birthday-cake',
-      className: 'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400'
+      className: 'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400',
+      onClick: () => setKpiModal('birthdays')
     },
     {
-      label: 'Levitas',
-      value: levitesCount,
-      detail: 'Membros em ministerios',
-      icon: 'fas fa-music',
-      className: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
+      label: 'Servos',
+      value: servantsCount,
+      detail: 'Pastores, levitas e liderancas',
+      icon: 'fas fa-hands-praying',
+      className: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
+      onClick: () => setKpiModal('servants')
     }
   ];
 
+  const modalMembers = kpiModal === 'birthdays' ? birthdayMembers : servantMembers;
+  const modalTitle = kpiModal === 'birthdays' ? 'Aniversariantes do mes' : 'Servos';
+  const modalIcon = kpiModal === 'birthdays' ? 'fas fa-birthday-cake' : 'fas fa-hands-praying';
+
   const renderKpiCard = (card: typeof kpiCards[number]) => (
-    <div key={card.label} className="group rounded-xl border border-slate-200 bg-white p-3 shadow-lg transition-all duration-300 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800/50 sm:rounded-2xl sm:p-4">
+    <button
+      type="button"
+      key={card.label}
+      onClick={card.onClick}
+      className="group rounded-xl border border-slate-200 bg-white p-3 text-left shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800/50 sm:rounded-2xl sm:p-4"
+    >
       <div className="flex h-full flex-col items-center justify-center gap-2 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
         <div className={`order-1 flex h-9 w-9 items-center justify-center rounded-lg transition-transform group-hover:scale-110 sm:order-2 sm:h-12 sm:w-12 sm:rounded-xl ${card.className}`}>
           <i className={`${card.icon} text-sm sm:text-lg`} />
@@ -278,7 +298,7 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
           <p className="mt-1 hidden truncate text-[10px] font-bold text-slate-400 sm:block">{card.detail}</p>
         </div>
       </div>
-    </div>
+    </button>
   );
 
   const verseCard = (
@@ -468,6 +488,61 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
                 {expandedEvent.local && <p className="mt-3 text-sm font-semibold text-white/80">{expandedEvent.local}</p>}
                 {expandedEvent.descricao && <p className="mt-4 max-w-3xl text-sm font-medium leading-relaxed text-white/80">{expandedEvent.descricao}</p>}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {kpiModal && (
+        <div className="fixed inset-0 z-[760] overflow-y-auto bg-slate-950/70 px-3 py-4 pb-24 backdrop-blur-sm sm:px-4 sm:py-6">
+          <div className="mx-auto max-w-2xl rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand/10 text-brand">
+                  <i className={modalIcon} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-brand">Inicio da Igreja</p>
+                  <h2 className="truncate text-xl font-black text-slate-900 dark:text-white">{modalTitle}</h2>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setKpiModal(null)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 hover:text-red-500 dark:bg-slate-800"
+              >
+                <i className="fas fa-times" />
+              </button>
+            </div>
+
+            <div className="max-h-[70vh] space-y-2 overflow-y-auto pr-1">
+              {modalMembers.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                  Nenhum membro encontrado.
+                </div>
+              ) : (
+                modalMembers.map((member) => {
+                  const name = getDisplayName(member);
+                  const photo = sanitizeImageUrl(member.foto) || buildLocalAvatar(name);
+                  const birthday = member.data_nasc
+                    ? new Date(`${member.data_nasc}T12:00:00`).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+                    : null;
+                  const detail =
+                    kpiModal === 'birthdays'
+                      ? birthday || 'Aniversario'
+                      : [member.posicao_igreja, member.ministerio_levita].filter(Boolean).join(' - ') || 'Servo';
+
+                  return (
+                    <div key={member.id} className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3 dark:bg-slate-800/60">
+                      <ImageCache src={photo} fallbackSrc={buildLocalAvatar(name)} alt={name} className="h-12 w-12 rounded-2xl object-cover" disableCompression />
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate text-sm font-black text-slate-900 dark:text-white">{name}</h3>
+                        <p className="truncate text-xs font-bold text-brand">{detail}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
