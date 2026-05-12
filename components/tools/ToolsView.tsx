@@ -44,7 +44,6 @@ interface EditingMemberState {
 }
 
 const uniqueIds = (ids: string[]) => [...new Set(ids.filter(Boolean))];
-const NO_MINISTERIO_FILTER = '__without_ministerio__';
 const normalizeSearchValue = (value?: string | null) =>
   (value || '')
     .normalize('NFD')
@@ -498,17 +497,19 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
   const ministerioFilterOptions = [...ministerios].sort((a, b) =>
     (a.nome || '').localeCompare(b.nome || '', 'pt-BR', { sensitivity: 'base' })
   );
-  const membersTableData = membersData.map((member: any) => {
-    const memberMinisterios = getMemberMinisterios(member.id);
-    const principalMinisterioId =
-      getMemberMemberships(member.id).find((membership) => membership.principal)?.ministerio_id || null;
+  const membersTableData = membersData
+    .map((member: any) => {
+      const memberMinisterios = getMemberMinisterios(member.id);
+      const principalMinisterioId =
+        getMemberMemberships(member.id).find((membership) => membership.principal)?.ministerio_id || null;
 
-    return {
-      member,
-      memberMinisterios,
-      principalMinisterioId
-    };
-  });
+      return {
+        member,
+        memberMinisterios,
+        principalMinisterioId
+      };
+    })
+    .filter(({ memberMinisterios }) => memberMinisterios.length > 0);
   const normalizedUserSearchTerm = normalizeSearchValue(userSearchTerm.trim());
   const filteredMembersTableData = membersTableData
     .filter(({ member, memberMinisterios }) => {
@@ -525,9 +526,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
       const matchesMinisterio =
         userMinisterioFilter === 'all'
           ? true
-          : userMinisterioFilter === NO_MINISTERIO_FILTER
-            ? memberMinisterios.length === 0
-            : memberMinisterios.some((ministerio: any) => ministerio.id === userMinisterioFilter);
+          : memberMinisterios.some((ministerio: any) => ministerio.id === userMinisterioFilter);
       const matchesPerfil = userPerfilFilter === 'all' ? true : (member.perfil || 'User') === userPerfilFilter;
 
       return matchesSearch && matchesMinisterio && matchesPerfil;
@@ -537,8 +536,10 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
         sensitivity: 'base'
       })
     );
-  const totalMembersCount = membersData.length;
-  const usersWithoutMinisterio = membersTableData.filter(({ memberMinisterios }) => memberMinisterios.length === 0).length;
+  const totalMembersCount = membersTableData.length;
+  const usersWithActiveMinisterio = membersTableData.filter(({ member }) =>
+    getMemberMemberships(member.id).some((membership) => membership.ativo !== false)
+  ).length;
   const usersInMultipleMinisterios = membersTableData.filter(({ memberMinisterios }) => memberMinisterios.length > 1).length;
 
   const renderContent = () => {
@@ -628,12 +629,12 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
               <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
                 <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Membros</p>
                 <p className="text-2xl font-black text-slate-800 dark:text-white">{totalMembersCount}</p>
-                <p className="text-xs text-slate-500 mt-1">Cadastros disponíveis para os ministérios.</p>
+                <p className="text-xs text-slate-500 mt-1">Usuarios vinculados a pelo menos um ministerio.</p>
               </div>
               <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Sem Ministerio</p>
-                <p className="text-2xl font-black text-slate-800 dark:text-white">{usersWithoutMinisterio}</p>
-                <p className="text-xs text-slate-500 mt-1">Membros que ainda precisam ser vinculados.</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Ativos</p>
+                <p className="text-2xl font-black text-slate-800 dark:text-white">{usersWithActiveMinisterio}</p>
+                <p className="text-xs text-slate-500 mt-1">Usuarios com acesso ativo em algum ministerio.</p>
               </div>
               <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
                 <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Multiministerio</p>
@@ -669,7 +670,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
                   >
                     <option value="all">Todos os ministerios</option>
-                    <option value={NO_MINISTERIO_FILTER}>Sem ministerio</option>
                     {ministerioFilterOptions.map((ministerio) => (
                       <option key={ministerio.id} value={ministerio.id}>
                         {ministerio.nome}
