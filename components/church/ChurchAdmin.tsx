@@ -55,6 +55,9 @@ const INITIAL_FORM: EventForm = {
 const inputClass =
   'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10 dark:border-slate-700 dark:bg-slate-900 dark:text-white';
 
+const normalize = (value?: string | null) =>
+  (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
 const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }> = ({ currentUserId, isAdmin }) => {
   const { data: eventsRaw } = useLocalStorageFirst<SupabaseEventoIgreja>({ table: 'eventos_igreja' });
   const { data: membersRaw } = useLocalStorageFirst<SupabaseMembro>({ table: 'membros' });
@@ -65,7 +68,9 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
   const [saving, setSaving] = useState(false);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
+  const [isPastorModalOpen, setIsPastorModalOpen] = useState(false);
   const [permissionSearch, setPermissionSearch] = useState('');
+  const [pastorSearch, setPastorSearch] = useState('');
 
   const managersByMemberId = useMemo(
     () => new Map((permissionsRaw || []).map((permission) => [permission.membro_id, permission])),
@@ -82,6 +87,17 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
         .filter((item): item is { permission: SupabasePermissaoIgreja; member: SupabaseMembro } => Boolean(item.member)),
     [membersRaw, permissionsRaw]
   );
+  const featuredPastors = useMemo(
+    () =>
+      (permissionsRaw || [])
+        .filter((permission) => permission.mostrar_pastor_inicio)
+        .map((permission) => ({
+          permission,
+          member: (membersRaw || []).find((member) => member.id === permission.membro_id)
+        }))
+        .filter((item): item is { permission: SupabasePermissaoIgreja; member: SupabaseMembro } => Boolean(item.member)),
+    [membersRaw, permissionsRaw]
+  );
   const availableManagers = useMemo(
     () =>
       (membersRaw || [])
@@ -89,6 +105,15 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
         .filter((member) => getDisplayName(member).toLowerCase().includes(permissionSearch.toLowerCase()))
         .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b))),
     [managersByMemberId, membersRaw, permissionSearch]
+  );
+  const availablePastors = useMemo(
+    () =>
+      (membersRaw || [])
+        .filter((member) => normalize(member.posicao_igreja).includes('pastor'))
+        .filter((member) => !managersByMemberId.get(member.id)?.mostrar_pastor_inicio)
+        .filter((member) => getDisplayName(member).toLowerCase().includes(pastorSearch.toLowerCase()))
+        .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b))),
+    [managersByMemberId, membersRaw, pastorSearch]
   );
   const orderedEvents = useMemo(
     () =>
@@ -310,6 +335,35 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
     if (allowed) {
       setIsPermissionModalOpen(false);
       setPermissionSearch('');
+    }
+  };
+
+  const toggleFeaturedPastor = async (member: SupabaseMembro, visible: boolean) => {
+    if (!isAdmin) {
+      showError('Somente admin define os pastores do inicio.');
+      return;
+    }
+
+    const existing = managersByMemberId.get(member.id);
+    const payload = {
+      membro_id: member.id,
+      gerenciar_eventos_igreja: existing?.gerenciar_eventos_igreja || false,
+      mostrar_pastor_inicio: visible
+    };
+    const request = existing
+      ? supabase.from('permissoes_igreja').update(payload).eq('id', existing.id)
+      : supabase.from('permissoes_igreja').insert(payload);
+
+    const { error } = await request;
+    if (error) {
+      showError('Erro ao atualizar pastor do inicio.');
+      return;
+    }
+
+    await LocalStorageFirstService.forceSync('permissoes_igreja');
+    if (visible) {
+      setIsPastorModalOpen(false);
+      setPastorSearch('');
     }
   };
 
@@ -591,6 +645,47 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
+            Pastores presidentes no inicio
+          </h2>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setIsPastorModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20"
+            >
+              <i className="fas fa-user-plus" />
+              Adicionar pastor
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          {featuredPastors.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:text-slate-400">
+              Nenhum pastor selecionado ainda.
+            </div>
+          ) : (
+            featuredPastors.map(({ member }) => (
+              <div key={member.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
+                <span className="truncate text-sm font-bold text-slate-700 dark:text-slate-200">{getDisplayName(member)}</span>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => toggleFeaturedPastor(member, false)}
+                    className="rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  >
+                    Remover
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:p-5">
         <h2 className="mb-4 text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">Eventos cadastrados</h2>
         <div className="space-y-2">
           {orderedEvents.slice(0, 20).map((event) => (
@@ -657,6 +752,53 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
                     key={member.id}
                     type="button"
                     onClick={() => toggleManager(member, true)}
+                    className="flex w-full items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 text-left hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800"
+                  >
+                    <span className="truncate text-sm font-bold text-slate-700 dark:text-slate-200">{getDisplayName(member)}</span>
+                    <i className="fas fa-plus text-brand" />
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isPastorModalOpen && (
+        <div className="fixed inset-0 z-[720] overflow-y-auto bg-slate-950/60 px-3 py-4 pb-24 backdrop-blur-sm sm:px-4 sm:py-6">
+          <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-brand">Inicio</p>
+                <h2 className="text-xl font-black text-slate-900 dark:text-white">Adicionar pastor</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPastorModalOpen(false)}
+                className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-red-500 dark:hover:bg-slate-800"
+              >
+                <i className="fas fa-times" />
+              </button>
+            </div>
+
+            <input
+              value={pastorSearch}
+              onChange={(event) => setPastorSearch(event.target.value)}
+              placeholder="Buscar pastor"
+              className={inputClass}
+            />
+
+            <div className="mt-4 max-h-[55vh] space-y-2 overflow-y-auto">
+              {availablePastors.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                  Nenhum pastor disponivel.
+                </div>
+              ) : (
+                availablePastors.map((member) => (
+                  <button
+                    key={member.id}
+                    type="button"
+                    onClick={() => toggleFeaturedPastor(member, true)}
                     className="flex w-full items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 text-left hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800"
                   >
                     <span className="truncate text-sm font-bold text-slate-700 dark:text-slate-200">{getDisplayName(member)}</span>

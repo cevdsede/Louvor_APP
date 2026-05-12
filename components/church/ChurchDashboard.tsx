@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
-import { useMinistryContext } from '../../contexts/MinistryContext';
-import { SupabaseEventoIgreja, SupabaseMembro } from '../../types-supabase';
+import { supabase } from '../../supabaseClient';
+import { SupabaseEventoIgreja, SupabaseMembro, SupabasePermissaoIgreja } from '../../types-supabase';
 import { generateChurchEventOccurrences } from '../../utils/churchEvents';
 import DashboardService from '../../services/DashboardService';
 import { buildLocalAvatar } from '../../utils/avatar';
@@ -54,14 +54,72 @@ const formatGroupedDates = (event: any) => {
 const normalize = (value?: string | null) =>
   (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
-const ChurchDashboard: React.FC = () => {
-  const { currentMember } = useMinistryContext();
-  const { data: eventsRaw, loading } = useLocalStorageFirst<SupabaseEventoIgreja>({ table: 'eventos_igreja' });
-  const { data: membersRaw } = useLocalStorageFirst<SupabaseMembro>({ table: 'membros' });
+type PublicStats = {
+  total_membros: number;
+  aniversariantes_mes: number;
+  total_levitas: number;
+};
+
+interface ChurchDashboardProps {
+  currentMember?: SupabaseMembro | null;
+  publicMode?: boolean;
+}
+
+const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null, publicMode = false }) => {
+  const { data: eventsRaw, loading } = useLocalStorageFirst<SupabaseEventoIgreja>({
+    table: 'eventos_igreja',
+    enableBackgroundSync: !publicMode,
+    autoRefresh: !publicMode
+  });
+  const { data: membersRaw } = useLocalStorageFirst<SupabaseMembro>({
+    table: 'membros',
+    enableBackgroundSync: !publicMode,
+    autoRefresh: !publicMode
+  });
+  const { data: permissionsRaw } = useLocalStorageFirst<SupabasePermissaoIgreja>({
+    table: 'permissoes_igreja',
+    enableBackgroundSync: !publicMode,
+    autoRefresh: !publicMode
+  });
   const { start, end } = useMemo(getWeekRange, []);
   const [activeSlide, setActiveSlide] = useState(0);
   const [expandedEvent, setExpandedEvent] = useState<any | null>(null);
   const [dailyVerse, setDailyVerse] = useState('');
+  const [publicEvents, setPublicEvents] = useState<SupabaseEventoIgreja[]>([]);
+  const [publicPastors, setPublicPastors] = useState<SupabaseMembro[]>([]);
+  const [publicStats, setPublicStats] = useState<PublicStats | null>(null);
+  const [publicLoading, setPublicLoading] = useState(false);
+
+  useEffect(() => {
+    if (!publicMode) return;
+
+    let mounted = true;
+    const loadPublicData = async () => {
+      setPublicLoading(true);
+      const [eventsResponse, pastorsResponse, statsResponse] = await Promise.all([
+        supabase.rpc('get_eventos_igreja_publicos'),
+        supabase.rpc('get_pastores_inicio_publicos'),
+        supabase.rpc('get_inicio_igreja_public_stats')
+      ]);
+
+      if (!mounted) return;
+      setPublicEvents((eventsResponse.data || []) as SupabaseEventoIgreja[]);
+      setPublicPastors((pastorsResponse.data || []) as SupabaseMembro[]);
+      setPublicStats(((statsResponse.data || [])[0] || null) as PublicStats | null);
+      setPublicLoading(false);
+    };
+
+    loadPublicData().catch((error) => {
+      console.error('Erro ao carregar inicio publico da igreja:', error);
+      if (mounted) setPublicLoading(false);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, [publicMode]);
+
+  const dashboardEvents = publicMode ? publicEvents : eventsRaw || [];
 
   const weekEvents = useMemo(
     () => {
@@ -70,7 +128,7 @@ const ChurchDashboard: React.FC = () => {
       };
       const grouped = new Map<string, ChurchDashboardEvent>();
 
-      generateChurchEventOccurrences(eventsRaw || [], start, end, { dashboardOnly: true }).forEach((event) => {
+      generateChurchEventOccurrences(dashboardEvents, start, end, { dashboardOnly: true }).forEach((event) => {
         const existing = grouped.get(event.eventId);
         if (!existing) {
           grouped.set(event.eventId, { ...event, weekOccurrences: [event] });
@@ -88,10 +146,10 @@ const ChurchDashboard: React.FC = () => {
         .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime() || b.prioridade - a.prioridade)
         .slice(0, 8);
     },
-    [end, eventsRaw, start]
+    [dashboardEvents, end, start]
   );
 
-  const members = membersRaw || [];
+  const members = publicMode ? [] : membersRaw || [];
   const birthdays = useMemo(() => {
     const currentMonth = new Date().getMonth() + 1;
     return members
@@ -106,18 +164,30 @@ const ChurchDashboard: React.FC = () => {
       });
   }, [members]);
 
-  const pastors = useMemo(
-    () =>
-      members
-        .filter((member) => normalize(member.posicao_igreja).includes('pastor'))
-        .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b))),
-    [members]
-  );
+  const pastors = useMemo(() => {
+    if (publicMode) {
+      return [...publicPastors].sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b)));
+    }
+
+    const selectedPastorIds = new Set(
+      (permissionsRaw || [])
+        .filter((permission) => permission.mostrar_pastor_inicio)
+        .map((permission) => permission.membro_id)
+    );
+
+    return members
+      .filter((member) => selectedPastorIds.has(member.id))
+      .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b)));
+  }, [members, permissionsRaw, publicMode, publicPastors]);
 
   const levites = useMemo(
     () => members.filter((member) => normalize(member.posicao_igreja) === 'levita'),
     [members]
   );
+
+  const totalMembersCount = publicMode ? publicStats?.total_membros || 0 : members.length;
+  const birthdaysCount = publicMode ? publicStats?.aniversariantes_mes || 0 : birthdays.length;
+  const levitesCount = publicMode ? publicStats?.total_levitas || 0 : levites.length;
 
   useEffect(() => {
     DashboardService.getVersiculoDiario().then(setDailyVerse).catch(() => setDailyVerse(''));
@@ -140,7 +210,7 @@ const ChurchDashboard: React.FC = () => {
   }, [activeSlide, weekEvents.length]);
 
   const activeEvent = weekEvents[activeSlide];
-  const firstName = getDisplayName((currentMember as SupabaseMembro | null) || null).split(' ')[0] || 'Membro';
+  const firstName = publicMode ? 'Visitante' : getDisplayName(currentMember).split(' ')[0] || 'Membro';
 
   const renderEventMedia = (event: any, index: number, className = '') => {
     const desktopUrl = event.imagem_url_desktop || event.imagem_url || event.imagem_url_mobile;
@@ -171,21 +241,25 @@ const ChurchDashboard: React.FC = () => {
   const kpiCards = [
     {
       label: 'Total de membros',
-      value: members.length,
+      value: totalMembersCount,
       detail: 'Cadastros da igreja',
       icon: 'fas fa-users',
       className: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
     },
     {
       label: 'Aniversariantes',
-      value: birthdays.length,
-      detail: birthdays.length ? birthdays.slice(0, 3).map((member) => getDisplayName(member).split(' ')[0]).join(', ') : 'Nenhum este mes',
+      value: birthdaysCount,
+      detail: publicMode
+        ? 'Aniversariantes do mes'
+        : birthdays.length
+          ? birthdays.slice(0, 3).map((member) => getDisplayName(member).split(' ')[0]).join(', ')
+          : 'Nenhum este mes',
       icon: 'fas fa-birthday-cake',
       className: 'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400'
     },
     {
       label: 'Levitas',
-      value: levites.length,
+      value: levitesCount,
       detail: 'Membros em ministerios',
       icon: 'fas fa-music',
       className: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
@@ -284,7 +358,7 @@ const ChurchDashboard: React.FC = () => {
         </div>
 
         <div className="order-1 flex min-w-0 flex-col items-center lg:order-2 lg:col-start-1 lg:items-stretch">
-          {loading ? (
+          {loading || publicLoading ? (
             <div className="flex aspect-[9/16] w-full max-w-[360px] items-center justify-center rounded-[1.75rem] border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900 lg:aspect-video lg:max-w-none">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent" />
             </div>

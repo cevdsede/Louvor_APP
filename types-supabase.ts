@@ -129,6 +129,7 @@ export interface SupabasePermissaoIgreja {
   id: string;
   membro_id: string;
   gerenciar_eventos_igreja: boolean;
+  mostrar_pastor_inicio: boolean;
   created_at: string;
   updated_at: string;
 }

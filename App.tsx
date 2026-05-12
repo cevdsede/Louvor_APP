@@ -4,7 +4,6 @@ import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 import Toolbar from './components/layout/Toolbar';
 import OfflineSyncBanner from './components/layout/OfflineSyncBanner';
-import SplashScreen from './components/auth/SplashScreen';
 import LoginScreen from './components/auth/LoginScreen';
 import { LocalStorageFirstInitializer } from './components/LocalStorageFirstInitializer';
 import { MinistryProvider, useMinistryContext } from './contexts/MinistryContext';
@@ -16,6 +15,7 @@ import { isMusicView, isTeamView, isToolsView } from './utils/views';
 const NotificationCenterModal = lazy(() => import('./components/layout/NotificationCenterModal'));
 const PublicMemberRegistration = lazy(() => import('./components/auth/PublicMemberRegistration'));
 const ChurchShell = lazy(() => import('./components/church/ChurchShell'));
+const PublicChurchShell = lazy(() => import('./components/church/PublicChurchShell'));
 const DashboardView = lazy(() => import('./components/dashboard/DashboardView'));
 const ListView = lazy(() => import('./components/escalas/ListView'));
 const CalendarView = lazy(() => import('./components/escalas/CalendarView'));
@@ -32,7 +32,7 @@ const LoadingBlock = ({ label = 'Carregando...' }: { label?: string }) => (
   </div>
 );
 
-type AppState = 'splash' | 'login' | 'main';
+type AppState = 'public' | 'login' | 'main';
 
 interface AppContentProps {
   currentView: ViewType;
@@ -205,7 +205,10 @@ const App: React.FC = () => {
     return localStorage.getItem('brandColor') || '#3b82f6';
   });
 
-  const [appState, setAppState] = useState<AppState>('splash');
+  const [appState, setAppState] = useState<AppState>(() => {
+    if (typeof window !== 'undefined' && window.location.pathname === '/login') return 'login';
+    return 'public';
+  });
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [activeArea, setActiveArea] = useState<'church' | 'ministry'>('church');
   const [isAvisoModalOpen, setIsAvisoModalOpen] = useState(false);
@@ -248,9 +251,14 @@ const App: React.FC = () => {
     }
   }, [isDarkMode]);
 
-  const handleSplashContinue = async () => {
+  const handleOpenLogin = async () => {
+    if (sessionCached) {
+      setAppState('main');
+      return;
+    }
+
     if (!navigator.onLine) {
-      setAppState(sessionCached ? 'main' : 'login');
+      setAppState('login');
       return;
     }
 
@@ -265,17 +273,11 @@ const App: React.FC = () => {
         setAppState('main');
         return;
       }
-
-      setAppState('login');
     } catch (error) {
-      if (sessionCached) {
-        console.warn('Erro ao verificar sessao, usando cache local:', error);
-        setAppState('main');
-        return;
-      }
-
-      setAppState('login');
+      console.warn('Erro ao verificar sessao antes do login:', error);
     }
+
+    setAppState('login');
   };
 
   useEffect(() => {
@@ -290,17 +292,13 @@ const App: React.FC = () => {
         localStorage.setItem('supabase_session_cache', JSON.stringify(session));
         setSessionCached(session);
 
-        if (appState === 'splash') {
-          setAppState('main');
-        }
-
         return;
       }
 
       localStorage.removeItem('supabase_session_cache');
       setSessionCached(null);
 
-      if (appState !== 'splash') {
+      if (appState === 'main') {
         setAppState('login');
       }
     });
@@ -337,8 +335,16 @@ const App: React.FC = () => {
     );
   }
 
-  if (appState === 'splash') {
-    return <SplashScreen onComplete={handleSplashContinue} />;
+  if (appState === 'public') {
+    return (
+      <Suspense fallback={<LoadingBlock />}>
+        <PublicChurchShell
+          isDarkMode={isDarkMode}
+          onToggleTheme={toggleDarkMode}
+          onLoginClick={handleOpenLogin}
+        />
+      </Suspense>
+    );
   }
 
   if (appState === 'login') {

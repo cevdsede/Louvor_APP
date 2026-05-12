@@ -331,7 +331,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
 
       <main className="min-h-screen bg-slate-50 pb-28 pt-16 dark:bg-slate-800 sm:pb-32 lg:ml-[280px] lg:pb-0 lg:pt-0">
         <div className="container mx-auto px-3 py-5 sm:px-6 lg:px-8">
-          {currentView === 'dashboard' && <ChurchDashboard />}
+          {currentView === 'dashboard' && <ChurchDashboard currentMember={(currentMemberRecord || currentMember) as SupabaseMembro | null} />}
           {currentView === 'agenda' && <ChurchAgenda />}
           {currentView === 'members' && <ChurchMembers />}
           {currentView === 'admin' && <ChurchAdmin currentUserId={currentMember?.id || null} isAdmin={isGlobalAdmin} />}

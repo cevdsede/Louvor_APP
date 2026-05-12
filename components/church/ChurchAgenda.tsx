@@ -1,12 +1,43 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
+import { supabase } from '../../supabaseClient';
 import { SupabaseEventoIgreja } from '../../types-supabase';
 import { generateChurchEventOccurrences } from '../../utils/churchEvents';
 
-const ChurchAgenda: React.FC = () => {
-  const { data: eventsRaw, loading } = useLocalStorageFirst<SupabaseEventoIgreja>({ table: 'eventos_igreja' });
+const ChurchAgenda: React.FC<{ publicMode?: boolean }> = ({ publicMode = false }) => {
+  const { data: eventsRaw, loading } = useLocalStorageFirst<SupabaseEventoIgreja>({
+    table: 'eventos_igreja',
+    enableBackgroundSync: !publicMode,
+    autoRefresh: !publicMode
+  });
   const [currentBaseDate, setCurrentBaseDate] = useState(new Date());
   const [selectedDateEvents, setSelectedDateEvents] = useState<any[] | null>(null);
+  const [publicEvents, setPublicEvents] = useState<SupabaseEventoIgreja[]>([]);
+  const [publicLoading, setPublicLoading] = useState(false);
+
+  useEffect(() => {
+    if (!publicMode) return;
+
+    let mounted = true;
+    const loadPublicEvents = async () => {
+      setPublicLoading(true);
+      const { data, error } = await supabase.rpc('get_eventos_igreja_publicos');
+      if (error) throw error;
+      if (mounted) {
+        setPublicEvents((data || []) as SupabaseEventoIgreja[]);
+        setPublicLoading(false);
+      }
+    };
+
+    loadPublicEvents().catch((error) => {
+      console.error('Erro ao carregar agenda publica:', error);
+      if (mounted) setPublicLoading(false);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, [publicMode]);
 
   const getMonthRange = (date: Date) => {
     const start = new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
@@ -17,8 +48,8 @@ const ChurchAgenda: React.FC = () => {
   const { start, end } = useMemo(() => getMonthRange(currentBaseDate), [currentBaseDate]);
 
   const monthEvents = useMemo(
-    () => generateChurchEventOccurrences(eventsRaw || [], start, end, { agendaOnly: true }),
-    [end, eventsRaw, start]
+    () => generateChurchEventOccurrences(publicMode ? publicEvents : eventsRaw || [], start, end, { agendaOnly: true }),
+    [end, eventsRaw, publicEvents, publicMode, start]
   );
 
   const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -136,7 +167,7 @@ const ChurchAgenda: React.FC = () => {
       </div>
 
       <div className="px-4">
-        {loading ? (
+        {loading || publicLoading ? (
           <div className="flex h-56 items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent" />
           </div>
