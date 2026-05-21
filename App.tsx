@@ -32,8 +32,6 @@ const LoadingBlock = ({ label = 'Carregando...' }: { label?: string }) => (
   </div>
 );
 
-type AppState = 'public' | 'login' | 'main';
-
 interface AppContentProps {
   currentView: ViewType;
   setCurrentView: React.Dispatch<React.SetStateAction<ViewType>>;
@@ -192,7 +190,8 @@ const AppContent: React.FC<AppContentProps> = ({
 };
 
 const App: React.FC = () => {
-  const isPublicRegistrationRoute = typeof window !== 'undefined' && window.location.pathname === '/cadastro';
+  const [routePath, setRoutePath] = useState(() => (typeof window === 'undefined' ? '/' : window.location.pathname));
+  const isPublicRegistrationRoute = routePath === '/cadastro';
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -205,10 +204,6 @@ const App: React.FC = () => {
     return localStorage.getItem('brandColor') || '#3b82f6';
   });
 
-  const [appState, setAppState] = useState<AppState>(() => {
-    if (typeof window !== 'undefined' && window.location.pathname === '/login') return 'login';
-    return 'public';
-  });
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [activeArea, setActiveArea] = useState<'church' | 'ministry'>('church');
   const [isAvisoModalOpen, setIsAvisoModalOpen] = useState(false);
@@ -221,6 +216,18 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('supabase_session_cache');
     return saved ? JSON.parse(saved) : null;
   });
+
+  const navigateTo = (path: string) => {
+    if (typeof window === 'undefined') return;
+    window.history.pushState({}, '', path);
+    setRoutePath(path);
+  };
+
+  useEffect(() => {
+    const handlePopState = () => setRoutePath(window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   useEffect(() => {
     document.documentElement.style.setProperty('--brand-primary', brandColor);
@@ -253,12 +260,12 @@ const App: React.FC = () => {
 
   const handleOpenLogin = async () => {
     if (sessionCached) {
-      setAppState('main');
+      navigateTo('/app');
       return;
     }
 
     if (!navigator.onLine) {
-      setAppState('login');
+      navigateTo('/login');
       return;
     }
 
@@ -270,14 +277,31 @@ const App: React.FC = () => {
       if (session) {
         localStorage.setItem('supabase_session_cache', JSON.stringify(session));
         setSessionCached(session);
-        setAppState('main');
+        navigateTo('/app');
         return;
       }
     } catch (error) {
       console.warn('Erro ao verificar sessao antes do login:', error);
     }
 
-    setAppState('login');
+    navigateTo('/login');
+  };
+
+  const handleLoginSuccess = async () => {
+    try {
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        localStorage.setItem('supabase_session_cache', JSON.stringify(session));
+        setSessionCached(session);
+      }
+    } catch (error) {
+      console.warn('Erro ao atualizar sessao apos login:', error);
+    }
+
+    navigateTo('/app');
   };
 
   useEffect(() => {
@@ -298,13 +322,13 @@ const App: React.FC = () => {
       localStorage.removeItem('supabase_session_cache');
       setSessionCached(null);
 
-      if (appState === 'main') {
-        setAppState('login');
+      if (routePath.startsWith('/app')) {
+        navigateTo('/login');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [appState]);
+  }, [routePath]);
 
   const handleSync = async () => {
     setIsLoading(true);
@@ -335,20 +359,25 @@ const App: React.FC = () => {
     );
   }
 
-  if (appState === 'public') {
+  if (routePath === '/' || routePath === '') {
     return (
       <Suspense fallback={<LoadingBlock />}>
-        <PublicChurchShell
-          isDarkMode={isDarkMode}
-          onToggleTheme={toggleDarkMode}
-          onLoginClick={handleOpenLogin}
-        />
+        <PublicChurchShell onLoginClick={handleOpenLogin} />
       </Suspense>
     );
   }
 
-  if (appState === 'login') {
-    return <LoginScreen onLogin={() => setAppState('main')} />;
+  if (routePath === '/login') {
+    return <LoginScreen onLogin={handleLoginSuccess} />;
+  }
+
+  if (!routePath.startsWith('/app')) {
+    navigateTo('/');
+    return null;
+  }
+
+  if (!sessionCached) {
+    return <LoginScreen onLogin={handleLoginSuccess} />;
   }
 
   return (

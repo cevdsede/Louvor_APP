@@ -1,109 +1,559 @@
-import React, { useState } from 'react';
-import ChurchAgenda from './ChurchAgenda';
-import ChurchDashboard from './ChurchDashboard';
-
-type PublicChurchView = 'dashboard' | 'agenda';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ChurchSiteContent, loadSiteContent } from './siteContent';
+import { supabase } from '../../supabaseClient';
+import { SupabaseEventoIgreja } from '../../types-supabase';
+import { generateChurchEventOccurrences } from '../../utils/churchEvents';
+import DashboardService from '../../services/DashboardService';
+import { buildLocalAvatar } from '../../utils/avatar';
+import { getDisplayName } from '../../utils/displayName';
+import { sanitizeImageUrl } from '../../utils/imageUrl';
 
 interface PublicChurchShellProps {
-  isDarkMode: boolean;
-  onToggleTheme: () => void;
   onLoginClick: () => void;
 }
 
-const menuItems: Array<{ id: PublicChurchView; label: string; icon: string }> = [
-  { id: 'dashboard', label: 'Inicio', icon: 'fas fa-house' },
-  { id: 'agenda', label: 'Agenda', icon: 'fas fa-calendar-days' }
+const navItems = ['Inicio', 'Sobre', 'Eventos', 'Ministerios', 'Pedido de Oracao', 'Contribua', 'Contato'];
+
+const sectionId = (label: string) =>
+  label
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replaceAll(' ', '-');
+
+const whatsappUrl = (phone: string) => {
+  const digits = phone.replace(/\D/g, '');
+  return `https://wa.me/${digits.startsWith('55') ? digits : `55${digits}`}`;
+};
+
+const eventFallbackImages = [
+  'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=900&q=80'
 ];
 
-const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ isDarkMode, onToggleTheme, onLoginClick }) => {
-  const [currentView, setCurrentView] = useState<PublicChurchView>('dashboard');
+const getCurrentWeekRange = () => {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 7);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+};
+
+const formatEventDate = (isoDate: string) =>
+  new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+    .format(new Date(isoDate))
+    .replace('.', '');
+
+const formatGroupedEventDates = (event: any) => {
+  const occurrences = Array.isArray(event.occurrences) ? event.occurrences : [];
+  if (occurrences.length <= 1) return formatEventDate(event.startsAt);
+
+  const formatter = new Intl.DateTimeFormat('pt-BR', { weekday: 'short' });
+  return occurrences
+    .map((occurrence: any) => {
+      const date = new Date(occurrence.startsAt);
+      const day = formatter.format(date).replace('.', '');
+      const time = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      return `${day} ${time}`;
+    })
+    .join(' e ');
+};
+
+const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) => {
+  const [content, setContent] = useState<ChurchSiteContent>(() => loadSiteContent());
+  const [publicEvents, setPublicEvents] = useState<SupabaseEventoIgreja[]>([]);
+  const [publicPastors, setPublicPastors] = useState<any[]>([]);
+  const [dailyVerse, setDailyVerse] = useState('');
+  const [instagramPosts, setInstagramPosts] = useState(content.instagramPosts);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventSlide, setEventSlide] = useState(0);
+  const { start, end } = useMemo(getCurrentWeekRange, []);
+  const siteEvents = useMemo(() => {
+    const grouped = new Map<string, any>();
+
+    generateChurchEventOccurrences(publicEvents, start, end, { dashboardOnly: true }).forEach((event) => {
+      const existing = grouped.get(event.eventId);
+      if (!existing) {
+        grouped.set(event.eventId, { ...event, occurrences: [event] });
+        return;
+      }
+
+      const occurrences = [...(existing.occurrences || []), event].sort(
+        (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()
+      );
+      grouped.set(event.eventId, { ...occurrences[0], occurrences });
+    });
+
+    return Array.from(grouped.values())
+      .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime() || b.prioridade - a.prioridade)
+      .slice(0, 12);
+  }, [end, publicEvents, start]);
+  const categories = useMemo(
+    () => ['Todos', ...Array.from(new Set(siteEvents.map((event) => event.categoria || 'Cultos')))],
+    [siteEvents]
+  );
+  const [selectedCategory, setSelectedCategory] = useState('Todos');
+
+  useEffect(() => {
+    const handleUpdate = (event: Event) => setContent((event as CustomEvent<ChurchSiteContent>).detail);
+    const handleStorage = () => setContent(loadSiteContent());
+    window.addEventListener('church-site-content-updated', handleUpdate);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('church-site-content-updated', handleUpdate);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
+  useEffect(() => {
+    setInstagramPosts(content.instagramPosts);
+  }, [content.instagramPosts]);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadPublicData = async () => {
+      setEventsLoading(true);
+      const [eventsResponse, pastorsResponse, verse] = await Promise.all([
+        supabase.rpc('get_eventos_igreja_publicos'),
+        supabase.rpc('get_pastores_inicio_publicos'),
+        DashboardService.getVersiculoDiario()
+      ]);
+      if (eventsResponse.error) throw eventsResponse.error;
+      if (pastorsResponse.error) throw pastorsResponse.error;
+      if (mounted) {
+        setPublicEvents((eventsResponse.data || []) as SupabaseEventoIgreja[]);
+        setPublicPastors(pastorsResponse.data || []);
+        setDailyVerse(verse);
+        setEventsLoading(false);
+      }
+    };
+
+    loadPublicData().catch((error) => {
+      console.error('Erro ao carregar dados publicos do site:', error);
+      if (mounted) setEventsLoading(false);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadInstagramPosts = async () => {
+      const { data, error } = await supabase.functions.invoke('instagram-feed');
+      if (error) throw error;
+      if (!mounted) return;
+      if (Array.isArray(data?.posts) && data.posts.length > 0) {
+        setInstagramPosts(data.posts);
+      }
+    };
+
+    loadInstagramPosts().catch((error) => {
+      console.warn('Instagram automatico indisponivel, usando posts configurados no editor:', error);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const filteredEvents =
+    selectedCategory === 'Todos' ? siteEvents : siteEvents.filter((event) => (event.categoria || 'Cultos') === selectedCategory);
+  const eventPages = useMemo(() => {
+    const pages = [];
+    for (let index = 0; index < filteredEvents.length; index += 3) {
+      pages.push(filteredEvents.slice(index, index + 3));
+    }
+    return pages;
+  }, [filteredEvents]);
+
+  useEffect(() => {
+    setEventSlide(0);
+  }, [selectedCategory, filteredEvents.length]);
+
+  useEffect(() => {
+    if (eventPages.length <= 1) return;
+    const interval = window.setInterval(() => {
+      setEventSlide((current) => (current + 1) % eventPages.length);
+    }, 5500);
+    return () => window.clearInterval(interval);
+  }, [eventPages.length]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white transition-colors duration-300 dark:from-slate-900 dark:to-slate-800">
-      <header className="fixed inset-x-0 top-0 z-[90] flex items-center justify-between border-b border-slate-100 bg-white/95 px-4 py-3 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-[#0f172a]/95 lg:hidden">
-        <div className="min-w-0">
-          <p className="text-[8px] font-black uppercase tracking-[0.28em] text-brand">Valentes</p>
-          <p className="truncate text-sm font-black uppercase tracking-tight text-slate-800 dark:text-white">Connected</p>
-        </div>
-        <div className="flex items-center gap-2">
+    <div className="min-h-screen bg-[#f7f3ea] text-zinc-950" style={{ ['--site-primary' as string]: content.primaryColor }}>
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/35 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+          <a href="#inicio" className="flex min-w-0 items-center gap-3">
+            <div
+              className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl text-sm font-black text-black shadow-lg"
+              style={{ backgroundColor: content.goldColor }}
+            >
+              {content.logoImage ? <img src={content.logoImage} alt={content.churchName} className="h-full w-full object-cover" /> : content.logoText}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-black uppercase tracking-wide text-white">{content.churchName}</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/55">Igreja Crista</p>
+            </div>
+          </a>
+
+          <nav className="hidden items-center gap-1 lg:flex">
+            {navItems.map((item) => (
+              <a
+                key={item}
+                href={`#${sectionId(item)}`}
+                className="rounded-full px-4 py-2 text-xs font-bold text-white/70 transition hover:bg-white/10 hover:text-white"
+              >
+                {item}
+              </a>
+            ))}
+          </nav>
+
           <button
             type="button"
             onClick={onLoginClick}
-            className="flex h-10 items-center justify-center gap-2 rounded-xl bg-brand px-4 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20"
+            className="flex h-11 items-center gap-2 rounded-full bg-white px-4 text-xs font-black uppercase tracking-widest text-black shadow-xl transition hover:scale-[1.02]"
           >
             <i className="fas fa-right-to-bracket" />
-            Entrar
-          </button>
-          <button
-            type="button"
-            onClick={onToggleTheme}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300"
-            aria-label="Alternar tema"
-          >
-            <i className={isDarkMode ? 'fas fa-sun text-brand-gold' : 'fas fa-moon text-brand'} />
+            Login
           </button>
         </div>
       </header>
 
-      <aside className="fixed inset-x-0 bottom-2 z-[100] mx-auto flex min-h-16 w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] rounded-2xl border border-slate-100 bg-white shadow-xl transition-all dark:border-slate-800 dark:bg-[#0f172a] sm:bottom-3 sm:w-[calc(100%-1.5rem)] sm:max-w-[720px] lg:inset-x-auto lg:bottom-0 lg:left-0 lg:mx-0 lg:h-full lg:w-[280px] lg:max-w-none lg:flex-col lg:rounded-none lg:border-r lg:border-b-0 lg:border-l-0 lg:border-t-0 lg:shadow-none">
-        <div className="hidden flex-col items-center px-6 py-10 lg:flex">
-          <div className="flex flex-col items-center gap-2">
-            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-brand/10 shadow-md dark:bg-brand/20">
-              <i className="fa-solid fa-shield text-5xl text-transparent [-webkit-text-stroke:2px_var(--brand-primary)]" />
-              <i className="fa-solid fa-crown absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[55%] text-base text-brand-gold" />
+      <main>
+        <section id="inicio" className="relative min-h-[92vh] overflow-hidden" style={{ backgroundColor: content.primaryColor }}>
+          <img src={content.heroImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-60" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/45 to-black" />
+          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#f7f3ea] to-transparent" />
+
+          <div className="relative mx-auto flex min-h-[92vh] max-w-7xl flex-col justify-end px-4 pb-16 pt-28 sm:px-6 lg:px-8 lg:pb-24">
+            <div className="max-w-4xl">
+              <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-white/75 backdrop-blur">
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: content.goldColor }} />
+                {content.serviceInfo}
+              </div>
+              <h1 className="max-w-5xl text-5xl font-black leading-[0.95] text-white sm:text-6xl lg:text-8xl">
+                {content.heroTitle}
+              </h1>
+              <p className="mt-6 max-w-2xl text-lg font-medium leading-8 text-white/75 sm:text-xl">{content.heroSubtitle}</p>
+
+              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+                <a
+                  href={content.mapUrl}
+                  className="inline-flex h-14 items-center justify-center gap-3 rounded-full px-7 text-sm font-black uppercase tracking-widest text-black shadow-2xl transition hover:scale-[1.02]"
+                  style={{ backgroundColor: content.goldColor }}
+                >
+                  <i className="fas fa-location-dot" />
+                  Como Chegar
+                </a>
+                <a
+                  href={whatsappUrl(content.whatsapp)}
+                  className="inline-flex h-14 items-center justify-center gap-3 rounded-full border border-white/20 bg-white/10 px-7 text-sm font-black uppercase tracking-widest text-white backdrop-blur transition hover:bg-white/20"
+                >
+                  <i className="fab fa-whatsapp" />
+                  Fale Conosco
+                </a>
+              </div>
             </div>
-            <h2 className="mt-2 text-center text-xl font-extrabold uppercase leading-none tracking-tighter text-slate-800 dark:text-white">
-              Valentes <span className="text-brand">Connected</span>
-            </h2>
           </div>
-        </div>
+        </section>
 
-        <nav className="flex w-full flex-1 items-center justify-center gap-1 px-1.5 no-scrollbar lg:w-auto lg:flex-col lg:items-stretch lg:justify-start lg:gap-1.5 lg:overflow-y-auto lg:px-4 lg:py-2">
-          {menuItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setCurrentView(item.id)}
-              className={`flex min-w-0 flex-1 max-w-none flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 transition-all lg:flex-none lg:flex-row lg:justify-start lg:gap-4 lg:rounded-2xl lg:px-5 lg:py-4 ${
-                currentView === item.id
-                  ? 'bg-brand text-white shadow-xl shadow-brand/20'
-                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 lg:hover:bg-slate-50 lg:dark:hover:bg-slate-800/50'
-              }`}
-            >
-              <i className={`${item.icon} w-5 text-center text-base lg:w-6 lg:text-lg`} />
-              <span className="w-full max-w-full whitespace-normal break-words text-center text-[8px] font-bold uppercase leading-[1.05] tracking-normal lg:w-auto lg:break-normal lg:text-sm lg:capitalize">
-                {item.label}
-              </span>
-            </button>
-          ))}
-        </nav>
+        <section id="sobre" className="mx-auto grid max-w-7xl gap-6 px-4 py-16 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
+          <div className="rounded-[2rem] bg-white p-8 shadow-xl shadow-black/5 sm:p-10">
+            <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
+              Sobre a igreja
+            </p>
+            <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">Uma casa organizada para servir pessoas.</h2>
+            <p className="mt-5 text-base leading-8 text-zinc-600">
+              Acolhemos familias, discipulamos pessoas e criamos ambientes onde fe, comunidade e excelencia caminham juntos.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+            {['Comunidade', 'Louvor', 'Cuidado'].map((item) => (
+              <div key={item} className="rounded-[2rem] border border-black/5 p-6 text-white shadow-xl shadow-black/10" style={{ backgroundColor: content.primaryColor }}>
+                <i className="fas fa-sparkles mb-8 text-xl" style={{ color: content.goldColor }} />
+                <h3 className="text-2xl font-black">{item}</h3>
+                <p className="mt-2 text-sm leading-6 text-white/60">Experiencias simples, bonitas e preparadas com excelencia.</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
-        <div className="mt-auto hidden flex-col gap-3 border-t border-slate-50 px-4 pb-6 pt-4 dark:border-slate-800 lg:flex">
-          <button
-            type="button"
-            onClick={onLoginClick}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-brand text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20 transition hover:brightness-110"
-          >
-            <i className="fas fa-right-to-bracket" />
-            Entrar no sistema
-          </button>
-          <button
-            type="button"
-            onClick={onToggleTheme}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-100 bg-white text-[9px] font-black uppercase tracking-widest text-slate-400 transition-all hover:text-brand dark:border-slate-700 dark:bg-slate-800"
-          >
-            <i className={isDarkMode ? 'fas fa-sun text-brand-gold' : 'fas fa-moon text-brand'} />
-            {isDarkMode ? 'Modo Claro' : 'Modo Escuro'}
-          </button>
-        </div>
-      </aside>
+        <section id="eventos" className="py-16 text-white" style={{ backgroundColor: content.primaryColor }}>
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
+                  Eventos
+                </p>
+                <h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Proximos encontros</h2>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                {categories.map((category) => (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => setSelectedCategory(category)}
+                    className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-widest transition ${
+                      selectedCategory === category ? 'bg-white text-black' : 'bg-white/10 text-white/60 hover:bg-white/15'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-      <main className="min-h-screen bg-slate-50 pb-28 pt-16 dark:bg-slate-800 sm:pb-32 lg:ml-[280px] lg:pb-0 lg:pt-0">
-        <div className="container mx-auto px-3 py-5 sm:px-6 lg:px-8">
-          {currentView === 'dashboard' && <ChurchDashboard publicMode />}
-          {currentView === 'agenda' && <ChurchAgenda publicMode />}
-        </div>
+            <div className="mt-10">
+              {eventsLoading && (
+                <div className="flex h-[280px] min-w-[280px] items-center justify-center rounded-[2rem] bg-white/10 text-xs font-black uppercase tracking-widest text-white/50">
+                  Carregando eventos...
+                </div>
+              )}
+              {!eventsLoading && filteredEvents.length === 0 && (
+                <div className="flex h-[280px] min-w-[280px] items-center justify-center rounded-[2rem] bg-white/10 px-8 text-center text-xs font-black uppercase tracking-widest text-white/50">
+                  Nenhum evento publico cadastrado
+                </div>
+              )}
+              {!eventsLoading && eventPages.length > 0 && (
+                <>
+                  <div className="overflow-hidden">
+                    <div className="flex transition-transform duration-700 ease-out" style={{ transform: `translateX(-${eventSlide * 100}%)` }}>
+                      {eventPages.map((page, pageIndex) => (
+                        <div key={pageIndex} className="grid min-w-full gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                          {page.map((event, index) => (
+                            <article
+                              key={event.id}
+                              className="group relative h-[380px] overflow-hidden rounded-[2rem] bg-zinc-900 shadow-2xl shadow-black/40"
+                            >
+                              <img
+                                src={event.imagem_url_desktop || event.imagem_url || eventFallbackImages[(pageIndex * 3 + index) % eventFallbackImages.length]}
+                                alt=""
+                                className="absolute inset-0 h-full w-full object-cover opacity-70 transition duration-500 group-hover:scale-105"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                              <div className="absolute inset-x-0 bottom-0 p-6">
+                                <span className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-widest backdrop-blur">
+                                  {formatGroupedEventDates(event)}
+                                </span>
+                                <h3 className="mt-4 text-2xl font-black">{event.titulo}</h3>
+                                <p className="mt-2 text-sm text-white/65">
+                                  <i className="fas fa-location-dot mr-2" />
+                                  {event.local || content.address}
+                                </p>
+                                <button className="mt-5 rounded-full px-5 py-3 text-xs font-black uppercase tracking-widest text-black" style={{ backgroundColor: content.goldColor }}>
+                                  Saiba Mais
+                                </button>
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {eventPages.length > 1 && (
+                    <div className="mt-6 flex items-center justify-between gap-4">
+                      <div className="flex gap-2">
+                        {eventPages.map((_, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => setEventSlide(index)}
+                            className={`h-2.5 rounded-full transition-all ${eventSlide === index ? 'w-9 bg-white' : 'w-2.5 bg-white/25 hover:bg-white/50'}`}
+                            aria-label={`Ir para slide ${index + 1}`}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEventSlide((current) => (current - 1 + eventPages.length) % eventPages.length)}
+                          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+                          aria-label="Eventos anteriores"
+                        >
+                          <i className="fas fa-chevron-left" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEventSlide((current) => (current + 1) % eventPages.length)}
+                          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+                          aria-label="Proximos eventos"
+                        >
+                          <i className="fas fa-chevron-right" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section id="ministerios" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
+            Ministerios
+          </p>
+          <h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Encontre seu lugar</h2>
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {content.ministries.map((ministry) => (
+              <div key={ministry.name} className="group overflow-hidden rounded-[2rem] border border-black/5 bg-white shadow-lg shadow-black/5 transition hover:-translate-y-1 hover:shadow-2xl">
+                {ministry.image && <img src={ministry.image} alt="" className="h-36 w-full object-cover" />}
+                <div className="p-6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl text-white transition group-hover:scale-110" style={{ backgroundColor: content.primaryColor }}>
+                    <i className={`fas ${ministry.icon || 'fa-cross'}`} style={{ color: content.goldColor }} />
+                  </div>
+                <h3 className="mt-8 text-xl font-black">{ministry.name}</h3>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="bg-white py-16">
+          <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
+            <div className="rounded-[2rem] p-8 text-white shadow-2xl shadow-black/15" style={{ backgroundColor: content.primaryColor }}>
+              <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
+                Versiculo do dia
+              </p>
+              <p className="mt-8 text-2xl font-semibold italic leading-10 text-white/90">"{dailyVerse || 'Carregando...'}"</p>
+            </div>
+
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
+                Lideranca
+              </p>
+              <h2 className="mt-3 text-4xl font-black tracking-tight">Pastores presidentes</h2>
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                {publicPastors.length === 0 && (
+                  <div className="rounded-[2rem] border border-dashed border-zinc-200 p-8 text-sm font-bold text-zinc-500">
+                    Nenhum pastor selecionado no app.
+                  </div>
+                )}
+                {publicPastors.map((pastor) => {
+                  const name = getDisplayName(pastor);
+                  const photo = sanitizeImageUrl(pastor.foto) || buildLocalAvatar(name);
+                  return (
+                    <article key={pastor.id} className="flex items-center gap-4 rounded-[2rem] border border-black/5 bg-[#f7f3ea] p-4 shadow-lg shadow-black/5">
+                      <img src={photo} alt={name} className="h-20 w-20 rounded-2xl object-cover" />
+                      <div className="min-w-0">
+                        <h3 className="truncate text-lg font-black">{name}</h3>
+                        <p className="text-sm font-bold" style={{ color: content.goldColor }}>{pastor.posicao_igreja || 'Pastor(a)'}</p>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
+                Instagram
+              </p>
+              <h2 className="mt-3 text-4xl font-black tracking-tight">Ultimas postagens</h2>
+            </div>
+            <a href={content.instagramUrl} target="_blank" rel="noreferrer" className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-black px-5 text-xs font-black uppercase tracking-widest text-white">
+              <i className="fab fa-instagram" />
+              {content.instagram}
+            </a>
+          </div>
+          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            {instagramPosts.map((post) => (
+              <a key={`${post.title}-${post.url}`} href={post.url} target="_blank" rel="noreferrer" className="group overflow-hidden rounded-[2rem] bg-white shadow-xl shadow-black/5">
+                {post.image ? (
+                  <img src={post.image} alt="" className="h-72 w-full object-cover transition duration-500 group-hover:scale-105" />
+                ) : (
+                  <div className="flex h-72 w-full flex-col items-center justify-center gap-4 bg-gradient-to-br from-zinc-950 via-zinc-800 to-black p-8 text-center text-white">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-3xl backdrop-blur">
+                      <i className="fab fa-instagram" style={{ color: content.goldColor }} />
+                    </div>
+                    <p className="text-xs font-black uppercase tracking-[0.24em] text-white/55">Abrir no Instagram</p>
+                  </div>
+                )}
+                <div className="p-5">
+                  <p className="text-sm font-black">{post.title || 'Postagem no Instagram'}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <section id="pedido-de-oracao" className="bg-white py-16">
+          <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
+                Pedido de Oracao
+              </p>
+              <h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Queremos orar por voce.</h2>
+              <p className="mt-5 text-base leading-8 text-zinc-600">Envie seu pedido e nossa equipe pastoral vai receber sua mensagem.</p>
+            </div>
+            <form className="rounded-[2rem] bg-zinc-950 p-6 text-white shadow-2xl shadow-black/15">
+              <input className="mb-3 w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 outline-none placeholder:text-white/40" placeholder="Seu nome" />
+              <input className="mb-3 w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 outline-none placeholder:text-white/40" placeholder="WhatsApp" />
+              <textarea className="mb-3 min-h-32 w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 outline-none placeholder:text-white/40" placeholder="Pedido de oracao" />
+              <button type="button" className="w-full rounded-2xl py-4 text-sm font-black uppercase tracking-widest text-black" style={{ backgroundColor: content.goldColor }}>
+                Enviar Pedido
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <section id="contribua" className="mx-auto grid max-w-7xl gap-8 px-4 py-16 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
+          <div className="rounded-[2rem] p-8 text-white shadow-2xl shadow-black/20" style={{ backgroundColor: content.primaryColor }}>
+            <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
+              Dizimos e Ofertas
+            </p>
+            <h2 className="mt-3 text-4xl font-black tracking-tight">Contribua com seguranca via PIX.</h2>
+            <p className="mt-5 text-sm leading-7 text-white/60">Use a chave abaixo ou aponte a camera para o QR Code.</p>
+            <div className="mt-8 rounded-2xl bg-white/10 p-4 text-sm font-bold">{content.pixKey}</div>
+          </div>
+          <div className="flex min-h-80 items-center justify-center rounded-[2rem] border border-black/5 bg-white p-8 shadow-xl shadow-black/5">
+            {content.pixQrImage ? (
+              <img src={content.pixQrImage} alt="QR Code PIX" className="h-64 w-64 rounded-2xl object-cover" />
+            ) : (
+              <div className="flex h-64 w-64 items-center justify-center rounded-2xl bg-zinc-100 text-center text-xs font-black uppercase tracking-widest text-zinc-400">
+                QR Code PIX
+              </div>
+            )}
+          </div>
+        </section>
       </main>
+
+      <footer id="contato" className="px-4 py-12 text-white sm:px-6 lg:px-8" style={{ backgroundColor: content.primaryColor }}>
+        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.1fr_0.9fr_0.9fr]">
+          <div>
+            <div className="mb-5 flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-black text-black" style={{ backgroundColor: content.goldColor }}>
+                {content.logoImage ? <img src={content.logoImage} alt={content.churchName} className="h-full w-full rounded-2xl object-cover" /> : content.logoText}
+              </div>
+              <h2 className="text-xl font-black">{content.churchName}</h2>
+            </div>
+            <p className="max-w-md text-sm leading-7 text-white/55">Fe, comunidade e proposito em uma experiencia acolhedora e organizada.</p>
+          </div>
+          <div className="space-y-3 text-sm text-white/65">
+            <p><i className="fas fa-location-dot mr-2" />{content.address}</p>
+            <p><i className="fab fa-whatsapp mr-2" />{content.whatsapp}</p>
+            <p><i className="fab fa-instagram mr-2" />{content.instagram}</p>
+          </div>
+          <div className="rounded-2xl bg-white/10 p-5 text-sm font-bold text-white/70">Mapa moderno: conectar iframe do Google Maps aqui.</div>
+        </div>
+        <div className="mx-auto mt-10 max-w-7xl border-t border-white/10 pt-6 text-xs font-bold uppercase tracking-widest text-white/35">
+          Todos os direitos reservados.
+        </div>
+      </footer>
     </div>
   );
 };

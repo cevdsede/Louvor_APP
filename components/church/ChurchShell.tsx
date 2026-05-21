@@ -8,13 +8,14 @@ import ChurchAdmin from './ChurchAdmin';
 import ChurchAgenda from './ChurchAgenda';
 import ChurchDashboard from './ChurchDashboard';
 import ChurchMembers from './ChurchMembers';
+import SiteEditor from './SiteEditor';
 import { buildLocalAvatar } from '../../utils/avatar';
 import { compressImageFile } from '../../utils/imageCompression';
 import { buildMemberPhotoPath, getPublicAssetsPathFromUrl, sanitizeImageUrl } from '../../utils/imageUrl';
 import logger from '../../utils/logger';
 import { showError, showSuccess } from '../../utils/toast';
 
-type ChurchView = 'dashboard' | 'agenda' | 'members' | 'admin';
+type ChurchView = 'dashboard' | 'agenda' | 'members' | 'site' | 'admin';
 
 const normalize = (value?: string | null) =>
   (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -66,6 +67,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
     { id: 'dashboard', label: 'Inicio', icon: 'fas fa-house', visible: true },
     { id: 'agenda', label: 'Agenda', icon: 'fas fa-calendar-days', visible: true },
     { id: 'members', label: 'Membros', icon: 'fas fa-users', visible: true },
+    { id: 'site', label: 'Site', icon: 'fas fa-globe', visible: canOpenAdmin },
     { id: 'admin', label: 'Admin', icon: 'fas fa-sliders', visible: canOpenAdmin }
   ];
 
@@ -334,6 +336,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
           {currentView === 'dashboard' && <ChurchDashboard currentMember={(currentMemberRecord || currentMember) as SupabaseMembro | null} />}
           {currentView === 'agenda' && <ChurchAgenda />}
           {currentView === 'members' && <ChurchMembers />}
+          {currentView === 'site' && <SiteEditor />}
           {currentView === 'admin' && <ChurchAdmin currentUserId={currentMember?.id || null} isAdmin={isGlobalAdmin} />}
         </div>
       </main>

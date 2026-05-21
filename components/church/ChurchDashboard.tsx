@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import { supabase } from '../../supabaseClient';
-import { SupabaseEventoIgreja, SupabaseMembro, SupabasePermissaoIgreja } from '../../types-supabase';
+import { SupabaseEventoIgreja, SupabaseMembro } from '../../types-supabase';
 import { generateChurchEventOccurrences } from '../../utils/churchEvents';
 import DashboardService from '../../services/DashboardService';
 import { buildLocalAvatar } from '../../utils/avatar';
@@ -76,17 +76,11 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
     enableBackgroundSync: !publicMode,
     autoRefresh: !publicMode
   });
-  const { data: permissionsRaw } = useLocalStorageFirst<SupabasePermissaoIgreja>({
-    table: 'permissoes_igreja',
-    enableBackgroundSync: !publicMode,
-    autoRefresh: !publicMode
-  });
   const { start, end } = useMemo(getWeekRange, []);
   const [activeSlide, setActiveSlide] = useState(0);
   const [expandedEvent, setExpandedEvent] = useState<any | null>(null);
   const [dailyVerse, setDailyVerse] = useState('');
   const [publicEvents, setPublicEvents] = useState<SupabaseEventoIgreja[]>([]);
-  const [publicPastors, setPublicPastors] = useState<SupabaseMembro[]>([]);
   const [publicBirthdays, setPublicBirthdays] = useState<SupabaseMembro[]>([]);
   const [publicServants, setPublicServants] = useState<SupabaseMembro[]>([]);
   const [publicStats, setPublicStats] = useState<PublicStats | null>(null);
@@ -99,9 +93,8 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
     let mounted = true;
     const loadPublicData = async () => {
       setPublicLoading(true);
-      const [eventsResponse, pastorsResponse, statsResponse, birthdaysResponse, servantsResponse] = await Promise.all([
+      const [eventsResponse, statsResponse, birthdaysResponse, servantsResponse] = await Promise.all([
         supabase.rpc('get_eventos_igreja_publicos'),
-        supabase.rpc('get_pastores_inicio_publicos'),
         supabase.rpc('get_inicio_igreja_public_stats'),
         supabase.rpc('get_aniversariantes_mes_publicos'),
         supabase.rpc('get_servos_igreja_publicos')
@@ -109,7 +102,6 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
 
       if (!mounted) return;
       setPublicEvents((eventsResponse.data || []) as SupabaseEventoIgreja[]);
-      setPublicPastors((pastorsResponse.data || []) as SupabaseMembro[]);
       setPublicStats(((statsResponse.data || [])[0] || null) as PublicStats | null);
       setPublicBirthdays((birthdaysResponse.data || []) as SupabaseMembro[]);
       setPublicServants((servantsResponse.data || []) as SupabaseMembro[]);
@@ -170,22 +162,6 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
         return dayA - dayB;
       });
   }, [members]);
-
-  const pastors = useMemo(() => {
-    if (publicMode) {
-      return [...publicPastors].sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b)));
-    }
-
-    const selectedPastorIds = new Set(
-      (permissionsRaw || [])
-        .filter((permission) => permission.mostrar_pastor_inicio)
-        .map((permission) => permission.membro_id)
-    );
-
-    return members
-      .filter((member) => selectedPastorIds.has(member.id))
-      .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b)));
-  }, [members, permissionsRaw, publicMode, publicPastors]);
 
   const servants = useMemo(
     () => members.filter((member) => normalize(member.posicao_igreja || 'membro') !== 'membro'),
@@ -351,33 +327,14 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
             <p className="mt-2 text-sm font-black text-white/80 sm:text-base">{firstName}</p>
           </div>
         </div>
-
-        <div className="bg-white p-4 backdrop-blur-xl dark:bg-slate-800/50">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand text-white shadow-lg">
-                <i className="fas fa-church text-lg" />
-              </div>
-              <div>
-                <h2 className="text-lg font-black text-slate-800 dark:text-white">Inicio da Igreja</h2>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Resumo geral, avisos e edificacao do dia</p>
-              </div>
-            </div>
-
-            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-brand/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-brand">
-              <i className="fas fa-calendar-day text-xs" />
-              {new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date())}
-            </div>
-          </div>
-        </div>
       </section>
 
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)] lg:items-stretch">
-        <div className="order-2 grid grid-cols-2 gap-2 sm:gap-3 lg:order-1 lg:col-span-2 lg:grid-cols-3">
+        <div className="order-1 grid grid-cols-3 gap-2 sm:gap-3 lg:col-span-2">
           {kpiCards.map(renderKpiCard)}
         </div>
 
-        <div className="order-1 flex min-w-0 flex-col items-center lg:order-2 lg:col-start-1 lg:items-stretch">
+        <div className="order-2 flex min-w-0 flex-col items-center lg:col-start-1 lg:items-stretch">
           {loading || publicLoading ? (
             <div className="flex aspect-[9/16] w-full max-w-[360px] items-center justify-center rounded-[1.75rem] border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900 lg:aspect-video lg:max-w-none">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent" />
@@ -440,32 +397,11 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
           )}
         </div>
 
-        <div className="order-3 lg:col-start-2 lg:row-start-2 lg:self-stretch">{verseCard}</div>
-      </section>
+        <div className="order-3 lg:col-start-2 lg:row-start-2 lg:self-stretch">
+          {verseCard}
+        </div>
 
-      {pastors.length > 0 && (
-        <section className="space-y-3">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand">Lideranca</p>
-            <h2 className="mt-1 text-lg font-black text-slate-900 dark:text-white">Pastores presidentes</h2>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {pastors.map((pastor) => {
-              const name = getDisplayName(pastor);
-              const photo = sanitizeImageUrl(pastor.foto) || buildLocalAvatar(name);
-              return (
-                <article key={pastor.id} className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-                  <ImageCache src={photo} fallbackSrc={buildLocalAvatar(name)} alt={name} className="h-16 w-16 rounded-2xl object-cover" disableCompression />
-                  <div className="min-w-0">
-                    <h3 className="truncate text-base font-black text-slate-900 dark:text-white">{name}</h3>
-                    <p className="text-xs font-bold text-brand">{pastor.posicao_igreja || 'Pastor(a)'}</p>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      )}
+      </section>
 
       {expandedEvent && (
         <div className="fixed inset-0 z-[760] flex items-center justify-center bg-slate-950/80 p-3 backdrop-blur-sm">

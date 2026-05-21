@@ -399,8 +399,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* User Card */}
-        <div className="flex items-center gap-2">
-          <div onClick={() => setIsProfileModalOpen(true)} className="flex items-center gap-3 px-3 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group flex-1">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <div onClick={() => setIsProfileModalOpen(true)} className="flex min-w-0 flex-1 items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-2.5 py-3 transition-all hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/30 dark:hover:bg-slate-800 cursor-pointer group">
             <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-black text-[10px] shadow-sm group-hover:scale-105 transition-transform overflow-hidden">
               {profileData.foto ? (
                 <ImageCache
@@ -414,7 +414,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               )}
             </div>
-            <div className="flex flex-col flex-1 truncate">
+            <div className="flex min-w-0 flex-1 flex-col truncate">
               <span className="text-[11px] font-black text-slate-800 dark:text-white truncate">{profileData.name}</span>
               <span className="text-[7px] font-bold text-brand uppercase tracking-widest">{profileData.perfil}</span>
             </div>
@@ -422,13 +422,13 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="relative">
             <NotificationButton
               onClick={onOpenNotifications}
-              className="flex h-[60px] w-12 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 text-slate-500 transition-all hover:bg-slate-100 hover:text-brand dark:border-slate-800 dark:bg-slate-800/30 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="flex h-[60px] w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 text-slate-500 transition-all hover:bg-slate-100 hover:text-brand dark:border-slate-800 dark:bg-slate-800/30 dark:text-slate-300 dark:hover:bg-slate-800"
               iconClassName="text-lg"
             />
           </div>
           <button
             onClick={handleLogout}
-            className="w-12 h-[60px] flex items-center justify-center rounded-2xl bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition-all group"
+            className="flex h-[60px] w-10 shrink-0 items-center justify-center rounded-2xl border border-red-100 bg-red-50 text-red-500 transition-all hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 group"
             title="Sair do Sistema"
           >
             <i className="fas fa-sign-out-alt text-lg group-hover:scale-110 transition-transform"></i>
