@@ -4,6 +4,7 @@ import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import { SupabaseEventoIgreja, SupabaseMembro, SupabasePermissaoIgreja } from '../../types-supabase';
 import { compressImageFile } from '../../utils/imageCompression';
+import { recordChurchAudit } from '../../utils/churchAudit';
 import { getDisplayName } from '../../utils/displayName';
 import { getPublicAssetsPathFromUrl } from '../../utils/imageUrl';
 import { showError, showSuccess } from '../../utils/toast';
@@ -300,6 +301,18 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
       }
 
       await LocalStorageFirstService.forceSync('eventos_igreja');
+      await recordChurchAudit({
+        action: editingEventId ? 'update' : 'create',
+        entity: 'eventos_igreja',
+        entityId: data.id,
+        userId: currentUserId,
+        description: editingEventId ? `Evento atualizado: ${payload.titulo}` : `Evento criado: ${payload.titulo}`,
+        payload: {
+          titulo: payload.titulo,
+          data_inicio: payload.data_inicio,
+          categoria: payload.categoria
+        }
+      });
       setForm(INITIAL_FORM);
       setEditingEventId(null);
       setIsEventModalOpen(false);
@@ -371,6 +384,18 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
 
     if (editingEventId === event.id) cancelEdit();
     await LocalStorageFirstService.forceSync('eventos_igreja');
+    await recordChurchAudit({
+      action: 'delete',
+      entity: 'eventos_igreja',
+      entityId: event.id,
+      userId: currentUserId,
+      description: `Evento excluido: ${event.titulo}`,
+      payload: {
+        titulo: event.titulo,
+        data_inicio: event.data_inicio,
+        categoria: event.categoria
+      }
+    });
     showSuccess('Evento excluido.');
   };
 
@@ -408,6 +433,19 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
     }
 
     await LocalStorageFirstService.forceSync('permissoes_igreja');
+    await recordChurchAudit({
+      action: allowed ? 'grant' : 'revoke',
+      entity: 'permissoes_igreja',
+      entityId: existing?.id || null,
+      userId: currentUserId,
+      description: `${allowed ? 'Liberado' : 'Removido'} acesso para alterar agenda/cards: ${getDisplayName(member)}`,
+      payload: {
+        membro_id: member.id,
+        nome: getDisplayName(member),
+        permissao: 'gerenciar_eventos_igreja',
+        valor: allowed
+      }
+    });
     if (allowed) {
       setIsPermissionModalOpen(false);
       setPermissionSearch('');
@@ -440,6 +478,19 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
     }
 
     await LocalStorageFirstService.forceSync('permissoes_igreja');
+    await recordChurchAudit({
+      action: visible ? 'grant' : 'revoke',
+      entity: 'permissoes_igreja',
+      entityId: existing?.id || null,
+      userId: currentUserId,
+      description: `${visible ? 'Adicionado' : 'Removido'} pastor do inicio: ${getDisplayName(member)}`,
+      payload: {
+        membro_id: member.id,
+        nome: getDisplayName(member),
+        permissao: 'mostrar_pastor_inicio',
+        valor: visible
+      }
+    });
     if (visible) {
       setIsPastorModalOpen(false);
       setPastorSearch('');
@@ -479,6 +530,19 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
     }
 
     await LocalStorageFirstService.forceSync('permissoes_igreja');
+    await recordChurchAudit({
+      action: allowed ? 'grant' : 'revoke',
+      entity: 'permissoes_igreja',
+      entityId: existing?.id || null,
+      userId: currentUserId,
+      description: `${allowed ? 'Liberado' : 'Removido'} acesso ${field} para ${getDisplayName(member)}`,
+      payload: {
+        membro_id: member.id,
+        nome: getDisplayName(member),
+        permissao: field,
+        valor: allowed
+      }
+    });
     successCallback?.();
   };
 

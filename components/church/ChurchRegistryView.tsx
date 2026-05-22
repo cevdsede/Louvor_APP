@@ -3,6 +3,7 @@ import { supabase } from '../../supabaseClient';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import { SupabaseNovoConvertidoIgreja, SupabaseVisitanteIgreja } from '../../types-supabase';
+import { recordChurchAudit } from '../../utils/churchAudit';
 import { showError, showSuccess } from '../../utils/toast';
 
 type RegistryMode = 'visitors' | 'converts';
@@ -71,6 +72,9 @@ const inputClass =
   'app-input w-full rounded-xl px-4 py-3 text-sm font-semibold outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10';
 
 const textareaClass = `${inputClass} min-h-[110px] resize-y`;
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const isFutureDate = (value?: string) => Boolean(value) && new Date(`${value}T00:00:00`).getTime() > Date.now();
 
 interface ChurchRegistryViewProps {
   mode: RegistryMode;
@@ -179,6 +183,14 @@ const ChurchRegistryView: React.FC<ChurchRegistryViewProps> = ({ mode, currentUs
       return;
     }
     await LocalStorageFirstService.forceSync(table);
+    await recordChurchAudit({
+      action: 'delete',
+      entity: table,
+      entityId: id,
+      userId: currentUserId,
+      description: `Cadastro removido: ${name}`,
+      payload: { nome: name }
+    });
     showSuccess('Cadastro excluido.');
   };
 
@@ -188,9 +200,36 @@ const ChurchRegistryView: React.FC<ChurchRegistryViewProps> = ({ mode, currentUs
       showError('Informe o nome do visitante.');
       return;
     }
+    if (!visitorForm.data_ficha) {
+      showError('Informe a data da ficha.');
+      return;
+    }
+    if (isFutureDate(visitorForm.data_ficha)) {
+      showError('A data da ficha nao pode ser no futuro.');
+      return;
+    }
+    if (visitorForm.data_nascimento && isFutureDate(visitorForm.data_nascimento)) {
+      showError('A data de nascimento nao pode ser no futuro.');
+      return;
+    }
+    if (!visitorForm.telefone.trim() && !visitorForm.endereco.trim()) {
+      showError('Informe pelo menos um telefone ou endereco do visitante.');
+      return;
+    }
 
     setSaving(true);
     try {
+      const duplicate = (visitorsRaw || []).find(
+        (item) =>
+          item.id !== editingId &&
+          item.nome.trim().toLowerCase() === visitorForm.nome.trim().toLowerCase() &&
+          (item.data_ficha || '') === (visitorForm.data_ficha || '')
+      );
+      if (duplicate) {
+        showError('Ja existe um visitante com este nome nesta mesma data.');
+        return;
+      }
+
       const payload = {
         data_ficha: visitorForm.data_ficha || new Date().toISOString().slice(0, 10),
         nome: visitorForm.nome.trim(),
@@ -214,6 +253,18 @@ const ChurchRegistryView: React.FC<ChurchRegistryViewProps> = ({ mode, currentUs
       const { error } = await request;
       if (error) throw error;
       await LocalStorageFirstService.forceSync('visitantes_igreja');
+      await recordChurchAudit({
+        action: editingId ? 'update' : 'create',
+        entity: 'visitantes_igreja',
+        entityId: editingId,
+        userId: currentUserId,
+        description: editingId ? `Visitante atualizado: ${payload.nome}` : `Visitante cadastrado: ${payload.nome}`,
+        payload: {
+          nome: payload.nome,
+          data_ficha: payload.data_ficha,
+          bairro: payload.bairro
+        }
+      });
       resetState();
       showSuccess(editingId ? 'Visitante atualizado.' : 'Visitante cadastrado.');
     } catch (error) {
@@ -230,9 +281,36 @@ const ChurchRegistryView: React.FC<ChurchRegistryViewProps> = ({ mode, currentUs
       showError('Informe o nome do novo convertido.');
       return;
     }
+    if (convertForm.email.trim() && !emailRegex.test(convertForm.email.trim())) {
+      showError('Informe um e-mail valido.');
+      return;
+    }
+    if (convertForm.data_nascimento && isFutureDate(convertForm.data_nascimento)) {
+      showError('A data de nascimento nao pode ser no futuro.');
+      return;
+    }
+    if (convertForm.data_conversao && isFutureDate(convertForm.data_conversao)) {
+      showError('A data da conversao nao pode ser no futuro.');
+      return;
+    }
+    if (!convertForm.contato.trim() && !convertForm.contato_recado.trim() && !convertForm.email.trim()) {
+      showError('Informe pelo menos um contato principal do novo convertido.');
+      return;
+    }
 
     setSaving(true);
     try {
+      const duplicate = (convertsRaw || []).find(
+        (item) =>
+          item.id !== editingId &&
+          item.nome.trim().toLowerCase() === convertForm.nome.trim().toLowerCase() &&
+          (item.data_conversao || '') === (convertForm.data_conversao || '')
+      );
+      if (duplicate) {
+        showError('Ja existe um novo convertido com este nome e esta data de conversao.');
+        return;
+      }
+
       const payload = {
         nome: convertForm.nome.trim(),
         endereco: convertForm.endereco.trim() || null,
@@ -255,6 +333,18 @@ const ChurchRegistryView: React.FC<ChurchRegistryViewProps> = ({ mode, currentUs
       const { error } = await request;
       if (error) throw error;
       await LocalStorageFirstService.forceSync('novos_convertidos_igreja');
+      await recordChurchAudit({
+        action: editingId ? 'update' : 'create',
+        entity: 'novos_convertidos_igreja',
+        entityId: editingId,
+        userId: currentUserId,
+        description: editingId ? `Novo convertido atualizado: ${payload.nome}` : `Novo convertido cadastrado: ${payload.nome}`,
+        payload: {
+          nome: payload.nome,
+          data_conversao: payload.data_conversao,
+          bairro: payload.bairro
+        }
+      });
       resetState();
       showSuccess(editingId ? 'Cadastro atualizado.' : 'Novo convertido cadastrado.');
     } catch (error) {

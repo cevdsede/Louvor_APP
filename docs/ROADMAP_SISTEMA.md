@@ -16,15 +16,15 @@ Legenda:
 - [ ] Revisar regras de acesso dos cadastros da igreja
 
 ### Auditoria basica
-- [ ] Criar historico basico de acoes do modulo igreja
-- [ ] Registrar quem criou, editou e excluiu eventos da igreja
-- [ ] Registrar quem criou, editou e excluiu visitantes
-- [ ] Registrar quem criou, editou e excluiu novos convertidos
-- [ ] Registrar quem alterou permissoes importantes
+- [x] Criar historico basico de acoes do modulo igreja
+- [x] Registrar quem criou, editou e excluiu eventos da igreja
+- [x] Registrar quem criou, editou e excluiu visitantes
+- [x] Registrar quem criou, editou e excluiu novos convertidos
+- [x] Registrar quem alterou permissoes importantes
 
 ### Validacao e consistencia de dados
-- [ ] Melhorar validacoes dos formularios de visitantes
-- [ ] Melhorar validacoes dos formularios de novos convertidos
+- [x] Melhorar validacoes dos formularios de visitantes
+- [x] Melhorar validacoes dos formularios de novos convertidos
 - [ ] Revisar consistencia entre app, site e banco
 - [ ] Reduzir risco de cadastros duplicados
 - [ ] Melhorar mensagens de erro e sucesso nas rotinas mais criticas

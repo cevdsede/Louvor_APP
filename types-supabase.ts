@@ -175,6 +175,17 @@ export interface SupabaseNovoConvertidoIgreja {
   updated_at: string;
 }
 
+export interface SupabaseAuditoriaIgreja {
+  id: string;
+  acao: string;
+  entidade: string;
+  entidade_id?: string | null;
+  descricao: string;
+  payload: Record<string, unknown>;
+  created_by?: string | null;
+  created_at: string;
+}
+
 export interface SupabaseMembroFuncao {
   id: string;
   id_membro: string;

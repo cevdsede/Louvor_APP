@@ -38,7 +38,8 @@ type ManagedTable =
   | 'presenca_evento'
   | 'permissoes_igreja'
   | 'visitantes_igreja'
-  | 'novos_convertidos_igreja';
+  | 'novos_convertidos_igreja'
+  | 'auditoria_igreja';
 
 class LocalStorageFirstService {
   private static readonly MANAGED_TABLES: ManagedTable[] = [
@@ -64,7 +65,8 @@ class LocalStorageFirstService {
     'presenca_evento',
     'permissoes_igreja',
     'visitantes_igreja',
-    'novos_convertidos_igreja'
+    'novos_convertidos_igreja',
+    'auditoria_igreja'
   ];
 
   private static readonly FULL_SYNC_REQUEST_KEY = 'louvor_force_full_sync';
