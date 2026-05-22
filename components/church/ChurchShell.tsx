@@ -8,6 +8,8 @@ import ChurchAdmin from './ChurchAdmin';
 import ChurchAgenda from './ChurchAgenda';
 import ChurchDashboard from './ChurchDashboard';
 import ChurchMembers from './ChurchMembers';
+import ChurchRegistryView from './ChurchRegistryView';
+import ChurchReports from './ChurchReports';
 import SiteEditor from './SiteEditor';
 import { buildLocalAvatar } from '../../utils/avatar';
 import { compressImageFile } from '../../utils/imageCompression';
@@ -15,7 +17,7 @@ import { buildMemberPhotoPath, getPublicAssetsPathFromUrl, sanitizeImageUrl } fr
 import logger from '../../utils/logger';
 import { showError, showSuccess } from '../../utils/toast';
 
-type ChurchView = 'dashboard' | 'agenda' | 'members' | 'site' | 'admin';
+type ChurchView = 'dashboard' | 'agenda' | 'members' | 'reports' | 'church-events' | 'visitors' | 'converts' | 'site' | 'admin';
 
 const normalize = (value?: string | null) =>
   (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -38,6 +40,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
   onColorChange
 }) => {
   const [currentView, setCurrentView] = useState<ChurchView>('dashboard');
+  const [isRegistryExpanded, setIsRegistryExpanded] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
   const [isThemeExpanded, setIsThemeExpanded] = useState(false);
@@ -63,13 +66,59 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
     return isGlobalAdmin || profile.includes('pastor') || profile.includes('admin') || explicitPermission;
   }, [currentMember?.id, currentMember?.perfil, isGlobalAdmin, permissionsRaw]);
 
+  const hasExplicitChurchEventPermission = useMemo(
+    () =>
+      (permissionsRaw || []).some(
+        (permission) => permission.membro_id === currentMember?.id && permission.gerenciar_eventos_igreja
+      ),
+    [currentMember?.id, permissionsRaw]
+  );
+
+  const canManageVisitors = useMemo(() => {
+    const profile = normalize(currentMember?.perfil);
+    const explicitPermission = (permissionsRaw || []).some(
+      (permission) => permission.membro_id === currentMember?.id && permission.gerenciar_visitantes_igreja
+    );
+    return isGlobalAdmin || profile.includes('pastor') || profile.includes('admin') || explicitPermission;
+  }, [currentMember?.id, currentMember?.perfil, isGlobalAdmin, permissionsRaw]);
+
+  const canManageConverts = useMemo(() => {
+    const profile = normalize(currentMember?.perfil);
+    const explicitPermission = (permissionsRaw || []).some(
+      (permission) => permission.membro_id === currentMember?.id && permission.gerenciar_novos_convertidos_igreja
+    );
+    return isGlobalAdmin || profile.includes('pastor') || profile.includes('admin') || explicitPermission;
+  }, [currentMember?.id, currentMember?.perfil, isGlobalAdmin, permissionsRaw]);
+
+  const canManageSite = useMemo(() => {
+    const explicitPermission = (permissionsRaw || []).some(
+      (permission) => permission.membro_id === currentMember?.id && permission.gerenciar_site_igreja
+    );
+    return isGlobalAdmin || explicitPermission;
+  }, [currentMember?.id, isGlobalAdmin, permissionsRaw]);
+
   const menuItems: Array<{ id: ChurchView; label: string; icon: string; visible: boolean }> = [
     { id: 'dashboard', label: 'Inicio', icon: 'fas fa-house', visible: true },
     { id: 'agenda', label: 'Agenda', icon: 'fas fa-calendar-days', visible: true },
     { id: 'members', label: 'Membros', icon: 'fas fa-users', visible: true },
-    { id: 'site', label: 'Site', icon: 'fas fa-globe', visible: canOpenAdmin },
+    { id: 'reports', label: 'Relatorios', icon: 'fas fa-chart-column', visible: canOpenAdmin },
     { id: 'admin', label: 'Admin', icon: 'fas fa-sliders', visible: canOpenAdmin }
   ];
+  const canOpenRegistryMenu =
+    isGlobalAdmin || hasExplicitChurchEventPermission || canManageVisitors || canManageConverts || canManageSite;
+  const isRegistryView = currentView === 'church-events' || currentView === 'visitors' || currentView === 'converts';
+
+  useEffect(() => {
+    if (isRegistryView) {
+      setIsRegistryExpanded(true);
+    }
+  }, [isRegistryView]);
+
+  useEffect(() => {
+    if (currentView === 'site' && !canManageSite) {
+      setCurrentView('dashboard');
+    }
+  }, [canManageSite, currentView]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -185,8 +234,8 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white transition-colors duration-300 dark:from-slate-900 dark:to-slate-800">
-      <header className="fixed inset-x-0 top-0 z-[90] flex items-center justify-between border-b border-slate-100 bg-white/95 px-4 py-3 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-[#0f172a]/95 lg:hidden">
+    <div className="bg-app-shell min-h-screen transition-colors duration-300">
+      <header className="app-card fixed inset-x-0 top-0 z-[90] flex items-center justify-between border-b px-4 py-3 shadow-sm backdrop-blur-xl lg:hidden">
         <div className="min-w-0">
           <p className="text-[8px] font-black uppercase tracking-[0.28em] text-brand">Valentes</p>
           <p className="truncate text-sm font-black uppercase tracking-tight text-slate-800 dark:text-white">
@@ -197,7 +246,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
           <button
             type="button"
             onClick={() => setIsProfileOpen(true)}
-            className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-800"
+              className="app-panel flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl"
             aria-label="Abrir perfil"
           >
             <img
@@ -209,7 +258,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
           <button
             type="button"
             onClick={onToggleTheme}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300"
+            className="app-panel text-app-muted flex h-10 w-10 items-center justify-center rounded-xl"
             aria-label="Alternar tema"
           >
             <i className={isDarkMode ? 'fas fa-sun text-brand-gold' : 'fas fa-moon text-brand'} />
@@ -217,7 +266,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
         </div>
       </header>
 
-      <aside className="fixed inset-x-0 bottom-2 z-[100] mx-auto flex min-h-16 w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] rounded-2xl border border-slate-100 bg-white shadow-xl transition-all dark:border-slate-800 dark:bg-[#0f172a] sm:bottom-3 sm:w-[calc(100%-1.5rem)] sm:max-w-[720px] lg:inset-x-auto lg:bottom-0 lg:left-0 lg:mx-0 lg:h-full lg:w-[280px] lg:max-w-none lg:flex-col lg:rounded-none lg:border-r lg:border-b-0 lg:border-l-0 lg:border-t-0 lg:shadow-none">
+      <aside className="app-card shadow-app fixed inset-x-0 bottom-2 z-[100] mx-auto flex min-h-16 w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] rounded-2xl backdrop-blur-xl transition-all sm:bottom-3 sm:w-[calc(100%-1.5rem)] sm:max-w-[720px] lg:inset-x-auto lg:bottom-0 lg:left-0 lg:mx-0 lg:h-full lg:w-[280px] lg:max-w-none lg:flex-col lg:rounded-none lg:border-r lg:border-b-0 lg:border-l-0 lg:border-t-0 lg:shadow-none">
         <div className="hidden flex-col items-center px-6 py-10 lg:flex">
           <div className="flex flex-col items-center gap-2">
             <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-brand/10 shadow-md dark:bg-brand/20">
@@ -230,7 +279,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
           </div>
         </div>
 
-        <nav className="flex w-full flex-1 items-center justify-center gap-1 px-1.5 no-scrollbar lg:w-auto lg:flex-col lg:items-stretch lg:justify-start lg:gap-1.5 lg:overflow-y-auto lg:px-4 lg:py-2">
+        <nav className="relative flex w-full flex-1 items-center justify-center gap-1 px-1.5 no-scrollbar lg:w-auto lg:flex-col lg:items-stretch lg:justify-start lg:gap-1.5 lg:overflow-y-auto lg:px-4 lg:py-2">
           {menuItems
             .filter((item) => item.visible)
             .map((item) => (
@@ -241,7 +290,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
                 className={`flex min-w-0 flex-1 max-w-none flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 transition-all lg:flex-none lg:flex-row lg:justify-start lg:gap-4 lg:rounded-2xl lg:px-5 lg:py-4 ${
                   currentView === item.id
                     ? 'bg-brand text-white shadow-xl shadow-brand/20'
-                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 lg:hover:bg-slate-50 lg:dark:hover:bg-slate-800/50'
+                    : 'text-app-muted hover:text-app lg:hover:bg-app-surface-strong'
                 }`}
               >
                 <i className={`${item.icon} w-5 text-center text-base lg:w-6 lg:text-lg`} />
@@ -251,11 +300,108 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
               </button>
             ))}
 
+          {canOpenRegistryMenu && (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsRegistryExpanded((prev) => !prev)}
+                className={`flex min-w-0 flex-1 max-w-none flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 transition-all lg:flex-none lg:flex-row lg:justify-start lg:gap-4 lg:rounded-2xl lg:px-5 lg:py-4 ${
+                  isRegistryView || isRegistryExpanded
+                    ? 'bg-brand text-white shadow-xl shadow-brand/20'
+                    : 'text-app-muted hover:text-app lg:hover:bg-app-surface-strong'
+                }`}
+              >
+                <div className="flex items-center gap-1 lg:w-6 lg:justify-center">
+                  <i className="fas fa-folder-tree w-5 text-center text-base lg:w-6 lg:text-lg" />
+                  <i className={`fas fa-chevron-${isRegistryExpanded ? 'up' : 'down'} text-[8px] lg:hidden`} />
+                </div>
+                <span className="w-full max-w-full whitespace-normal break-words text-center text-[8px] font-bold uppercase leading-[1.05] tracking-normal lg:flex-1 lg:text-left lg:text-sm lg:capitalize">
+                  Cadastros
+                </span>
+                <i className={`fas fa-chevron-${isRegistryExpanded ? 'up' : 'down'} hidden text-[10px] lg:block`} />
+              </button>
+
+              {isRegistryExpanded && (
+                <>
+                  <div className="fixed inset-x-3 bottom-20 z-[110] rounded-2xl border border-app bg-app-surface p-2 shadow-2xl lg:hidden">
+                    {canManageSite && (
+                      <RegistrySubmenuButton
+                        label="Site"
+                        icon="fas fa-globe"
+                        active={currentView === 'site'}
+                        onClick={() => setCurrentView('site')}
+                      />
+                    )}
+                    {canOpenAdmin && (
+                      <RegistrySubmenuButton
+                        label="Eventos"
+                        icon="fas fa-calendar-plus"
+                        active={currentView === 'church-events'}
+                        onClick={() => setCurrentView('church-events')}
+                      />
+                    )}
+                    {canManageVisitors && (
+                      <RegistrySubmenuButton
+                        label="Visitantes"
+                        icon="fas fa-user-group"
+                        active={currentView === 'visitors'}
+                        onClick={() => setCurrentView('visitors')}
+                      />
+                    )}
+                    {canManageConverts && (
+                      <RegistrySubmenuButton
+                        label="Novos Convertidos"
+                        icon="fas fa-seedling"
+                        active={currentView === 'converts'}
+                        onClick={() => setCurrentView('converts')}
+                      />
+                    )}
+                  </div>
+
+                  <div className="hidden lg:flex lg:flex-col lg:gap-1">
+                    {canManageSite && (
+                      <RegistrySubmenuButton
+                        label="Site"
+                        icon="fas fa-globe"
+                        active={currentView === 'site'}
+                        onClick={() => setCurrentView('site')}
+                      />
+                    )}
+                    {canOpenAdmin && (
+                      <RegistrySubmenuButton
+                        label="Eventos"
+                        icon="fas fa-calendar-plus"
+                        active={currentView === 'church-events'}
+                        onClick={() => setCurrentView('church-events')}
+                      />
+                    )}
+                    {canManageVisitors && (
+                      <RegistrySubmenuButton
+                        label="Visitantes"
+                        icon="fas fa-user-group"
+                        active={currentView === 'visitors'}
+                        onClick={() => setCurrentView('visitors')}
+                      />
+                    )}
+                    {canManageConverts && (
+                      <RegistrySubmenuButton
+                        label="Novos Convertidos"
+                        icon="fas fa-seedling"
+                        active={currentView === 'converts'}
+                        onClick={() => setCurrentView('converts')}
+                      />
+                    )}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
           {(userMinisterios.length > 0 || isGlobalAdmin) && (
             <button
               type="button"
               onClick={onOpenMinistry}
-              className="flex min-w-0 flex-1 max-w-none flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 text-slate-400 transition-all hover:text-slate-600 dark:hover:text-slate-200 lg:flex-none lg:flex-row lg:justify-start lg:gap-4 lg:rounded-2xl lg:px-5 lg:py-4 lg:hover:bg-slate-50 lg:dark:hover:bg-slate-800/50"
+              className="flex min-w-0 flex-1 max-w-none flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 text-app-muted transition-all hover:text-app lg:flex-none lg:flex-row lg:justify-start lg:gap-4 lg:rounded-2xl lg:px-5 lg:py-4 lg:hover:bg-app-surface-strong"
             >
               <i className="fas fa-layer-group w-5 text-center text-base lg:w-6 lg:text-lg" />
               <span className="w-full max-w-full whitespace-normal break-words text-center text-[8px] font-bold uppercase leading-[1.05] tracking-normal lg:w-auto lg:break-normal lg:text-sm lg:capitalize">
@@ -265,12 +411,12 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
           )}
         </nav>
 
-        <div className="mt-auto hidden flex-col gap-3 border-t border-slate-50 px-4 pb-6 pt-4 dark:border-slate-800 lg:flex">
-          <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/30">
+        <div className="mt-auto hidden flex-col gap-3 border-t border-app px-4 pb-6 pt-4 lg:flex">
+          <div className="app-panel flex flex-col overflow-hidden rounded-2xl">
             <button
               type="button"
               onClick={() => setIsThemeExpanded(!isThemeExpanded)}
-              className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/50"
+              className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-app-surface-muted"
             >
               <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Temas</span>
               <i className={`fas fa-chevron-up text-[9px] text-slate-400 transition-transform ${isThemeExpanded ? 'rotate-180' : ''}`} />
@@ -296,7 +442,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
             <button
               type="button"
               onClick={() => setIsProfileOpen(true)}
-              className="group flex flex-1 cursor-pointer items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 text-left transition-all hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/30 dark:hover:bg-slate-800"
+              className="app-panel group flex flex-1 cursor-pointer items-center gap-3 rounded-2xl px-3 py-3 text-left transition-all hover:bg-app-surface-muted"
             >
               <img
                 src={profilePhoto || buildLocalAvatar(currentMember?.nome || 'Usuario')}
@@ -323,7 +469,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
           <button
             type="button"
             onClick={onToggleTheme}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-100 bg-white text-[9px] font-black uppercase tracking-widest text-slate-400 transition-all hover:text-brand dark:border-slate-700 dark:bg-slate-800"
+            className="app-btn-muted flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all hover:text-brand"
           >
             <i className={isDarkMode ? 'fas fa-sun text-brand-gold' : 'fas fa-moon text-brand'} />
             {isDarkMode ? 'Modo Claro' : 'Modo Escuro'}
@@ -331,13 +477,17 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
         </div>
       </aside>
 
-      <main className="min-h-screen bg-slate-50 pb-28 pt-16 dark:bg-slate-800 sm:pb-32 lg:ml-[280px] lg:pb-0 lg:pt-0">
+      <main className="min-h-screen bg-transparent pb-28 pt-16 sm:pb-32 lg:ml-[280px] lg:pb-0 lg:pt-0">
         <div className="container mx-auto px-3 py-5 sm:px-6 lg:px-8">
           {currentView === 'dashboard' && <ChurchDashboard currentMember={(currentMemberRecord || currentMember) as SupabaseMembro | null} />}
           {currentView === 'agenda' && <ChurchAgenda />}
           {currentView === 'members' && <ChurchMembers />}
+          {currentView === 'reports' && <ChurchReports />}
+          {currentView === 'church-events' && <ChurchAdmin currentUserId={currentMember?.id || null} isAdmin={isGlobalAdmin} mode="events" />}
+          {currentView === 'visitors' && <ChurchRegistryView mode="visitors" currentUserId={currentMember?.id || null} />}
+          {currentView === 'converts' && <ChurchRegistryView mode="converts" currentUserId={currentMember?.id || null} />}
           {currentView === 'site' && <SiteEditor />}
-          {currentView === 'admin' && <ChurchAdmin currentUserId={currentMember?.id || null} isAdmin={isGlobalAdmin} />}
+          {currentView === 'admin' && <ChurchAdmin currentUserId={currentMember?.id || null} isAdmin={isGlobalAdmin} mode="admin" />}
         </div>
       </main>
 
@@ -345,7 +495,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
         <div className="fixed inset-0 z-[700] overflow-y-auto px-3 py-4 pb-24 sm:p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsProfileOpen(false)} />
           <div className="flex min-h-full items-start justify-center sm:items-center">
-            <div className="relative mx-auto mt-2 max-h-[calc(100dvh-7rem)] w-full max-w-md overflow-y-auto rounded-[2rem] border border-slate-100 bg-white p-5 shadow-2xl animate-fade-in no-scrollbar dark:border-slate-800 dark:bg-slate-900 sm:max-h-[90vh] sm:rounded-[2.5rem] sm:p-6 lg:p-8">
+            <div className="app-card relative mx-auto mt-2 max-h-[calc(100dvh-7rem)] w-full max-w-md overflow-y-auto rounded-[2rem] p-5 shadow-2xl animate-fade-in no-scrollbar sm:max-h-[90vh] sm:rounded-[2.5rem] sm:p-6 lg:p-8">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-lg font-black uppercase tracking-tighter text-slate-800 dark:text-white">Configuracoes</h2>
                 <button type="button" onClick={() => setIsProfileOpen(false)} className="text-slate-400 transition-colors hover:text-red-500">
@@ -355,7 +505,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
 
               <div className="mb-6 flex flex-col items-center">
                 <div className="relative mb-2">
-                  <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-slate-50 bg-slate-100 shadow-xl dark:border-slate-800 dark:bg-slate-800">
+                  <div className="app-panel flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 shadow-xl">
                     <img
                       src={profilePhoto || buildLocalAvatar(profileName || 'Usuario')}
                       alt={profileName || 'Usuario'}
@@ -381,7 +531,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
                   <input
                     value={profileName}
                     onChange={(event) => setProfileName(event.target.value)}
-                    className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-800"
+                    className="app-input-strong w-full rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand"
                   />
                 </label>
                 <label className="block">
@@ -390,7 +540,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
                     type="email"
                     value={profileEmail}
                     onChange={(event) => setProfileEmail(event.target.value)}
-                    className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-800"
+                    className="app-input-strong w-full rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand"
                   />
                 </label>
 
@@ -412,7 +562,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
                   </button>
                 </div>
 
-                <div className="space-y-4 border-t border-slate-100 pt-4 dark:border-slate-800 lg:hidden">
+                <div className="space-y-4 border-t border-app pt-4 lg:hidden">
                   <label className="ml-1 block text-[8px] font-black uppercase tracking-widest text-slate-400">Temas</label>
                   <div className="flex justify-between">
                     {themeColors.map((color) => (
@@ -430,7 +580,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
                   <button
                     type="button"
                     onClick={onToggleTheme}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-100 bg-slate-50 py-3 text-[8px] font-black uppercase tracking-widest text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                    className="app-btn-muted flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[8px] font-black uppercase tracking-widest"
                   >
                     <i className={`fas ${isDarkMode ? 'fa-sun text-brand-gold' : 'fa-moon text-brand'}`} />
                     Alternar Modo
@@ -450,7 +600,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsProfileOpen(false)}
-                  className="flex-1 rounded-xl bg-slate-100 py-3.5 text-[9px] font-black uppercase tracking-widest text-slate-500 dark:bg-slate-800"
+                  className="app-btn-muted flex-1 rounded-xl py-3.5 text-[9px] font-black uppercase tracking-widest"
                 >
                   Fechar
                 </button>
@@ -472,7 +622,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
         <div className="fixed inset-0 z-[760] overflow-y-auto px-3 py-4 pb-24 sm:p-4 lg:p-8">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsPasswordOpen(false)} />
           <div className="flex min-h-full items-start justify-center sm:items-center">
-            <div className="relative mx-auto mt-2 max-h-[calc(100dvh-7rem)] w-full max-w-md overflow-y-auto rounded-[2rem] border border-slate-100 bg-white p-5 shadow-2xl animate-fade-in no-scrollbar dark:border-slate-800 dark:bg-slate-900 sm:max-h-[90vh] sm:rounded-[2.5rem] sm:p-6 lg:p-8">
+            <div className="app-card relative mx-auto mt-2 max-h-[calc(100dvh-7rem)] w-full max-w-md overflow-y-auto rounded-[2rem] p-5 shadow-2xl animate-fade-in no-scrollbar sm:max-h-[90vh] sm:rounded-[2.5rem] sm:p-6 lg:p-8">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-lg font-black uppercase tracking-tighter text-slate-800 dark:text-white">Alterar Senha</h2>
                 <button type="button" onClick={() => setIsPasswordOpen(false)} className="text-slate-400 transition-colors hover:text-red-500">
@@ -487,7 +637,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
                     value={newPassword}
                     onChange={(event) => setNewPassword(event.target.value)}
                     placeholder="Digite a nova senha"
-                    className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-800"
+                    className="app-input-strong w-full rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand"
                   />
                 </label>
                 <label className="block">
@@ -497,7 +647,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
                     value={confirmPassword}
                     onChange={(event) => setConfirmPassword(event.target.value)}
                     placeholder="Confirme a nova senha"
-                    className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-800"
+                    className="app-input-strong w-full rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand"
                   />
                 </label>
               </div>
@@ -506,7 +656,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
                   type="button"
                   onClick={() => setIsPasswordOpen(false)}
                   disabled={isSavingProfile}
-                  className="flex-1 rounded-xl border border-slate-200 bg-slate-100 py-3.5 text-[9px] font-black uppercase tracking-widest text-slate-600 transition-all hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  className="app-btn-muted flex-1 rounded-xl py-3.5 text-[9px] font-black uppercase tracking-widest transition-all disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Cancelar
                 </button>
@@ -526,5 +676,31 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
     </div>
   );
 };
+
+const RegistrySubmenuButton = ({
+  label,
+  icon,
+  active,
+  onClick
+}: {
+  label: string;
+  icon: string;
+  active: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left transition-all lg:rounded-2xl lg:px-5 lg:py-3 ${
+      active ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-app-muted hover:bg-app-surface-strong hover:text-app'
+    }`}
+  >
+    <span className="flex min-w-0 items-center gap-3">
+      <i className={`${icon} w-4 text-center text-sm`} />
+      <span className="truncate text-[10px] font-black uppercase tracking-widest lg:text-[11px]">{label}</span>
+    </span>
+    {active && <i className="fas fa-check text-[10px]" />}
+  </button>
+);
 
 export default ChurchShell;

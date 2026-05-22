@@ -58,7 +58,7 @@ const ChurchMembers: React.FC = () => {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand">Membros</p>
-          <h1 className="mt-2 text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+          <h1 className="text-app mt-2 text-xl font-black tracking-tight sm:text-3xl">
             Cadastro da igreja
           </h1>
         </div>
@@ -66,18 +66,18 @@ const ChurchMembers: React.FC = () => {
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
           placeholder="Buscar membro"
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 dark:border-slate-700 dark:bg-slate-900 dark:text-white sm:max-w-xs"
+          className="bg-app-surface border-app text-app w-full rounded-xl border px-4 py-3 text-sm font-bold outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 sm:max-w-xs"
         />
       </div>
 
       {loading ? (
-        <div className="flex h-56 items-center justify-center rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+        <div className="bg-app-surface border-app flex h-56 items-center justify-center rounded-2xl border">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent" />
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-6">
           {members.length === 0 ? (
-            <div className="col-span-2 rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 lg:col-span-6">
+            <div className="bg-app-surface border-app text-app-muted col-span-2 rounded-2xl border border-dashed p-8 text-center text-sm font-bold lg:col-span-6">
               Nenhum membro disponivel para visualizacao.
             </div>
           ) : (
@@ -95,7 +95,7 @@ const ChurchMembers: React.FC = () => {
                   key={member.id}
                   type="button"
                   onClick={() => setSelectedMember(member)}
-                  className="flex min-w-0 flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-center transition hover:border-brand/40 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-4"
+                  className="bg-app-surface border-app flex min-w-0 flex-col items-center gap-2 rounded-2xl border p-3 text-center transition hover:border-brand/40 hover:shadow-md sm:p-4"
                 >
                   <ImageCache
                     src={photo}
@@ -105,7 +105,7 @@ const ChurchMembers: React.FC = () => {
                     disableCompression
                   />
                   <div className="min-w-0 max-w-full">
-                    <p className="truncate text-xs font-black text-slate-900 dark:text-white sm:text-sm">{name}</p>
+                    <p className="text-app truncate text-xs font-black sm:text-sm">{name}</p>
                     <p className="mt-1 truncate text-[10px] font-black uppercase tracking-widest text-brand">
                       {publicRole}
                     </p>
@@ -124,7 +124,7 @@ const ChurchMembers: React.FC = () => {
 
       {selectedMember && (
         <div className="fixed inset-0 z-[700] overflow-y-auto bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
-          <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="bg-app-surface border-app mx-auto max-w-2xl rounded-2xl border p-5 shadow-2xl">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
                 <ImageCache
@@ -139,7 +139,7 @@ const ChurchMembers: React.FC = () => {
                   disableCompression
                 />
                 <div>
-                  <h2 className="text-xl font-black text-slate-900 dark:text-white">
+                  <h2 className="text-app text-xl font-black">
                     {getDisplayName(selectedMember)}
                   </h2>
                   <p className="text-[10px] font-black uppercase tracking-widest text-brand">
@@ -179,9 +179,9 @@ const ChurchMembers: React.FC = () => {
 };
 
 const Info = ({ label, value }: { label: string; value?: string | null }) => (
-  <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
-    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{label}</p>
-    <p className="mt-1 font-bold text-slate-800 dark:text-slate-100">{value || '-'}</p>
+  <div className="bg-app-surface-muted rounded-xl p-3">
+    <p className="text-app-muted text-[9px] font-black uppercase tracking-widest">{label}</p>
+    <p className="text-app mt-1 font-bold">{value || '-'}</p>
   </div>
 );
 

@@ -234,7 +234,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
         <div className="absolute top-[-10%] right-[-10%] w-[300px] h-[300px] bg-brand/5 rounded-full blur-[80px]"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-[300px] h-[300px] bg-brand-gold/5 rounded-full blur-[80px]"></div>
 
-        <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl border border-slate-100 dark:border-slate-800 p-10 lg:p-14 animate-fade-in text-center">
+      <div className="app-card w-full max-w-md rounded-[3rem] shadow-2xl p-10 lg:p-14 animate-fade-in text-center">
           <div className="mb-8">
             <div className="w-20 h-20 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
               <i className="fas fa-check text-green-500 text-3xl"></i>
@@ -245,7 +245,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
             <p className="text-slate-400 dark:text-slate-500 font-bold text-[10px] uppercase tracking-widest mb-6">
               Sua solicitação foi enviada para aprovação
             </p>
-            <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-6 mb-6">
+            <div className="app-panel rounded-2xl p-6 mb-6">
               <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                 Aguarde a aprovação de um administrador para acessar o sistema. Você receberá um email quando sua conta for ativada.
               </p>
@@ -269,12 +269,12 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
       <div className="absolute top-[-10%] right-[-10%] w-[300px] h-[300px] bg-brand/5 rounded-full blur-[80px]"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-[300px] h-[300px] bg-brand-gold/5 rounded-full blur-[80px]"></div>
 
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl border border-slate-100 dark:border-slate-800 p-10 lg:p-14 animate-fade-in">
+      <div className="app-card w-full max-w-md rounded-[3rem] shadow-2xl p-10 lg:p-14 animate-fade-in">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <button
             onClick={onBack}
-            className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+            className="app-panel w-10 h-10 rounded-full flex items-center justify-center text-app-muted hover:text-app transition-colors"
           >
             <i className="fas fa-arrow-left"></i>
           </button>
@@ -300,13 +300,13 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all ${
                 s <= step 
                   ? 'bg-brand text-white' 
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                  : 'app-panel text-app-muted'
               }`}>
                 {s < step ? <i className="fas fa-check"></i> : s}
               </div>
               {s < 3 && (
                 <div className={`w-8 h-0.5 transition-all ${
-                  s < step ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-800'
+                  s < step ? 'bg-brand' : 'bg-app-surface-strong'
                 }`}></div>
               )}
             </div>
@@ -340,7 +340,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
                     value={formData.nome}
                     onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                     placeholder="Seu nome completo"
-                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl py-4 pl-14 pr-6 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-brand/10 focus:border-brand transition-all font-medium"
+                    className="app-input w-full rounded-2xl py-4 pl-14 pr-6 text-sm outline-none focus:ring-2 focus:ring-brand/10 focus:border-brand transition-all font-medium"
                   />
                 </div>
               </div>
@@ -357,7 +357,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="seu@email.com"
-                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl py-4 pl-14 pr-6 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-brand/10 focus:border-brand transition-all font-medium"
+                    className="app-input w-full rounded-2xl py-4 pl-14 pr-6 text-sm outline-none focus:ring-2 focus:ring-brand/10 focus:border-brand transition-all font-medium"
                   />
                 </div>
               </div>
@@ -373,7 +373,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
                     value={formData.telefone}
                     onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
                     placeholder="(00) 00000-0000"
-                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl py-4 pl-14 pr-6 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-brand/10 focus:border-brand transition-all font-medium"
+                    className="app-input w-full rounded-2xl py-4 pl-14 pr-6 text-sm outline-none focus:ring-2 focus:ring-brand/10 focus:border-brand transition-all font-medium"
                   />
                 </div>
               </div>
@@ -387,7 +387,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
                     className={`py-3 rounded-xl border-2 transition-all font-black text-[10px] uppercase tracking-widest ${
                       formData.genero === 'Homem'
                         ? 'border-brand bg-brand text-white'
-                        : 'border-slate-100 dark:border-slate-700 text-slate-400 hover:border-brand/40'
+                        : 'border-app text-app-muted hover:border-brand/40'
                     }`}
                   >
                     Masculino
@@ -398,7 +398,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
                     className={`py-3 rounded-xl border-2 transition-all font-black text-[10px] uppercase tracking-widest ${
                       formData.genero === 'Mulher'
                         ? 'border-brand bg-brand text-white'
-                        : 'border-slate-100 dark:border-slate-700 text-slate-400 hover:border-brand/40'
+                        : 'border-app text-app-muted hover:border-brand/40'
                     }`}
                   >
                     Feminino
@@ -418,7 +418,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
                     value={formData.senha}
                     onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
                     placeholder="••••••••"
-                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl py-4 pl-14 pr-14 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-brand/10 focus:border-brand transition-all font-medium"
+                    className="app-input w-full rounded-2xl py-4 pl-14 pr-14 text-sm outline-none focus:ring-2 focus:ring-brand/10 focus:border-brand transition-all font-medium"
                   />
                   <button
                     type="button"
@@ -442,7 +442,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
                     value={formData.confirmarSenha}
                     onChange={(e) => setFormData({ ...formData, confirmarSenha: e.target.value })}
                     placeholder="••••••••"
-                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl py-4 pl-14 pr-14 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-brand/10 focus:border-brand transition-all font-medium"
+                    className="app-input w-full rounded-2xl py-4 pl-14 pr-14 text-sm outline-none focus:ring-2 focus:ring-brand/10 focus:border-brand transition-all font-medium"
                   />
                   <button
                     type="button"
@@ -464,7 +464,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
                   Foto de Perfil (opcional)
                 </label>
                 <div className="flex flex-col items-center">
-                  <div className="w-32 h-32 rounded-full bg-slate-100 dark:bg-slate-800 border-4 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center mb-4 overflow-hidden">
+                  <div className="app-panel w-32 h-32 rounded-full border-4 border-dashed border-app flex items-center justify-center mb-4 overflow-hidden">
                     {formData.foto ? (
                       <img 
                         src={URL.createObjectURL(formData.foto)} 
@@ -508,7 +508,7 @@ const CreateProfileScreen: React.FC<CreateProfileScreenProps> = ({ onBack, onSuc
               <button
                 type="button"
                 onClick={prevStep}
-                className="flex-1 py-5 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-300 rounded-2xl font-black uppercase tracking-widest text-[12px] hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                className="app-btn-muted flex-1 py-5 rounded-2xl font-black uppercase tracking-widest text-[12px] transition-all"
               >
                 Voltar
               </button>

@@ -352,7 +352,11 @@ const DashboardView: React.FC = () => {
     }
 
     const isDark = document.documentElement.classList.contains('dark');
-    const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--brand-primary').trim() || '#3b82f6';
+    const computedStyles = getComputedStyle(document.documentElement);
+    const primaryColor =
+      computedStyles.getPropertyValue('--brand-primary').trim() ||
+      computedStyles.getPropertyValue('--app-brand-primary').trim() ||
+      '#3b82f6';
 
     if (chartInstance.current) {
       chartInstance.current.destroy();
@@ -360,17 +364,43 @@ const DashboardView: React.FC = () => {
     }
 
     // Função helper para converter hexa em rgba
-    const hexToRgba = (hex: string, alpha: number) => {
-      let r = 0, g = 0, b = 0;
-      if (hex.startsWith('#')) {
-        r = parseInt(hex.slice(1, 3), 16);
-        g = parseInt(hex.slice(3, 5), 16);
-        b = parseInt(hex.slice(5, 7), 16);
-      } else {
-        return `rgba(59, 130, 246, ${alpha})`;
+    const parseColor = (value: string) => {
+      const normalized = value.trim();
+
+      if (normalized.startsWith('#') && normalized.length >= 7) {
+        return {
+          r: parseInt(normalized.slice(1, 3), 16),
+          g: parseInt(normalized.slice(3, 5), 16),
+          b: parseInt(normalized.slice(5, 7), 16)
+        };
       }
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+
+      const rgbMatch = normalized.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+      if (rgbMatch) {
+        return {
+          r: Number(rgbMatch[1]),
+          g: Number(rgbMatch[2]),
+          b: Number(rgbMatch[3])
+        };
+      }
+
+      return { r: 59, g: 130, b: 246 };
     };
+
+    const mixColor = (
+      base: { r: number; g: number; b: number },
+      target: { r: number; g: number; b: number },
+      amount: number
+    ) => ({
+      r: Math.round(base.r + (target.r - base.r) * amount),
+      g: Math.round(base.g + (target.g - base.g) * amount),
+      b: Math.round(base.b + (target.b - base.b) * amount)
+    });
+
+    const toRgba = (color: { r: number; g: number; b: number }, alpha: number) =>
+      `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
+
+    const hexToRgba = (value: string, alpha: number) => toRgba(parseColor(value), alpha);
 
     // Função para ajustar cor (HSL)
     const adjustColor = (hex: string, degrees: number): string => {
@@ -498,6 +528,24 @@ const DashboardView: React.FC = () => {
       return baseColors[index % baseColors.length];
     });
 
+    const themeRgb = parseColor(primaryColor);
+    const monochromeScale = [
+      mixColor(themeRgb, { r: 255, g: 255, b: 255 }, 0.18),
+      mixColor(themeRgb, { r: 255, g: 255, b: 255 }, 0.08),
+      themeRgb,
+      mixColor(themeRgb, { r: 0, g: 0, b: 0 }, 0.08),
+      mixColor(themeRgb, { r: 0, g: 0, b: 0 }, 0.16),
+      mixColor(themeRgb, { r: 0, g: 0, b: 0 }, 0.24)
+    ];
+
+    const themeBackgroundColors = frequenciaMembros.map((_, index) =>
+      toRgba(monochromeScale[index % monochromeScale.length], 0.82)
+    );
+
+    const themeBorderColors = frequenciaMembros.map((_, index) =>
+      toRgba(monochromeScale[index % monochromeScale.length], 1)
+    );
+
     chartInstance.current = new window.Chart(escalaChartRef.current, {
       type: 'bar',
       data: {
@@ -505,8 +553,8 @@ const DashboardView: React.FC = () => {
         datasets: [{
           label: 'Cultos Participados',
           data: frequenciaMembros.map(m => m.quantidade),
-          backgroundColor: backgroundColors,
-          borderColor: borderColors,
+          backgroundColor: themeBackgroundColors,
+          borderColor: themeBorderColors,
           borderWidth: 2,
           borderRadius: 8,
           maxBarThickness: 60,
@@ -689,12 +737,12 @@ const DashboardView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 overflow-hidden">
+    <div className="min-h-screen overflow-hidden bg-gradient-to-br from-sky-50 via-white to-cyan-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Header Hero Section */}
-      <div className="relative overflow-hidden bg-brand dark:bg-brand">
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-[100px]"></div>
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-brand/20 rounded-full blur-[100px]"></div>
+      <div className="relative overflow-hidden bg-gradient-to-r from-brand via-brand to-brand-accent/90 dark:from-slate-950 dark:via-brand/90 dark:to-slate-900">
+        <div className="absolute inset-0 bg-slate-950/12 dark:bg-black/28"></div>
+        <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/12 blur-[110px]"></div>
+        <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-cyan-200/20 blur-[110px] dark:bg-brand/25"></div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8">
           <div className="text-center">
@@ -711,11 +759,11 @@ const DashboardView: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-2 sm:-mt-4">
         <div className="mb-6">
-          <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-xl border border-white/10 dark:border-slate-700 p-4">
+          <div className="app-card rounded-[1.75rem] border border-sky-100/90 bg-white/94 p-4 shadow-[0_28px_70px_-42px_rgba(14,116,144,0.28)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/88">
             <div className="flex flex-col gap-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-brand text-white rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-accent text-white shadow-lg shadow-brand/25">
                     <i className="fas fa-calendar-week text-lg"></i>
                   </div>
                   <div>
@@ -726,7 +774,7 @@ const DashboardView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="inline-flex items-center rounded-full bg-brand/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-brand">
+                <div className="inline-flex items-center rounded-full bg-sky-100/90 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-sky-700 dark:bg-brand/15 dark:text-brand-accent">
                   {loading ? '...' : `${escalaSemana?.items.length || 0} escala${(escalaSemana?.items.length || 0) === 1 ? '' : 's'}`}
                 </div>
               </div>
@@ -736,7 +784,7 @@ const DashboardView: React.FC = () => {
                   {[0, 1].map((item) => (
                     <div
                       key={item}
-                      className="h-24 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/40 animate-pulse"
+                      className="h-24 rounded-[1.4rem] border border-sky-100 bg-white/88 animate-pulse dark:border-slate-700 dark:bg-slate-900/55"
                     />
                   ))}
                 </div>
@@ -746,7 +794,7 @@ const DashboardView: React.FC = () => {
                     <div
                       key={item.idCulto}
                       onClick={() => openWeekEventModal(item.idCulto)}
-                      className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/40 p-4 cursor-pointer transition-all hover:border-brand/40 hover:bg-brand/5 dark:hover:bg-brand/10"
+                      className="cursor-pointer rounded-[1.4rem] border border-sky-100 bg-white/92 p-4 transition-all hover:border-brand/35 hover:bg-white hover:shadow-lg hover:shadow-brand/10 dark:border-slate-700 dark:bg-slate-900/55 dark:hover:bg-brand/10"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
@@ -758,7 +806,7 @@ const DashboardView: React.FC = () => {
                           </h3>
                         </div>
                         {item.horario && (
-                          <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-300">
+                          <span className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-bold text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-300">
                             {formatHour(item.horario)}
                           </span>
                         )}
@@ -769,7 +817,7 @@ const DashboardView: React.FC = () => {
                           item.funcoes.map((funcao) => (
                             <span
                               key={`${item.idCulto}-${funcao}`}
-                              className="px-2.5 py-1 bg-brand/10 text-brand text-xs font-semibold rounded-lg"
+                              className="rounded-xl bg-sky-100/90 px-2.5 py-1 text-xs font-semibold text-sky-700 dark:bg-brand/15 dark:text-brand-accent"
                             >
                               {funcao}
                             </span>
@@ -782,7 +830,7 @@ const DashboardView: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/30 px-4 py-5 text-sm text-slate-500 dark:text-slate-400">
+                <div className="rounded-[1.4rem] border border-dashed border-sky-100 bg-white/88 px-4 py-5 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/55 dark:text-slate-400">
                   Nenhuma escala encontrada nesta semana para o ministerio atual.
                 </div>
               )}
@@ -792,11 +840,11 @@ const DashboardView: React.FC = () => {
         <div className="hidden">
         {/* Próximo Culto Card - Compacto em Uma Linha */}
         <div className="mb-6">
-          <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-xl border border-white/10 dark:border-slate-700 p-4">
+          <div className="app-card rounded-[1.75rem] border border-sky-100/90 bg-white/94 p-4 shadow-[0_28px_70px_-42px_rgba(14,116,144,0.28)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/88">
             <div className="flex flex-col gap-5">
               {/* Ícone e Título */}
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-brand text-white rounded-xl flex items-center justify-center shadow-lg">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-accent text-white shadow-lg shadow-brand/25">
                   <i className="fas fa-calendar-week text-lg"></i>
                 </div>
                 <div>
@@ -816,12 +864,12 @@ const DashboardView: React.FC = () => {
                   ) : proximaEscalaData?.funcoes.length ? (
                     <div className="flex gap-1">
                       {proximaEscalaData.funcoes.slice(0, 2).map((funcao, index) => (
-                        <span key={index} className="px-2 py-1 bg-brand/10 text-brand text-xs font-semibold rounded-lg">
+                        <span key={index} className="rounded-xl bg-sky-100/90 px-2 py-1 text-xs font-semibold text-sky-700 dark:bg-brand/15 dark:text-brand-accent">
                           {funcao}
                         </span>
                       ))}
                       {proximaEscalaData.funcoes.length > 2 && (
-                        <span className="px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 text-xs font-semibold rounded-lg">
+                        <span className="rounded-xl bg-sky-50 px-2 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-400">
                           +{proximaEscalaData.funcoes.length - 2}
                         </span>
                       )}
@@ -838,9 +886,9 @@ const DashboardView: React.FC = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-5 sm:mb-6">
-          <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 group aspect-square sm:aspect-auto">
+          <div className="app-card group aspect-square rounded-[1.35rem] border border-sky-100/90 bg-white/94 p-2.5 backdrop-blur-xl transition-all duration-300 hover:shadow-xl hover:shadow-brand/10 sm:aspect-auto sm:rounded-[1.65rem] sm:p-4 dark:border-white/10 dark:bg-slate-900/88">
             <div className="flex h-full flex-col items-center justify-center text-center gap-2 sm:flex-row sm:items-center sm:justify-between sm:text-left sm:gap-0">
-              <div className="order-1 w-8 h-8 sm:order-2 sm:w-12 sm:h-12 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg sm:rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="order-1 flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 transition-transform group-hover:scale-110 dark:bg-emerald-900/30 dark:text-emerald-400 sm:order-2 sm:h-12 sm:w-12 sm:rounded-2xl">
                 <i className="fas fa-church text-sm sm:text-lg"></i>
               </div>
               <div className="order-2 sm:order-1">
@@ -852,9 +900,9 @@ const DashboardView: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 group aspect-square sm:aspect-auto">
+          <div className="app-card group aspect-square rounded-[1.35rem] border border-sky-100/90 bg-white/94 p-2.5 backdrop-blur-xl transition-all duration-300 hover:shadow-xl hover:shadow-brand/10 sm:aspect-auto sm:rounded-[1.65rem] sm:p-4 dark:border-white/10 dark:bg-slate-900/88">
             <div className="flex h-full flex-col items-center justify-center text-center gap-2 sm:flex-row sm:items-center sm:justify-between sm:text-left sm:gap-0">
-              <div className="order-1 w-8 h-8 sm:order-2 sm:w-12 sm:h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg sm:rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="order-1 flex h-8 w-8 items-center justify-center rounded-xl bg-sky-100 text-sky-600 transition-transform group-hover:scale-110 dark:bg-blue-900/30 dark:text-blue-400 sm:order-2 sm:h-12 sm:w-12 sm:rounded-2xl">
                 <i className="fas fa-users text-sm sm:text-lg"></i>
               </div>
               <div className="order-2 sm:order-1">
@@ -866,9 +914,9 @@ const DashboardView: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 group aspect-square sm:aspect-auto">
+          <div className="app-card group aspect-square rounded-[1.35rem] border border-sky-100/90 bg-white/94 p-2.5 backdrop-blur-xl transition-all duration-300 hover:shadow-xl hover:shadow-brand/10 sm:aspect-auto sm:rounded-[1.65rem] sm:p-4 dark:border-white/10 dark:bg-slate-900/88">
             <div className="flex h-full flex-col items-center justify-center text-center gap-2 sm:flex-row sm:items-center sm:justify-between sm:text-left sm:gap-0">
-              <div className="order-1 w-8 h-8 sm:order-2 sm:w-12 sm:h-12 bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 rounded-lg sm:rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="order-1 flex h-8 w-8 items-center justify-center rounded-xl bg-rose-100 text-rose-600 transition-transform group-hover:scale-110 dark:bg-pink-900/30 dark:text-pink-400 sm:order-2 sm:h-12 sm:w-12 sm:rounded-2xl">
                 <i className="fas fa-birthday-cake text-sm sm:text-lg"></i>
               </div>
               <div className="order-2 sm:order-1">
@@ -886,10 +934,10 @@ const DashboardView: React.FC = () => {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Gráfico de Frequência - Maior e Principal */}
           <div className="lg:col-span-2">
-            <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-5 sm:p-6 min-h-[360px] sm:h-[400px]">
+            <div className="app-card min-h-[360px] rounded-[1.8rem] border border-sky-100/90 bg-white/94 p-5 shadow-[0_28px_70px_-42px_rgba(14,116,144,0.28)] backdrop-blur-xl sm:h-[400px] sm:p-6 dark:border-white/10 dark:bg-slate-900/88">
               <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-2 h-6 bg-brand rounded-full"></div>
+                  <div className="h-6 w-2 rounded-full bg-gradient-to-b from-brand to-brand-accent"></div>
                   <div>
                     <h3 className="text-lg font-black text-slate-800 dark:text-white">Frequência por Membro</h3>
                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
@@ -923,7 +971,7 @@ const DashboardView: React.FC = () => {
                             </span>
                             <span className="shrink-0 font-black text-brand">{member.quantidade}</span>
                           </div>
-                          <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
+                          <div className="h-2 overflow-hidden rounded-full bg-sky-100 dark:bg-slate-700">
                             <div
                               className="h-full rounded-full bg-brand"
                               style={{ width: `${Math.max((member.quantidade / maxFrequenciaQuantidade) * 100, 8)}%` }}
@@ -948,18 +996,18 @@ const DashboardView: React.FC = () => {
 
           {/* Card Devocional */}
           <div className="lg:col-span-1">
-            <div className="bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 rounded-2xl shadow-xl p-5 sm:p-6 min-h-[380px] sm:h-[420px] relative overflow-hidden group border border-gray-100 dark:border-gray-700">
+            <div className="app-card group relative min-h-[380px] overflow-hidden rounded-[1.8rem] border border-sky-100/90 bg-white/94 p-5 shadow-[0_28px_70px_-42px_rgba(14,116,144,0.28)] backdrop-blur-xl sm:h-[420px] sm:p-6 dark:border-white/10 dark:bg-slate-900/88">
               {/* Efeitos de Fundo - Modo Claro (Modelo 5) / Modo Escuro (Modelo 4) */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-brand/20 dark:bg-brand/30 rounded-full blur-3xl"></div>
-              <div className="absolute bottom-0 left-0 w-40 h-40 bg-brand-accent/20 dark:bg-brand-accent/30 rounded-full blur-3xl"></div>
+              <div className="absolute top-0 right-0 h-32 w-32 rounded-full bg-sky-200/45 blur-3xl dark:bg-brand/30"></div>
+              <div className="absolute bottom-0 left-0 h-40 w-40 rounded-full bg-brand-accent/25 blur-3xl dark:bg-brand-accent/30"></div>
               
               {/* Gradiente adicional para modo escuro */}
-              <div className="absolute inset-0 bg-gradient-to-br from-brand/5 dark:from-brand/10 via-transparent to-brand-accent/3 dark:to-brand-accent/5 opacity-60 dark:opacity-80"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-sky-100/35 via-transparent to-brand-accent/10 opacity-80 dark:from-brand/10 dark:to-brand-accent/5"></div>
               
               <div className="relative h-full flex flex-col">
                 <div className="text-center">
                   {/* Ícone - Adapta entre Modelo 5 (claro) e Modelo 4 (escuro) */}
-                  <div className="w-16 h-16 bg-white/80 dark:bg-gray-800 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4 border border-brand/20 dark:border-brand/30 shadow-lg dark:shadow-xl">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[1.4rem] border border-sky-100 bg-white shadow-lg backdrop-blur dark:border-brand/30 dark:bg-gray-800">
                     <i className="fas fa-dove text-2xl text-[var(--brand-primary)] dark:text-[var(--brand-accent)]"></i>
                   </div>
                   
@@ -975,7 +1023,7 @@ const DashboardView: React.FC = () => {
                       <div className="absolute -inset-6 bg-brand/5 dark:bg-brand/10 rounded-2xl blur-2xl opacity-50 dark:opacity-70"></div>
                       
                       {/* Container do versículo - mais translúcido no claro, mais opaco no escuro */}
-                      <div className="relative bg-white/60 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 border border-brand/10 dark:border-brand/20 shadow-lg dark:shadow-xl">
+                      <div className="relative rounded-[1.5rem] border border-sky-100 bg-white/96 p-6 shadow-lg backdrop-blur-sm dark:border-brand/20 dark:bg-gray-800/88 dark:shadow-xl">
                         <p className="relative text-xl text-gray-700 dark:text-gray-200 font-medium leading-relaxed italic font-serif text-center transition-all duration-300" 
                            style={{
                              fontSize: currentDevocional.length > 150 ? '0.875rem' : 
@@ -1017,7 +1065,7 @@ const DashboardView: React.FC = () => {
       {/* Modal Devocional */}
       {isDevocionalModalOpen && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-md p-8 shadow-2xl border border-slate-200 dark:border-slate-700">
+          <div className="app-card w-full max-w-md rounded-3xl border p-8 backdrop-blur-xl">
             <h3 className="text-xl font-black text-slate-800 dark:text-white mb-6">
               Atualizar Versículo
             </h3>
@@ -1048,7 +1096,7 @@ const DashboardView: React.FC = () => {
       {selectedWeekEvents && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 lg:pl-[312px] antialiased">
           <div className="absolute inset-0 bg-slate-900/80" onClick={() => setSelectedWeekEvents(null)}></div>
-          <div className="relative w-full max-w-4xl max-h-[85vh] lg:max-h-[90vh] bg-[#f4f7fa] dark:bg-[#0b1120] rounded-[2rem] lg:rounded-[3rem] shadow-2xl overflow-y-auto custom-scrollbar border border-slate-100 dark:border-slate-800">
+          <div className="bg-app-shell border-app relative max-h-[85vh] w-full max-w-4xl overflow-y-auto rounded-[2rem] border shadow-2xl custom-scrollbar lg:max-h-[90vh] lg:rounded-[3rem]">
             <div className="p-6 lg:p-10">
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter uppercase leading-none">

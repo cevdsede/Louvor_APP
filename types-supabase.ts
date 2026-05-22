@@ -130,6 +130,47 @@ export interface SupabasePermissaoIgreja {
   membro_id: string;
   gerenciar_eventos_igreja: boolean;
   mostrar_pastor_inicio: boolean;
+  gerenciar_visitantes_igreja: boolean;
+  gerenciar_novos_convertidos_igreja: boolean;
+  gerenciar_site_igreja: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SupabaseVisitanteIgreja {
+  id: string;
+  data_ficha: string;
+  nome: string;
+  data_nascimento?: string | null;
+  endereco?: string | null;
+  bairro?: string | null;
+  telefone?: string | null;
+  e_cristao?: boolean | null;
+  deseja_oracao_lar: boolean;
+  deseja_aconselhamento: boolean;
+  deseja_informacoes_igreja: boolean;
+  convidado_por?: string | null;
+  observacoes?: string | null;
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SupabaseNovoConvertidoIgreja {
+  id: string;
+  nome: string;
+  endereco?: string | null;
+  numero?: string | null;
+  bairro?: string | null;
+  data_nascimento?: string | null;
+  data_conversao?: string | null;
+  estado_civil?: 'Solteiro(a)' | 'Casado(a)' | 'Viuvo(a)' | 'Divorciado(a)' | 'Concubinato' | null;
+  email?: string | null;
+  contato?: string | null;
+  contato_recado?: string | null;
+  nome_contato_recado?: string | null;
+  observacoes?: string | null;
+  created_by?: string | null;
   created_at: string;
   updated_at: string;
 }

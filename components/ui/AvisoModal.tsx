@@ -55,16 +55,16 @@ const AvisoModal: React.FC<AvisoModalProps> = ({ eventId, onClose }) => {
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose}></div>
       
       {/* Modal Content */}
-      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden animate-fade-in border border-slate-100 dark:border-slate-800">
+      <div className="bg-app-surface border-app relative w-full max-w-md overflow-hidden rounded-[2.5rem] border shadow-2xl animate-fade-in">
         <div className="p-10">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter uppercase">Aviso de Culto</h3>
+            <h3 className="text-app text-2xl font-black tracking-tighter uppercase">Aviso de Culto</h3>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
               <i className="fas fa-times text-xl"></i>
             </button>
           </div>
 
-          <p className="text-slate-500 dark:text-slate-400 mb-6 font-medium leading-relaxed">
+          <p className="text-app-muted mb-6 font-medium leading-relaxed">
             Se você não puder comparecer ou tiver algum imprevisto, informe o motivo para que a liderança possa se organizar.
           </p>
 
@@ -72,7 +72,7 @@ const AvisoModal: React.FC<AvisoModalProps> = ({ eventId, onClose }) => {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Descreva o motivo (ex: não poderei ir, chegarei atrasado...)"
-            className="w-full h-40 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none font-medium mb-8"
+            className="bg-app-surface-strong border-app text-app placeholder:text-app-muted mb-8 h-40 w-full resize-none rounded-3xl border p-6 font-medium transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           ></textarea>
 
           <button 

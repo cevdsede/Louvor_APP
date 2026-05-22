@@ -53,12 +53,16 @@ const INITIAL_FORM: EventForm = {
 };
 
 const inputClass =
-  'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10 dark:border-slate-700 dark:bg-slate-900 dark:text-white';
+  'app-input w-full rounded-xl px-4 py-3 text-sm font-semibold outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10';
 
 const normalize = (value?: string | null) =>
   (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
-const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }> = ({ currentUserId, isAdmin }) => {
+const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; mode?: 'admin' | 'events' }> = ({
+  currentUserId,
+  isAdmin,
+  mode = 'admin'
+}) => {
   const { data: eventsRaw } = useLocalStorageFirst<SupabaseEventoIgreja>({ table: 'eventos_igreja' });
   const { data: membersRaw } = useLocalStorageFirst<SupabaseMembro>({ table: 'membros' });
   const { data: permissionsRaw } = useLocalStorageFirst<SupabasePermissaoIgreja>({ table: 'permissoes_igreja' });
@@ -69,8 +73,16 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
   const [isPastorModalOpen, setIsPastorModalOpen] = useState(false);
+  const [isVisitorPermissionModalOpen, setIsVisitorPermissionModalOpen] = useState(false);
+  const [isConvertPermissionModalOpen, setIsConvertPermissionModalOpen] = useState(false);
+  const [isSitePermissionModalOpen, setIsSitePermissionModalOpen] = useState(false);
   const [permissionSearch, setPermissionSearch] = useState('');
   const [pastorSearch, setPastorSearch] = useState('');
+  const [visitorPermissionSearch, setVisitorPermissionSearch] = useState('');
+  const [convertPermissionSearch, setConvertPermissionSearch] = useState('');
+  const [sitePermissionSearch, setSitePermissionSearch] = useState('');
+  const isEventsMode = mode === 'events';
+  const isAdminMode = mode === 'admin';
 
   const managersByMemberId = useMemo(
     () => new Map((permissionsRaw || []).map((permission) => [permission.membro_id, permission])),
@@ -98,6 +110,39 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
         .filter((item): item is { permission: SupabasePermissaoIgreja; member: SupabaseMembro } => Boolean(item.member)),
     [membersRaw, permissionsRaw]
   );
+  const activeVisitorManagers = useMemo(
+    () =>
+      (permissionsRaw || [])
+        .filter((permission) => permission.gerenciar_visitantes_igreja)
+        .map((permission) => ({
+          permission,
+          member: (membersRaw || []).find((member) => member.id === permission.membro_id)
+        }))
+        .filter((item): item is { permission: SupabasePermissaoIgreja; member: SupabaseMembro } => Boolean(item.member)),
+    [membersRaw, permissionsRaw]
+  );
+  const activeConvertManagers = useMemo(
+    () =>
+      (permissionsRaw || [])
+        .filter((permission) => permission.gerenciar_novos_convertidos_igreja)
+        .map((permission) => ({
+          permission,
+          member: (membersRaw || []).find((member) => member.id === permission.membro_id)
+        }))
+        .filter((item): item is { permission: SupabasePermissaoIgreja; member: SupabaseMembro } => Boolean(item.member)),
+    [membersRaw, permissionsRaw]
+  );
+  const activeSiteManagers = useMemo(
+    () =>
+      (permissionsRaw || [])
+        .filter((permission) => permission.gerenciar_site_igreja)
+        .map((permission) => ({
+          permission,
+          member: (membersRaw || []).find((member) => member.id === permission.membro_id)
+        }))
+        .filter((item): item is { permission: SupabasePermissaoIgreja; member: SupabaseMembro } => Boolean(item.member)),
+    [membersRaw, permissionsRaw]
+  );
   const availableManagers = useMemo(
     () =>
       (membersRaw || [])
@@ -114,6 +159,30 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
         .filter((member) => getDisplayName(member).toLowerCase().includes(pastorSearch.toLowerCase()))
         .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b))),
     [managersByMemberId, membersRaw, pastorSearch]
+  );
+  const availableVisitorManagers = useMemo(
+    () =>
+      (membersRaw || [])
+        .filter((member) => !managersByMemberId.get(member.id)?.gerenciar_visitantes_igreja)
+        .filter((member) => getDisplayName(member).toLowerCase().includes(visitorPermissionSearch.toLowerCase()))
+        .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b))),
+    [managersByMemberId, membersRaw, visitorPermissionSearch]
+  );
+  const availableConvertManagers = useMemo(
+    () =>
+      (membersRaw || [])
+        .filter((member) => !managersByMemberId.get(member.id)?.gerenciar_novos_convertidos_igreja)
+        .filter((member) => getDisplayName(member).toLowerCase().includes(convertPermissionSearch.toLowerCase()))
+        .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b))),
+    [convertPermissionSearch, managersByMemberId, membersRaw]
+  );
+  const availableSiteManagers = useMemo(
+    () =>
+      (membersRaw || [])
+        .filter((member) => !managersByMemberId.get(member.id)?.gerenciar_site_igreja)
+        .filter((member) => getDisplayName(member).toLowerCase().includes(sitePermissionSearch.toLowerCase()))
+        .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b))),
+    [managersByMemberId, membersRaw, sitePermissionSearch]
   );
   const orderedEvents = useMemo(
     () =>
@@ -320,7 +389,14 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
     }
 
     const existing = managersByMemberId.get(member.id);
-    const payload = { membro_id: member.id, gerenciar_eventos_igreja: allowed };
+    const payload = {
+      membro_id: member.id,
+      gerenciar_eventos_igreja: allowed,
+      mostrar_pastor_inicio: existing?.mostrar_pastor_inicio || false,
+      gerenciar_visitantes_igreja: existing?.gerenciar_visitantes_igreja || false,
+      gerenciar_novos_convertidos_igreja: existing?.gerenciar_novos_convertidos_igreja || false,
+      gerenciar_site_igreja: existing?.gerenciar_site_igreja || false
+    };
     const request = existing
       ? supabase.from('permissoes_igreja').update(payload).eq('id', existing.id)
       : supabase.from('permissoes_igreja').insert(payload);
@@ -348,7 +424,10 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
     const payload = {
       membro_id: member.id,
       gerenciar_eventos_igreja: existing?.gerenciar_eventos_igreja || false,
-      mostrar_pastor_inicio: visible
+      mostrar_pastor_inicio: visible,
+      gerenciar_visitantes_igreja: existing?.gerenciar_visitantes_igreja || false,
+      gerenciar_novos_convertidos_igreja: existing?.gerenciar_novos_convertidos_igreja || false,
+      gerenciar_site_igreja: existing?.gerenciar_site_igreja || false
     };
     const request = existing
       ? supabase.from('permissoes_igreja').update(payload).eq('id', existing.id)
@@ -367,33 +446,71 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
     }
   };
 
+  const toggleChurchPermission = async (
+    member: SupabaseMembro,
+    field: 'gerenciar_visitantes_igreja' | 'gerenciar_novos_convertidos_igreja' | 'gerenciar_site_igreja',
+    allowed: boolean,
+    successCallback?: () => void
+  ) => {
+    if (!isAdmin) {
+      showError('Somente admin define quem acessa esses cadastros.');
+      return;
+    }
+
+    const existing = managersByMemberId.get(member.id);
+    const payload = {
+      membro_id: member.id,
+      gerenciar_eventos_igreja: existing?.gerenciar_eventos_igreja || false,
+      mostrar_pastor_inicio: existing?.mostrar_pastor_inicio || false,
+      gerenciar_visitantes_igreja: field === 'gerenciar_visitantes_igreja' ? allowed : existing?.gerenciar_visitantes_igreja || false,
+      gerenciar_novos_convertidos_igreja:
+        field === 'gerenciar_novos_convertidos_igreja' ? allowed : existing?.gerenciar_novos_convertidos_igreja || false,
+      gerenciar_site_igreja: field === 'gerenciar_site_igreja' ? allowed : existing?.gerenciar_site_igreja || false
+    };
+
+    const request = existing
+      ? supabase.from('permissoes_igreja').update(payload).eq('id', existing.id)
+      : supabase.from('permissoes_igreja').insert(payload);
+
+    const { error } = await request;
+    if (error) {
+      showError('Erro ao atualizar permissao.');
+      return;
+    }
+
+    await LocalStorageFirstService.forceSync('permissoes_igreja');
+    successCallback?.();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand">Administracao</p>
           <h1 className="mt-2 text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-            Agenda e cards da igreja
+            {isEventsMode ? 'Agenda e cards da igreja' : 'Permissoes e exibicao da igreja'}
           </h1>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setEditingEventId(null);
-            setForm(INITIAL_FORM);
-            setIsEventModalOpen(true);
-          }}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand px-5 py-4 text-[11px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20"
-        >
-          <i className="fas fa-plus" />
-          Adicionar evento
-        </button>
+        {isEventsMode && (
+          <button
+            type="button"
+            onClick={() => {
+              setEditingEventId(null);
+              setForm(INITIAL_FORM);
+              setIsEventModalOpen(true);
+            }}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand px-5 py-4 text-[11px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20"
+          >
+            <i className="fas fa-plus" />
+            Adicionar evento
+          </button>
+        )}
       </div>
 
-      {isEventModalOpen && (
+      {isEventsMode && isEventModalOpen && (
         <div className="fixed inset-0 z-[720] overflow-y-auto bg-slate-950/60 px-3 py-4 pb-24 backdrop-blur-sm sm:px-4 sm:py-6">
-          <form onSubmit={saveEvent} className="mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-            <div className="sticky top-0 z-10 flex items-start justify-between gap-3 rounded-t-2xl border-b border-slate-100 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+          <form onSubmit={saveEvent} className="app-card mx-auto max-w-3xl rounded-2xl border shadow-2xl">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-3 rounded-t-2xl border-b border-app bg-app-surface p-4 sm:p-5">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-brand">
                   {editingEventId ? 'Editar evento' : 'Novo evento'}
@@ -415,7 +532,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
         {editingEventId && (
           <div className="mb-4 flex flex-col gap-3 rounded-xl bg-brand/10 p-3 text-sm font-bold text-brand sm:flex-row sm:items-center sm:justify-between">
             <span>Editando evento cadastrado</span>
-            <button type="button" onClick={cancelEdit} className="rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-white/60 dark:hover:bg-slate-900/40">
+            <button type="button" onClick={cancelEdit} className="rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-app-surface-strong">
               Cancelar
             </button>
           </div>
@@ -510,7 +627,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
         </div>
 
         {form.recorrente && (
-          <div className="mt-4 grid gap-3 rounded-2xl bg-slate-50 p-3 dark:bg-slate-800/60 md:grid-cols-2">
+          <div className="mt-4 grid gap-3 rounded-2xl bg-app-surface-strong p-3 md:grid-cols-2">
             {['semanal', 'mensal_ordem_semana'].includes(form.recorrencia_tipo) && (
               <div className="md:col-span-2 space-y-2">
                 <div className="flex items-center gap-2">
@@ -526,7 +643,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
                       className={`rounded-xl px-2 py-3 text-[10px] font-black uppercase tracking-widest transition ${
                         form.recorrencia_dias_semana.includes(index)
                           ? 'bg-brand text-white shadow-lg shadow-brand/20'
-                          : 'bg-white text-slate-500 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+                          : 'bg-app-surface text-app-muted hover:bg-app-surface-strong'
                       }`}
                       title={form.recorrencia_tipo === 'semanal' ? `Evento se repete toda ${day.toLowerCase()}` : `Evento se repete toda ${day.toLowerCase()} selecionada`}
                     >
@@ -603,7 +720,8 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
         </div>
       )}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+      {isAdminMode && (
+      <div className="app-card rounded-2xl border p-4 sm:p-5">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
             Quem pode alterar agenda/cards
@@ -627,7 +745,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
             </div>
           ) : (
             activeManagers.map(({ member }) => (
-              <div key={member.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
+              <div key={member.id} className="flex items-center justify-between gap-3 rounded-xl bg-app-surface-strong px-4 py-3">
                 <span className="truncate text-sm font-bold text-slate-700 dark:text-slate-200">{getDisplayName(member)}</span>
                 {isAdmin && (
                   <button
@@ -643,8 +761,139 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
           )}
         </div>
       </div>
+      )}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+      {isAdminMode && (
+      <div className="app-card rounded-2xl border p-4 sm:p-5">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
+            Quem pode alterar o site
+          </h2>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setIsSitePermissionModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20"
+            >
+              <i className="fas fa-user-plus" />
+              Liberar pessoa
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          {activeSiteManagers.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:text-slate-400">
+              Ninguem liberado para editar o site ainda.
+            </div>
+          ) : (
+            activeSiteManagers.map(({ member }) => (
+              <div key={member.id} className="flex items-center justify-between gap-3 rounded-xl bg-app-surface-strong px-4 py-3">
+                <span className="truncate text-sm font-bold text-slate-700 dark:text-slate-200">{getDisplayName(member)}</span>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => toggleChurchPermission(member, 'gerenciar_site_igreja', false)}
+                    className="rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  >
+                    Remover
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+      )}
+
+      {isAdminMode && (
+      <div className="app-card rounded-2xl border p-4 sm:p-5">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
+            Quem pode acessar visitantes
+          </h2>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setIsVisitorPermissionModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20"
+            >
+              <i className="fas fa-user-plus" />
+              Liberar pessoa
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          {activeVisitorManagers.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:text-slate-400">
+              Ninguem liberado para visitantes ainda.
+            </div>
+          ) : (
+            activeVisitorManagers.map(({ member }) => (
+              <div key={member.id} className="flex items-center justify-between gap-3 rounded-xl bg-app-surface-strong px-4 py-3">
+                <span className="truncate text-sm font-bold text-slate-700 dark:text-slate-200">{getDisplayName(member)}</span>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => toggleChurchPermission(member, 'gerenciar_visitantes_igreja', false)}
+                    className="rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  >
+                    Remover
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+      )}
+
+      {isAdminMode && (
+      <div className="app-card rounded-2xl border p-4 sm:p-5">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
+            Quem pode acessar novos convertidos
+          </h2>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setIsConvertPermissionModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20"
+            >
+              <i className="fas fa-user-plus" />
+              Liberar pessoa
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          {activeConvertManagers.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:text-slate-400">
+              Ninguem liberado para novos convertidos ainda.
+            </div>
+          ) : (
+            activeConvertManagers.map(({ member }) => (
+              <div key={member.id} className="flex items-center justify-between gap-3 rounded-xl bg-app-surface-strong px-4 py-3">
+                <span className="truncate text-sm font-bold text-slate-700 dark:text-slate-200">{getDisplayName(member)}</span>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => toggleChurchPermission(member, 'gerenciar_novos_convertidos_igreja', false)}
+                    className="rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  >
+                    Remover
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+      )}
+
+      {isAdminMode && (
+      <div className="app-card rounded-2xl border p-4 sm:p-5">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
             Pastores presidentes no inicio
@@ -668,7 +917,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
             </div>
           ) : (
             featuredPastors.map(({ member }) => (
-              <div key={member.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
+              <div key={member.id} className="flex items-center justify-between gap-3 rounded-xl bg-app-surface-strong px-4 py-3">
                 <span className="truncate text-sm font-bold text-slate-700 dark:text-slate-200">{getDisplayName(member)}</span>
                 {isAdmin && (
                   <button
@@ -684,12 +933,14 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
           )}
         </div>
       </div>
+      )}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+      {isEventsMode && (
+      <div className="app-card rounded-2xl border p-4 sm:p-5">
         <h2 className="mb-4 text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">Eventos cadastrados</h2>
         <div className="space-y-2">
           {orderedEvents.slice(0, 20).map((event) => (
-            <div key={event.id} className="flex flex-col gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800/60 sm:flex-row sm:items-center sm:justify-between">
+            <div key={event.id} className="flex flex-col gap-3 rounded-xl bg-app-surface-strong px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <span className="block truncate text-sm font-bold text-slate-700 dark:text-slate-200">{event.titulo}</span>
                 <span className="mt-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
@@ -700,7 +951,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
                 <button
                   type="button"
                   onClick={() => editEvent(event)}
-                  className="rounded-lg bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700"
+                  className="rounded-lg bg-app-surface px-3 py-2 text-[10px] font-black uppercase tracking-widest text-app-muted hover:bg-app-surface-strong"
                 >
                   Editar
                 </button>
@@ -716,10 +967,11 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
           ))}
         </div>
       </div>
+      )}
 
-      {isPermissionModalOpen && (
+      {isAdminMode && isPermissionModalOpen && (
         <div className="fixed inset-0 z-[720] overflow-y-auto bg-slate-950/60 px-3 py-4 pb-24 backdrop-blur-sm sm:px-4 sm:py-6">
-          <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+          <div className="app-card mx-auto max-w-xl rounded-2xl border p-4 shadow-2xl sm:p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-brand">Permissao</p>
@@ -752,7 +1004,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
                     key={member.id}
                     type="button"
                     onClick={() => toggleManager(member, true)}
-                    className="flex w-full items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 text-left hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800"
+                    className="flex w-full items-center justify-between gap-3 rounded-xl bg-app-surface-strong px-4 py-3 text-left hover:bg-app-surface-muted"
                   >
                     <span className="truncate text-sm font-bold text-slate-700 dark:text-slate-200">{getDisplayName(member)}</span>
                     <i className="fas fa-plus text-brand" />
@@ -764,9 +1016,9 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
         </div>
       )}
 
-      {isPastorModalOpen && (
+      {isAdminMode && isPastorModalOpen && (
         <div className="fixed inset-0 z-[720] overflow-y-auto bg-slate-950/60 px-3 py-4 pb-24 backdrop-blur-sm sm:px-4 sm:py-6">
-          <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+          <div className="app-card mx-auto max-w-xl rounded-2xl border p-4 shadow-2xl sm:p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-brand">Inicio</p>
@@ -799,7 +1051,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
                     key={member.id}
                     type="button"
                     onClick={() => toggleFeaturedPastor(member, true)}
-                    className="flex w-full items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 text-left hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800"
+                    className="flex w-full items-center justify-between gap-3 rounded-xl bg-app-surface-strong px-4 py-3 text-left hover:bg-app-surface-muted"
                   >
                     <span className="truncate text-sm font-bold text-slate-700 dark:text-slate-200">{getDisplayName(member)}</span>
                     <i className="fas fa-plus text-brand" />
@@ -810,12 +1062,69 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean }>
           </div>
         </div>
       )}
+
+      {isAdminMode && isVisitorPermissionModalOpen && (
+        <PermissionModal
+          title="Adicionar acesso a visitantes"
+          subtitle="Visitantes"
+          search={visitorPermissionSearch}
+          setSearch={setVisitorPermissionSearch}
+          placeholder="Buscar membro"
+          onClose={() => setIsVisitorPermissionModalOpen(false)}
+          members={availableVisitorManagers}
+          onSelect={(member) =>
+            toggleChurchPermission(member, 'gerenciar_visitantes_igreja', true, () => {
+              setIsVisitorPermissionModalOpen(false);
+              setVisitorPermissionSearch('');
+            })
+          }
+          emptyLabel="Nenhum membro disponivel."
+        />
+      )}
+
+      {isAdminMode && isConvertPermissionModalOpen && (
+        <PermissionModal
+          title="Adicionar acesso a novos convertidos"
+          subtitle="Novos convertidos"
+          search={convertPermissionSearch}
+          setSearch={setConvertPermissionSearch}
+          placeholder="Buscar membro"
+          onClose={() => setIsConvertPermissionModalOpen(false)}
+          members={availableConvertManagers}
+          onSelect={(member) =>
+            toggleChurchPermission(member, 'gerenciar_novos_convertidos_igreja', true, () => {
+              setIsConvertPermissionModalOpen(false);
+              setConvertPermissionSearch('');
+            })
+          }
+          emptyLabel="Nenhum membro disponivel."
+        />
+      )}
+
+      {isAdminMode && isSitePermissionModalOpen && (
+        <PermissionModal
+          title="Adicionar acesso ao site"
+          subtitle="Site"
+          search={sitePermissionSearch}
+          setSearch={setSitePermissionSearch}
+          placeholder="Buscar membro"
+          onClose={() => setIsSitePermissionModalOpen(false)}
+          members={availableSiteManagers}
+          onSelect={(member) =>
+            toggleChurchPermission(member, 'gerenciar_site_igreja', true, () => {
+              setIsSitePermissionModalOpen(false);
+              setSitePermissionSearch('');
+            })
+          }
+          emptyLabel="Nenhum membro disponivel."
+        />
+      )}
     </div>
   );
 };
 
 const Toggle = ({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) => (
-  <label className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
+  <label className="flex items-center justify-between gap-3 rounded-xl bg-app-surface-strong px-4 py-3">
     <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{label}</span>
     <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-5 w-5 rounded border-slate-300 text-brand focus:ring-brand" />
   </label>
@@ -834,6 +1143,73 @@ const Field = ({
     <span className="block text-[10px] font-black uppercase tracking-widest text-slate-500">{label}</span>
     {children}
   </label>
+);
+
+const PermissionModal = ({
+  title,
+  subtitle,
+  search,
+  setSearch,
+  placeholder,
+  onClose,
+  members,
+  onSelect,
+  emptyLabel
+}: {
+  title: string;
+  subtitle: string;
+  search: string;
+  setSearch: (value: string) => void;
+  placeholder: string;
+  onClose: () => void;
+  members: SupabaseMembro[];
+  onSelect: (member: SupabaseMembro) => void;
+  emptyLabel: string;
+}) => (
+  <div className="fixed inset-0 z-[720] overflow-y-auto bg-slate-950/60 px-3 py-4 pb-24 backdrop-blur-sm sm:px-4 sm:py-6">
+    <div className="app-card mx-auto max-w-xl rounded-2xl border p-4 shadow-2xl sm:p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-brand">{subtitle}</p>
+          <h2 className="text-xl font-black text-slate-900 dark:text-white">{title}</h2>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-red-500 dark:hover:bg-slate-800"
+        >
+          <i className="fas fa-times" />
+        </button>
+      </div>
+
+      <input
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+        placeholder={placeholder}
+        className={inputClass}
+      />
+
+      <div className="mt-4 max-h-[55vh] space-y-2 overflow-y-auto">
+        {members.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:text-slate-400">
+            {emptyLabel}
+          </div>
+        ) : (
+          members.map((member) => (
+            <button
+              key={member.id}
+              type="button"
+              onClick={() => onSelect(member)}
+              className="flex w-full items-center justify-between gap-3 rounded-xl bg-app-surface-strong px-4 py-3 text-left hover:bg-app-surface-muted"
+            >
+              <span className="truncate text-sm font-bold text-slate-700 dark:text-slate-200">{getDisplayName(member)}</span>
+              <i className="fas fa-plus text-brand" />
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  </div>
 );
 
 export default ChurchAdmin;

@@ -189,8 +189,15 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
   }, [eventPages.length]);
 
   return (
-    <div className="min-h-screen bg-[#f7f3ea] text-zinc-950" style={{ ['--site-primary' as string]: content.primaryColor }}>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/35 backdrop-blur-xl">
+    <div
+      className="site-theme min-h-screen bg-[#f7f3ea] text-zinc-950"
+      style={{
+        ['--site-primary' as string]: content.primaryColor,
+        ['--site-brand-primary' as string]: content.primaryColor,
+        ['--site-brand-accent' as string]: content.goldColor
+      }}
+    >
+      <header className="site-glass fixed inset-x-0 top-0 z-50 border-b bg-black/35">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           <a href="#inicio" className="flex min-w-0 items-center gap-3">
             <div
@@ -210,7 +217,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
               <a
                 key={item}
                 href={`#${sectionId(item)}`}
-                className="rounded-full px-4 py-2 text-xs font-bold text-white/70 transition hover:bg-white/10 hover:text-white"
+                className="site-nav-link rounded-full px-4 py-2 text-xs font-bold transition"
               >
                 {item}
               </a>
@@ -220,7 +227,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
           <button
             type="button"
             onClick={onLoginClick}
-            className="flex h-11 items-center gap-2 rounded-full bg-white px-4 text-xs font-black uppercase tracking-widest text-black shadow-xl transition hover:scale-[1.02]"
+            className="site-button-light flex h-11 items-center gap-2 rounded-full px-4 text-xs font-black uppercase tracking-widest shadow-xl transition"
           >
             <i className="fas fa-right-to-bracket" />
             Login
@@ -236,7 +243,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
 
           <div className="relative mx-auto flex min-h-[92vh] max-w-7xl flex-col justify-end px-4 pb-16 pt-28 sm:px-6 lg:px-8 lg:pb-24">
             <div className="max-w-4xl">
-              <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-white/75 backdrop-blur">
+              <div className="site-glass mb-6 inline-flex items-center gap-3 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-white/75">
                 <span className="h-2 w-2 rounded-full" style={{ backgroundColor: content.goldColor }} />
                 {content.serviceInfo}
               </div>
@@ -256,7 +263,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
                 </a>
                 <a
                   href={whatsappUrl(content.whatsapp)}
-                  className="inline-flex h-14 items-center justify-center gap-3 rounded-full border border-white/20 bg-white/10 px-7 text-sm font-black uppercase tracking-widest text-white backdrop-blur transition hover:bg-white/20"
+                  className="site-glass inline-flex h-14 items-center justify-center gap-3 rounded-full px-7 text-sm font-black uppercase tracking-widest text-white transition hover:bg-white/20"
                 >
                   <i className="fab fa-whatsapp" />
                   Fale Conosco
@@ -267,7 +274,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
         </section>
 
         <section id="sobre" className="mx-auto grid max-w-7xl gap-6 px-4 py-16 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
-          <div className="rounded-[2rem] bg-white p-8 shadow-xl shadow-black/5 sm:p-10">
+          <div className="site-card rounded-[2rem] p-8 shadow-xl shadow-black/5 sm:p-10">
             <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
               Sobre a igreja
             </p>
@@ -303,7 +310,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
                     type="button"
                     onClick={() => setSelectedCategory(category)}
                     className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-widest transition ${
-                      selectedCategory === category ? 'bg-white text-black' : 'bg-white/10 text-white/60 hover:bg-white/15'
+                      selectedCategory === category ? 'site-button-light text-black' : 'site-glass text-white/60 hover:bg-white/15'
                     }`}
                   >
                     {category}
@@ -314,12 +321,12 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
 
             <div className="mt-10">
               {eventsLoading && (
-                <div className="flex h-[280px] min-w-[280px] items-center justify-center rounded-[2rem] bg-white/10 text-xs font-black uppercase tracking-widest text-white/50">
+                <div className="site-glass flex h-[280px] min-w-[280px] items-center justify-center rounded-[2rem] text-xs font-black uppercase tracking-widest text-white/50">
                   Carregando eventos...
                 </div>
               )}
               {!eventsLoading && filteredEvents.length === 0 && (
-                <div className="flex h-[280px] min-w-[280px] items-center justify-center rounded-[2rem] bg-white/10 px-8 text-center text-xs font-black uppercase tracking-widest text-white/50">
+                <div className="site-glass flex h-[280px] min-w-[280px] items-center justify-center rounded-[2rem] px-8 text-center text-xs font-black uppercase tracking-widest text-white/50">
                   Nenhum evento publico cadastrado
                 </div>
               )}
@@ -341,7 +348,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
                               <div className="absolute inset-x-0 bottom-0 p-6">
-                                <span className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-widest backdrop-blur">
+                                <span className="site-glass rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest">
                                   {formatGroupedEventDates(event)}
                                 </span>
                                 <h3 className="mt-4 text-2xl font-black">{event.titulo}</h3>
@@ -377,7 +384,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
                         <button
                           type="button"
                           onClick={() => setEventSlide((current) => (current - 1 + eventPages.length) % eventPages.length)}
-                          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+                          className="site-glass flex h-11 w-11 items-center justify-center rounded-full text-white transition hover:bg-white/20"
                           aria-label="Eventos anteriores"
                         >
                           <i className="fas fa-chevron-left" />
@@ -385,7 +392,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
                         <button
                           type="button"
                           onClick={() => setEventSlide((current) => (current + 1) % eventPages.length)}
-                          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+                          className="site-glass flex h-11 w-11 items-center justify-center rounded-full text-white transition hover:bg-white/20"
                           aria-label="Proximos eventos"
                         >
                           <i className="fas fa-chevron-right" />
@@ -406,7 +413,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
           <h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Encontre seu lugar</h2>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {content.ministries.map((ministry) => (
-              <div key={ministry.name} className="group overflow-hidden rounded-[2rem] border border-black/5 bg-white shadow-lg shadow-black/5 transition hover:-translate-y-1 hover:shadow-2xl">
+              <div key={ministry.name} className="site-card group overflow-hidden rounded-[2rem] border border-black/5 shadow-lg shadow-black/5 transition hover:-translate-y-1 hover:shadow-2xl">
                 {ministry.image && <img src={ministry.image} alt="" className="h-36 w-full object-cover" />}
                 <div className="p-6">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl text-white transition group-hover:scale-110" style={{ backgroundColor: content.primaryColor }}>
@@ -419,7 +426,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
           </div>
         </section>
 
-        <section className="bg-white py-16">
+        <section className="site-card py-16">
           <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
             <div className="rounded-[2rem] p-8 text-white shadow-2xl shadow-black/15" style={{ backgroundColor: content.primaryColor }}>
               <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
@@ -435,7 +442,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
               <h2 className="mt-3 text-4xl font-black tracking-tight">Pastores presidentes</h2>
               <div className="mt-8 grid gap-4 sm:grid-cols-2">
                 {publicPastors.length === 0 && (
-                  <div className="rounded-[2rem] border border-dashed border-zinc-200 p-8 text-sm font-bold text-zinc-500">
+                  <div className="site-card rounded-[2rem] border border-dashed border-zinc-200 p-8 text-sm font-bold text-zinc-500">
                     Nenhum pastor selecionado no app.
                   </div>
                 )}
@@ -443,7 +450,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
                   const name = getDisplayName(pastor);
                   const photo = sanitizeImageUrl(pastor.foto) || buildLocalAvatar(name);
                   return (
-                    <article key={pastor.id} className="flex items-center gap-4 rounded-[2rem] border border-black/5 bg-[#f7f3ea] p-4 shadow-lg shadow-black/5">
+                    <article key={pastor.id} className="site-card-muted flex items-center gap-4 rounded-[2rem] border border-black/5 p-4 shadow-lg shadow-black/5">
                       <img src={photo} alt={name} className="h-20 w-20 rounded-2xl object-cover" />
                       <div className="min-w-0">
                         <h3 className="truncate text-lg font-black">{name}</h3>
@@ -472,12 +479,12 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
           </div>
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
             {instagramPosts.map((post) => (
-              <a key={`${post.title}-${post.url}`} href={post.url} target="_blank" rel="noreferrer" className="group overflow-hidden rounded-[2rem] bg-white shadow-xl shadow-black/5">
+              <a key={`${post.title}-${post.url}`} href={post.url} target="_blank" rel="noreferrer" className="site-card group overflow-hidden rounded-[2rem] shadow-xl shadow-black/5">
                 {post.image ? (
                   <img src={post.image} alt="" className="h-72 w-full object-cover transition duration-500 group-hover:scale-105" />
                 ) : (
                   <div className="flex h-72 w-full flex-col items-center justify-center gap-4 bg-gradient-to-br from-zinc-950 via-zinc-800 to-black p-8 text-center text-white">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-3xl backdrop-blur">
+                    <div className="site-glass flex h-16 w-16 items-center justify-center rounded-2xl text-3xl">
                       <i className="fab fa-instagram" style={{ color: content.goldColor }} />
                     </div>
                     <p className="text-xs font-black uppercase tracking-[0.24em] text-white/55">Abrir no Instagram</p>
@@ -491,7 +498,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
           </div>
         </section>
 
-        <section id="pedido-de-oracao" className="bg-white py-16">
+        <section id="pedido-de-oracao" className="site-card py-16">
           <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
@@ -500,10 +507,10 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
               <h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Queremos orar por voce.</h2>
               <p className="mt-5 text-base leading-8 text-zinc-600">Envie seu pedido e nossa equipe pastoral vai receber sua mensagem.</p>
             </div>
-            <form className="rounded-[2rem] bg-zinc-950 p-6 text-white shadow-2xl shadow-black/15">
-              <input className="mb-3 w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 outline-none placeholder:text-white/40" placeholder="Seu nome" />
-              <input className="mb-3 w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 outline-none placeholder:text-white/40" placeholder="WhatsApp" />
-              <textarea className="mb-3 min-h-32 w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 outline-none placeholder:text-white/40" placeholder="Pedido de oracao" />
+            <form className="site-panel-dark rounded-[2rem] p-6 shadow-2xl shadow-black/15">
+              <input className="site-input-glass mb-3 w-full rounded-2xl px-5 py-4 outline-none" placeholder="Seu nome" />
+              <input className="site-input-glass mb-3 w-full rounded-2xl px-5 py-4 outline-none" placeholder="WhatsApp" />
+              <textarea className="site-input-glass mb-3 min-h-32 w-full rounded-2xl px-5 py-4 outline-none" placeholder="Pedido de oracao" />
               <button type="button" className="w-full rounded-2xl py-4 text-sm font-black uppercase tracking-widest text-black" style={{ backgroundColor: content.goldColor }}>
                 Enviar Pedido
               </button>
@@ -518,9 +525,9 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
             </p>
             <h2 className="mt-3 text-4xl font-black tracking-tight">Contribua com seguranca via PIX.</h2>
             <p className="mt-5 text-sm leading-7 text-white/60">Use a chave abaixo ou aponte a camera para o QR Code.</p>
-            <div className="mt-8 rounded-2xl bg-white/10 p-4 text-sm font-bold">{content.pixKey}</div>
+            <div className="site-glass mt-8 rounded-2xl p-4 text-sm font-bold">{content.pixKey}</div>
           </div>
-          <div className="flex min-h-80 items-center justify-center rounded-[2rem] border border-black/5 bg-white p-8 shadow-xl shadow-black/5">
+          <div className="site-card flex min-h-80 items-center justify-center rounded-[2rem] border border-black/5 p-8 shadow-xl shadow-black/5">
             {content.pixQrImage ? (
               <img src={content.pixQrImage} alt="QR Code PIX" className="h-64 w-64 rounded-2xl object-cover" />
             ) : (
@@ -548,7 +555,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
             <p><i className="fab fa-whatsapp mr-2" />{content.whatsapp}</p>
             <p><i className="fab fa-instagram mr-2" />{content.instagram}</p>
           </div>
-          <div className="rounded-2xl bg-white/10 p-5 text-sm font-bold text-white/70">Mapa moderno: conectar iframe do Google Maps aqui.</div>
+          <div className="site-glass rounded-2xl p-5 text-sm font-bold text-white/70">Mapa moderno: conectar iframe do Google Maps aqui.</div>
         </div>
         <div className="mx-auto mt-10 max-w-7xl border-t border-white/10 pt-6 text-xs font-bold uppercase tracking-widest text-white/35">
           Todos os direitos reservados.

@@ -145,7 +145,7 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
 
       {/* Add Notice Form */}
       {showAddNotice && (
-        <div className="mb-6 p-6 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700">
+        <div className="app-panel mb-6 rounded-xl p-6">
           <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">
             {editingNoticeId ? 'EDITAR AVISO' : 'NOVO AVISO'}
           </h4>
@@ -153,12 +153,12 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
             value={noticeText}
             onChange={(e) => setNoticeText(e.target.value)}
             placeholder="Digite seu aviso aqui..."
-            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-xs focus:ring-1 focus:ring-brand outline-none resize-none"
+            className="app-input-strong w-full rounded-xl px-4 py-3 text-xs outline-none resize-none focus:ring-1 focus:ring-brand"
             rows={3}
           />
           {canManageNotices && (
             <div className="flex gap-2 mt-4">
-              <button onClick={() => setShowAddNotice(false)} className="flex-1 py-2 bg-slate-100 dark:bg-slate-700 text-slate-500 rounded-xl text-[9px] font-black uppercase tracking-widest">Cancelar</button>
+              <button onClick={() => setShowAddNotice(false)} className="app-btn-muted flex-1 rounded-xl py-2 text-[9px] font-black uppercase tracking-widest">Cancelar</button>
               <button 
                 onClick={handleSaveNotice}
                 className="flex-1 py-2 bg-brand text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md hover:bg-brand/90 transition-colors"
@@ -174,7 +174,7 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
       {notices.length > 0 ? (
         <div className="space-y-3">
           {notices.map((notice) => (
-            <div key={notice.id} className="group p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700">
+            <div key={notice.id} className="app-panel group rounded-xl p-4">
               <div className="flex justify-between items-center mb-1.5">
                 <span className="text-[8px] font-black text-brand uppercase tracking-widest">{notice.sender}</span>
                 <div className="flex items-center gap-2">
@@ -205,7 +205,7 @@ const NoticeManager: React.FC<NoticeManagerProps> = ({
         </div>
       ) : (
         <div className="text-center py-8">
-          <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3">
+          <div className="app-panel mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border-0">
             <i className="fas fa-bell-slash text-slate-400 text-lg"></i>
           </div>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nenhum aviso ainda</p>

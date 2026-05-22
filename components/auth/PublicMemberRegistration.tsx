@@ -95,7 +95,7 @@ const Field = ({
 );
 
 const inputClass =
-  'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10 dark:border-slate-700 dark:bg-slate-900 dark:text-white';
+  'app-input w-full rounded-xl px-4 py-3 text-sm font-semibold outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10';
 
 const onlyDigits = (value: string) => value.replace(/\D/g, '');
 
@@ -318,7 +318,7 @@ const PublicMemberRegistration: React.FC = () => {
     return (
       <div className="min-h-screen bg-slate-50 px-4 py-10 dark:bg-slate-950">
         <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-xl items-center justify-center">
-          <div className="w-full rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-xl dark:border-slate-800 dark:bg-slate-900">
+          <div className="app-card w-full rounded-2xl border p-8 text-center shadow-xl">
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300">
               <i className="fas fa-check text-2xl" />
             </div>
@@ -355,7 +355,7 @@ const PublicMemberRegistration: React.FC = () => {
           </a>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+        <form onSubmit={handleSubmit} className="app-card rounded-2xl border p-4 shadow-xl sm:p-6">
           {error && (
             <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
               {error}

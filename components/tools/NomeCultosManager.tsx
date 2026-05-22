@@ -173,10 +173,10 @@ const NomeCultosManager: React.FC = () => {
         </button>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+      <div className="app-card rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-slate-50 dark:bg-slate-800">
+            <thead className="app-panel">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Nome do Culto
@@ -191,7 +191,7 @@ const NomeCultosManager: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
               {nomeCultos.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800">
+                <tr key={item.id} className="hover:bg-app-surface-strong">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-slate-900 dark:text-white">
                       {item.nome_culto}
@@ -234,7 +234,7 @@ const NomeCultosManager: React.FC = () => {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 w-full max-w-md">
+          <div className="app-card rounded-xl p-6 w-full max-w-md">
             <h3 className="text-lg font-black text-slate-800 dark:text-white mb-4">
               {editingItem ? 'Editar Nome do Culto' : 'Adicionar Nome do Culto'}
             </h3>
@@ -248,7 +248,7 @@ const NomeCultosManager: React.FC = () => {
                   type="text"
                   value={formData.nome_culto}
                   onChange={(e) => setFormData({ nome_culto: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent dark:bg-slate-800 dark:text-white"
+                  className="app-input w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent"
                   placeholder="Ex: Culto de Celebração"
                   required
                 />
@@ -264,7 +264,7 @@ const NomeCultosManager: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="flex-1 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  className="app-btn-muted flex-1 px-4 py-2 rounded-lg font-black text-sm uppercase tracking-widest transition-colors"
                 >
                   Cancelar
                 </button>

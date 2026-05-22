@@ -131,50 +131,50 @@ const AvailabilityPanel: React.FC<AvailabilityPanelProps> = ({ memberId }) => {
   };
 
   return (
-    <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/35">
+    <div className="bg-app-surface-muted border-app rounded-2xl border p-4">
       <div className="mb-4">
-        <h4 className="text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
+        <h4 className="text-app text-xs font-black uppercase tracking-widest">
           Minha disponibilidade
         </h4>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        <p className="text-app-muted mt-1 text-xs">
           Informe dias em que voce nao podera servir.
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
-          <label className="mb-1 ml-1 block text-[8px] font-black uppercase tracking-widest text-slate-400">Inicio</label>
+          <label className="text-app-muted mb-1 ml-1 block text-[8px] font-black uppercase tracking-widest">Inicio</label>
           <input
             type="date"
             value={form.data_inicio}
             onChange={(event) => setForm((current) => ({ ...current, data_inicio: event.target.value }))}
-            className="w-full rounded-xl border border-slate-100 bg-white px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-900"
+            className="bg-app-surface border-app text-app w-full rounded-xl border px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand"
           />
         </div>
         <div>
-          <label className="mb-1 ml-1 block text-[8px] font-black uppercase tracking-widest text-slate-400">Fim</label>
+          <label className="text-app-muted mb-1 ml-1 block text-[8px] font-black uppercase tracking-widest">Fim</label>
           <input
             type="date"
             value={form.data_fim}
             onChange={(event) => setForm((current) => ({ ...current, data_fim: event.target.value }))}
-            className="w-full rounded-xl border border-slate-100 bg-white px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-900"
+            className="bg-app-surface border-app text-app w-full rounded-xl border px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand"
           />
         </div>
         <div className="sm:col-span-2">
-          <label className="mb-1 ml-1 block text-[8px] font-black uppercase tracking-widest text-slate-400">Motivo</label>
+          <label className="text-app-muted mb-1 ml-1 block text-[8px] font-black uppercase tracking-widest">Motivo</label>
           <input
             type="text"
             value={form.motivo}
             onChange={(event) => setForm((current) => ({ ...current, motivo: event.target.value }))}
             placeholder="Ex.: viagem, trabalho, compromisso"
-            className="w-full rounded-xl border border-slate-100 bg-white px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-900"
+            className="bg-app-surface border-app text-app w-full rounded-xl border px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand"
           />
         </div>
         <div className="sm:col-span-2 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
           <select
             value={form.recorrencia}
             onChange={(event) => setForm((current) => ({ ...current, recorrencia: event.target.value as 'nenhuma' | 'semanal' }))}
-            className="w-full rounded-xl border border-slate-100 bg-white px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-900"
+            className="bg-app-surface border-app text-app w-full rounded-xl border px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand"
           >
             <option value="nenhuma">Sem repeticao</option>
             <option value="semanal">Repete semanalmente</option>
@@ -192,24 +192,24 @@ const AvailabilityPanel: React.FC<AvailabilityPanelProps> = ({ memberId }) => {
 
       <div className="mt-4 space-y-2">
         {loading ? (
-          <p className="rounded-xl border border-dashed border-slate-200 px-4 py-3 text-xs text-slate-500 dark:border-slate-700">
+          <p className="border-app text-app-muted rounded-xl border border-dashed px-4 py-3 text-xs">
             Carregando indisponibilidades...
           </p>
         ) : items.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-slate-200 px-4 py-3 text-xs text-slate-500 dark:border-slate-700">
+          <p className="border-app text-app-muted rounded-xl border border-dashed px-4 py-3 text-xs">
             Nenhuma indisponibilidade futura cadastrada.
           </p>
         ) : (
           items.map((item) => (
             <div
               key={item.id}
-              className="flex flex-col gap-3 rounded-xl border border-slate-100 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/50 sm:flex-row sm:items-center sm:justify-between"
+              className="bg-app-surface border-app flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
-                <p className="text-xs font-black text-slate-700 dark:text-slate-200">
+                <p className="text-app text-xs font-black">
                   {formatDate(item.data_inicio)} ate {formatDate(item.data_fim)}
                 </p>
-                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                <p className="text-app-muted mt-1 text-[11px]">
                   {item.motivo || 'Sem motivo informado'}
                   {item.recorrencia === 'semanal' ? ' - semanal' : ''}
                 </p>

@@ -79,12 +79,12 @@ const Toolbar: React.FC<ToolbarProps> = ({ currentView, onViewChange }) => {
 
   return (
     <div className="mb-6 animate-fade-in pt-4 sm:mb-8">
-      <div className="flex flex-col items-center gap-4 border-b border-slate-100 pb-5 dark:border-slate-800 sm:gap-6 sm:pb-6">
+      <div className="border-app flex flex-col items-center gap-4 border-b pb-5 sm:gap-6 sm:pb-6">
         <div className="w-full text-center">
           <p className="mb-2 text-[9px] font-black uppercase tracking-[0.3em] text-brand">
             {activeMinisterio?.nome || 'Ministerio'}
           </p>
-          <h2 className="text-3xl font-black uppercase leading-none tracking-tighter text-slate-900 dark:text-white sm:text-4xl">
+          <h2 className="text-app text-3xl font-black uppercase leading-none tracking-tighter sm:text-4xl">
             {getTitle()}
           </h2>
         </div>
@@ -92,7 +92,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ currentView, onViewChange }) => {
         <div className="flex w-full items-center justify-center">
           <div className={`w-full pb-1 sm:w-auto sm:pb-0 ${isToolsToolbar ? '' : 'flex justify-center'} ${isToolsToolbar ? '' : 'sm:no-scrollbar'}`}>
             <div
-              className={`rounded-2xl border border-slate-100 bg-white p-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-800 ${
+              className={`bg-app-surface border-app shadow-app rounded-2xl border p-1.5 backdrop-blur-xl ${
                 isToolsToolbar
                   ? 'grid w-full grid-cols-4 gap-1.5'
                   : 'mx-auto inline-flex min-w-max items-center justify-center gap-1.5'
@@ -109,7 +109,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ currentView, onViewChange }) => {
                 } sm:whitespace-nowrap sm:px-6 sm:py-2.5 sm:text-[10px] sm:tracking-widest ${
                   currentView === tab.view
                     ? 'bg-brand text-white shadow-lg shadow-brand/20'
-                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                    : 'text-app-muted hover:text-brand'
                 }`}
               >
                 {tab.icon && <i className={`${tab.icon} shrink-0 text-[11px] sm:text-sm`} />}

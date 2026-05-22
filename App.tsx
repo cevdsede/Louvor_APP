@@ -16,6 +16,7 @@ const NotificationCenterModal = lazy(() => import('./components/layout/Notificat
 const PublicMemberRegistration = lazy(() => import('./components/auth/PublicMemberRegistration'));
 const ChurchShell = lazy(() => import('./components/church/ChurchShell'));
 const PublicChurchShell = lazy(() => import('./components/church/PublicChurchShell'));
+const DesignLabView = lazy(() => import('./components/lab/DesignLabView'));
 const DashboardView = lazy(() => import('./components/dashboard/DashboardView'));
 const ListView = lazy(() => import('./components/escalas/ListView'));
 const CalendarView = lazy(() => import('./components/escalas/CalendarView'));
@@ -28,9 +29,23 @@ const AvisoModal = lazy(() => import('./components/ui/AvisoModal'));
 const LoadingBlock = ({ label = 'Carregando...' }: { label?: string }) => (
   <div className="flex flex-col items-center justify-center py-40">
     <div className="h-12 w-12 animate-spin rounded-full border-[6px] border-brand border-t-transparent" />
-    <p className="mt-6 text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
+    <p className="mt-6 text-[10px] font-bold uppercase tracking-widest text-app-muted">{label}</p>
   </div>
 );
+
+const getCurrentRoute = () => {
+  if (typeof window === 'undefined') return '/';
+
+  const normalizedHash = window.location.hash.replace(/^#/, '');
+  if (normalizedHash.startsWith('/')) {
+    return normalizedHash;
+  }
+
+  return window.location.pathname || '/';
+};
+
+const isInternalRoute = (path: string) =>
+  path === '/login' || path === '/cadastro' || path === '/design-lab' || path.startsWith('/app');
 
 interface AppContentProps {
   currentView: ViewType;
@@ -104,7 +119,7 @@ const AppContent: React.FC<AppContentProps> = ({
   if (ministryLoading) {
     return (
       <div
-        className={`min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 transition-colors duration-300 ${
+        className={`bg-app-shell min-h-screen transition-colors duration-300 ${
           isDarkMode ? 'dark' : ''
         }`}
       >
@@ -122,11 +137,11 @@ const AppContent: React.FC<AppContentProps> = ({
 
   return (
     <div
-      className={`min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 transition-colors duration-300 ${
+      className={`bg-app-shell min-h-screen transition-colors duration-300 ${
         isDarkMode ? 'dark' : ''
       }`}
     >
-      <div className="flex h-screen overflow-hidden bg-white dark:bg-slate-900">
+      <div className="flex h-screen overflow-hidden bg-transparent">
         <Sidebar
           currentView={currentView}
           onViewChange={setCurrentView}
@@ -151,12 +166,12 @@ const AppContent: React.FC<AppContentProps> = ({
 
           <OfflineSyncBanner />
 
-          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 dark:bg-slate-800">
+          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-transparent">
             <div className="container mx-auto px-4 py-6 pb-28 sm:px-6 sm:pb-32 lg:px-8 lg:pb-8">
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-40">
                   <div className="h-12 w-12 animate-spin rounded-full border-[6px] border-brand border-t-transparent" />
-                  <p className="mt-6 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  <p className="mt-6 text-[10px] font-bold uppercase tracking-widest text-app-muted">
                     Sincronizando...
                   </p>
                 </div>
@@ -190,7 +205,7 @@ const AppContent: React.FC<AppContentProps> = ({
 };
 
 const App: React.FC = () => {
-  const [routePath, setRoutePath] = useState(() => (typeof window === 'undefined' ? '/' : window.location.pathname));
+  const [routePath, setRoutePath] = useState(() => getCurrentRoute());
   const isPublicRegistrationRoute = routePath === '/cadastro';
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -219,19 +234,49 @@ const App: React.FC = () => {
 
   const navigateTo = (path: string) => {
     if (typeof window === 'undefined') return;
+
+    if (path === '/') {
+      window.history.pushState({}, '', '/');
+      window.location.hash = '';
+      setRoutePath('/');
+      return;
+    }
+
+    if (isInternalRoute(path)) {
+      window.history.pushState({}, '', `/#${path}`);
+      setRoutePath(path);
+      return;
+    }
+
     window.history.pushState({}, '', path);
     setRoutePath(path);
   };
 
   useEffect(() => {
-    const handlePopState = () => setRoutePath(window.location.pathname);
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    if (typeof window === 'undefined') return;
+
+    if (!window.location.hash && isInternalRoute(window.location.pathname)) {
+      const legacyPath = window.location.pathname;
+      window.history.replaceState({}, '', `/#${legacyPath}`);
+      setRoutePath(legacyPath);
+    }
+
+    const syncRoute = () => setRoutePath(getCurrentRoute());
+
+    window.addEventListener('hashchange', syncRoute);
+    window.addEventListener('popstate', syncRoute);
+
+    syncRoute();
+
+    return () => {
+      window.removeEventListener('hashchange', syncRoute);
+      window.removeEventListener('popstate', syncRoute);
+    };
   }, []);
 
   useEffect(() => {
-    document.documentElement.style.setProperty('--brand-primary', brandColor);
-    document.documentElement.style.setProperty('--brand-accent', getAccentColor(brandColor));
+    document.documentElement.style.setProperty('--app-brand-primary', brandColor);
+    document.documentElement.style.setProperty('--app-brand-accent', getAccentColor(brandColor));
   }, [brandColor]);
 
   useEffect(() => {
@@ -353,22 +398,40 @@ const App: React.FC = () => {
 
   if (isPublicRegistrationRoute) {
     return (
-      <Suspense fallback={<LoadingBlock label="Carregando cadastro..." />}>
-        <PublicMemberRegistration />
-      </Suspense>
+      <div className="site-theme">
+        <Suspense fallback={<LoadingBlock label="Carregando cadastro..." />}>
+          <PublicMemberRegistration />
+        </Suspense>
+      </div>
     );
   }
 
   if (routePath === '/' || routePath === '') {
     return (
-      <Suspense fallback={<LoadingBlock />}>
-        <PublicChurchShell onLoginClick={handleOpenLogin} />
-      </Suspense>
+      <div className="site-theme">
+        <Suspense fallback={<LoadingBlock />}>
+          <PublicChurchShell onLoginClick={handleOpenLogin} />
+        </Suspense>
+      </div>
     );
   }
 
   if (routePath === '/login') {
-    return <LoginScreen onLogin={handleLoginSuccess} />;
+    return (
+      <div className="app-theme">
+        <LoginScreen onLogin={handleLoginSuccess} />
+      </div>
+    );
+  }
+
+  if (routePath === '/design-lab') {
+    return (
+      <div className="app-theme">
+        <Suspense fallback={<LoadingBlock label="Carregando laboratorio..." />}>
+          <DesignLabView onBack={() => navigateTo('/')} />
+        </Suspense>
+      </div>
+    );
   }
 
   if (!routePath.startsWith('/app')) {
@@ -377,53 +440,59 @@ const App: React.FC = () => {
   }
 
   if (!sessionCached) {
-    return <LoginScreen onLogin={handleLoginSuccess} />;
+    return (
+      <div className="app-theme">
+        <LoginScreen onLogin={handleLoginSuccess} />
+      </div>
+    );
   }
 
   return (
-    <LocalStorageFirstInitializer
-      config={{
-        syncInterval: 2 * 60 * 1000,
-        enableBackgroundSync: true,
-        priorityLocal: true
-      }}
-      onReady={() => undefined}
-      onError={(error) => console.error('Erro na inicializacao:', error)}
-    >
-      <MinistryProvider>
-        {activeArea === 'church' ? (
-          <Suspense fallback={<LoadingBlock />}>
-            <ChurchShell
-              onOpenMinistry={() => setActiveArea('ministry')}
+    <div className="app-theme">
+      <LocalStorageFirstInitializer
+        config={{
+          syncInterval: 2 * 60 * 1000,
+          enableBackgroundSync: true,
+          priorityLocal: true
+        }}
+        onReady={() => undefined}
+        onError={(error) => console.error('Erro na inicializacao:', error)}
+      >
+        <MinistryProvider>
+          {activeArea === 'church' ? (
+            <Suspense fallback={<LoadingBlock />}>
+              <ChurchShell
+                onOpenMinistry={() => setActiveArea('ministry')}
+                isDarkMode={isDarkMode}
+                onToggleTheme={toggleDarkMode}
+                brandColor={brandColor}
+                onColorChange={setBrandColor}
+              />
+            </Suspense>
+          ) : (
+            <AppContent
+              currentView={currentView}
+              setCurrentView={setCurrentView}
               isDarkMode={isDarkMode}
-              onToggleTheme={toggleDarkMode}
+              toggleDarkMode={toggleDarkMode}
               brandColor={brandColor}
-              onColorChange={setBrandColor}
+              setBrandColor={setBrandColor}
+              isProfileModalOpen={isProfileModalOpen}
+              setIsProfileModalOpen={setIsProfileModalOpen}
+              isAvisoModalOpen={isAvisoModalOpen}
+              setIsAvisoModalOpen={setIsAvisoModalOpen}
+              isNotificationsOpen={isNotificationsOpen}
+              setIsNotificationsOpen={setIsNotificationsOpen}
+              selectedEventId={selectedEventId}
+              onBackToChurch={() => setActiveArea('church')}
+              openAviso={openAviso}
+              handleSync={handleSync}
+              isLoading={isLoading}
             />
-          </Suspense>
-        ) : (
-          <AppContent
-            currentView={currentView}
-            setCurrentView={setCurrentView}
-            isDarkMode={isDarkMode}
-            toggleDarkMode={toggleDarkMode}
-            brandColor={brandColor}
-            setBrandColor={setBrandColor}
-            isProfileModalOpen={isProfileModalOpen}
-            setIsProfileModalOpen={setIsProfileModalOpen}
-            isAvisoModalOpen={isAvisoModalOpen}
-            setIsAvisoModalOpen={setIsAvisoModalOpen}
-            isNotificationsOpen={isNotificationsOpen}
-            setIsNotificationsOpen={setIsNotificationsOpen}
-            selectedEventId={selectedEventId}
-            onBackToChurch={() => setActiveArea('church')}
-            openAviso={openAviso}
-            handleSync={handleSync}
-            isLoading={isLoading}
-          />
-        )}
-      </MinistryProvider>
-    </LocalStorageFirstInitializer>
+          )}
+        </MinistryProvider>
+      </LocalStorageFirstInitializer>
+    </div>
   );
 };
 

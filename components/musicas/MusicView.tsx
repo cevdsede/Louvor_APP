@@ -676,7 +676,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
   if (!activeModules.includes('music')) {
     return (
       <div className="py-20 text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+        <div className="app-panel mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border-0">
           <i className="fas fa-music-slash text-slate-400" />
         </div>
         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
@@ -716,13 +716,13 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
       <div className="pb-20 fade-in max-w-7xl mx-auto">
         {/* Gráficos Estilos e Temas */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-50 dark:border-slate-800 flex flex-col items-center">
+          <div className="app-card p-6 rounded-[2rem] border flex flex-col items-center">
             <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">Estilos</h3>
             <div className="h-40 w-full relative">
               <canvas ref={stylesChartRef}></canvas>
             </div>
           </div>
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-50 dark:border-slate-800 flex flex-col items-center">
+          <div className="app-card p-6 rounded-[2rem] border flex flex-col items-center">
             <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">Temas (Paleta)</h3>
             <div className="h-40 w-full relative">
               <canvas ref={themesChartRef}></canvas>
@@ -793,23 +793,23 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
         {isSongModalOpen && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ left: '256px' }}>
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" style={{ left: '-256px' }} onClick={() => setIsSongModalOpen(false)}></div>
-            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl animate-fade-in border border-slate-100 dark:border-slate-800">
+            <div className="app-card relative w-full max-w-md p-8 rounded-3xl animate-fade-in border">
               <h3 className="text-lg font-black text-slate-800 dark:text-white mb-6">Nova Música</h3>
               <div className="space-y-4">
-                <input value={newSong.song} onChange={e => setNewSong({ ...newSong, song: e.target.value })} placeholder="Nome da Música" className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand" />
-                <input value={newSong.singer} onChange={e => setNewSong({ ...newSong, singer: e.target.value })} placeholder="Cantor / Banda" className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand" />
+                <input value={newSong.song} onChange={e => setNewSong({ ...newSong, song: e.target.value })} placeholder="Nome da Música" className="app-input-strong w-full rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand" />
+                <input value={newSong.singer} onChange={e => setNewSong({ ...newSong, singer: e.target.value })} placeholder="Cantor / Banda" className="app-input-strong w-full rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand" />
                 <div className="grid grid-cols-2 gap-4">
-                  <select value={newSong.theme} onChange={e => setNewSong({ ...newSong, theme: e.target.value })} className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand">
+                  <select value={newSong.theme} onChange={e => setNewSong({ ...newSong, theme: e.target.value })} className="app-input-strong w-full rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand">
                     <option value="">Tema...</option>
                     {availableThemes.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
-                  <select value={newSong.style} onChange={e => setNewSong({ ...newSong, style: e.target.value as 'Adoração' | 'Celebração' })} className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand">
+                  <select value={newSong.style} onChange={e => setNewSong({ ...newSong, style: e.target.value as 'Adoração' | 'Celebração' })} className="app-input-strong w-full rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand">
                     <option value="Adoração">Adoração</option>
                     <option value="Celebração">Celebração</option>
                   </select>
                 </div>
                 <div className="flex gap-3 pt-4">
-                  <button onClick={() => setIsSongModalOpen(false)} className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold rounded-xl text-xs uppercase tracking-widest">Cancelar</button>
+                  <button onClick={() => setIsSongModalOpen(false)} className="app-btn-muted flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest">Cancelar</button>
                   <button onClick={handleAddSong} className="flex-1 py-3 bg-brand text-white font-bold rounded-xl text-xs uppercase tracking-widest shadow-lg">Salvar</button>
                 </div>
               </div>
@@ -819,11 +819,11 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
 
         <div className="space-y-6">
           {Object.entries(grouped).map(([theme, styles]: [string, Record<string, Music[]>]) => (
-            <div key={theme} className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+            <div key={theme} className="app-card rounded-[2rem] border overflow-hidden transition-all duration-300 hover:shadow-xl">
               {/* Nível Tema - Header Melhorado */}
               <div 
                 onClick={() => setExpandedThemes(p => ({ ...p, [theme]: !p[theme] }))} 
-                className="px-4 sm:px-8 py-4 sm:py-6 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700 cursor-pointer group hover:bg-brand/5 dark:hover:bg-brand/10 transition-all duration-300"
+                className="app-panel px-4 sm:px-8 py-4 sm:py-6 border-x-0 border-t-0 cursor-pointer group hover:bg-brand/5 transition-all duration-300"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 sm:gap-4">
@@ -843,7 +843,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className={`w-8 h-8 sm:w-10 sm:h-10 bg-slate-100 dark:bg-slate-800 rounded-lg sm:rounded-xl flex items-center justify-center transition-all duration-300 ${expandedThemes[theme] ? 'bg-brand text-white rotate-180' : 'text-slate-400 group-hover:bg-brand group-hover:text-white'}`}>
+                    <div className={`app-panel-muted w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center transition-all duration-300 ${expandedThemes[theme] ? 'bg-brand text-white rotate-180 border-brand/20' : 'text-slate-400 group-hover:bg-brand group-hover:text-white group-hover:border-brand/20'}`}>
                       <i className="fas fa-chevron-down text-xs sm:text-sm"></i>
                     </div>
                   </div>
@@ -851,13 +851,13 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
               </div>
               
               {expandedThemes[theme] && (
-                <div className="px-8 pb-8 space-y-6 pt-6 animate-fade-in bg-slate-50/30 dark:bg-slate-800/20">
+                <div className="px-8 pb-8 space-y-6 pt-6 animate-fade-in bg-app-surface-strong/60">
                   {Object.entries(styles).map(([style, sList]: [string, Music[]]) => {
                     const styleKey = `${theme}-${style}`;
                     return (
-                      <div key={styleKey} className="bg-white dark:bg-slate-800/50 rounded-[2rem] border border-slate-100 dark:border-slate-700 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+                      <div key={styleKey} className="app-card rounded-[2rem] border overflow-hidden transition-all duration-300 hover:shadow-xl">
                         {/* Nível Estilo - Melhorado */}
-                        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                        <div className="app-panel flex items-center justify-between rounded-2xl p-4">
                           <div className="flex items-center gap-3">
                             <div className={`w-3 h-3 rounded-full shadow-lg ${style === 'Adoração' ? 'bg-blue-500' : 'bg-amber-500'}`}></div>
                             <div>
@@ -883,7 +883,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                             {sList.sort((a: Music, b: Music) => a.song.localeCompare(b.song)).map((s: Music, index: number) => (
                               <div key={s.id} className="group relative">
                                 {/* Cartão da Música */}
-                                <div className="bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+                                <div className="app-panel rounded-xl overflow-hidden">
                                   {/* Header com Tom e Informações */}
                                   <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
                                     <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
@@ -903,16 +903,16 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                                   {/* Botões de Links */}
                                   <div className="p-4">
                                     <div className="grid grid-cols-4 gap-1">
-                                      <a href={getLink('youtube', s.song, s.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube">
+                                      <a href={getLink('youtube', s.song, s.singer)} target="_blank" className="app-panel flex items-center justify-center rounded-lg py-2 text-red-600 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-red-600 hover:bg-red-600 hover:text-white" title="Youtube">
                                         <i className="fab fa-youtube text-[10px]"></i>
                                       </a>
-                                      <a href={getLink('spotify', s.song, s.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-green-600 hover:bg-green-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify">
+                                      <a href={getLink('spotify', s.song, s.singer)} target="_blank" className="app-panel flex items-center justify-center rounded-lg py-2 text-green-600 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-green-600 hover:bg-green-600 hover:text-white" title="Spotify">
                                         <i className="fab fa-spotify text-[10px]"></i>
                                       </a>
-                                      <a href={getLink('lyrics', s.song, s.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-600 hover:bg-blue-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra">
+                                      <a href={getLink('lyrics', s.song, s.singer)} target="_blank" className="app-panel flex items-center justify-center rounded-lg py-2 text-blue-600 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-blue-600 hover:bg-blue-600 hover:text-white" title="Letra">
                                         <i className="fas fa-microphone-alt text-[10px]"></i>
                                       </a>
-                                      <a href={getLink('chords', s.song, s.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-purple-600 hover:bg-purple-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra">
+                                      <a href={getLink('chords', s.song, s.singer)} target="_blank" className="app-panel flex items-center justify-center rounded-lg py-2 text-purple-600 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-purple-600 hover:bg-purple-600 hover:text-white" title="Cifra">
                                         <i className="fas fa-guitar text-[10px]"></i>
                                       </a>
                                     </div>
@@ -939,7 +939,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
     return (
       <div className="pb-20 fade-in max-w-7xl mx-auto space-y-6">
         {/* Gráfico Ranking Músicas */}
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-50 dark:border-slate-800 flex flex-col">
+        <div className="app-card p-6 rounded-[2rem] border flex flex-col">
           <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">Ranking Músicas</h3>
           <div className="h-40 w-full">
             <canvas ref={rankingChartRef}></canvas>
@@ -978,10 +978,10 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
           </div>
         ) : (
           repertoires.map((event: RepertoireSet) => (
-            <div key={event.id} className="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-50 dark:border-slate-800 overflow-hidden shadow-sm">
+            <div key={event.id} className="app-card rounded-[1.5rem] border overflow-hidden">
               <div 
                 onClick={() => setExpandedThemes(p => ({ ...p, [event.id]: !p[event.id] }))}
-                className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-50 dark:border-slate-800"
+                className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-app-surface-strong border-b border-app"
               >
                 <div>
                   <h4 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">
@@ -1026,7 +1026,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {event.items.map((item: RepertoireItem, index: number) => (
-                    <div key={item.id} className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 relative">
+                    <div key={item.id} className="app-panel relative rounded-xl p-4">
                       <div className="absolute top-2 right-2 flex gap-1">
                         <button
                           onClick={() => openEditModal(item)}
@@ -1057,10 +1057,10 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                       </div>
                       
                       <div className="grid grid-cols-4 gap-1">
-                        <a href={getLink('youtube', item.song, item.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
-                        <a href={getLink('spotify', item.song, item.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-emerald-500 hover:bg-emerald-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
-                        <a href={getLink('lyrics', item.song, item.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-500 hover:bg-blue-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-align-left text-[9px]"></i></a>
-                        <a href={getLink('chords', item.song, item.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-amber-500 hover:bg-amber-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[9px]"></i></a>
+                        <a href={getLink('youtube', item.song, item.singer)} target="_blank" className="app-panel-muted flex items-center justify-center rounded-lg py-2 text-red-600 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-red-600 hover:bg-red-600 hover:text-white" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
+                        <a href={getLink('spotify', item.song, item.singer)} target="_blank" className="app-panel-muted flex items-center justify-center rounded-lg py-2 text-emerald-500 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-emerald-500 hover:bg-emerald-500 hover:text-white" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
+                        <a href={getLink('lyrics', item.song, item.singer)} target="_blank" className="app-panel-muted flex items-center justify-center rounded-lg py-2 text-blue-500 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-blue-500 hover:bg-blue-500 hover:text-white" title="Letra"><i className="fas fa-align-left text-[9px]"></i></a>
+                        <a href={getLink('chords', item.song, item.singer)} target="_blank" className="app-panel-muted flex items-center justify-center rounded-lg py-2 text-amber-500 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-amber-500 hover:bg-amber-500 hover:text-white" title="Cifra"><i className="fas fa-guitar text-[9px]"></i></a>
                       </div>
                     </div>
                   ))}
@@ -1075,7 +1075,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
         {isRepertoireModalOpen && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ left: '256px' }}>
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" style={{ left: '-256px' }} onClick={() => setIsRepertoireModalOpen(false)}></div>
-            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl animate-fade-in border border-slate-100 dark:border-slate-800">
+            <div className="app-card relative w-full max-w-md p-8 rounded-3xl animate-fade-in border">
               <h3 className="text-lg font-black text-slate-800 dark:text-white mb-6">
                 {editingRepertoire ? 'Editar Repertório' : 'Novo Repertório'}
               </h3>
@@ -1085,7 +1085,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                   <select 
                     value={newRepertoire.id_culto} 
                     onChange={e => setNewRepertoire({ ...newRepertoire, id_culto: e.target.value })} 
-                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand"
+                    className="app-input-strong w-full rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand"
                   >
                     <option value="">Selecione um culto...</option>
                     {availableCults.map(cult => (
@@ -1166,7 +1166,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                       <select 
                         value={newRepertoire.id_membros} 
                         onChange={e => setNewRepertoire({ ...newRepertoire, id_membros: e.target.value, minister: getDisplayName(filteredMembers.find(m => m.id === e.target.value)) })} 
-                        className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand appearance-none"
+                        className="app-input-strong w-full rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand appearance-none"
                         disabled={!newRepertoire.id_culto || loadingMinisters}
                       >
                         <option value="">
@@ -1199,7 +1199,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                     <select 
                       value={newRepertoire.id_tons} 
                       onChange={e => setNewRepertoire({ ...newRepertoire, id_tons: e.target.value, key: availableTones.find(t => t.id === e.target.value)?.nome_tons || '' })} 
-                      className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand"
+                      className="app-input-strong w-full rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand"
                     >
                       <option value="">Selecione um tom...</option>
                       {availableTones.map(tone => (
@@ -1215,7 +1215,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                 <div className="flex gap-3 pt-4">
                   <button 
                     onClick={() => setIsRepertoireModalOpen(false)} 
-                    className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold rounded-xl text-xs uppercase tracking-widest"
+                    className="app-btn-muted flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest"
                   >
                     Cancelar
                   </button>
@@ -1235,7 +1235,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
         {isDeleteModalOpen && deletingRepertoire && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ left: '256px' }}>
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" style={{ left: '-256px' }} onClick={() => setIsDeleteModalOpen(false)}></div>
-            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl animate-fade-in border border-slate-100 dark:border-slate-800">
+            <div className="app-card relative w-full max-w-md p-8 rounded-3xl animate-fade-in border">
               {/* Ícone de Alerta */}
               <div className="flex justify-center mb-6">
                 <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
@@ -1253,7 +1253,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                 </p>
                 
                 {/* Card com informações da música */}
-                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 text-left">
+                <div className="app-panel rounded-xl p-4 text-left">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
                       {deletingRepertoire.key || 'Ñ'}
@@ -1279,7 +1279,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                     setIsDeleteModalOpen(false);
                     setDeletingRepertoire(null);
                   }} 
-                  className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold rounded-xl text-xs uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  className="app-btn-muted flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-colors"
                 >
                   <i className="fas fa-times mr-2"></i>
                   Cancelar
@@ -1300,7 +1300,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
         {isEscalaDeleteModalOpen && deletingEscala && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ left: '256px' }}>
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" style={{ left: '-256px' }} onClick={() => setIsEscalaDeleteModalOpen(false)}></div>
-            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl animate-fade-in border border-slate-100 dark:border-slate-800">
+            <div className="app-card relative w-full max-w-md p-8 rounded-3xl animate-fade-in border">
               {/* Ícone de Alerta */}
               <div className="flex justify-center mb-6">
                 <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
@@ -1318,7 +1318,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                 </p>
                 
                 {/* Card com informações do membro */}
-                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 text-left">
+                <div className="app-panel rounded-xl p-4 text-left">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
                       {getDisplayName(deletingEscala.membros?.[0], 'M').charAt(0).toUpperCase()}
@@ -1342,7 +1342,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                     setIsEscalaDeleteModalOpen(false);
                     setDeletingEscala(null);
                   }} 
-                  className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold rounded-xl text-xs uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  className="app-btn-muted flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-colors"
                 >
                   <i className="fas fa-times mr-2"></i>
                   Cancelar
@@ -1461,11 +1461,11 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
           <h2 className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-4 mb-4">Histórico de Músicas</h2>
 
           {Object.entries(groupedHistory).map(([minister, themes]) => (
-            <div key={minister} className="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-50 dark:border-slate-800 overflow-hidden shadow-sm">
+            <div key={minister} className="app-card rounded-[1.5rem] border overflow-hidden">
               {/* Minister Level */}
               <div
                 onClick={() => setExpandedHistMinisters(p => ({ ...p, [minister]: !p[minister] }))}
-                className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-50 dark:border-slate-800"
+                className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-app-surface-strong border-b border-app"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center font-black text-sm">
@@ -1480,7 +1480,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
               </div>
 
               {expandedHistMinisters[minister] && (
-                <div className="px-6 pb-6 space-y-6 pt-4 animate-fade-in bg-slate-50/5 dark:bg-slate-800/5">
+                <div className="px-6 pb-6 space-y-6 pt-4 animate-fade-in bg-app-surface-strong/40">
                   {Object.entries(themes).map(([theme, styles]) => (
                     <div key={theme} className="space-y-4">
                       {/* Theme Level */}
@@ -1509,7 +1509,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                               {expandedHistStyles[`${minister}-${theme}-${style}`] && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
                                   {songs.map((song) => (
-                                    <div key={song.id} className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                                    <div key={song.id} className="app-card p-4 rounded-xl border">
                                       <div className="flex-1 min-w-0 mb-3">
                                         <p className="text-[10px] font-black text-slate-800 dark:text-white uppercase truncate leading-tight">{song.song}</p>
                                         <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1 truncate">
@@ -1519,10 +1519,10 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                                         </p>
                                       </div>
                                       <div className="grid grid-cols-4 gap-1">
-                                        <a href={getLink('youtube', song.song, song.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
-                                        <a href={getLink('spotify', song.song, song.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-emerald-500 hover:bg-emerald-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
-                                        <a href={getLink('lyrics', song.song, song.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-500 hover:bg-blue-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-align-left text-[9px]"></i></a>
-                                        <a href={getLink('chords', song.song, song.singer)} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-amber-500 hover:bg-amber-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[9px]"></i></a>
+                                        <a href={getLink('youtube', song.song, song.singer)} target="_blank" className="app-panel flex items-center justify-center rounded-lg py-2 text-red-600 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-red-600 hover:bg-red-600 hover:text-white" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
+                                        <a href={getLink('spotify', song.song, song.singer)} target="_blank" className="app-panel flex items-center justify-center rounded-lg py-2 text-emerald-500 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-emerald-500 hover:bg-emerald-500 hover:text-white" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
+                                        <a href={getLink('lyrics', song.song, song.singer)} target="_blank" className="app-panel flex items-center justify-center rounded-lg py-2 text-blue-500 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-blue-500 hover:bg-blue-500 hover:text-white" title="Letra"><i className="fas fa-align-left text-[9px]"></i></a>
+                                        <a href={getLink('chords', song.song, song.singer)} target="_blank" className="app-panel flex items-center justify-center rounded-lg py-2 text-amber-500 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-amber-500 hover:bg-amber-500 hover:text-white" title="Cifra"><i className="fas fa-guitar text-[9px]"></i></a>
                                       </div>
                                     </div>
                                   ))}
@@ -1582,10 +1582,10 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
           </div>
         ) : (
           events.map((event: EscalaEvent) => (
-            <div key={event.id} className="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-50 dark:border-slate-800 overflow-hidden shadow-sm">
+            <div key={event.id} className="app-card rounded-[1.5rem] border overflow-hidden">
               <div 
                 onClick={() => setExpandedThemes(p => ({ ...p, [event.id]: !p[event.id] }))}
-                className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+                className="px-6 py-4 bg-app-surface-strong border-b border-app flex justify-between items-center cursor-pointer hover:bg-app-surface-muted transition-colors"
               >
                 <div>
                   <h4 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">
@@ -1604,7 +1604,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                 <div className="p-4 space-y-3 animate-fade-in">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {event.items.map((item: any, index: number) => (
-                      <div key={item.id} className="p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 relative">
+                      <div key={item.id} className="app-panel relative rounded-xl p-4">
                         <div className="absolute top-2 right-2 flex gap-1 z-50">
                           <button
                             onClick={() => openEditEscalaModal(item)}
@@ -1633,10 +1633,10 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                           </div>
                         </div>
                         <div className="grid grid-cols-4 gap-1">
-                          <a href={getLink('youtube', getDisplayName(item.membros?.[0]), item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
-                          <a href={getLink('spotify', getDisplayName(item.membros?.[0]), item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-emerald-500 hover:bg-emerald-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
-                          <a href={getLink('lyrics', getDisplayName(item.membros?.[0]), item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-500 hover:bg-blue-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-align-left text-[9px]"></i></a>
-                          <a href={getLink('chords', getDisplayName(item.membros?.[0]), item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-amber-500 hover:bg-amber-500 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[9px]"></i></a>
+                          <a href={getLink('youtube', getDisplayName(item.membros?.[0]), item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="app-panel-muted flex items-center justify-center rounded-lg py-2 text-red-600 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-red-600 hover:bg-red-600 hover:text-white" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
+                          <a href={getLink('spotify', getDisplayName(item.membros?.[0]), item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="app-panel-muted flex items-center justify-center rounded-lg py-2 text-emerald-500 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-emerald-500 hover:bg-emerald-500 hover:text-white" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
+                          <a href={getLink('lyrics', getDisplayName(item.membros?.[0]), item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="app-panel-muted flex items-center justify-center rounded-lg py-2 text-blue-500 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-blue-500 hover:bg-blue-500 hover:text-white" title="Letra"><i className="fas fa-align-left text-[9px]"></i></a>
+                          <a href={getLink('chords', getDisplayName(item.membros?.[0]), item.funcao?.[0]?.nome_funcao || '')} target="_blank" className="app-panel-muted flex items-center justify-center rounded-lg py-2 text-amber-500 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-amber-500 hover:bg-amber-500 hover:text-white" title="Cifra"><i className="fas fa-guitar text-[9px]"></i></a>
                         </div>
                       </div>
                     ))}

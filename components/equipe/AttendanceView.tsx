@@ -288,7 +288,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
       <div className="flex items-center gap-4">
         <button
           onClick={onBack}
-          className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+          className="w-10 h-10 bg-app-surface-strong rounded-xl flex items-center justify-center hover:bg-app-surface-muted transition-colors"
         >
           <i className="fas fa-arrow-left text-slate-500"></i>
         </button>
@@ -330,7 +330,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
 
       {/* Estatísticas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-100 dark:border-slate-800">
+        <div className="app-card rounded-xl border p-4">
           <div className="text-2xl font-black text-slate-800 dark:text-white">{estatisticas.total}</div>
           <div className="text-sm text-slate-500">Total</div>
         </div>
@@ -358,7 +358,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
               placeholder="Buscar membro..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+              className="app-input-strong w-full rounded-xl pl-12 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
             />
           </div>
         </div>
@@ -370,7 +370,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
               className={`px-4 py-2 rounded-xl font-medium transition-colors ${
                 filterStatus === status
                   ? 'bg-brand text-white'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  : 'bg-app-surface-strong text-app-muted hover:bg-app-surface-muted'
               }`}
             >
               {status === 'todos' ? 'Todos' : 
@@ -382,7 +382,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
       </div>
 
       {/* Lista de Presença */}
-      <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 overflow-hidden">
+      <div className="app-card rounded-[2rem] border overflow-hidden">
         <div className="p-6">
           <h3 className="font-black text-slate-800 dark:text-white text-lg mb-4">Lista de Presença</h3>
           
@@ -441,7 +441,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
                             setJustificativaText('');
                           }
                         }}
-                        className="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                        className="app-input rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
                         autoFocus
                       />
                       <button
@@ -517,14 +517,14 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
       {/* Modal para Adicionar Membro */}
       {showAddMembro && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+          <div className="app-card rounded-[2rem] w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col border">
             <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-xl font-black text-slate-800 dark:text-white">
                 Adicionar Membro à Chamada
               </h3>
               <button
                 onClick={() => setShowAddMembro(false)}
-                className="w-8 h-8 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                className="w-8 h-8 bg-app-surface-strong rounded-lg flex items-center justify-center hover:bg-app-surface-muted transition-colors"
               >
                 <i className="fas fa-times text-slate-500"></i>
               </button>
@@ -546,7 +546,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
                   {membrosDisponiveis.map((membro) => (
                     <div
                       key={membro.id}
-                      className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                      className="flex items-center justify-between p-3 bg-app-surface-strong rounded-lg hover:bg-app-surface-muted transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <ImageCache
@@ -576,7 +576,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ evento, onBack }) => {
             <div className="p-6 border-t border-slate-100 dark:border-slate-800">
               <button
                 onClick={() => setShowAddMembro(false)}
-                className="w-full py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                className="w-full py-3 bg-app-surface-strong text-app-muted rounded-xl font-medium hover:bg-app-surface-muted transition-colors"
               >
                 Fechar
               </button>

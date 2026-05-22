@@ -294,7 +294,7 @@ const CalendarView: React.FC = () => {
             </div>
           ))}
           {blanks.map(i => (
-            <div key={`blank-${i}`} className="bg-white dark:bg-slate-900/20 h-16 md:h-24"></div>
+            <div key={`blank-${i}`} className="bg-app-surface-muted h-16 md:h-24"></div>
           ))}
           {monthDates.map(day => {
             const dayEvents = getEventsForDate(day);
@@ -303,7 +303,7 @@ const CalendarView: React.FC = () => {
               <div
                 key={day}
                 onClick={() => hasEvent && setSelectedDateEvents(dayEvents)}
-                className={`bg-white dark:bg-slate-900 p-2 h-16 md:h-24 border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all group relative cursor-pointer overflow-hidden ${hasEvent ? 'ring-1 ring-inset ring-brand/20' : ''}`}
+                className={`bg-app-surface border-app p-2 h-16 md:h-24 transition-all group relative cursor-pointer overflow-hidden hover:bg-app-surface-strong ${hasEvent ? 'ring-1 ring-inset ring-brand/20' : ''}`}
               >
                 <span className={`text-[10px] font-black transition-colors ${hasEvent ? 'text-brand' : 'text-slate-300 dark:text-slate-700'}`}>
                   {day.toString().padStart(2, '0')}
@@ -346,7 +346,7 @@ const CalendarView: React.FC = () => {
               value={memberSearchTerm}
               onChange={(event) => setMemberSearchTerm(event.target.value)}
               placeholder="Pesquisar membro..."
-              className="w-full rounded-xl border border-slate-100 bg-white py-3 pl-9 pr-9 text-xs font-bold text-slate-700 outline-none transition-all focus:border-brand focus:ring-2 focus:ring-brand/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              className="bg-app-surface border-app text-app w-full rounded-xl border py-3 pl-9 pr-9 text-xs font-bold outline-none transition-all focus:border-brand focus:ring-2 focus:ring-brand/10"
             />
             {memberSearchTerm && (
               <button
@@ -359,10 +359,10 @@ const CalendarView: React.FC = () => {
             )}
           </div>
           <div className="grid grid-cols-2 gap-2 sm:flex">
-            <button onClick={handlePrevMonth} className="bg-white dark:bg-slate-800 text-slate-400 h-10 rounded-xl flex items-center justify-center border border-slate-100 dark:border-slate-700 hover:text-brand transition-all sm:w-10">
+            <button onClick={handlePrevMonth} className="bg-app-surface border-app text-app-muted flex h-10 items-center justify-center rounded-xl border hover:text-brand transition-all sm:w-10">
               <i className="fas fa-chevron-left text-xs"></i>
             </button>
-            <button onClick={handleNextMonth} className="bg-white dark:bg-slate-800 text-slate-400 h-10 rounded-xl flex items-center justify-center border border-slate-100 dark:border-slate-700 hover:text-brand transition-all sm:w-10">
+            <button onClick={handleNextMonth} className="bg-app-surface border-app text-app-muted flex h-10 items-center justify-center rounded-xl border hover:text-brand transition-all sm:w-10">
               <i className="fas fa-chevron-right text-xs"></i>
             </button>
           </div>
@@ -385,13 +385,13 @@ const CalendarView: React.FC = () => {
       {selectedDateEvents && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 lg:pl-[312px] antialiased">
           <div className="absolute inset-0 bg-slate-900/80" onClick={() => setSelectedDateEvents(null)}></div>
-          <div className="relative w-full max-w-4xl max-h-[85vh] lg:max-h-[90vh] bg-[#f4f7fa] dark:bg-[#0b1120] rounded-[2rem] lg:rounded-[3rem] shadow-2xl overflow-y-auto custom-scrollbar border border-slate-100 dark:border-slate-800">
+          <div className="bg-app-shell border-app relative max-h-[85vh] w-full max-w-4xl overflow-y-auto rounded-[2rem] border shadow-2xl custom-scrollbar lg:max-h-[90vh] lg:rounded-[3rem]">
             <div className="p-6 lg:p-10">
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter uppercase leading-none">
+                <h3 className="text-app text-2xl font-black tracking-tighter uppercase leading-none">
                   Cultos do Dia
                 </h3>
-                <button onClick={() => setSelectedDateEvents(null)} className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white dark:bg-slate-800 text-slate-400 hover:text-red-500 transition-all border border-slate-100 dark:border-slate-700 shadow-sm">
+                <button onClick={() => setSelectedDateEvents(null)} className="bg-app-surface border-app text-app-muted flex h-10 w-10 items-center justify-center rounded-2xl border shadow-sm transition-all hover:text-red-500">
                   <i className="fas fa-times"></i>
                 </button>
               </div>

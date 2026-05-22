@@ -322,7 +322,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
       )}
 
       {showAddMember && (
-        <div className="mb-6 rounded-xl border border-slate-100 bg-slate-50 p-6 dark:border-slate-700 dark:bg-slate-800/30">
+        <div className="app-panel mb-6 rounded-xl p-6">
           <h4 className="mb-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
             {editingMember ? 'Editar funcao do membro' : 'Adicionar membro'}
           </h4>
@@ -335,7 +335,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
               <select
                 value={newMemberFormData.memberId}
                 onChange={(e) => setNewMemberFormData({ ...newMemberFormData, memberId: e.target.value })}
-                className="w-full appearance-none rounded-xl border border-slate-100 bg-slate-50 px-4 py-2 text-xs outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-900"
+                className="app-input-strong w-full appearance-none rounded-xl px-4 py-2 text-xs outline-none focus:ring-1 focus:ring-brand"
                 disabled={Boolean(editingMember)}
               >
                 <option value="">Selecionar membro...</option>
@@ -360,7 +360,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
               <select
                 value={newMemberFormData.roleId}
                 onChange={(e) => setNewMemberFormData({ ...newMemberFormData, roleId: e.target.value })}
-                className="w-full appearance-none rounded-xl border border-slate-100 bg-slate-50 px-4 py-2 text-xs outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-900"
+                className="app-input-strong w-full appearance-none rounded-xl px-4 py-2 text-xs outline-none focus:ring-1 focus:ring-brand"
               >
                 <option value="">Selecionar funcao...</option>
                 {functions.map((funcao) => (
@@ -375,7 +375,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
           <div className="mt-4 flex gap-2">
             <button
               onClick={closeForm}
-              className="min-w-0 flex-1 rounded-xl bg-slate-100 px-2 py-2 text-center text-[8px] font-black uppercase leading-tight tracking-normal text-slate-500 dark:bg-slate-700 sm:text-[9px] sm:tracking-widest"
+              className="app-panel-muted min-w-0 flex-1 rounded-xl px-2 py-2 text-center text-[8px] font-black uppercase leading-tight tracking-normal sm:text-[9px] sm:tracking-widest"
             >
               Cancelar
             </button>
@@ -392,7 +392,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
         {sortedMembers.map((member, index) => (
           <div key={`${member.id}-${(member as any).roleId || index}`} className="group relative">
-            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 transition-all duration-300 hover:border-brand/20 dark:border-slate-700 dark:bg-slate-800/30 sm:p-4">
+            <div className="app-panel rounded-xl p-3 transition-all duration-300 hover:border-brand/20 sm:p-4">
               <div className="flex flex-col items-center text-center">
                 <div className="relative mb-3">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-gold shadow-lg">
@@ -408,7 +408,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
                     )}
                   </div>
 
-                  <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-brand bg-white shadow-md dark:bg-slate-800">
+                  <div className="app-card absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-brand shadow-md">
                     <i className={`fas ${getRoleIcon(member.roles && member.roles.length > 0 ? member.roles[0] : member.role)} text-[8px] text-brand`} />
                   </div>
                 </div>
@@ -454,7 +454,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({
 
       {sortedMembers.length === 0 && (
         <div className="py-8 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+          <div className="app-panel mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border-0">
             <i className="fas fa-users-slash text-lg text-slate-400" />
           </div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Nenhum membro escalado</p>

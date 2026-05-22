@@ -243,24 +243,24 @@ const MinistryManager: React.FC = () => {
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_380px] gap-6">
       <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
+          <div className="app-card rounded-2xl p-4">
             <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Ministerios Ativos</p>
             <p className="text-2xl font-black text-slate-800 dark:text-white">{activeMinisterios.length}</p>
             <p className="text-xs text-slate-500 mt-1">Prontos para uso no app.</p>
           </div>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
+          <div className="app-card rounded-2xl p-4">
             <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Arquivados</p>
             <p className="text-2xl font-black text-slate-800 dark:text-white">{inactiveMinisterios}</p>
             <p className="text-xs text-slate-500 mt-1">Historico mantido sem expor no menu.</p>
           </div>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
+          <div className="app-card rounded-2xl p-4">
             <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Vinculos</p>
             <p className="text-2xl font-black text-slate-800 dark:text-white">{totalLinks}</p>
             <p className="text-xs text-slate-500 mt-1">Relacoes entre membros e ministerios.</p>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6">
+        <div className="app-card rounded-3xl p-5 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
             <div>
               <h3 className="text-lg font-black text-slate-800 dark:text-white">Ministerios cadastrados</h3>
@@ -271,7 +271,7 @@ const MinistryManager: React.FC = () => {
               onClick={() => {
                 syncCaches().then(loadMinisterios).catch(() => showError('Nao foi possivel atualizar os ministerios.'));
               }}
-              className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-black uppercase tracking-widest"
+              className="app-btn-muted px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest"
             >
               <i className="fas fa-rotate mr-2"></i>
               Atualizar
@@ -284,7 +284,7 @@ const MinistryManager: React.FC = () => {
                 Carregando ministerios...
               </div>
             ) : ministerios.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/40 px-6 py-12 text-center">
+              <div className="app-panel-muted rounded-2xl border border-dashed border-app px-6 py-12 text-center">
                 <div className="w-14 h-14 mx-auto rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-4">
                   <i className="fas fa-layer-group text-lg"></i>
                 </div>
@@ -304,7 +304,7 @@ const MinistryManager: React.FC = () => {
                     className={`rounded-3xl border p-5 transition-all ${
                       isEditing
                         ? 'border-brand/40 bg-brand/5 dark:bg-brand/10'
-                        : 'border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40'
+                        : 'app-panel-muted'
                     }`}
                   >
                     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
@@ -334,7 +334,7 @@ const MinistryManager: React.FC = () => {
                           {modules.map((moduleId) => (
                             <span
                               key={moduleId}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
+                              className="app-panel inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black"
                             >
                               <i className={`${MODULE_OPTIONS.find((module) => module.id === moduleId)?.icon || 'fas fa-square'} text-[10px] opacity-70`}></i>
                               {formatModuleLabel(moduleId)}
@@ -347,7 +347,7 @@ const MinistryManager: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleEdit(ministerio)}
-                          className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 text-xs font-black uppercase tracking-widest border border-slate-200 dark:border-slate-700"
+                          className="app-panel px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest"
                         >
                           <i className="fas fa-pen mr-2"></i>
                           Editar
@@ -355,7 +355,7 @@ const MinistryManager: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleToggleActive(ministerio)}
-                          className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-black uppercase tracking-widest"
+                          className="app-btn-muted px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest"
                         >
                           <i className={`fas ${ministerio.ativo === false ? 'fa-rotate-left' : 'fa-box-archive'} mr-2`}></i>
                           {ministerio.ativo === false ? 'Reativar' : 'Arquivar'}
@@ -372,15 +372,15 @@ const MinistryManager: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-5 border-t border-slate-200/70 dark:border-slate-700/70">
-                      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-3">
+                      <div className="app-card rounded-2xl p-3">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Membros</p>
                         <p className="text-lg font-black text-slate-800 dark:text-white">{memberCount}</p>
                       </div>
-                      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-3">
+                      <div className="app-card rounded-2xl p-3">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Modulos</p>
                         <p className="text-lg font-black text-slate-800 dark:text-white">{modules.length}</p>
                       </div>
-                      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-3">
+                      <div className="app-card rounded-2xl p-3">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Criado em</p>
                         <p className="text-sm font-black text-slate-800 dark:text-white">
                           {ministerio.created_at ? new Date(ministerio.created_at).toLocaleDateString('pt-BR') : '--'}
@@ -403,7 +403,7 @@ const MinistryManager: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => setPendingDeleteId(null)}
-                              className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 text-xs font-black uppercase tracking-widest border border-red-200 dark:border-red-900/40"
+                              className="app-panel px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest"
                             >
                               Cancelar
                             </button>
@@ -427,7 +427,7 @@ const MinistryManager: React.FC = () => {
       </div>
 
       <div className="xl:sticky xl:top-4 xl:self-start">
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-5">
+        <div className="app-card rounded-3xl p-5 sm:p-6 space-y-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.25em] text-brand mb-2">
@@ -445,7 +445,7 @@ const MinistryManager: React.FC = () => {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-black uppercase tracking-widest"
+                className="app-btn-muted px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest"
               >
                 Cancelar
               </button>
@@ -460,7 +460,7 @@ const MinistryManager: React.FC = () => {
                 value={formData.nome}
                 onChange={(event) => setFormData((previous) => ({ ...previous, nome: event.target.value }))}
                 placeholder="Ex.: Midia, Recepcao, Infantil"
-                className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand"
+                className="app-input w-full px-3 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand"
               />
             </div>
 
@@ -471,7 +471,7 @@ const MinistryManager: React.FC = () => {
                 value={formData.slug}
                 onChange={(event) => setFormData((previous) => ({ ...previous, slug: event.target.value }))}
                 placeholder="gerado-a-partir-do-nome"
-                className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand"
+                className="app-input w-full px-3 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand"
               />
               <p className="text-xs text-slate-500 mt-2">Preview: /{previewSlug || 'novo-ministerio'}</p>
             </div>
@@ -483,7 +483,7 @@ const MinistryManager: React.FC = () => {
                 onChange={(event) => setFormData((previous) => ({ ...previous, descricao: event.target.value }))}
                 rows={3}
                 placeholder="Resumo para ajudar no gerenciamento interno."
-                className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand resize-none"
+                className="app-input w-full px-3 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand resize-none"
               />
             </div>
 
@@ -501,10 +501,10 @@ const MinistryManager: React.FC = () => {
                       className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-left border transition-colors ${
                         active
                           ? 'bg-brand text-white border-brand'
-                          : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                          : 'app-panel-muted text-app border-app'
                       }`}
                     >
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${active ? 'bg-white/15' : 'bg-white dark:bg-slate-900'}`}>
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${active ? 'bg-white/15' : 'app-panel'}`}>
                         <i className={`${module.icon} text-sm`}></i>
                       </div>
                       <div>
@@ -519,7 +519,7 @@ const MinistryManager: React.FC = () => {
               </div>
             </div>
 
-            <label className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 dark:border-slate-700 px-4 py-3">
+            <label className="app-panel flex items-center justify-between gap-4 rounded-2xl px-4 py-3">
               <div>
                 <p className="text-sm font-black text-slate-700 dark:text-slate-200">Ministerio ativo</p>
                 <p className="text-xs text-slate-500 mt-1">Quando desligado, ele sai das opcoes de menu para os membros.</p>
@@ -545,7 +545,7 @@ const MinistryManager: React.FC = () => {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-5 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-black text-sm uppercase tracking-widest"
+                className="app-btn-muted px-5 py-3 rounded-xl font-black text-sm uppercase tracking-widest"
               >
                 Limpar
               </button>

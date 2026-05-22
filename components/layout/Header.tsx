@@ -2,6 +2,8 @@ import React from 'react';
 import { useMinistryContext } from '../../contexts/MinistryContext';
 import MinistrySwitcher from './MinistrySwitcher';
 import NotificationButton from './NotificationButton';
+import { ImageCache } from '../ui/ImageCache';
+import { buildLocalAvatar } from '../../utils/avatar';
 
 interface HeaderProps {
   onSync: () => void;
@@ -10,24 +12,25 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onSync, onOpenProfile, onOpenNotifications }) => {
-  const { userMinisterios } = useMinistryContext();
+  const { userMinisterios, currentMember } = useMinistryContext();
+  const memberPhoto = (currentMember as any)?.foto || buildLocalAvatar(currentMember?.nome || 'Usuario');
 
   return (
-    <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-[#0f172a]/80 backdrop-blur-lg border-b border-slate-100 dark:border-slate-800 z-[90] px-6 flex items-center justify-between transition-colors">
-      <h1 className="text-lg font-black tracking-tighter uppercase text-slate-800 dark:text-white">
+    <header className="bg-app-surface border-app fixed left-0 right-0 top-0 z-[90] flex h-16 items-center justify-between border-b px-6 backdrop-blur-xl transition-colors lg:hidden">
+      <h1 className="text-app text-lg font-black uppercase tracking-tighter">
         Valentes <span className="text-brand">Connected</span>
       </h1>
       <div className="flex items-center gap-2">
         <div className="relative">
           <NotificationButton
             onClick={onOpenNotifications}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 shadow-sm transition-all hover:text-brand dark:bg-slate-800"
+            className="bg-app-surface-strong text-app-muted border-app flex h-10 w-10 items-center justify-center rounded-xl border shadow-sm transition-all hover:text-brand"
           />
         </div>
 
         <button 
           onClick={onSync}
-          className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-brand transition-all shadow-sm"
+          className="bg-app-surface-strong text-app-muted border-app flex h-10 w-10 items-center justify-center rounded-xl border shadow-sm transition-all hover:text-brand"
           title="Sincronizar"
         >
           <i className="fas fa-sync-alt text-sm"></i>
@@ -38,10 +41,16 @@ const Header: React.FC<HeaderProps> = ({ onSync, onOpenProfile, onOpenNotificati
 
         <button 
           onClick={onOpenProfile}
-          className="w-10 h-10 flex items-center justify-center rounded-xl bg-brand text-white shadow-md hover:scale-105 active:scale-95 transition-all"
+          className="app-panel flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl p-0 shadow-md transition-all hover:scale-105 active:scale-95"
           title="Perfil e Ajustes"
         >
-          <i className="fas fa-user text-sm"></i>
+          <ImageCache
+            src={memberPhoto}
+            fallbackSrc={buildLocalAvatar(currentMember?.nome || 'Usuario')}
+            alt={currentMember?.nome || 'Usuario'}
+            className="h-full w-full object-cover"
+            disableCompression
+          />
         </button>
       </div>
     </header>

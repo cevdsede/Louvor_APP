@@ -576,44 +576,49 @@ const TeamModals: React.FC<TeamModalsProps> = ({
     <>
       {/* Modal de Membro - Centralizado apenas na área de conteúdo (ignorando navbar) */}
       {selectedMember && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 lg:p-10 py-20 lg:py-10 overflow-hidden">
+        <div className="fixed inset-0 z-[600] flex items-center justify-center overflow-hidden p-4 py-20 lg:p-10 lg:py-10">
           <div className="absolute inset-0 bg-slate-900/80 dark:bg-black/90 backdrop-blur-xl" onClick={() => onSelectedMemberChange(null)}></div>
 
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl border border-white/10 dark:border-slate-700/50 overflow-hidden animate-fade-in max-h-[75vh] lg:max-h-[85vh] flex flex-col lg:ml-64">
-            {/* Header sem gradiente */}
-            <div className="relative p-6 pb-4 bg-brand/5 dark:bg-brand/10 border-b border-slate-100/50 dark:border-slate-800/50 z-10 shrink-0">
+          <div className="app-card relative flex max-h-[78vh] w-full max-w-xl flex-col overflow-hidden rounded-[2.4rem] border shadow-[0_38px_120px_-54px_rgba(15,23,42,0.55)] animate-fade-in lg:ml-64 lg:max-h-[86vh]">
+            <div className="relative shrink-0 overflow-hidden border-b border-app bg-[linear-gradient(135deg,rgba(255,255,255,0.86),rgba(255,255,255,0.62))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.92),rgba(30,41,59,0.76))]">
+              <div className="absolute inset-x-10 top-0 h-24 rounded-full bg-brand/12 blur-3xl"></div>
+              <div className="absolute -right-12 top-6 h-28 w-28 rounded-full bg-brand/10 blur-3xl"></div>
               <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-brand rounded-full animate-pulse"></div>
-                  <span className="text-[8px] font-black text-brand uppercase tracking-widest bg-white/80 dark:bg-slate-800/80 px-3 py-1.5 rounded-full border border-brand/20">Perfil do Membro</span>
+                <div className="flex w-full items-start justify-between gap-4 px-6 pb-5 pt-6 lg:px-8">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-brand animate-pulse"></div>
+                    <span className="app-card text-[8px] font-black uppercase tracking-[0.28em] text-brand px-3 py-1.5 rounded-full border border-brand/20 shadow-sm">
+                      Perfil do Membro
+                    </span>
+                  </div>
+                  <button onClick={() => onSelectedMemberChange(null)} className="app-btn-muted flex h-10 w-10 items-center justify-center rounded-2xl border shadow-sm transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/20">
+                    <i className="fas fa-times text-sm"></i>
+                  </button>
                 </div>
-                <button onClick={() => onSelectedMemberChange(null)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/80 dark:bg-slate-800/80 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
-                  <i className="fas fa-times text-sm"></i>
-                </button>
               </div>
             </div>
 
-            <div className="p-6 lg:p-8 overflow-y-auto no-scrollbar flex-grow space-y-6">
-              {/* Seção Perfil */}
-              <div className="text-center space-y-4">
+            <div className="flex-grow space-y-6 overflow-y-auto p-6 no-scrollbar lg:p-8">
+              <div className="app-card-strong rounded-[2rem] border p-5 text-center shadow-[0_24px_70px_-48px_rgba(14,116,144,0.45)] lg:p-6">
                 <div className="relative inline-block">
-                  <div className="absolute inset-0 bg-brand/20 rounded-full blur-xl animate-pulse"></div>
+                  <div className="absolute inset-0 rounded-full bg-brand/20 blur-2xl"></div>
+                  <div className="absolute -inset-2 rounded-full border border-brand/15"></div>
                   <ImageCache
                     src={selectedMember.avatar} 
                     fallbackSrc={buildLocalAvatar(selectedMember.name)}
                     alt={selectedMember.name}
-                    className="relative w-24 h-24 rounded-full border-4 border-white shadow-2xl ring-4 ring-brand/10"
+                    className="relative h-24 w-24 rounded-full border-4 border-white object-cover shadow-2xl ring-4 ring-brand/10 dark:border-slate-900"
                   />
                 </div>
-                <div>
-                  <h2 className="text-2xl font-black text-slate-800 dark:text-white leading-none mb-2">
+                <div className="mt-4">
+                  <h2 className="mb-2 text-2xl font-black leading-none text-app">
                     {selectedMember.name}
                   </h2>
-                  <div className="flex flex-wrap justify-center gap-2 mb-4">
-                    <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-600 dark:text-slate-300">
+                  <div className="mb-1 flex flex-wrap justify-center gap-2">
+                    <span className="app-card rounded-full border px-3 py-1 text-[10px] font-black text-app-muted">
                       {selectedMember.role}
                     </span>
-                    <span className={`px-3 py-1 rounded-full border text-[10px] font-black ${
+                    <span className={`rounded-full border px-3 py-1 text-[10px] font-black ${
                       selectedMember.gender === 'M' 
                         ? 'bg-brand/10 border-brand/20 text-brand' 
                         : 'bg-pink-500/10 border-pink-500/20 text-pink-500'
@@ -624,22 +629,26 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                 </div>
               </div>
 
-              {/* Próximas Escalas */}
               <div className="space-y-4">
-                <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left">Próximas Escalas</h4>
+                <div className="flex items-center justify-between px-1">
+                  <h4 className="text-left text-[9px] font-black uppercase tracking-[0.32em] text-app-muted">Próximas Escalas</h4>
+                  <span className="text-[8px] font-bold uppercase tracking-[0.24em] text-brand/70">
+                    {selectedMember.upcomingScales?.length || 0} itens
+                  </span>
+                </div>
                 <div className="space-y-3">
                   {selectedMember.upcomingScales && selectedMember.upcomingScales.length > 0 ? (
                     selectedMember.upcomingScales.map((s, idx) => (
-                      <button key={idx} onClick={() => openScaleDetailFromMember(s.id)} className="w-full bg-slate-50 dark:bg-slate-800/50 px-5 py-4 rounded-[2rem] border border-slate-100/50 dark:border-slate-700/50 flex justify-between items-center group transition-all hover:border-brand/40 hover:shadow-lg hover:shadow-brand/10 active:scale-[0.98]">
+                      <button key={idx} onClick={() => openScaleDetailFromMember(s.id)} className="app-panel group flex w-full items-center justify-between rounded-[1.8rem] px-5 py-4 shadow-[0_22px_60px_-50px_rgba(15,23,42,0.4)] transition-all hover:border-brand/40 hover:shadow-[0_28px_70px_-48px_rgba(59,130,246,0.26)] active:scale-[0.98]">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-white dark:bg-slate-700 rounded-2xl flex flex-col items-center justify-center border border-slate-100/50 dark:border-slate-600/50 shadow-md">
+                          <div className="app-card flex h-12 w-12 flex-col items-center justify-center rounded-2xl border shadow-md">
                             <span className="text-[8px] font-black text-slate-400 leading-none">{s.date.split('/')[1]}</span>
                             <span className="text-lg font-black text-brand leading-none mt-1">{s.date.split('/')[0]}</span>
                           </div>
                           <div className="text-left">
-                            <span className="text-[11px] font-black text-slate-700 dark:text-slate-200 uppercase block mb-1">{s.event}</span>
+                            <span className="mb-1 block text-[11px] font-black uppercase text-app">{s.event}</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">{s.role}</span>
+                              <span className="app-card-muted rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest">{s.role}</span>
                               {s.time && <span className="text-[7px] text-slate-300">• {s.time}</span>}
                             </div>
                           </div>
@@ -650,8 +659,8 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                       </button>
                     ))
                   ) : (
-                    <div className="text-center py-8">
-                      <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    <div className="app-panel-muted rounded-[1.8rem] py-8 text-center">
+                      <div className="app-card mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl border">
                         <i className="fas fa-calendar-xmark text-slate-300 text-xl"></i>
                       </div>
                       <p className="text-[10px] text-slate-400 font-bold uppercase">Nenhuma escala programada</p>
@@ -663,15 +672,15 @@ const TeamModals: React.FC<TeamModalsProps> = ({
               {/* Repertório Recente - Apenas para Ministro ou Vocal */}
               {(selectedMember.role?.toLowerCase().includes('ministro') || selectedMember.role?.toLowerCase().includes('vocal')) && (
                 <div className="space-y-4">
-                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left">Repertório Recente</h4>
+                  <h4 className="ml-1 text-left text-[9px] font-black uppercase tracking-[0.32em] text-app-muted">Repertório Recente</h4>
                   <div className="space-y-3">
                     {selectedMember.songHistory && selectedMember.songHistory.length > 0 ? (
                       selectedMember.songHistory.map((h, idx) => (
-                        <div key={idx} className="flex items-center gap-3 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-50 dark:border-slate-800 flex-nowrap">
-                          <div className="w-16 h-12 bg-brand text-white rounded-2xl shadow-lg flex items-center justify-center font-black text-[10px] flex-shrink-0 p-1">{h.key}</div>
+                        <div key={idx} className="app-panel flex flex-nowrap items-center gap-3 rounded-[1.7rem] p-4 shadow-[0_18px_44px_-38px_rgba(15,23,42,0.35)]">
+                          <div className="flex h-12 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-brand p-1 text-[10px] font-black text-white shadow-lg">{h.key}</div>
                           <div className="flex-1 min-w-0 text-left">
-                            <span className="text-[11px] font-black text-slate-600 dark:text-slate-300 truncate block">{h.song}</span>
-                            <div className="flex items-center gap-2 text-[8px] text-slate-400">
+                            <span className="block truncate text-[11px] font-black text-app">{h.song}</span>
+                            <div className="flex items-center gap-2 text-[8px] text-app-muted">
                               <span>{h.date}</span>
                               <span>•</span>
                               <span>{h.event}</span>
@@ -680,8 +689,8 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                         </div>
                       ))
                     ) : (
-                      <div className="text-center py-8">
-                        <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <div className="app-panel-muted rounded-[1.8rem] py-8 text-center">
+                        <div className="app-card mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl border">
                           <i className="fas fa-music text-slate-300 text-xl"></i>
                         </div>
                         <p className="text-[10px] text-slate-400 font-bold uppercase">Nenhuma música registrada</p>
@@ -694,10 +703,10 @@ const TeamModals: React.FC<TeamModalsProps> = ({
               {/* Avisos enviados para lideres - Apenas se houver avisos */}
               {!loadingAvisos && avisosGerais.length > 0 && (
                 <div className="space-y-4">
-                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left">Avisos para lideres</h4>
+                  <h4 className="ml-1 text-left text-[9px] font-black uppercase tracking-[0.32em] text-app-muted">Avisos para lideres</h4>
                   <div className="space-y-3">
                     {avisosGerais.map((aviso) => (
-                      <div key={aviso.id.toString()} className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200 dark:border-amber-800/50">
+                      <div key={aviso.id.toString()} className="rounded-[1.7rem] border border-amber-200/80 bg-amber-50/92 p-4 shadow-[0_18px_45px_-38px_rgba(245,158,11,0.45)] dark:border-amber-800/50 dark:bg-amber-900/20">
                         <div className="flex items-start gap-3">
                           <div className="w-8 h-8 bg-amber-500 text-white rounded-xl flex items-center justify-center flex-shrink-0">
                             <i className="fas fa-bell text-[10px]"></i>
@@ -722,17 +731,17 @@ const TeamModals: React.FC<TeamModalsProps> = ({
               )}
             </div>
 
-            <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex gap-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
+            <div className="app-card-strong border-app flex shrink-0 gap-3 border-t p-5 lg:p-6">
               <button 
                 onClick={() => handleWhatsAppContact(selectedMember)}
-                className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 active:scale-95 transition-all hover:bg-emerald-600"
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-500 py-4 text-[9px] font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-600 active:scale-95"
               >
                 <i className="fab fa-whatsapp"></i> WhatsApp
               </button>
               {canEditMember(selectedMember) && (
                 <button 
                   onClick={() => handleEditMember(selectedMember)}
-                  className="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl font-black uppercase tracking-widest text-[9px] hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  className="app-btn-muted flex-1 rounded-2xl py-4 text-[9px] font-black uppercase tracking-widest transition-colors hover:text-app"
                 >
                   Editar
                 </button>
@@ -740,7 +749,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
               {canManageCurrentMinistry && selectedMember.id !== currentMember?.id && (
                 <button
                   onClick={() => handleRemoveFromCurrentMinisterio(selectedMember)}
-                  className="flex-1 py-4 bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-300 rounded-2xl font-black uppercase tracking-widest text-[9px] hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"
+                  className="flex-1 rounded-2xl bg-red-50 py-4 text-[9px] font-black uppercase tracking-widest text-red-500 transition-colors hover:bg-red-100 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50"
                 >
                   Remover
                 </button>
@@ -755,15 +764,15 @@ const TeamModals: React.FC<TeamModalsProps> = ({
         <div className="fixed inset-0 z-[700] flex items-center justify-center p-4 lg:p-10 py-20 lg:py-10 overflow-hidden">
           <div className="absolute inset-0 bg-slate-900/80 dark:bg-black/90 backdrop-blur-xl" onClick={() => onEditingMemberChange(null)}></div>
 
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl border border-white/10 dark:border-slate-700/50 overflow-hidden animate-fade-in max-h-[75vh] lg:max-h-[85vh] flex flex-col lg:ml-64">
+          <div className="bg-app-surface border-app relative flex max-h-[75vh] w-full max-w-lg flex-col overflow-hidden rounded-[3rem] border shadow-2xl animate-fade-in lg:ml-64 lg:max-h-[85vh]">
             {/* Header */}
             <div className="relative p-6 pb-4 bg-emerald-500/5 dark:bg-emerald-500/10 border-b border-slate-100/50 dark:border-slate-800/50 z-10 shrink-0">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                  <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest bg-white/80 dark:bg-slate-800/80 px-3 py-1.5 rounded-full border border-emerald-500/20">Editar Membro</span>
+                  <span className="bg-app-surface text-[8px] font-black text-emerald-600 uppercase tracking-widest px-3 py-1.5 rounded-full border border-emerald-500/20">Editar Membro</span>
                 </div>
-                <button onClick={() => onEditingMemberChange(null)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/80 dark:bg-slate-800/80 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+                <button onClick={() => onEditingMemberChange(null)} className="bg-app-surface border-app text-app-muted flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition-all hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/20">
                   <i className="fas fa-times text-sm"></i>
                 </button>
               </div>
@@ -786,7 +795,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                             name: e.target.value
                           })
                         }
-                        className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition-colors"
+                        className="bg-app-surface border-app text-app w-full rounded-xl border px-4 py-3 text-[11px] focus:outline-none focus:border-emerald-500 transition-colors"
                         placeholder="Nome"
                       />
                     </div>
@@ -803,7 +812,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                               nome_planilha: e.target.value
                             })
                           }
-                          className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition-colors"
+                          className="bg-app-surface border-app text-app w-full rounded-xl border px-4 py-3 text-[11px] focus:outline-none focus:border-emerald-500 transition-colors"
                           placeholder="Igual ao nome usado na escala"
                         />
                       </div>
@@ -823,7 +832,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                           nome_planilha: e.target.value
                         })
                       }
-                      className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition-colors"
+                      className="bg-app-surface border-app text-app w-full rounded-xl border px-4 py-3 text-[11px] focus:outline-none focus:border-emerald-500 transition-colors"
                       placeholder="Igual ao nome usado na escala"
                     />
                   </div>
@@ -856,37 +865,37 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                           if (file) handlePhotoUpload(file);
                         }}
                         disabled={uploading}
-                        className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition-colors file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-app-surface border-app text-app w-full rounded-xl border px-4 py-3 text-[11px] focus:outline-none focus:border-emerald-500 transition-colors file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                     </div>
 
                     <div>
                       <label className="block text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-2">Telefone</label>
-                      <input type="tel" value={editingMember.telefone || ''} onChange={(e) => onEditingMemberChange({ ...editingMember, telefone: e.target.value })} className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition-colors" placeholder="(00) 00000-0000" />
+                      <input type="tel" value={editingMember.telefone || ''} onChange={(e) => onEditingMemberChange({ ...editingMember, telefone: e.target.value })} className="bg-app-surface border-app text-app w-full rounded-xl border px-4 py-3 text-[11px] focus:outline-none focus:border-emerald-500 transition-colors" placeholder="(00) 00000-0000" />
                     </div>
 
                     <div>
                       <label className="block text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-2">Email</label>
-                      <input type="email" value={editingMember.email || ''} onChange={(e) => onEditingMemberChange({ ...editingMember, email: e.target.value })} className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition-colors" placeholder="email@exemplo.com" />
+                      <input type="email" value={editingMember.email || ''} onChange={(e) => onEditingMemberChange({ ...editingMember, email: e.target.value })} className="bg-app-surface border-app text-app w-full rounded-xl border px-4 py-3 text-[11px] focus:outline-none focus:border-emerald-500 transition-colors" placeholder="email@exemplo.com" />
                     </div>
 
                     <div>
                       <label className="block text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-2">Data de Nascimento</label>
-                      <input type="date" value={editingMember.data_nasc || ''} onChange={(e) => onEditingMemberChange({ ...editingMember, data_nasc: e.target.value })} className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition-colors" />
+                      <input type="date" value={editingMember.data_nasc || ''} onChange={(e) => onEditingMemberChange({ ...editingMember, data_nasc: e.target.value })} className="bg-app-surface border-app text-app w-full rounded-xl border px-4 py-3 text-[11px] focus:outline-none focus:border-emerald-500 transition-colors" />
                     </div>
 
                     {isAdmin && (
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="block text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-2">Genero</label>
-                          <select value={editingMember.gender || 'M'} onChange={(e) => onEditingMemberChange({ ...editingMember, gender: e.target.value as 'M' | 'F' })} className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition-colors">
+                          <select value={editingMember.gender || 'M'} onChange={(e) => onEditingMemberChange({ ...editingMember, gender: e.target.value as 'M' | 'F' })} className="bg-app-surface border-app text-app w-full rounded-xl border px-4 py-3 text-[11px] focus:outline-none focus:border-emerald-500 transition-colors">
                             <option value="M">Masculino</option>
                             <option value="F">Feminino</option>
                           </select>
                         </div>
                         <div>
                           <label className="block text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-2">Perfil</label>
-                          <input type="text" value={editingMember.perfil || ''} onChange={(e) => onEditingMemberChange({ ...editingMember, perfil: e.target.value })} className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition-colors" />
+                          <input type="text" value={editingMember.perfil || ''} onChange={(e) => onEditingMemberChange({ ...editingMember, perfil: e.target.value })} className="bg-app-surface border-app text-app w-full rounded-xl border px-4 py-3 text-[11px] focus:outline-none focus:border-emerald-500 transition-colors" />
                         </div>
                       </div>
                     )}
@@ -894,12 +903,12 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                 )}
 
                 {canEditMinistry && (
-                  <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/40 p-4 space-y-4">
+                  <div className="bg-app-surface-muted border-app rounded-2xl border p-4 space-y-4">
                     <div>
                       <p className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">Ministerio atual</p>
                       <div className="flex gap-2 mt-3">
-                        <button type="button" onClick={() => onEditingMemberChange({ ...editingMember, activeMinisterioStatus: true })} className={`flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest ${editingMember.activeMinisterioStatus !== false ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-slate-900 text-slate-500'}`}>Ativo</button>
-                        <button type="button" onClick={() => onEditingMemberChange({ ...editingMember, activeMinisterioStatus: false })} className={`flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest ${editingMember.activeMinisterioStatus === false ? 'bg-red-500 text-white' : 'bg-white dark:bg-slate-900 text-slate-500'}`}>Inativo</button>
+                        <button type="button" onClick={() => onEditingMemberChange({ ...editingMember, activeMinisterioStatus: true })} className={`flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest ${editingMember.activeMinisterioStatus !== false ? 'bg-emerald-500 text-white' : 'bg-app-surface text-app-muted'}`}>Ativo</button>
+                        <button type="button" onClick={() => onEditingMemberChange({ ...editingMember, activeMinisterioStatus: false })} className={`flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest ${editingMember.activeMinisterioStatus === false ? 'bg-red-500 text-white' : 'bg-app-surface text-app-muted'}`}>Inativo</button>
                       </div>
                     </div>
                     <div>
@@ -909,7 +918,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                           const funcaoId = String(funcao.id);
                           const checked = editingMemberFuncaoIds.has(funcaoId);
                           return (
-                            <label key={funcaoId} className="flex items-center gap-3 rounded-xl bg-white dark:bg-slate-900 px-3 py-2 text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                            <label key={funcaoId} className="bg-app-surface text-app flex items-center gap-3 rounded-xl px-3 py-2 text-[11px] font-bold">
                               <input type="checkbox" checked={checked} onChange={(event) => {
                                 const currentIds = new Set((editingMember.funcaoIds || []).map(String));
                                 if (event.target.checked) currentIds.add(funcaoId); else currentIds.delete(funcaoId);
@@ -926,7 +935,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
               </div>
             </div>
 
-            <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex gap-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
+            <div className="bg-app-surface-muted border-app flex shrink-0 gap-3 border-t p-6">
               <button 
                 onClick={() => onEditingMemberChange(null)}
                 className="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl font-black uppercase tracking-widest text-[9px] hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
@@ -956,7 +965,7 @@ const TeamModals: React.FC<TeamModalsProps> = ({
                 </h3>
                 <button
                   onClick={() => onViewingEventChange(null)}
-                  className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white dark:bg-slate-800 text-slate-400 hover:text-red-500 transition-all border border-slate-100 dark:border-slate-700 shadow-sm"
+                  className="bg-app-surface border-app text-app-muted flex h-10 w-10 items-center justify-center rounded-2xl border shadow-sm transition-all hover:text-red-500"
                 >
                   <i className="fas fa-times"></i>
                 </button>

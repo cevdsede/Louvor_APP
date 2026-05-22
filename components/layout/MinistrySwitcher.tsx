@@ -79,8 +79,8 @@ const MinistrySwitcher: React.FC<MinistrySwitcherProps> = ({ variant = 'desktop'
         onClick={() => setIsOpen((previous) => !previous)}
         className={`relative flex items-center justify-between gap-2 rounded-xl text-left font-black uppercase shadow-sm transition-all ${
           isMobile
-            ? 'h-10 w-full bg-slate-50 px-3 text-[9px] tracking-tight text-slate-600 dark:bg-slate-800 dark:text-slate-300'
-            : 'w-full border border-slate-100 bg-white px-4 py-3 text-[10px] tracking-widest text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+            ? 'bg-app-surface-strong border-app text-app-muted h-10 w-full border px-3 text-[9px] tracking-tight backdrop-blur-xl'
+            : 'bg-app-surface border-app text-app-muted w-full border px-4 py-3 text-[10px] tracking-widest backdrop-blur-xl'
         }`}
         title={hasWeeklyAlert ? 'Existe escala nesta semana em um dos seus ministerios.' : 'Trocar ministerio'}
       >
@@ -91,24 +91,24 @@ const MinistrySwitcher: React.FC<MinistrySwitcherProps> = ({ variant = 'desktop'
               {activeWeeklyCount}
             </span>
           )}
-          <i className={`fas fa-chevron-${isOpen ? 'up' : 'down'} text-[10px] text-slate-400`} />
+          <i className={`fas fa-chevron-${isOpen ? 'up' : 'down'} text-app-muted text-[10px]`} />
         </div>
 
         {hasWeeklyAlert && (
           <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-70" />
-            <span className="relative inline-flex h-3.5 w-3.5 rounded-full border border-white bg-amber-500" />
+            <span className="border-app bg-amber-500 relative inline-flex h-3.5 w-3.5 rounded-full border" />
           </span>
         )}
       </button>
 
       {isOpen && (
         <div
-          className={`absolute z-[130] mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900 ${
+          className={`bg-app-surface border-app absolute z-[130] mt-2 overflow-hidden rounded-2xl border shadow-2xl backdrop-blur-xl ${
             isMobile ? 'right-0 w-[220px]' : 'left-0 w-full'
           }`}
         >
-          <div className="border-b border-slate-100 px-4 py-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 dark:border-slate-800">
+          <div className="border-app text-app-muted border-b px-4 py-3 text-[10px] font-black uppercase tracking-[0.18em]">
             Ministerios
           </div>
 
@@ -128,12 +128,12 @@ const MinistrySwitcher: React.FC<MinistrySwitcherProps> = ({ variant = 'desktop'
                   className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors ${
                     isActive
                       ? 'bg-brand/10 text-brand'
-                      : 'text-slate-600 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/70'
+                      : 'text-app hover:bg-app-surface-strong'
                   }`}
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-black">{ministerio.nome}</p>
-                    <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-slate-400">
+                    <p className="text-app-muted mt-1 text-[10px] uppercase tracking-[0.18em]">
                       {weeklyCount > 0 ? `${weeklyCount} escala${weeklyCount === 1 ? '' : 's'} na semana` : 'Sem escala na semana'}
                     </p>
                   </div>

@@ -273,13 +273,13 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
 
   return (
     <div className="fixed inset-0 z-[950] flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-sm">
-      <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5 dark:border-slate-800">
+      <div className="app-card relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] border shadow-2xl backdrop-blur-xl">
+        <div className="border-app flex items-center justify-between border-b px-6 py-5">
           <div>
             <p className="text-[9px] font-black uppercase tracking-[0.3em] text-brand">
               {activeMinisterio?.nome || 'Ministerio'}
             </p>
-            <h3 className="mt-1 text-xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">
+            <h3 className="text-app mt-1 text-xl font-black uppercase tracking-tighter">
               Notificacoes
             </h3>
           </div>
@@ -287,32 +287,32 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
             {notifications.length > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="rounded-xl bg-slate-100 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                className="bg-app-surface-strong text-app-muted rounded-xl px-3 py-2 text-[9px] font-black uppercase tracking-widest transition-colors hover:text-brand"
               >
                 Marcar todas
               </button>
             )}
             <button
               onClick={handleClose}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-red-500 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              className="bg-app-surface-strong text-app-muted flex h-10 w-10 items-center justify-center rounded-xl transition-colors hover:text-red-500"
             >
               <i className="fas fa-times text-sm"></i>
             </button>
           </div>
         </div>
 
-        <div className="border-b border-slate-100 px-6 py-4 dark:border-slate-800">
+        <div className="border-app border-b px-6 py-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-3">
-              <div className="rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
-                <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Nao lidas</p>
-                <p className="mt-1 text-2xl font-black tracking-tight text-slate-900 dark:text-white">{unreadCount}</p>
+              <div className="bg-app-surface-muted rounded-2xl px-4 py-3">
+                <p className="text-app-muted text-[8px] font-black uppercase tracking-widest">Nao lidas</p>
+                <p className="text-app mt-1 text-2xl font-black tracking-tight">{unreadCount}</p>
               </div>
 
               {notifications.length > 0 && (
                 <button
                   onClick={handleSelectAllNotifications}
-                  className="rounded-2xl bg-slate-100 px-4 py-3 text-[9px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                className="bg-app-surface-strong text-app-muted rounded-2xl px-4 py-3 text-[9px] font-black uppercase tracking-widest transition-colors hover:text-brand"
                 >
                   {selectedCount === notifications.length ? 'Limpar selecao' : 'Selecionar todas'}
                 </button>
@@ -341,16 +341,16 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
           </div>
 
           {showGeneralNoticeForm && (
-            <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
+            <div className="bg-app-surface-muted border-app mt-4 rounded-2xl border p-4">
               <div className="grid gap-4 sm:grid-cols-[180px_1fr]">
                 <div>
-                  <label className="mb-2 block text-[8px] font-black uppercase tracking-widest text-slate-400">
+                  <label className="text-app-muted mb-2 block text-[8px] font-black uppercase tracking-widest">
                     Destino
                   </label>
                   <select
                     value={target}
                     onChange={(event) => setTarget(event.target.value as GeneralNoticeTarget)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-900"
+                    className="app-input w-full rounded-xl px-3 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand"
                   >
                     <option value="todos">Todos</option>
                     <option value="lideres">Somente lideres</option>
@@ -358,7 +358,7 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-[8px] font-black uppercase tracking-widest text-slate-400">
+                  <label className="text-app-muted mb-2 block text-[8px] font-black uppercase tracking-widest">
                     Mensagem
                   </label>
                   <textarea
@@ -366,7 +366,7 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                     onChange={(event) => setMessage(event.target.value)}
                     rows={4}
                     placeholder="Digite o aviso que sera enviado..."
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-xs font-medium outline-none focus:ring-1 focus:ring-brand dark:border-slate-700 dark:bg-slate-900"
+                    className="app-input w-full rounded-xl px-3 py-3 text-xs font-medium outline-none focus:ring-1 focus:ring-brand"
                   />
                 </div>
               </div>
@@ -378,7 +378,7 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                     setMessage('');
                     setTarget('todos');
                   }}
-                  className="rounded-xl bg-slate-200 px-4 py-2.5 text-[9px] font-black uppercase tracking-widest text-slate-600 dark:bg-slate-700 dark:text-slate-200"
+                  className="bg-app-surface-strong text-app rounded-xl px-4 py-2.5 text-[9px] font-black uppercase tracking-widest"
                 >
                   Cancelar
                 </button>
@@ -397,10 +397,10 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
         <div className="flex-1 overflow-y-auto px-6 py-5">
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800">
+              <div className="bg-app-surface-strong text-app-muted flex h-16 w-16 items-center justify-center rounded-full">
                 <i className="fas fa-bell-slash text-xl"></i>
               </div>
-              <p className="mt-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+              <p className="text-app-muted mt-4 text-[10px] font-black uppercase tracking-widest">
                 Nenhuma notificacao
               </p>
             </div>
@@ -408,13 +408,13 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
             <div className="space-y-6">
               <div>
                 <div className="mb-3 flex items-center justify-between">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Novas</h4>
+                  <h4 className="text-app-muted text-[10px] font-black uppercase tracking-widest">Novas</h4>
                   <span className="rounded-full bg-red-500 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-white">
                     {unreadNotifications.length}
                   </span>
                 </div>
                 {unreadNotifications.length === 0 ? (
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:border-slate-800 dark:bg-slate-800/40">
+                  <div className="bg-app-surface-muted border-app text-app-muted rounded-2xl border p-4 text-[10px] font-bold uppercase tracking-widest">
                     Nenhuma notificacao nova
                   </div>
                 ) : (
@@ -431,7 +431,7 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                             className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
                               selectedSet.has(String(notification.id))
                                 ? 'border-brand bg-brand text-white'
-                                : 'border-slate-300 bg-white text-transparent dark:border-slate-600 dark:bg-slate-900'
+                                : 'border-app bg-app-surface text-transparent'
                             }`}
                             aria-label="Selecionar notificacao"
                           >
@@ -440,7 +440,7 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
 
                           <div className="min-w-0 flex-1">
                             <div className="mb-2 flex items-center gap-2">
-                              <span className="rounded-full bg-white/90 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-brand dark:bg-slate-900/70">
+                              <span className="bg-app-surface rounded-full px-2 py-1 text-[8px] font-black uppercase tracking-widest text-brand">
                                 {notification.titulo || 'Notificacao'}
                               </span>
                               <span className="rounded-full bg-red-500 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-white">
@@ -448,9 +448,9 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                               </span>
                             </div>
 
-                            <p className="text-sm font-bold text-slate-800 dark:text-white">{notification.texto}</p>
+                            <p className="text-app text-sm font-bold">{notification.texto}</p>
 
-                            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                            <div className="text-app-muted mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold uppercase tracking-widest">
                               <span>{getSenderName(notification.remetente_id)}</span>
                               <span>{formatNotificationTime(notification.created_at)}</span>
                             </div>
@@ -459,7 +459,7 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                           <div className="flex shrink-0 flex-col items-end gap-2">
                             <button
                               onClick={() => handleMarkAsRead(notification.id)}
-                              className="rounded-xl bg-white px-3 py-2 text-[9px] font-black uppercase tracking-widest text-slate-500 shadow-sm transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                              className="bg-app-surface text-app-muted rounded-xl px-3 py-2 text-[9px] font-black uppercase tracking-widest shadow-sm transition-colors hover:text-brand"
                             >
                               Marcar
                             </button>
@@ -467,7 +467,7 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                               onClick={() => handleDeleteNotification(notification.id)}
                               title="Excluir notificacao"
                               aria-label="Excluir notificacao"
-                              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-red-500 shadow-sm transition-colors hover:bg-red-50 hover:text-red-600 dark:bg-slate-900 dark:hover:bg-red-950/40"
+                              className="bg-app-surface flex h-9 w-9 items-center justify-center rounded-xl text-red-500 shadow-sm transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
                             >
                               <i className="fas fa-trash text-[10px]"></i>
                             </button>
@@ -481,13 +481,13 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
 
               <div>
                 <div className="mb-3 flex items-center justify-between">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Lidas</h4>
+                  <h4 className="text-app-muted text-[10px] font-black uppercase tracking-widest">Lidas</h4>
                   <span className="rounded-full bg-slate-200 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-slate-500 dark:bg-slate-700 dark:text-slate-300">
                     {readNotifications.length}
                   </span>
                 </div>
                 {readNotifications.length === 0 ? (
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:border-slate-800 dark:bg-slate-800/40">
+                  <div className="bg-app-surface-muted border-app text-app-muted rounded-2xl border p-4 text-[10px] font-bold uppercase tracking-widest">
                     Nenhuma notificacao lida
                   </div>
                 ) : (
@@ -495,7 +495,7 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                     {readNotifications.map((notification) => (
                       <div
                         key={String(notification.id)}
-                        className="rounded-2xl border border-slate-100 bg-slate-50 p-4 transition-colors dark:border-slate-800 dark:bg-slate-800/40"
+                        className="bg-app-surface-muted border-app rounded-2xl border p-4 transition-colors"
                       >
                         <div className="flex items-start justify-between gap-4">
                           <button
@@ -504,7 +504,7 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                             className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
                               selectedSet.has(String(notification.id))
                                 ? 'border-brand bg-brand text-white'
-                                : 'border-slate-300 bg-white text-transparent dark:border-slate-600 dark:bg-slate-900'
+                                : 'border-app bg-app-surface text-transparent'
                             }`}
                             aria-label="Selecionar notificacao"
                           >
@@ -513,14 +513,14 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
 
                           <div className="min-w-0 flex-1">
                             <div className="mb-2 flex items-center gap-2">
-                              <span className="rounded-full bg-white/90 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-brand dark:bg-slate-900/70">
+                              <span className="bg-app-surface rounded-full px-2 py-1 text-[8px] font-black uppercase tracking-widest text-brand">
                                 {notification.titulo || 'Notificacao'}
                               </span>
                             </div>
 
-                            <p className="text-sm font-bold text-slate-800 dark:text-white">{notification.texto}</p>
+                            <p className="text-app text-sm font-bold">{notification.texto}</p>
 
-                            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                            <div className="text-app-muted mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold uppercase tracking-widest">
                               <span>{getSenderName(notification.remetente_id)}</span>
                               <span>{formatNotificationTime(notification.created_at)}</span>
                             </div>
@@ -529,7 +529,7 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                           <div className="flex shrink-0 flex-col items-end gap-2">
                             <button
                               onClick={() => handleMarkAsRead(notification.id)}
-                              className="rounded-xl bg-white px-3 py-2 text-[9px] font-black uppercase tracking-widest text-slate-500 shadow-sm transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                              className="bg-app-surface text-app-muted rounded-xl px-3 py-2 text-[9px] font-black uppercase tracking-widest shadow-sm transition-colors hover:text-brand"
                             >
                               Lida
                             </button>
@@ -537,7 +537,7 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                               onClick={() => handleDeleteNotification(notification.id)}
                               title="Excluir notificacao"
                               aria-label="Excluir notificacao"
-                              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-red-500 shadow-sm transition-colors hover:bg-red-50 hover:text-red-600 dark:bg-slate-900 dark:hover:bg-red-950/40"
+                              className="bg-app-surface flex h-9 w-9 items-center justify-center rounded-xl text-red-500 shadow-sm transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
                             >
                               <i className="fas fa-trash text-[10px]"></i>
                             </button>

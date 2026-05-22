@@ -279,7 +279,7 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
 
       {/* Add Song Form */}
       {showAddSong && (
-        <div className="mb-6 p-6 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700">
+        <div className="app-panel mb-6 rounded-xl p-6">
           <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">
             {editingSongId ? 'EDITAR MÚSICA' : 'ADICIONAR MÚSICA'}
           </h4>
@@ -328,7 +328,7 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
               <select
                 value={newSongData.singer}
                 onChange={(e) => setNewSongData({ ...newSongData, singer: e.target.value })}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs focus:ring-1 focus:ring-brand outline-none appearance-none"
+                className="app-input-strong w-full rounded-xl px-4 py-2.5 text-xs outline-none appearance-none focus:ring-1 focus:ring-brand"
               >
                 <option value="">Cantor... *</option>
                 {singersInEvent.map(m => (
@@ -338,7 +338,7 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
               <select
                 value={newSongData.key}
                 onChange={(e) => setNewSongData({ ...newSongData, key: e.target.value })}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs focus:ring-1 focus:ring-brand outline-none appearance-none"
+                className="app-input-strong w-full rounded-xl px-4 py-2.5 text-xs outline-none appearance-none focus:ring-1 focus:ring-brand"
               >
                 <option value="">Tom (opcional)...</option>
                 {tones.map(t => <option key={t} value={t}>{t}</option>)}
@@ -347,7 +347,7 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
           </div>
           {canManageRepertoire && (
             <div className="flex gap-2 mt-4">
-              <button onClick={() => setShowAddSong(false)} className="flex-1 py-2 bg-slate-100 dark:bg-slate-700 text-slate-500 rounded-xl text-[9px] font-black uppercase tracking-widest">Cancelar</button>
+              <button onClick={() => setShowAddSong(false)} className="app-btn-muted flex-1 rounded-xl py-2 text-[9px] font-black uppercase tracking-widest">Cancelar</button>
               <button 
                 onClick={handleSaveSong} 
                 disabled={isSavingSong}
@@ -370,7 +370,7 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
       {/* Song List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {repertoire.map((item, index) => (
-          <div key={`${eventId}-rep-${item.id || `${item.musica}-${item.cantor}-${item.key}-${item.minister}-${index}`}`} className="group bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+          <div key={`${eventId}-rep-${item.id || `${item.musica}-${item.cantor}-${item.key}-${item.minister}-${index}`}`} className="app-panel group rounded-xl overflow-hidden">
             {/* Header com Tom e Informações da Música */}
             <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700 relative">
               <div className="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center font-black text-[8px] shrink-0">
@@ -405,10 +405,10 @@ const RepertoireManager: React.FC<RepertoireManagerProps> = ({
             {/* Botões de Links */}
             <div className="px-4 pb-4">
               <div className="grid grid-cols-4 gap-1">
-                <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${item.musica} ${item.cantor}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-red-600 hover:bg-red-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
-                <a href={`https://open.spotify.com/search/${encodeURIComponent(`${item.musica} ${item.cantor}`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-green-600 hover:bg-green-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
-                <a href={`https://www.google.com/search?q=${encodeURIComponent(`${item.musica} ${item.cantor} cifra`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-blue-600 hover:bg-blue-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Cifra"><i className="fas fa-guitar text-[10px]"></i></a>
-                <a href={`https://www.google.com/search?q=${encodeURIComponent(`${item.musica} ${item.cantor} letra`)}`} target="_blank" className="flex items-center justify-center py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-purple-600 hover:bg-purple-600 hover:text-white border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-110 hover:shadow-lg" title="Letra"><i className="fas fa-microphone-alt text-[10px]"></i></a>
+                <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${item.musica} ${item.cantor}`)}`} target="_blank" className="app-panel flex items-center justify-center rounded-lg py-2 text-red-600 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-red-600 hover:bg-red-600 hover:text-white" title="Youtube"><i className="fab fa-youtube text-[10px]"></i></a>
+                <a href={`https://open.spotify.com/search/${encodeURIComponent(`${item.musica} ${item.cantor}`)}`} target="_blank" className="app-panel flex items-center justify-center rounded-lg py-2 text-green-600 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-green-600 hover:bg-green-600 hover:text-white" title="Spotify"><i className="fab fa-spotify text-[10px]"></i></a>
+                <a href={`https://www.google.com/search?q=${encodeURIComponent(`${item.musica} ${item.cantor} cifra`)}`} target="_blank" className="app-panel flex items-center justify-center rounded-lg py-2 text-blue-600 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-blue-600 hover:bg-blue-600 hover:text-white" title="Cifra"><i className="fas fa-guitar text-[10px]"></i></a>
+                <a href={`https://www.google.com/search?q=${encodeURIComponent(`${item.musica} ${item.cantor} letra`)}`} target="_blank" className="app-panel flex items-center justify-center rounded-lg py-2 text-purple-600 transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:border-purple-600 hover:bg-purple-600 hover:text-white" title="Letra"><i className="fas fa-microphone-alt text-[10px]"></i></a>
               </div>
             </div>
           </div>

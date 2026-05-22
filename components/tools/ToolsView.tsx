@@ -590,7 +590,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                 <select
                   value={adminSubView}
                   onChange={(e) => setAdminSubView(e.target.value as any)}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-black text-sm focus:ring-2 focus:ring-brand focus:border-transparent"
+                  className="app-input w-full rounded-lg px-3 py-2 text-sm font-black focus:border-transparent focus:ring-2 focus:ring-brand"
                 >
                   <option value="members">
                     👥 Membros
@@ -626,24 +626,24 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
+              <div className="app-card rounded-2xl border p-4">
                 <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Membros</p>
                 <p className="text-2xl font-black text-slate-800 dark:text-white">{totalMembersCount}</p>
                 <p className="text-xs text-slate-500 mt-1">Usuarios vinculados a pelo menos um ministerio.</p>
               </div>
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
+              <div className="app-card rounded-2xl border p-4">
                 <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Ativos</p>
                 <p className="text-2xl font-black text-slate-800 dark:text-white">{usersWithActiveMinisterio}</p>
                 <p className="text-xs text-slate-500 mt-1">Usuarios com acesso ativo em algum ministerio.</p>
               </div>
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
+              <div className="app-card rounded-2xl border p-4">
                 <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Multiministerio</p>
                 <p className="text-2xl font-black text-slate-800 dark:text-white">{usersInMultipleMinisterios}</p>
                 <p className="text-xs text-slate-500 mt-1">Pessoas participando de mais de um time.</p>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
+            <div className="app-card rounded-2xl border p-4">
               <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.8fr)_minmax(180px,1fr)_minmax(160px,1fr)_auto] gap-3">
                 <div>
                   <label className="block text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">
@@ -656,7 +656,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                       value={userSearchTerm}
                       onChange={(e) => setUserSearchTerm(e.target.value)}
                       placeholder="Nome, email ou ministerio"
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                      className="app-input w-full rounded-xl py-2.5 pl-9 pr-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand"
                     />
                   </div>
                 </div>
@@ -667,7 +667,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                   <select
                     value={userMinisterioFilter}
                     onChange={(e) => setUserMinisterioFilter(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                    className="app-input w-full rounded-xl px-3 py-2.5 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand"
                   >
                     <option value="all">Todos os ministerios</option>
                     {ministerioFilterOptions.map((ministerio) => (
@@ -684,7 +684,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                   <select
                     value={userPerfilFilter}
                     onChange={(e) => setUserPerfilFilter(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                    className="app-input w-full rounded-xl px-3 py-2.5 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand"
                   >
                     <option value="all">Todos os perfis</option>
                     {profileOptions.map((option) => (
@@ -701,7 +701,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                     setUserMinisterioFilter('all');
                     setUserPerfilFilter('all');
                   }}
-                  className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors self-end"
+                  className="app-btn-muted self-end rounded-xl px-4 py-2.5 text-sm font-black uppercase tracking-widest transition-colors"
                 >
                   Limpar
                 </button>
@@ -714,10 +714,10 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+            <div className="app-card rounded-2xl border overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
+                  <thead className="app-panel border-b-0">
                     <tr>
                       <th className="px-4 sm:px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Nome</th>
                       <th className="px-4 sm:px-6 py-3 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Ministerio</th>
@@ -735,7 +735,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                     )}
                     {filteredMembersTableData.map(({ member, memberMinisterios, principalMinisterioId }) => {
                       return (
-                      <tr key={member.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <tr key={member.id} className="transition-colors hover:bg-app-surface-strong">
                         <td className="px-4 sm:px-6 py-4">
                           <div className="flex items-center">
                             <div className="w-10 h-10 bg-brand text-white rounded-full flex items-center justify-center font-black text-sm mr-3 shrink-0">
@@ -767,7 +767,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                                     ministerio.membership?.ativo !== false
                                       ? ministerio.id === principalMinisterioId
                                         ? 'bg-brand text-white'
-                                        : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                        : 'app-panel-muted'
                                       : 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300'
                                   }`}
                                 >
@@ -794,7 +794,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                                 value={member.perfil || 'User'}
                                 onChange={(e) => handleProfileChange(member.id, e.target.value)}
                                 onBlur={() => setEditingProfile(null)}
-                                className="px-3 py-1.5 text-xs font-black rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent cursor-pointer"
+                                className="app-input cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand"
                                 autoFocus
                               >
                                 {profileOptions.map((option) => (
@@ -814,7 +814,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                                   ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400'
                                   : member.perfil === 'Advanced'
                                   ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400'
-                                  : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400'
+                                  : 'app-panel-muted'
                               }`}
                             >
                               <div className="flex items-center gap-1">
@@ -858,7 +858,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
               {adminCards.map((card) => (
                 <div
                   key={card.title}
-                  className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 group aspect-square sm:aspect-auto"
+                  className="app-card group aspect-square rounded-xl border p-4 backdrop-blur-xl transition-all duration-300 hover:shadow-xl sm:aspect-auto sm:rounded-2xl"
                 >
                   <div className="flex h-full flex-col justify-between gap-4">
                     <div className="flex items-start justify-between gap-3">
@@ -896,7 +896,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
               {performanceKpis.map((kpi) => (
                 <div
                   key={kpi.title}
-                  className="aspect-square bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between"
+                  className="app-card flex aspect-square flex-col justify-between rounded-2xl border p-4 sm:p-5"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${kpi.iconWrapClass}`}>
@@ -921,7 +921,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
               ))}
             </div>
 
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
+            <div className="app-card rounded-2xl border p-6">
               <h3 className="text-lg font-black text-slate-800 dark:text-white mb-4">Gráfico de Desempenho</h3>
               <div className="h-64 flex items-center justify-center text-slate-400">
                 <div className="text-center">
@@ -932,7 +932,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
             </div>
 
             {/* Ações e Cache */}
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
+            <div className="app-card rounded-2xl border p-6">
               <h3 className="text-lg font-black text-slate-800 dark:text-white mb-4">Ações e Cache</h3>
               
               {/* Ações Rápidas */}
@@ -1030,7 +1030,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                         showError('Erro ao realizar backup. Tente novamente.');
                       }
                     }}
-                    className="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    className="app-btn-muted rounded-xl px-4 py-3 text-sm font-black uppercase tracking-widest transition-colors"
                   >
                     <i className="fas fa-download mr-2"></i> Backup Manual (Ver Console)
                   </button>
@@ -1039,7 +1039,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                       setShowCacheManager(true);
                       setCacheInfo(getImageCacheSize());
                     }}
-                    className="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    className="app-btn-muted rounded-xl px-4 py-3 text-sm font-black uppercase tracking-widest transition-colors"
                   >
                     <i className="fas fa-broom mr-2"></i> Gerenciar Cache
                   </button>
@@ -1052,7 +1052,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                 <LocalStorageStatus />
               </div>
 
-              <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-slate-200 dark:border-slate-700">
+              <div className="app-card rounded-2xl border p-6 backdrop-blur-xl">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                   <div>
                     <h4 className="text-sm font-black text-slate-700 dark:text-slate-300">Erros Recentes</h4>
@@ -1063,7 +1063,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => setRecentErrors(logger.getRecentErrors())}
-                      className="px-3 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg font-black text-xs uppercase tracking-wider hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      className="app-btn-muted rounded-lg px-3 py-2 text-xs font-black uppercase tracking-wider transition-colors"
                     >
                       <i className="fas fa-sync mr-2"></i>Atualizar
                     </button>
@@ -1088,7 +1088,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                     {recentErrors.slice(0, 8).map((entry, index) => (
                       <div
                         key={`${entry.timestamp}-${index}`}
-                        className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-3"
+                        className="app-panel rounded-xl p-3"
                       >
                         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                           <p className="text-sm font-black text-slate-700 dark:text-slate-200">{entry.message}</p>
@@ -1109,19 +1109,19 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
             {/* Gerenciador de Cache */}
             {showCacheManager && (
               <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6 max-w-md w-full">
+                <div className="app-card w-full max-w-md rounded-2xl border p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-black text-slate-800 dark:text-white">Gerenciador de Cache</h3>
                     <button 
                       onClick={() => setShowCacheManager(false)}
-                      className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      className="app-panel-muted flex h-8 w-8 items-center justify-center rounded-full border-0 transition-colors hover:bg-app-surface-strong"
                     >
                       <i className="fas fa-times text-slate-500"></i>
                     </button>
                   </div>
 
                   <div className="space-y-4">
-                    <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+                    <div className="app-panel rounded-xl p-4">
                       <h4 className="font-black text-slate-700 dark:text-slate-300 mb-2">Status do Cache</h4>
                       <div className="space-y-1 text-sm">
                         <p><span className="font-medium">Imagens armazenadas:</span> {cacheInfo?.count || 0}</p>
@@ -1146,7 +1146,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                           onClick={() => {
                             setCacheInfo(getImageCacheSize());
                           }}
-                          className="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                          className="app-btn-muted rounded-xl px-4 py-3 text-sm font-black uppercase tracking-widest transition-colors"
                         >
                           <i className="fas fa-sync mr-2"></i> Atualizar
                         </button>
@@ -1197,12 +1197,12 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
       {/* Modal de Edição de Membro */}
       {editingMember && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="app-card max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-black text-slate-800 dark:text-white">Editar Membro</h3>
               <button 
                 onClick={() => setEditingMember(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="app-panel-muted flex h-8 w-8 items-center justify-center rounded-full border-0 transition-colors hover:bg-app-surface-strong"
               >
                 <i className="fas fa-times text-slate-500"></i>
               </button>
@@ -1249,12 +1249,12 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                     type="text"
                     value={editingMember.display_name || ''}
                     onChange={(e) => setEditingMember({ ...editingMember, display_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                    className="app-input w-full rounded-lg px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand"
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/40 p-4">
+                  <div className="app-panel rounded-2xl p-4">
                     <div className="flex items-center justify-between gap-3 mb-3">
                       <div>
                         <label className="block text-sm font-black text-slate-700 dark:text-slate-300">Ministerios</label>
@@ -1285,7 +1285,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                           return (
                             <div
                               key={ministerioId}
-                              className="rounded-xl border border-slate-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/40"
+                              className="app-card rounded-xl border p-3"
                             >
                               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
@@ -1312,7 +1312,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                                     className={`rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-colors ${
                                       editingMember.ministerioStatusById?.[ministerioId] !== false
                                         ? 'bg-emerald-500 text-white'
-                                        : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                                        : 'app-panel-muted'
                                     }`}
                                   >
                                     Ativo
@@ -1339,7 +1339,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                                     className={`rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-colors ${
                                       editingMember.ministerioStatusById?.[ministerioId] === false
                                         ? 'bg-red-500 text-white'
-                                        : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                                        : 'app-panel-muted'
                                     }`}
                                   >
                                     Inativo
@@ -1360,7 +1360,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                     <select
                       value={editingMember.principalMinisterioId || ''}
                       onChange={(e) => setEditingMember({ ...editingMember, principalMinisterioId: e.target.value || null })}
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                      className="app-input w-full rounded-lg px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand"
                     >
                       {(editingMember.ministerioIds || [])
                         .filter((ministerioId) => editingMember.ministerioStatusById?.[ministerioId] !== false)
@@ -1392,7 +1392,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                 </button>
                 <button 
                   onClick={() => setEditingMember(null)}
-                  className="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  className="app-btn-muted rounded-xl px-4 py-3 text-sm font-black uppercase tracking-widest transition-colors"
                 >
                   <i className="fas fa-times mr-2"></i> Cancelar
                 </button>

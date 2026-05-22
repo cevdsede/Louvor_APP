@@ -10,6 +10,7 @@ import NotificationButton from './NotificationButton';
 import { showError, showSuccess } from '../../utils/toast';
 import { isMusicView, isScaleView, isTeamView, isToolsView } from '../../utils/views';
 import AvailabilityPanel from './AvailabilityPanel';
+import { buildLocalAvatar } from '../../utils/avatar';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -324,7 +325,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <nav className="fixed inset-x-0 bottom-2 z-[100] mx-auto flex min-h-16 w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] rounded-2xl border border-slate-100 bg-white shadow-xl transition-all dark:border-slate-800 dark:bg-[#0f172a] sm:bottom-3 sm:w-[calc(100%-1.5rem)] sm:max-w-[720px] lg:inset-x-auto lg:bottom-0 lg:left-0 lg:mx-0 lg:h-full lg:w-[280px] lg:max-w-none lg:flex-col lg:rounded-none lg:border-r lg:border-b-0 lg:border-l-0 lg:border-t-0 lg:shadow-none">
+    <>
+    <nav className="app-card shadow-app fixed inset-x-0 bottom-2 z-[100] mx-auto flex min-h-16 w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] rounded-2xl backdrop-blur-xl transition-all sm:bottom-3 sm:w-[calc(100%-1.5rem)] sm:max-w-[720px] lg:inset-x-auto lg:bottom-0 lg:left-0 lg:mx-0 lg:h-full lg:w-[280px] lg:max-w-none lg:flex-col lg:rounded-none lg:border-r lg:border-b-0 lg:border-l-0 lg:border-t-0 lg:shadow-none">
       {/* LOGO DESKTOP */}
       <div className="hidden lg:flex flex-col items-center py-10 px-6">
         <div className="flex flex-col items-center gap-2">
@@ -354,7 +356,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               flex min-w-0 flex-1 max-w-none flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 transition-all lg:flex-none lg:flex-row lg:justify-start lg:gap-4 lg:rounded-2xl lg:px-5 lg:py-4
               ${isActive(item.id)
                 ? 'bg-brand text-white shadow-xl shadow-brand/20'
-                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 lg:hover:bg-slate-50 lg:dark:hover:bg-slate-800/50'}
+                : 'text-app-muted hover:text-app lg:hover:bg-app-surface-strong'}
             `}
           >
             <i className={`${item.icon} text-base lg:text-lg w-5 lg:w-6 text-center`}></i>
@@ -366,9 +368,9 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* FOOTER DESKTOP */}
-      <div className="hidden lg:flex flex-col px-4 pb-6 gap-3 mt-auto border-t border-slate-50 dark:border-slate-800 pt-4">
+      <div className="hidden lg:flex flex-col px-4 pb-6 gap-3 mt-auto border-t border-app pt-4">
         {userMinisterios.length > 1 && (
-          <div className="flex flex-col rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 overflow-visible">
+          <div className="app-panel flex flex-col rounded-2xl overflow-visible">
             <div className="px-4 py-2.5">
               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Ministerio ativo</span>
             </div>
@@ -379,8 +381,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         )}
 
         {/* Color Selectors */}
-        <div className="flex flex-col rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 overflow-hidden">
-          <button onClick={() => setIsThemeExpanded(!isThemeExpanded)} className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors">
+        <div className="app-panel flex flex-col rounded-2xl overflow-hidden">
+          <button onClick={() => setIsThemeExpanded(!isThemeExpanded)} className="flex items-center justify-between px-4 py-2.5 hover:bg-app-surface-muted transition-colors">
             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Temas</span>
             <i className={`fas fa-chevron-up text-[9px] text-slate-400 transition-transform ${isThemeExpanded ? 'rotate-180' : ''}`}></i>
           </button>
@@ -400,7 +402,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {/* User Card */}
         <div className="flex min-w-0 items-center gap-1.5">
-          <div onClick={() => setIsProfileModalOpen(true)} className="flex min-w-0 flex-1 items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-2.5 py-3 transition-all hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/30 dark:hover:bg-slate-800 cursor-pointer group">
+          <div onClick={() => setIsProfileModalOpen(true)} className="app-panel flex min-w-0 flex-1 items-center gap-2 rounded-2xl px-2.5 py-3 transition-all hover:bg-app-surface-muted cursor-pointer group">
             <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-black text-[10px] shadow-sm group-hover:scale-105 transition-transform overflow-hidden">
               {profileData.foto ? (
                 <ImageCache
@@ -422,7 +424,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="relative">
             <NotificationButton
               onClick={onOpenNotifications}
-              className="flex h-[60px] w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 text-slate-500 transition-all hover:bg-slate-100 hover:text-brand dark:border-slate-800 dark:bg-slate-800/30 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="app-panel flex h-[60px] w-10 shrink-0 items-center justify-center rounded-2xl text-app-muted transition-all hover:bg-app-surface-muted hover:text-brand"
               iconClassName="text-lg"
             />
           </div>
@@ -438,19 +440,21 @@ const Sidebar: React.FC<SidebarProps> = ({
         {/* Theme Toggle */}
         <button
           onClick={onToggleTheme}
-          className="flex items-center justify-center gap-2 w-full h-11 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-400 hover:text-brand transition-all font-black text-[9px] uppercase tracking-widest"
+          className="app-btn-muted flex items-center justify-center gap-2 w-full h-11 rounded-2xl text-app-muted hover:text-brand transition-all font-black text-[9px] uppercase tracking-widest"
         >
           <i className={isDarkMode ? "fas fa-sun text-brand-gold" : "fas fa-moon text-brand"}></i>
           {isDarkMode ? 'Modo Claro' : 'Modo Escuro'}
         </button>
       </div>
 
+    </nav>
+
       {/* MOBILE MODAL */}
       {isProfileModalOpen && (
         <div className="fixed inset-0 z-[500] overflow-y-auto px-3 py-4 pb-24 sm:p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsProfileModalOpen(false)}></div>
           <div className="flex min-h-full items-start justify-center sm:items-center">
-          <div className="relative mx-auto mt-2 w-full max-w-md bg-white dark:bg-slate-900 rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-6 lg:p-8 shadow-2xl animate-fade-in border border-slate-100 dark:border-slate-800 max-h-[calc(100dvh-7rem)] sm:max-h-[90vh] overflow-y-auto no-scrollbar">
+          <div className="app-card relative mx-auto mt-2 max-h-[calc(100dvh-7rem)] w-full max-w-md overflow-y-auto rounded-[2rem] p-5 shadow-2xl animate-fade-in no-scrollbar sm:max-h-[90vh] sm:rounded-[2.5rem] sm:p-6 lg:p-8">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter">Configurações</h3>
               <button onClick={() => setIsProfileModalOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors"><i className="fas fa-times text-lg"></i></button>
@@ -458,15 +462,20 @@ const Sidebar: React.FC<SidebarProps> = ({
 
             <div className="flex flex-col items-center mb-6">
               <div className="relative mb-2">
-                <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center border-4 border-slate-50 dark:border-slate-800 shadow-xl overflow-hidden">
+                <div className="app-panel w-20 h-20 rounded-full flex items-center justify-center border-4 shadow-xl overflow-hidden">
                   {profileData.foto ? (
                     <ImageCache
                       src={profileData.foto}
                       alt={profileData.name}
+                      fallbackSrc={buildLocalAvatar(profileData.name || 'Usuario')}
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <i className="fas fa-user text-2xl text-slate-300"></i>
+                    <img
+                      src={buildLocalAvatar(profileData.name || 'Usuario')}
+                      alt={profileData.name || 'Usuario'}
+                      className="w-full h-full object-cover"
+                    />
                   )}
                 </div>
               </div>
@@ -476,11 +485,11 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className="space-y-4">
               <div>
                 <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1 block ml-1">Nome</label>
-                <input type="text" value={profileData.name} onChange={(e) => setProfileData({ ...profileData, name: e.target.value })} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand" />
+                <input type="text" value={profileData.name} onChange={(e) => setProfileData({ ...profileData, name: e.target.value })} className="app-input-strong w-full rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand" />
               </div>
               <div>
                 <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1 block ml-1">Email de Login</label>
-                <input type="email" value={profileData.email} onChange={(e) => setProfileData({ ...profileData, email: e.target.value })} placeholder="seu@email.com" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand" />
+                <input type="email" value={profileData.email} onChange={(e) => setProfileData({ ...profileData, email: e.target.value })} placeholder="seu@email.com" className="app-input-strong w-full rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand" />
               </div>
               <div>
                 <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1 block ml-1">Alterar Senha</label>
@@ -502,7 +511,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
               <AvailabilityPanel memberId={currentUser?.id || null} />
 
-              <div className="lg:hidden space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="lg:hidden space-y-4 pt-4 border-t border-app">
                 <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest block ml-1">Temas</label>
                 <div className="flex justify-between">
                   {themeColors.map(color => (
@@ -514,7 +523,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     />
                   ))}
                 </div>
-                <button onClick={onToggleTheme} className="w-full py-3 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-black uppercase tracking-widest text-[8px] border border-slate-100 dark:border-slate-700 flex items-center justify-center gap-2">
+                <button onClick={onToggleTheme} className="app-btn-muted w-full py-3 rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2">
                   <i className={`fas ${isDarkMode ? 'fa-sun text-brand-gold' : 'fa-moon text-brand'}`}></i>
                   Alternar Modo
                 </button>
@@ -529,7 +538,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
 
             <div className="flex flex-col-reverse gap-3 mt-8 sm:flex-row sm:gap-4">
-              <button onClick={() => setIsProfileModalOpen(false)} className="flex-1 py-3.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-xl font-black uppercase tracking-widest text-[9px]">Fechar</button>
+              <button onClick={() => setIsProfileModalOpen(false)} className="app-btn-muted flex-1 py-3.5 rounded-xl font-black uppercase tracking-widest text-[9px]">Fechar</button>
               <button onClick={handleSaveProfile} disabled={isSaving} className="flex-1 py-3.5 bg-brand text-white rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-brand/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                 {isSaving ? 'Salvando...' : 'Salvar'}
               </button>
@@ -543,7 +552,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <div className="fixed inset-0 z-[600] overflow-y-auto px-3 py-4 pb-24 sm:p-4 lg:p-8">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsPasswordModalOpen(false)}></div>
           <div className="flex min-h-full items-start justify-center sm:items-center">
-          <div className="relative mx-auto mt-2 w-full max-w-md bg-white dark:bg-slate-900 rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-6 lg:p-8 shadow-2xl animate-fade-in border border-slate-100 dark:border-slate-800 max-h-[calc(100dvh-7rem)] sm:max-h-[90vh] overflow-y-auto no-scrollbar">
+          <div className="app-card relative mx-auto mt-2 max-h-[calc(100dvh-7rem)] w-full max-w-md overflow-y-auto rounded-[2rem] p-5 shadow-2xl animate-fade-in no-scrollbar sm:max-h-[90vh] sm:rounded-[2.5rem] sm:p-6 lg:p-8">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter">Alterar Senha</h3>
               <button onClick={() => setIsPasswordModalOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors"><i className="fas fa-times text-lg"></i></button>
@@ -557,7 +566,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   value={passwordData.newPassword}
                   onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                   placeholder="Digite a nova senha"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand"
+                  className="app-input-strong w-full rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand"
                 />
               </div>
               <div>
@@ -567,7 +576,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   value={passwordData.confirmPassword}
                   onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                   placeholder="Confirme a nova senha"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand"
+                  className="app-input-strong w-full rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-1 focus:ring-brand"
                 />
               </div>
             </div>
@@ -576,7 +585,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               <button
                 onClick={() => setIsPasswordModalOpen(false)}
                 disabled={isSaving}
-                className="flex-1 py-3.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-black uppercase tracking-widest text-[9px] border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="app-btn-muted flex-1 py-3.5 rounded-xl font-black uppercase tracking-widest text-[9px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancelar
               </button>
@@ -592,7 +601,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
       )}
-    </nav>
+    </>
   );
 };
 

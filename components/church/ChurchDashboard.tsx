@@ -262,10 +262,10 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
       type="button"
       key={card.label}
       onClick={card.onClick}
-      className="group rounded-xl border border-slate-200 bg-white p-3 text-left shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800/50 sm:rounded-2xl sm:p-4"
+      className="app-card group rounded-[1.35rem] border border-sky-100/90 bg-white/94 p-3 text-left shadow-[0_28px_70px_-42px_rgba(14,116,144,0.28)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-brand/10 dark:border-white/10 dark:bg-slate-900/88 sm:rounded-[1.65rem] sm:p-4"
     >
       <div className="flex h-full flex-col items-center justify-center gap-2 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
-        <div className={`order-1 flex h-9 w-9 items-center justify-center rounded-lg transition-transform group-hover:scale-110 sm:order-2 sm:h-12 sm:w-12 sm:rounded-xl ${card.className}`}>
+        <div className={`order-1 flex h-9 w-9 items-center justify-center rounded-xl transition-transform group-hover:scale-110 sm:order-2 sm:h-12 sm:w-12 sm:rounded-2xl ${card.className}`}>
           <i className={`${card.icon} text-sm sm:text-lg`} />
         </div>
         <div className="order-2 min-w-0 sm:order-1">
@@ -278,15 +278,15 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
   );
 
   const verseCard = (
-    <div className="relative min-h-[320px] overflow-hidden rounded-2xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5 shadow-xl dark:border-gray-700 dark:from-gray-900 dark:to-gray-800 sm:p-6 lg:h-full">
-      <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-brand/20 blur-3xl dark:bg-brand/30" />
+    <div className="relative min-h-[320px] overflow-hidden rounded-[1.8rem] border border-sky-100/90 bg-white/94 p-5 shadow-[0_28px_70px_-42px_rgba(14,116,144,0.28)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/88 sm:p-6 lg:h-full">
+      <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-sky-200/40 blur-3xl dark:bg-brand/30" />
       <div className="absolute bottom-0 left-0 h-40 w-40 rounded-full bg-brand-accent/20 blur-3xl dark:bg-brand-accent/30" />
       <div className="relative flex h-full flex-col justify-center text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-brand/20 bg-white/80 shadow-lg backdrop-blur dark:bg-gray-800">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[1.4rem] border border-sky-100 bg-white shadow-lg backdrop-blur dark:border-brand/30 dark:bg-gray-800">
           <i className="fas fa-dove text-2xl text-brand" />
         </div>
         <h3 className="mb-4 text-lg font-bold text-gray-800 dark:text-white">Edificacao do Dia</h3>
-        <div className="relative rounded-2xl border border-brand/10 bg-white/60 p-5 shadow-lg backdrop-blur-sm dark:border-brand/20 dark:bg-gray-800/80">
+        <div className="relative rounded-[1.5rem] border border-sky-100 bg-white/96 p-5 shadow-lg backdrop-blur-sm dark:border-brand/20 dark:bg-gray-800/88">
           <p
             className="font-serif italic leading-relaxed text-gray-700 dark:text-gray-200"
             style={{
@@ -298,11 +298,11 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
           </p>
         </div>
         <div className="mt-6 flex items-center justify-center gap-3">
-          <div className="h-px w-10 bg-brand/20" />
-          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-brand/20 bg-brand/10">
+          <div className="h-px w-10 bg-sky-200 dark:bg-brand/20" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-sky-100 bg-sky-50 dark:border-brand/20 dark:bg-brand/10">
             <i className="fas fa-cross text-sm text-brand" />
           </div>
-          <div className="h-px w-10 bg-brand/20" />
+          <div className="h-px w-10 bg-sky-200 dark:bg-brand/20" />
         </div>
       </div>
     </div>
@@ -336,16 +336,16 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
 
         <div className="order-2 flex min-w-0 flex-col items-center lg:col-start-1 lg:items-stretch">
           {loading || publicLoading ? (
-            <div className="flex aspect-[9/16] w-full max-w-[360px] items-center justify-center rounded-[1.75rem] border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900 lg:aspect-video lg:max-w-none">
+            <div className="flex aspect-[9/16] w-full max-w-[360px] items-center justify-center rounded-[1.75rem] border border-sky-100/90 bg-white/94 shadow-[0_28px_70px_-42px_rgba(14,116,144,0.28)] dark:border-white/10 dark:bg-slate-900/88 lg:aspect-video lg:max-w-none">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent" />
             </div>
           ) : weekEvents.length === 0 ? (
-            <div className="flex aspect-[9/16] w-full max-w-[360px] items-center justify-center rounded-[1.75rem] border border-dashed border-slate-300 bg-white p-8 text-center shadow-xl dark:border-slate-700 dark:bg-slate-900 lg:aspect-video lg:max-w-none">
+            <div className="flex aspect-[9/16] w-full max-w-[360px] items-center justify-center rounded-[1.75rem] border border-dashed border-sky-100 bg-white/94 p-8 text-center shadow-[0_28px_70px_-42px_rgba(14,116,144,0.28)] dark:border-slate-700 dark:bg-slate-900/88 lg:aspect-video lg:max-w-none">
               <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Nenhum evento ativo para esta semana.</p>
             </div>
           ) : (
             <div className="w-full max-w-[360px] space-y-3 lg:max-w-none">
-              <div className="relative aspect-[9/16] overflow-hidden rounded-[1.75rem] bg-slate-900 shadow-xl lg:aspect-video">
+              <div className="relative aspect-[9/16] overflow-hidden rounded-[1.75rem] border border-sky-100/80 bg-slate-900 shadow-[0_28px_70px_-42px_rgba(14,116,144,0.28)] dark:border-white/10 lg:aspect-video">
                 {activeEvent && (
                   <button type="button" onClick={() => setExpandedEvent(activeEvent)} className="block h-full w-full text-left">
                     <div className="absolute inset-0">{renderEventMedia(activeEvent, activeSlide)}</div>

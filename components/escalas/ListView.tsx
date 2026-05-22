@@ -59,7 +59,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
   const [activeSubTabs, setActiveSubTabs] = useState<Record<string, SubTab>>({});
   const [showScaleModal, setShowScaleModal] = useState<{ mode: 'add' | 'edit', eventId?: string } | null>(null);
 
-  // User logged state - exige membro válido
+  // User logged state - exige membro vÃ¡lido
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isMember, setIsMember] = useState<boolean>(false);
   const [isAdminOrLeader, setIsAdminOrLeader] = useState<boolean>(false);
@@ -151,7 +151,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
   const canViewRepertoire = canManageRepertoire || activeMinisterioSlug === 'midia' || activeMinisterioSlug === 'media';
   const canCreateScale = isAdminOrLeader || isGlobalAdminOrLeader || canManageCurrentMinisterio;
 
-  // Trava scroll quando o modal de escala está aberto
+  // Trava scroll quando o modal de escala estÃ¡ aberto
   useEffect(() => {
     if (showScaleModal) {
       document.body.classList.add('modal-open');
@@ -189,34 +189,34 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     [filteredEvents]
   );
 
-  // Buscar usuário logado de forma resiliente (Offline-First)
+  // Buscar usuÃ¡rio logado de forma resiliente (Offline-First)
   useEffect(() => {
     const getCurrentUser = async () => {
       try {
         let userEmail: string | undefined;
 
-        // 1. Tentar pegar email do cache primeiro (rápido e offline-safe)
+        // 1. Tentar pegar email do cache primeiro (rÃ¡pido e offline-safe)
         const savedSession = localStorage.getItem('supabase_session_cache');
         if (savedSession) {
           const session = JSON.parse(savedSession);
           userEmail = session.user?.email;
         }
 
-        // 2. Se estiver online e não tiver email, tentar Supabase
+        // 2. Se estiver online e nÃ£o tiver email, tentar Supabase
         if (!userEmail && navigator.onLine) {
           const { data: { user } } = await supabase.auth.getUser();
           userEmail = user?.email;
         }
 
         if (userEmail && membrosRaw) {
-          // Verificar se é membro válido usando o cache local de membros
+          // Verificar se Ã© membro vÃ¡lido usando o cache local de membros
           const memberData = membrosRaw.find((m: any) => m.email?.toLowerCase() === userEmail?.toLowerCase());
           
           if (memberData) {
             setCurrentUser({ id: memberData.id, name: getDisplayName(memberData) });
             const isAdmin = memberData.perfil && (
               memberData.perfil.toLowerCase().includes('admin') || 
-              memberData.perfil.toLowerCase().includes('líder') ||
+              memberData.perfil.toLowerCase().includes('lÃ­der') ||
               memberData.perfil.toLowerCase().includes('lider')
             );
             setIsAdminOrLeader(isAdmin);
@@ -232,7 +232,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
           setIsAdminOrLeader(false);
         }
       } catch (error) {
-        logger.error('Erro ao buscar usuário:', error, 'auth');
+        logger.error('Erro ao buscar usuÃ¡rio:', error, 'auth');
         setCurrentUser(null);
         setIsMember(false);
         setIsAdminOrLeader(false);
@@ -241,7 +241,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
 
     getCurrentUser();
 
-    // Escutar mudanças na autenticação apenas se online
+    // Escutar mudanÃ§as na autenticaÃ§Ã£o apenas se online
     if (!navigator.onLine) {
       return;
     }
@@ -289,7 +289,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
   const canDeleteEventForCurrentMinisterio = isAdminProfile;
 
   // Processamento e Join Local dos dados
-  // Função para agrupar membros com múltiplas funções
+  // FunÃ§Ã£o para agrupar membros com mÃºltiplas funÃ§Ãµes
   const groupMembersByPerson = (escalas: any[]) => {
     const memberMap = new Map();
     
@@ -325,7 +325,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
       }
     });
     
-    // Ordenar funções por ID e criar string de funções
+    // Ordenar funÃ§Ãµes por ID e criar string de funÃ§Ãµes
     return Array.from(memberMap.values()).map(member => {
       // Ordenar roles pelos IDs correspondentes
       const sortedRoles = member.roleIds
@@ -363,7 +363,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     // 2. Tipos de Culto
     setCultoTypes(nomeCultosRaw);
 
-    // 3. Músicas e Tons
+    // 3. MÃºsicas e Tons
     setAllSongs(activeModules.includes('music') ? musicasRaw : []);
     setTones(tonsRaw.map((t: any) => t.nome_tons).filter(Boolean));
 
@@ -391,7 +391,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
       .filter((c: any) => c.data_culto >= today)
       .sort((a: any, b: any) => a.data_culto.localeCompare(b.data_culto))
       .map((c: any) => {
-        const weekDays = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+        const weekDays = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÃB'];
         const dateObj = new Date(c.data_culto + 'T12:00:00');
         const dayOfWeek = weekDays[dateObj.getUTCDay()];
         const formattedDate = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
@@ -408,10 +408,10 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
           };
         });
 
-        // Agrupar membros com múltiplas funções (usando a função existente)
+        // Agrupar membros com mÃºltiplas funÃ§Ãµes (usando a funÃ§Ã£o existente)
         const groupedMembers = groupMembersByPerson(eventMembrosRaw);
 
-        // Local Join: Repertório
+        // Local Join: RepertÃ³rio
         const cRepertorio = musicasRaw.filter((m: any) => false); // Placeholder logic if repertorio is separate
         // Wait, repertorio has its own table. Let's get it too.
         // I'll add repertorioRaw below.
@@ -434,7 +434,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     setLoading(false);
   }, [activeModules, cultosRaw, scopedActiveMembros, scopedAvisos, scopedEscalas, scopedFuncoes, scopedMembros, musicasRaw, nomeCultosRaw, tonsRaw, activeMinisterioId]);
 
-  // Adicionando Repertório ao Join
+  // Adicionando RepertÃ³rio ao Join
   const { data: repertorioRaw } = useLocalStorageFirst<any>({ table: 'repertorio' });
 
   useEffect(() => {
@@ -466,7 +466,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     );
   }, [canViewRepertoire, membrosRaw, musicasRaw, repertorioRaw, tonsRaw, activeMinisterioId]);
 
-  // Função para salvar escala usando o service
+  // FunÃ§Ã£o para salvar escala usando o service
   const handleSaveScale = async () => {
     if (!scaleFormData.title || !scaleFormData.date) return;
 
@@ -475,7 +475,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
       let nomeCultoId = cultoTypes.find(c => normalizeSearchText(c.nome_culto) === normalizedTitle)?.id;
 
       if (!nomeCultoId) {
-        // No offline-first complexo, criaríamos o nome_culto localmente também.
+        // No offline-first complexo, criarÃ­amos o nome_culto localmente tambÃ©m.
         // Por simplicidade, vamos apenas usar o ID existente se houver.
         showWarning("Tipo de culto novo. Conecte-se para criar novos tipos.");
         if (!nomeCultoId) return;
@@ -529,7 +529,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
   const handleDeleteScale = async (eventId: string, eventTitle: string) => {
     const userWantsToDelete = await ModalUtils.confirmDelete(
       eventTitle,
-      'Esta ação irá excluir:\n• O culto\n• Todos os membros escalados\n• Todas as músicas do repertório\n\nEsta ação não pode ser desfeita.'
+      'Esta aÃ§Ã£o irÃ¡ excluir:\nâ€¢ O culto\nâ€¢ Todos os membros escalados\nâ€¢ Todas as mÃºsicas do repertÃ³rio\n\nEsta aÃ§Ã£o nÃ£o pode ser desfeita.'
     );
 
     if (!userWantsToDelete) {
@@ -537,14 +537,14 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
     }
 
     try {
-      // 1. Excluir repertório do culto
+      // 1. Excluir repertÃ³rio do culto
       const { error: repertorioError } = await supabase
         .from('repertorio')
         .delete()
         .eq('id_culto', eventId);
 
       if (repertorioError) {
-        logger.error('Erro ao excluir repertório:', repertorioError, 'database');
+        logger.error('Erro ao excluir repertÃ³rio:', repertorioError, 'database');
         throw repertorioError;
       }
 
@@ -570,7 +570,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
         throw cultoError;
       }
 
-      showSuccess(`Escala "${eventTitle}" excluída com sucesso!`);
+      showSuccess(`Escala "${eventTitle}" excluÃ­da com sucesso!`);
       fetchEvents(); // Recarregar a lista
     } catch (err) {
       logger.error('Error deleting scale:', err, 'database');
@@ -748,7 +748,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
                 ${event.title}
               </h2>
               <p style="margin:0; font-size:13px; font-weight:700; color:#475569;">
-                ${event.dayOfWeek} � ${event.date} � ${event.time}
+                ${event.dayOfWeek} • ${event.date} • ${event.time}
               </p>
             </div>
             <div style="min-width:92px; padding:12px 14px; border-radius:20px; background:#eff6ff; text-align:center;">
@@ -768,7 +768,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
                     ${member.name}
                   </div>
                   <div style="font-size:11px; color:#475569; font-weight:700; line-height:1.35; word-wrap:break-word;">
-                    ${member.roles.join(' � ')}
+                    ${member.roles.join(' • ')}
                   </div>
                 </div>
               </div>
@@ -820,10 +820,10 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
       <div className="flex flex-col gap-4 mb-10">
         <div className="text-center sm:text-left">
           <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tighter">Lista de <span className="text-brand">Cultos</span></h2>
-          <p className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest text-[11px] mt-1">Próximos eventos e escalas</p>
+          <p className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest text-[11px] mt-1">PrÃ³ximos eventos e escalas</p>
         </div>
         
-        {/* Campo de pesquisa e botões na mesma linha - centralizado no desktop */}
+        {/* Campo de pesquisa e botÃµes na mesma linha - centralizado no desktop */}
         <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
           {/* Campo de pesquisa */}
           <div className="relative w-full max-w-[240px] sm:max-w-none sm:w-auto">
@@ -831,8 +831,8 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Pesquisar cultos, membros, músicas..."
-              className="w-full sm:w-64 md:w-80 px-3 py-2 pl-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
+              placeholder="Pesquisar cultos, membros, mÃºsicas..."
+              className="app-input w-full rounded-full px-3 py-2 pl-9 text-xs transition-all focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 sm:w-64 sm:text-sm md:w-80"
             />
             <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-xs sm:text-sm"></i>
             {searchTerm && (
@@ -845,23 +845,23 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
             )}
           </div>
           
-          {/* Botões */}
+          {/* BotÃµes */}
           <div className="contents sm:flex sm:items-center sm:gap-3 sm:w-auto">
-            {/* Botão de exportação */}
+            {/* BotÃ£o de exportaÃ§Ã£o */}
             <button
               onClick={() => exportFilteredData()}
-              className="shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-brand hover:border-brand transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm"
+              className="app-btn-muted shrink-0 flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all hover:border-brand hover:text-brand"
               title="Exportar lista filtrada"
             >
               <i className="fas fa-camera text-[8px]"></i>
               Exportar
             </button>
             
-            {/* Botão Nova Escala - apenas para admin/líder */}
+            {/* BotÃ£o Nova Escala - apenas para admin/lÃ­der */}
             {canCreateScale && (
               <button
                 onClick={() => setShowScaleModal({ mode: 'add' })}
-                className="w-full max-w-sm sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-brand hover:border-brand transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm"
+                className="app-btn-muted flex w-full max-w-sm items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:border-brand hover:text-brand sm:w-auto"
               >
                 <i className="fas fa-plus text-[8px]"></i>
                 Nova Escala
@@ -930,7 +930,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
           ))
         ) : (
           <div className="text-center py-16">
-            <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="app-panel mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border-0">
               <i className="fas fa-search text-slate-300 text-2xl"></i>
             </div>
             <h3 className="text-xl font-black text-slate-600 dark:text-slate-400 mb-2">
@@ -939,7 +939,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
             <p className="text-sm text-slate-400 dark:text-slate-500 max-w-md mx-auto">
               {searchTerm 
                 ? `Tente pesquisar por outros termos como "Culto", "Domingo" ou nomes de membros` 
-                : 'Todos os cultos já passaram. Crie novas escalas para os próximos eventos.'
+                : 'Todos os cultos jÃ¡ passaram. Crie novas escalas para os prÃ³ximos eventos.'
               }
             </p>
             {searchTerm && (
@@ -958,7 +958,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
       {showScaleModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ left: '256px' }}>
           <div className="absolute inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md" style={{ left: '-256px' }} onClick={() => setShowScaleModal(null)}></div>
-          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 lg:p-10 shadow-2xl animate-fade-in border border-slate-100 dark:border-slate-800 max-h-[90vh] overflow-y-auto no-scrollbar">
+          <div className="app-card relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-[2.5rem] border p-8 shadow-2xl animate-fade-in no-scrollbar lg:p-10">
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Escala</h3>
               <button onClick={() => setShowScaleModal(null)} className="text-slate-400 hover:text-red-500"><i className="fas fa-times"></i></button>
@@ -966,7 +966,7 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
             <div className="space-y-5">
               <div>
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Culto</label>
-                <input value={scaleFormData.title} onChange={(e) => setScaleFormData({ ...scaleFormData, title: e.target.value })} type="text" placeholder="Ex: SANTA CEIA" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-1 focus:ring-brand" list="culto-options" />
+                <input value={scaleFormData.title} onChange={(e) => setScaleFormData({ ...scaleFormData, title: e.target.value })} type="text" placeholder="Ex: SANTA CEIA" className="app-input-strong w-full rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-1 focus:ring-brand" list="culto-options" />
                 <datalist id="culto-options">
                   {cultoTypes.map(c => <option key={c.id} value={c.nome_culto} />)}
                 </datalist>
@@ -974,11 +974,11 @@ const ListView: React.FC<ListViewProps> = ({ onReportAbsence }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Data</label>
-                  <input value={scaleFormData.date} onChange={(e) => setScaleFormData({ ...scaleFormData, date: e.target.value })} type="date" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-1 focus:ring-brand" />
+                  <input value={scaleFormData.date} onChange={(e) => setScaleFormData({ ...scaleFormData, date: e.target.value })} type="date" className="app-input-strong w-full rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-1 focus:ring-brand" />
                 </div>
                 <div>
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Hora</label>
-                  <input value={scaleFormData.time} onChange={(e) => setScaleFormData({ ...scaleFormData, time: e.target.value })} type="time" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-1 focus:ring-brand" />
+                  <input value={scaleFormData.time} onChange={(e) => setScaleFormData({ ...scaleFormData, time: e.target.value })} type="time" className="app-input-strong w-full rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-1 focus:ring-brand" />
                 </div>
               </div>
             </div>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { supabase } from '../../supabaseClient';
 import { logger } from '../../utils/logger';
@@ -25,14 +24,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.username,
-        password: formData.password,
+        password: formData.password
       });
 
       if (error) {
         if (error.message === 'Invalid login credentials') {
           setError('Email ou senha incorretos. Tente novamente.');
         } else {
-          setError('Erro ao fazer login: ' + error.message);
+          setError(`Erro ao fazer login: ${error.message}`);
         }
       } else {
         const { error: memberError } = await supabase
@@ -65,7 +64,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
             'funcao'
           ]);
         } catch (syncError) {
-          logger.warn('Login concluído, mas o bootstrap local falhou. O app continuará com os dados já salvos.', syncError, 'database');
+          logger.warn('Login concluido, mas o bootstrap local falhou. O app continuara com os dados ja salvos.', syncError, 'database');
         }
 
         onLogin();
@@ -85,35 +84,36 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   };
 
   const handleCreateProfile = () => {
-    window.location.href = '/cadastro';
+    window.history.pushState({}, '', '/#/cadastro');
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0b1120] flex items-center justify-center p-6 relative transition-colors duration-300">
-      {/* Background Decor */}
-      <div className="absolute top-[-10%] right-[-10%] w-[300px] h-[300px] bg-brand/5 rounded-full blur-[80px]"></div>
-      <div className="absolute bottom-[-10%] left-[-10%] w-[300px] h-[300px] bg-brand-gold/5 rounded-full blur-[80px]"></div>
+    <div className="bg-app-shell relative flex min-h-screen items-center justify-center overflow-hidden p-6 transition-colors duration-300">
+      <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white/45 to-transparent dark:from-white/5" />
+      <div className="absolute -right-16 top-[-8%] h-[320px] w-[320px] rounded-full bg-brand/10 blur-[100px]" />
+      <div className="absolute -left-16 bottom-[-8%] h-[320px] w-[320px] rounded-full bg-brand-gold/10 blur-[100px]" />
 
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl border border-slate-100 dark:border-slate-800 p-10 lg:p-14 animate-fade-in">
-        <div className="flex flex-col items-center mb-10">
-          <div className="flex flex-col items-center mb-6">
+      <div className="app-card relative w-full max-w-md rounded-[3rem] border p-10 backdrop-blur-xl animate-fade-in lg:p-14">
+        <div className="mb-10 flex flex-col items-center">
+          <div className="mb-6 flex flex-col items-center">
             <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-brand/10 shadow-md dark:bg-brand/20">
-              <i className="fa-solid fa-shield text-transparent text-5xl [-webkit-text-stroke:2px_var(--brand-primary)]"></i>
-              <i className="fa-solid fa-crown absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[55%] text-brand-gold text-base"></i>
+              <i className="fa-solid fa-shield text-5xl text-transparent [-webkit-text-stroke:2px_var(--brand-primary)]"></i>
+              <i className="fa-solid fa-crown absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[55%] text-base text-brand-gold"></i>
             </div>
           </div>
-          <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter text-center leading-none">
+          <h2 className="text-app text-center text-2xl font-black uppercase leading-none tracking-tighter">
             Valentes <span className="text-brand">Connected</span>
           </h2>
-          <p className="text-slate-400 dark:text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-3">Acesso Administrativo</p>
+          <p className="text-app-muted mt-3 text-[10px] font-bold uppercase tracking-widest">Acesso Administrativo</p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 flex items-center gap-3 animate-fade-in">
-            <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-800 flex items-center justify-center shrink-0">
-              <i className="fas fa-exclamation-triangle text-red-500 dark:text-red-400 text-xs"></i>
+          <div className="mb-6 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50/90 p-4 animate-fade-in dark:border-red-500/20 dark:bg-red-950/30">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/60">
+              <i className="fas fa-exclamation-triangle text-xs text-red-500 dark:text-red-400"></i>
             </div>
-            <p className="text-[10px] font-bold text-red-600 dark:text-red-300 uppercase tracking-wide leading-relaxed flex-1">
+            <p className="flex-1 text-[10px] font-bold uppercase leading-relaxed tracking-wide text-red-600 dark:text-red-300">
               {error}
             </p>
           </div>
@@ -121,9 +121,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Email</label>
-            <div className="relative group">
-              <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand transition-colors">
+            <label className="text-app-muted ml-1 text-[10px] font-black uppercase tracking-widest">Email</label>
+            <div className="group relative">
+              <div className="text-app-muted absolute left-5 top-1/2 -translate-y-1/2 transition-colors group-focus-within:text-brand">
                 <i className="fas fa-envelope text-sm"></i>
               </div>
               <input
@@ -132,29 +132,29 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 placeholder="seu@email.com"
-                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl py-4 pl-14 pr-6 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-brand/10 focus:border-brand transition-all font-medium"
+                className="app-input-strong w-full rounded-2xl py-4 pl-14 pr-6 text-sm font-medium outline-none transition-all focus:border-brand focus:ring-2 focus:ring-brand/10"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Senha</label>
-            <div className="relative group">
-              <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand transition-colors">
+            <label className="text-app-muted ml-1 text-[10px] font-black uppercase tracking-widest">Senha</label>
+            <div className="group relative">
+              <div className="text-app-muted absolute left-5 top-1/2 -translate-y-1/2 transition-colors group-focus-within:text-brand">
                 <i className="fas fa-lock text-sm"></i>
               </div>
               <input
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? 'text' : 'password'}
                 required
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder="••••••••"
-                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl py-4 pl-14 pr-14 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-brand/10 focus:border-brand transition-all font-medium"
+                placeholder="........"
+                className="app-input-strong w-full rounded-2xl py-4 pl-14 pr-14 text-sm font-medium outline-none transition-all focus:border-brand focus:ring-2 focus:ring-brand/10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1"
+                className="text-app-muted absolute right-5 top-1/2 -translate-y-1/2 p-1 transition-colors hover:text-brand"
               >
                 <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'} text-xs`}></i>
               </button>
@@ -162,37 +162,42 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
           </div>
 
           <div className="flex items-center justify-between px-1">
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <input type="checkbox" className="w-4 h-4 rounded border-slate-200 dark:border-slate-700 text-brand focus:ring-brand" />
-              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest group-hover:text-slate-600 transition-colors">Lembrar-me</span>
+            <label className="group flex cursor-pointer items-center gap-2">
+              <input type="checkbox" className="h-4 w-4 rounded border-slate-200 text-brand focus:ring-brand dark:border-slate-700" />
+              <span className="text-app-muted text-[10px] font-black uppercase tracking-widest transition-colors group-hover:text-brand">
+                Lembrar-me
+              </span>
             </label>
-            <button type="button" className="text-[10px] font-black text-brand-gold uppercase tracking-widest hover:text-brand transition-all">Esqueceu a senha?</button>
+            <button type="button" className="text-[10px] font-black uppercase tracking-widest text-brand-gold transition-all hover:text-brand">
+              Esqueceu a senha?
+            </button>
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-5 bg-brand text-white rounded-2xl font-black uppercase tracking-widest text-[12px] shadow-2xl shadow-brand/20 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3"
+            className="flex w-full items-center justify-center gap-3 rounded-2xl bg-brand py-5 text-[12px] font-black uppercase tracking-widest text-white shadow-2xl shadow-brand/20 transition-all hover:brightness-110 active:scale-95"
           >
             {isLoading ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
             ) : (
-              <>Acessar Painel <i className="fas fa-arrow-right text-[10px]"></i></>
+              <>
+                Acessar Painel <i className="fas fa-arrow-right text-[10px]"></i>
+              </>
             )}
           </button>
           {isLoading && (
-            <p className="text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-              {loadingMessage}
-            </p>
+            <p className="text-app-muted text-center text-[10px] font-black uppercase tracking-widest">{loadingMessage}</p>
           )}
         </form>
 
-        <div className="mt-10 pt-8 border-t border-slate-50 dark:border-slate-800 text-center">
-          <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            Ainda não tem conta? <button 
+        <div className="border-app mt-10 border-t pt-8 text-center">
+          <p className="text-app-muted text-[10px] font-black uppercase tracking-widest">
+            Ainda nao tem conta?
+            <button
               type="button"
               onClick={handleCreateProfile}
-              className="text-brand ml-1 hover:text-brand/80 transition-colors"
+              className="ml-1 text-brand transition-colors hover:text-brand/80"
             >
               Criar Perfil
             </button>
