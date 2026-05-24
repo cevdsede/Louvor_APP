@@ -43,6 +43,9 @@ const statisticOptions: Array<{ id: MemberStatisticType; label: string; icon: st
   { id: 'by-education', label: 'Escolaridade', icon: 'fas fa-graduation-cap' }
 ];
 
+const hasAnyReportData = (membersCount: number, visitorsCount: number, convertsCount: number) =>
+  membersCount > 0 || visitorsCount > 0 || convertsCount > 0;
+
 const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false }) => {
   const { currentMember } = useMinistryContext();
   const [membersRaw, setMembersRaw] = useState<SupabaseMembro[]>([]);
@@ -56,12 +59,14 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
   const [exporting, setExporting] = useState(false);
   const [exportingSheet, setExportingSheet] = useState(false);
   const [copyingText, setCopyingText] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
-    const loadReportData = async () => {
-      setLoading(true);
+    const loadReportData = async (showLoadingState = true) => {
+      if (showLoadingState) setLoading(true);
+      else setRefreshing(true);
       try {
         const [membersResponse, visitorsResponse, convertsResponse] = await Promise.all([
           supabase
@@ -87,7 +92,10 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
         console.error('Erro ao carregar relatorios do banco:', error);
         showError('Erro ao carregar dados dos relatorios.');
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     };
 
@@ -98,12 +106,45 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
     };
   }, []);
 
+  const refreshReportData = async () => {
+    setSelectedDetail(null);
+    setRefreshing(true);
+    try {
+      const [membersResponse, visitorsResponse, convertsResponse] = await Promise.all([
+        supabase
+          .from('membros')
+          .select('id, nome, display_name, nome_planilha, email, genero, perfil, bairro, escolaridade, created_at'),
+        supabase
+          .from('visitantes_igreja')
+          .select('id, data_ficha, nome, data_nascimento, endereco, bairro, telefone, e_cristao, deseja_oracao_lar, deseja_aconselhamento, deseja_informacoes_igreja, convidado_por, observacoes, created_by, created_at, updated_at'),
+        supabase
+          .from('novos_convertidos_igreja')
+          .select('id, nome, endereco, numero, bairro, data_nascimento, data_conversao, estado_civil, email, contato, contato_recado, nome_contato_recado, observacoes, created_by, created_at, updated_at')
+      ]);
+
+      if (membersResponse.error) throw membersResponse.error;
+      if (visitorsResponse.error) throw visitorsResponse.error;
+      if (convertsResponse.error) throw convertsResponse.error;
+
+      setMembersRaw((membersResponse.data || []) as SupabaseMembro[]);
+      setVisitorsRaw((visitorsResponse.data || []) as SupabaseVisitanteIgreja[]);
+      setConvertsRaw((convertsResponse.data || []) as SupabaseNovoConvertidoIgreja[]);
+      showSuccess('Relatorios atualizados com os dados mais recentes do banco.');
+    } catch (error) {
+      console.error('Erro ao atualizar relatorios do banco:', error);
+      showError('Nao foi possivel atualizar os relatorios agora.');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const members = membersRaw || [];
   const visitors = visitorsRaw || [];
   const converts = convertsRaw || [];
   const memberName = (member: SupabaseMembro) => getDisplayName(member) || member.nome || 'Membro sem nome';
 
   const totalMembers = members.length;
+  const reportHasData = hasAnyReportData(members.length, visitors.length, converts.length);
 
   const neighborhoodDistribution = useMemo(() => {
     const map = new Map<string, number>();
@@ -394,20 +435,31 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
             Escolha qual relatorio deseja visualizar. Ao clicar nos dados, voce ve as pessoas ligadas a eles.
           </p>
         </div>
-        {selectedGroup === 'monthly-consolidation' && (
-          <label className="block sm:w-[220px]">
-            <span className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">Mes do consolidado</span>
-            <input
-              type="month"
-              value={selectedMonth}
-              onChange={(event) => {
-                setSelectedMonth(event.target.value);
-                setSelectedDetail(null);
-              }}
-              className="app-input w-full rounded-2xl px-4 py-3 text-sm font-semibold"
-            />
-          </label>
-        )}
+        <div className="flex flex-col gap-3 sm:w-auto sm:items-end">
+          {selectedGroup === 'monthly-consolidation' && (
+            <label className="block sm:w-[220px]">
+              <span className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">Mes do consolidado</span>
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(event) => {
+                  setSelectedMonth(event.target.value);
+                  setSelectedDetail(null);
+                }}
+                className="app-input w-full rounded-2xl px-4 py-3 text-sm font-semibold"
+              />
+            </label>
+          )}
+          <button
+            type="button"
+            onClick={refreshReportData}
+            disabled={loading || refreshing}
+            className="app-btn-muted inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest disabled:opacity-60"
+          >
+            <i className={`fas ${refreshing ? 'fa-spinner animate-spin' : 'fa-rotate-right'}`} />
+            {refreshing ? 'Atualizando...' : 'Atualizar dados'}
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
@@ -451,8 +503,27 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
       )}
 
       {loading ? (
-        <div className="app-card flex h-56 items-center justify-center rounded-2xl border">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent" />
+        <div className="app-card rounded-[2rem] border p-6">
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand border-t-transparent" />
+            <p className="mt-5 text-sm font-bold text-slate-700 dark:text-slate-200">Carregando dados dos relatorios</p>
+            <p className="mt-1 max-w-md text-xs font-medium text-app-muted">
+              Estamos consultando membros, visitantes e novos convertidos no banco para montar os indicadores.
+            </p>
+          </div>
+        </div>
+      ) : !reportHasData ? (
+        <div className="app-card rounded-[2rem] border p-6">
+          <div className="app-panel-muted rounded-[1.75rem] border border-dashed border-app px-6 py-14 text-center">
+            <i className="fas fa-folder-open text-3xl text-app-muted" />
+            <p className="mt-4 text-base font-black text-slate-900 dark:text-white">Ainda nao ha dados suficientes para montar relatorios.</p>
+            <p className="mt-2 max-w-2xl text-sm font-medium text-app-muted mx-auto">
+              Assim que houver membros cadastrados ou registros de visitantes e novos convertidos, esta central vai preencher os dados automaticamente.
+            </p>
+            <p className="mt-4 text-xs font-bold uppercase tracking-widest text-slate-400">
+              Dica: cadastre membros, visitantes ou novos convertidos e depois toque em atualizar dados.
+            </p>
+          </div>
         </div>
       ) : (
         <>
@@ -488,7 +559,7 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
             </div>
           </div>
           {!canExport && (
-            <p className="text-right text-xs font-bold text-app-muted">
+            <p className="text-left text-xs font-bold text-app-muted sm:text-right">
               Seu acesso permite visualizar os relatorios, mas nao exportar.
             </p>
           )}
@@ -600,16 +671,35 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
                     <p className="text-sm font-medium text-app-muted">Nenhuma pessoa encontrada neste agrupamento.</p>
                   ) : (
                     <div className="space-y-3">
-                      <div className={`grid gap-3 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 ${selectedDetail.columns.length >= 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+                      <div className={`hidden gap-3 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 md:grid ${selectedDetail.columns.length >= 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
                         {selectedDetail.columns.map((column) => (
                           <span key={column}>{column}</span>
                         ))}
                       </div>
                       {selectedDetail.items.map((item) => (
-                        <div key={`${item.title}-${item.meta}-${item.extra}`} className={`app-panel grid gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 ${selectedDetail.columns.length >= 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
-                          <span>{item.title}</span>
-                          {selectedDetail.columns[1] && <span>{item.meta || '-'}</span>}
-                          {selectedDetail.columns[2] && <span>{item.extra || '-'}</span>}
+                        <div key={`${item.title}-${item.meta}-${item.extra}`} className={`app-panel rounded-2xl px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 md:grid md:gap-3 ${selectedDetail.columns.length >= 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+                          <div className="space-y-1 md:space-y-0">
+                            <span className="block md:hidden text-[10px] font-black uppercase tracking-widest text-slate-400">
+                              {selectedDetail.columns[0]}
+                            </span>
+                            <span>{item.title}</span>
+                          </div>
+                          {selectedDetail.columns[1] && (
+                            <div className="space-y-1 md:space-y-0">
+                              <span className="block md:hidden text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                {selectedDetail.columns[1]}
+                              </span>
+                              <span>{item.meta || '-'}</span>
+                            </div>
+                          )}
+                          {selectedDetail.columns[2] && (
+                            <div className="space-y-1 md:space-y-0">
+                              <span className="block md:hidden text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                {selectedDetail.columns[2]}
+                              </span>
+                              <span>{item.extra || '-'}</span>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

@@ -30,9 +30,9 @@ Legenda:
 - [x] Melhorar mensagens de erro e sucesso nas rotinas mais criticas
 
 ### UX e operacao
-- [ ] Revisar mobile das telas mais usadas
-- [ ] Melhorar estados de loading nas areas principais
-- [ ] Melhorar estados vazios e mensagens de orientacao
+- [x] Revisar mobile das telas mais usadas
+- [x] Melhorar estados de loading nas areas principais
+- [x] Melhorar estados vazios e mensagens de orientacao
 
 ## Fase 2 - Gestao inteligente
 

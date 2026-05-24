@@ -98,6 +98,7 @@ const ChurchRegistryView: React.FC<ChurchRegistryViewProps> = ({ mode, currentUs
 
   const isVisitors = mode === 'visitors';
   const loading = isVisitors ? visitorsLoading : convertsLoading;
+  const hasSearch = search.trim().length > 0;
 
   const items = useMemo(() => {
     const source = isVisitors ? visitorsRaw || [] : convertsRaw || [];
@@ -388,7 +389,11 @@ const ChurchRegistryView: React.FC<ChurchRegistryViewProps> = ({ mode, currentUs
               {isVisitors ? 'Cadastros de visitantes' : 'Cadastros de novos convertidos'}
             </h2>
             <p className="mt-1 text-xs font-medium text-app-muted">
-              {loading ? 'Sincronizando registros...' : `${items.length} registro(s) encontrado(s)`}
+              {loading
+                ? 'Sincronizando registros com o banco...'
+                : hasSearch
+                  ? `${items.length} resultado(s) para a busca atual`
+                  : `${items.length} registro(s) encontrado(s)`}
             </p>
           </div>
           <div className="relative w-full sm:max-w-xs">
@@ -403,16 +408,37 @@ const ChurchRegistryView: React.FC<ChurchRegistryViewProps> = ({ mode, currentUs
         </div>
 
         <div className="mt-5 grid gap-3 lg:grid-cols-2">
-          {items.length === 0 ? (
+          {loading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={`registry-loading-${index}`}
+                className="app-card-muted animate-pulse rounded-2xl border p-5"
+              >
+                <div className="h-3 w-24 rounded-full bg-app-surface-strong" />
+                <div className="mt-4 h-5 w-2/3 rounded-full bg-app-surface-strong" />
+                <div className="mt-5 space-y-3">
+                  <div className="h-3 w-full rounded-full bg-app-surface-strong" />
+                  <div className="h-3 w-5/6 rounded-full bg-app-surface-strong" />
+                  <div className="h-3 w-4/6 rounded-full bg-app-surface-strong" />
+                </div>
+              </div>
+            ))
+          ) : items.length === 0 ? (
             <div className="app-panel-muted rounded-2xl border border-dashed border-app px-5 py-12 text-center lg:col-span-2">
               <i className={`fas ${isVisitors ? 'fa-user-group' : 'fa-seedling'} text-2xl text-app-muted`} />
               <p className="mt-3 text-sm font-bold text-slate-700 dark:text-slate-200">
-                {isVisitors ? 'Nenhum visitante cadastrado ainda.' : 'Nenhum novo convertido cadastrado ainda.'}
+                {hasSearch
+                  ? 'Nenhum cadastro encontrado para esta busca.'
+                  : isVisitors
+                    ? 'Nenhum visitante cadastrado ainda.'
+                    : 'Nenhum novo convertido cadastrado ainda.'}
               </p>
               <p className="mt-1 text-xs font-medium text-app-muted">
-                {isVisitors
-                  ? 'Use o botao acima para registrar a ficha de visitante.'
-                  : 'Use o botao acima para registrar a ficha de novo convertido.'}
+                {hasSearch
+                  ? 'Tente buscar por outro nome, bairro, telefone ou convite para localizar o cadastro.'
+                  : isVisitors
+                    ? 'Use o botao acima para registrar a ficha de visitante.'
+                    : 'Use o botao acima para registrar a ficha de novo convertido.'}
               </p>
             </div>
           ) : (
