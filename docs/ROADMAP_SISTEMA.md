@@ -26,8 +26,8 @@ Legenda:
 - [x] Melhorar validacoes dos formularios de visitantes
 - [x] Melhorar validacoes dos formularios de novos convertidos
 - [ ] Revisar consistencia entre app, site e banco
-- [ ] Reduzir risco de cadastros duplicados
-- [ ] Melhorar mensagens de erro e sucesso nas rotinas mais criticas
+- [x] Reduzir risco de cadastros duplicados
+- [x] Melhorar mensagens de erro e sucesso nas rotinas mais criticas
 
 ### UX e operacao
 - [ ] Revisar mobile das telas mais usadas

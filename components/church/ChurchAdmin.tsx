@@ -281,10 +281,27 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
       showError('Informe titulo e data.');
       return;
     }
+    if (form.horarioFim && form.horarioFim <= form.horario) {
+      showError('O horario final deve ser maior que o horario inicial.');
+      return;
+    }
 
     setSaving(true);
 
     try {
+      const duplicateEvent = (eventsRaw || []).find((item) => {
+        if (item.id === editingEventId) return false;
+        return (
+          item.titulo.trim().toLowerCase() === form.titulo.trim().toLowerCase() &&
+          item.data_inicio.slice(0, 10) === form.data &&
+          (item.horario_inicio?.slice(0, 5) || '') === (form.horario || '')
+        );
+      });
+      if (duplicateEvent) {
+        showError('Ja existe um evento com este titulo, data e horario.');
+        return;
+      }
+
       const startsAt = `${form.data}T${form.horario || '19:30'}:00`;
       const endsAt = form.horarioFim ? `${form.data}T${form.horarioFim}:00` : null;
       const payload = {
