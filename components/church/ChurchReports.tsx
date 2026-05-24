@@ -3,7 +3,7 @@ import { useMinistryContext } from '../../contexts/MinistryContext';
 import { supabase } from '../../supabaseClient';
 import { SupabaseMembro, SupabaseNovoConvertidoIgreja, SupabaseVisitanteIgreja } from '../../types-supabase';
 import { getDisplayName } from '../../utils/displayName';
-import { showError } from '../../utils/toast';
+import { showError, showSuccess } from '../../utils/toast';
 
 const normalize = (value?: string | null) =>
   (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -16,6 +16,12 @@ const formatMonthLabel = (value: string) => {
 
 const getMonthInputValue = (date = new Date()) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+const formatDateLabel = (value?: string | null) => {
+  if (!value) return '-';
+  const date = new Date(`${value}T00:00:00`);
+  return new Intl.DateTimeFormat('pt-BR').format(date);
+};
 
 type ReportGroup = 'members-statistics' | 'monthly-consolidation';
 type MemberStatisticType = 'total-members' | 'by-neighborhood' | 'by-gender' | 'by-education';
@@ -60,6 +66,12 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
   const [exportingSheet, setExportingSheet] = useState(false);
   const [copyingText, setCopyingText] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [periodStart, setPeriodStart] = useState('');
+  const [periodEnd, setPeriodEnd] = useState('');
+  const [memberNeighborhoodFilter, setMemberNeighborhoodFilter] = useState('todos');
+  const [memberGenderFilter, setMemberGenderFilter] = useState('todos');
+  const [memberEducationFilter, setMemberEducationFilter] = useState('todos');
+  const [convertMaritalStatusFilter, setConvertMaritalStatusFilter] = useState('todos');
 
   useEffect(() => {
     let mounted = true;
@@ -143,24 +155,73 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
   const converts = convertsRaw || [];
   const memberName = (member: SupabaseMembro) => getDisplayName(member) || member.nome || 'Membro sem nome';
 
-  const totalMembers = members.length;
-  const reportHasData = hasAnyReportData(members.length, visitors.length, converts.length);
+  const availableNeighborhoods = useMemo(
+    () =>
+      Array.from(new Set(members.map((member) => member.bairro?.trim()).filter(Boolean) as string[])).sort((a, b) =>
+        a.localeCompare(b, 'pt-BR')
+      ),
+    [members]
+  );
+
+  const availableMaritalStatus = useMemo(
+    () =>
+      Array.from(
+        new Set(converts.map((item) => item.estado_civil?.trim()).filter(Boolean) as string[])
+      ).sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    [converts]
+  );
+
+  const membersFiltered = useMemo(
+    () =>
+      members.filter((member) => {
+        const bairro = member.bairro?.trim() || 'Nao Informado';
+        const genero = normalize(member.genero);
+        const escolaridade = normalize(member.escolaridade);
+
+        if (memberNeighborhoodFilter !== 'todos' && bairro !== memberNeighborhoodFilter) return false;
+        if (memberGenderFilter === 'feminino' && genero !== 'mulher') return false;
+        if (memberGenderFilter === 'masculino' && genero !== 'homem') return false;
+        if (memberGenderFilter === 'naoInformado' && (genero === 'mulher' || genero === 'homem')) return false;
+        if (memberEducationFilter === 'nenhuma' && escolaridade !== 'nenhuma') return false;
+        if (memberEducationFilter === 'medioCompleto' && !(escolaridade.includes('ensino medio') && !escolaridade.includes('incompleto'))) return false;
+        if (memberEducationFilter === 'medioIncompleto' && !escolaridade.includes('ensino medio incompleto')) return false;
+        if (memberEducationFilter === 'superiorCompleto' && !(escolaridade.includes('superior') && !escolaridade.includes('incompleto'))) return false;
+        if (memberEducationFilter === 'superiorIncompleto' && !escolaridade.includes('superior incompleto')) return false;
+        if (memberEducationFilter === 'fundamental' && !escolaridade.includes('fundamental')) return false;
+        if (
+          memberEducationFilter === 'naoInformado' &&
+          !!escolaridade &&
+          (escolaridade.includes('fundamental') ||
+            escolaridade.includes('medio') ||
+            escolaridade.includes('superior') ||
+            escolaridade === 'nenhuma')
+        ) {
+          return false;
+        }
+
+        return true;
+      }),
+    [members, memberEducationFilter, memberGenderFilter, memberNeighborhoodFilter]
+  );
+
+  const totalMembers = membersFiltered.length;
+  const reportHasData = hasAnyReportData(membersFiltered.length, visitors.length, converts.length);
 
   const neighborhoodDistribution = useMemo(() => {
     const map = new Map<string, number>();
-    members.forEach((member) => {
+    membersFiltered.forEach((member) => {
       const bairro = member.bairro?.trim() || 'Nao Informado';
       map.set(bairro, (map.get(bairro) || 0) + 1);
     });
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt-BR'));
-  }, [members]);
+  }, [membersFiltered]);
 
   const genderSummary = useMemo(() => {
-    const feminino = members.filter((member) => normalize(member.genero) === 'mulher').length;
-    const masculino = members.filter((member) => normalize(member.genero) === 'homem').length;
+    const feminino = membersFiltered.filter((member) => normalize(member.genero) === 'mulher').length;
+    const masculino = membersFiltered.filter((member) => normalize(member.genero) === 'homem').length;
     const naoInformado = Math.max(0, totalMembers - feminino - masculino);
     return { feminino, masculino, naoInformado };
-  }, [members, totalMembers]);
+  }, [membersFiltered, totalMembers]);
 
   const educationSummary = useMemo(() => {
     const summary = {
@@ -173,7 +234,7 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
       naoInformado: 0
     };
 
-    members.forEach((member) => {
+    membersFiltered.forEach((member) => {
       const escolaridade = normalize(member.escolaridade);
       if (!escolaridade) summary.naoInformado += 1;
       else if (escolaridade === 'nenhuma') summary.nenhuma += 1;
@@ -186,7 +247,7 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
     });
 
     return summary;
-  }, [members]);
+  }, [membersFiltered]);
 
   const [selectedYear, selectedMonthNumber] = selectedMonth.split('-').map(Number);
   const isInSelectedMonth = (value?: string | null) => {
@@ -195,13 +256,36 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
     return date.getFullYear() === selectedYear && date.getMonth() + 1 === selectedMonthNumber;
   };
 
+  const isInCustomPeriod = (value?: string | null) => {
+    if (!value) return false;
+    const current = new Date(`${value}T00:00:00`).getTime();
+    const startTime = periodStart ? new Date(`${periodStart}T00:00:00`).getTime() : null;
+    const endTime = periodEnd ? new Date(`${periodEnd}T23:59:59`).getTime() : null;
+    if (startTime && current < startTime) return false;
+    if (endTime && current > endTime) return false;
+    return true;
+  };
+
   const monthlyConvertsList = useMemo(
-    () => converts.filter((item) => isInSelectedMonth(item.data_conversao)),
-    [converts, selectedMonth]
+    () =>
+      converts.filter((item) => {
+        const matchesMonth = isInSelectedMonth(item.data_conversao);
+        const matchesPeriod = isInCustomPeriod(item.data_conversao);
+        const matchesState =
+          convertMaritalStatusFilter === 'todos' ||
+          (item.estado_civil || '').trim() === convertMaritalStatusFilter;
+        return matchesMonth && matchesPeriod && matchesState;
+      }),
+    [converts, convertMaritalStatusFilter, periodEnd, periodStart, selectedMonth]
   );
   const monthlyVisitorsList = useMemo(
-    () => visitors.filter((item) => isInSelectedMonth(item.data_ficha)),
-    [visitors, selectedMonth]
+    () =>
+      visitors.filter((item) => {
+        const matchesMonth = isInSelectedMonth(item.data_ficha);
+        const matchesPeriod = isInCustomPeriod(item.data_ficha);
+        return matchesMonth && matchesPeriod;
+      }),
+    [periodEnd, periodStart, selectedMonth, visitors]
   );
 
   const monthlySummary = useMemo(
@@ -231,7 +315,7 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
   };
 
   const getMembersByNeighborhood = (bairro: string) =>
-    members
+    membersFiltered
       .filter((member) => (member.bairro?.trim() || 'Nao Informado') === bairro)
       .map((member) => ({
         title: memberName(member),
@@ -240,7 +324,7 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
       }));
 
   const getMembersByGender = (gender: 'feminino' | 'masculino' | 'naoInformado') =>
-    members
+    membersFiltered
       .filter((member) => {
         const normalized = normalize(member.genero);
         if (gender === 'feminino') return normalized === 'mulher';
@@ -254,7 +338,7 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
       }));
 
   const getMembersByEducation = (bucket: keyof typeof educationSummary) =>
-    members
+    membersFiltered
       .filter((member) => {
         const escolaridade = normalize(member.escolaridade);
         if (bucket === 'naoInformado') {
@@ -501,6 +585,147 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
           ))}
         </div>
       )}
+
+      <section className="app-card rounded-[2rem] border p-5 sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand">Filtros do relatorio</p>
+            <h2 className="mt-2 text-lg font-black text-slate-900 dark:text-white">Refine os dados antes de visualizar ou exportar</h2>
+            <p className="mt-1 text-sm font-medium text-app-muted">
+              Os filtros afetam os cards, o detalhamento e as exportacoes do relatorio atual.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setPeriodStart('');
+              setPeriodEnd('');
+              setMemberNeighborhoodFilter('todos');
+              setMemberGenderFilter('todos');
+              setMemberEducationFilter('todos');
+              setConvertMaritalStatusFilter('todos');
+              setSelectedDetail(null);
+            }}
+            className="app-btn-muted inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest"
+          >
+            <i className="fas fa-filter-circle-xmark" />
+            Limpar filtros
+          </button>
+        </div>
+
+        <div className="mt-5 grid gap-4 xl:grid-cols-5">
+          <label>
+            <span className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">Periodo inicial</span>
+            <input
+              type="date"
+              value={periodStart}
+              onChange={(event) => {
+                setPeriodStart(event.target.value);
+                setSelectedDetail(null);
+              }}
+              className="app-input w-full rounded-2xl px-4 py-3 text-sm font-semibold"
+            />
+          </label>
+          <label>
+            <span className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">Periodo final</span>
+            <input
+              type="date"
+              value={periodEnd}
+              onChange={(event) => {
+                setPeriodEnd(event.target.value);
+                setSelectedDetail(null);
+              }}
+              className="app-input w-full rounded-2xl px-4 py-3 text-sm font-semibold"
+            />
+          </label>
+          <label>
+            <span className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">Bairro</span>
+            <select
+              value={memberNeighborhoodFilter}
+              onChange={(event) => {
+                setMemberNeighborhoodFilter(event.target.value);
+                setSelectedDetail(null);
+              }}
+              className="app-input w-full rounded-2xl px-4 py-3 text-sm font-semibold"
+            >
+              <option value="todos">Todos os bairros</option>
+              {availableNeighborhoods.map((bairro) => (
+                <option key={bairro} value={bairro}>
+                  {bairro}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">Genero</span>
+            <select
+              value={memberGenderFilter}
+              onChange={(event) => {
+                setMemberGenderFilter(event.target.value);
+                setSelectedDetail(null);
+              }}
+              className="app-input w-full rounded-2xl px-4 py-3 text-sm font-semibold"
+            >
+              <option value="todos">Todos</option>
+              <option value="feminino">Feminino</option>
+              <option value="masculino">Masculino</option>
+              <option value="naoInformado">Nao informado</option>
+            </select>
+          </label>
+          <label>
+            <span className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">Escolaridade</span>
+            <select
+              value={memberEducationFilter}
+              onChange={(event) => {
+                setMemberEducationFilter(event.target.value);
+                setSelectedDetail(null);
+              }}
+              className="app-input w-full rounded-2xl px-4 py-3 text-sm font-semibold"
+            >
+              <option value="todos">Todas</option>
+              <option value="medioCompleto">Ensino Medio Completo</option>
+              <option value="medioIncompleto">Ensino Medio Incompleto</option>
+              <option value="superiorCompleto">Ensino Superior Completo</option>
+              <option value="superiorIncompleto">Ensino Superior Incompleto</option>
+              <option value="fundamental">Ensino Fundamental</option>
+              <option value="nenhuma">Nenhuma</option>
+              <option value="naoInformado">Nao informado</option>
+            </select>
+          </label>
+        </div>
+
+        <div className="mt-4 grid gap-4 xl:grid-cols-5">
+          <label className="xl:col-span-2">
+            <span className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">Estado civil dos novos convertidos</span>
+            <select
+              value={convertMaritalStatusFilter}
+              onChange={(event) => {
+                setConvertMaritalStatusFilter(event.target.value);
+                setSelectedDetail(null);
+              }}
+              className="app-input w-full rounded-2xl px-4 py-3 text-sm font-semibold"
+            >
+              <option value="todos">Todos</option>
+              {availableMaritalStatus.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="app-panel-muted rounded-2xl px-4 py-3 xl:col-span-3">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Resumo dos filtros ativos</p>
+            <p className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-200">
+              {selectedGroup === 'members-statistics'
+                ? `${membersFiltered.length} membro(s) considerados nos relatorios estatisticos`
+                : `${monthlyVisitorsList.length} visitante(s) e ${monthlyConvertsList.length} novo(s) convertido(s) no consolidado`}
+            </p>
+            <p className="mt-1 text-xs font-medium text-app-muted">
+              Periodo: {periodStart ? formatDateLabel(periodStart) : 'livre'} ate {periodEnd ? formatDateLabel(periodEnd) : 'livre'}
+            </p>
+          </div>
+        </div>
+      </section>
 
       {loading ? (
         <div className="app-card rounded-[2rem] border p-6">

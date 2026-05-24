@@ -37,12 +37,12 @@ Legenda:
 ## Fase 2 - Gestao inteligente
 
 ### Relatorios
-- [ ] Expandir relatorios com mais filtros
-- [ ] Adicionar filtros por periodo
-- [ ] Adicionar filtros por bairro
-- [ ] Adicionar filtros por genero
-- [ ] Adicionar filtros por escolaridade
-- [ ] Adicionar filtros por estado civil
+- [x] Expandir relatorios com mais filtros
+- [x] Adicionar filtros por periodo
+- [x] Adicionar filtros por bairro
+- [x] Adicionar filtros por genero
+- [x] Adicionar filtros por escolaridade
+- [x] Adicionar filtros por estado civil
 - [ ] Criar comparativos mensais
 
 ### Busca e produtividade
