@@ -58,13 +58,12 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
     [currentMember?.id, membersRaw]
   );
 
-  const canOpenAdmin = useMemo(() => {
-    const profile = normalize(currentMember?.perfil);
-    const explicitPermission = (permissionsRaw || []).some(
-      (permission) => permission.membro_id === currentMember?.id && permission.gerenciar_eventos_igreja
-    );
-    return isGlobalAdmin || profile.includes('pastor') || profile.includes('admin') || explicitPermission;
-  }, [currentMember?.id, currentMember?.perfil, isGlobalAdmin, permissionsRaw]);
+  const currentPermission = useMemo(
+    () => (permissionsRaw || []).find((permission) => permission.membro_id === currentMember?.id) || null,
+    [currentMember?.id, permissionsRaw]
+  );
+
+  const canOpenAdmin = isGlobalAdmin;
 
   const hasExplicitChurchEventPermission = useMemo(
     () =>
@@ -74,34 +73,19 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
     [currentMember?.id, permissionsRaw]
   );
 
-  const canManageVisitors = useMemo(() => {
-    const profile = normalize(currentMember?.perfil);
-    const explicitPermission = (permissionsRaw || []).some(
-      (permission) => permission.membro_id === currentMember?.id && permission.gerenciar_visitantes_igreja
-    );
-    return isGlobalAdmin || profile.includes('pastor') || profile.includes('admin') || explicitPermission;
-  }, [currentMember?.id, currentMember?.perfil, isGlobalAdmin, permissionsRaw]);
+  const canManageVisitors = Boolean(isGlobalAdmin || currentPermission?.gerenciar_visitantes_igreja);
 
-  const canManageConverts = useMemo(() => {
-    const profile = normalize(currentMember?.perfil);
-    const explicitPermission = (permissionsRaw || []).some(
-      (permission) => permission.membro_id === currentMember?.id && permission.gerenciar_novos_convertidos_igreja
-    );
-    return isGlobalAdmin || profile.includes('pastor') || profile.includes('admin') || explicitPermission;
-  }, [currentMember?.id, currentMember?.perfil, isGlobalAdmin, permissionsRaw]);
+  const canManageConverts = Boolean(isGlobalAdmin || currentPermission?.gerenciar_novos_convertidos_igreja);
 
-  const canManageSite = useMemo(() => {
-    const explicitPermission = (permissionsRaw || []).some(
-      (permission) => permission.membro_id === currentMember?.id && permission.gerenciar_site_igreja
-    );
-    return isGlobalAdmin || explicitPermission;
-  }, [currentMember?.id, isGlobalAdmin, permissionsRaw]);
+  const canManageSite = Boolean(isGlobalAdmin || currentPermission?.gerenciar_site_igreja);
+  const canViewReports = Boolean(isGlobalAdmin || currentPermission?.acessar_relatorios_igreja);
+  const canExportReports = Boolean(isGlobalAdmin || currentPermission?.exportar_relatorios_igreja);
 
   const menuItems: Array<{ id: ChurchView; label: string; icon: string; visible: boolean }> = [
     { id: 'dashboard', label: 'Inicio', icon: 'fas fa-house', visible: true },
     { id: 'agenda', label: 'Agenda', icon: 'fas fa-calendar-days', visible: true },
     { id: 'members', label: 'Membros', icon: 'fas fa-users', visible: true },
-    { id: 'reports', label: 'Relatorios', icon: 'fas fa-chart-column', visible: canOpenAdmin },
+    { id: 'reports', label: 'Relatorios', icon: 'fas fa-chart-column', visible: canViewReports },
     { id: 'admin', label: 'Admin', icon: 'fas fa-sliders', visible: canOpenAdmin }
   ];
   const canOpenRegistryMenu =
@@ -119,6 +103,12 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
       setCurrentView('dashboard');
     }
   }, [canManageSite, currentView]);
+
+  useEffect(() => {
+    if (currentView === 'reports' && !canViewReports) {
+      setCurrentView('dashboard');
+    }
+  }, [canViewReports, currentView]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -482,7 +472,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
           {currentView === 'dashboard' && <ChurchDashboard currentMember={(currentMemberRecord || currentMember) as SupabaseMembro | null} />}
           {currentView === 'agenda' && <ChurchAgenda />}
           {currentView === 'members' && <ChurchMembers />}
-          {currentView === 'reports' && <ChurchReports />}
+          {currentView === 'reports' && <ChurchReports canExport={canExportReports} />}
           {currentView === 'church-events' && <ChurchAdmin currentUserId={currentMember?.id || null} isAdmin={isGlobalAdmin} mode="events" />}
           {currentView === 'visitors' && <ChurchRegistryView mode="visitors" currentUserId={currentMember?.id || null} />}
           {currentView === 'converts' && <ChurchRegistryView mode="converts" currentUserId={currentMember?.id || null} />}

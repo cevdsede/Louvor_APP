@@ -133,6 +133,8 @@ export interface SupabasePermissaoIgreja {
   gerenciar_visitantes_igreja: boolean;
   gerenciar_novos_convertidos_igreja: boolean;
   gerenciar_site_igreja: boolean;
+  acessar_relatorios_igreja: boolean;
+  exportar_relatorios_igreja: boolean;
   created_at: string;
   updated_at: string;
 }

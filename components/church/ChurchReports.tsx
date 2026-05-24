@@ -43,7 +43,7 @@ const statisticOptions: Array<{ id: MemberStatisticType; label: string; icon: st
   { id: 'by-education', label: 'Escolaridade', icon: 'fas fa-graduation-cap' }
 ];
 
-const ChurchReports: React.FC = () => {
+const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false }) => {
   const { currentMember } = useMinistryContext();
   const [membersRaw, setMembersRaw] = useState<SupabaseMembro[]>([]);
   const [visitorsRaw, setVisitorsRaw] = useState<SupabaseVisitanteIgreja[]>([]);
@@ -461,7 +461,7 @@ const ChurchReports: React.FC = () => {
               <button
                 type="button"
                 onClick={copyReportText}
-                disabled={copyingText}
+                disabled={copyingText || !canExport}
                 className="app-btn-muted inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-[10px] font-black uppercase tracking-widest disabled:opacity-60"
               >
                 <i className="fas fa-copy" />
@@ -470,7 +470,7 @@ const ChurchReports: React.FC = () => {
               <button
                 type="button"
                 onClick={exportToSpreadsheet}
-                disabled={exportingSheet}
+                disabled={exportingSheet || !canExport}
                 className="app-btn-muted inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-[10px] font-black uppercase tracking-widest disabled:opacity-60"
               >
                 <i className="fas fa-file-excel" />
@@ -479,7 +479,7 @@ const ChurchReports: React.FC = () => {
               <button
                 type="button"
                 onClick={exportToPdf}
-                disabled={exporting}
+                disabled={exporting || !canExport}
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20 disabled:opacity-60"
               >
                 <i className="fas fa-file-pdf" />
@@ -487,6 +487,11 @@ const ChurchReports: React.FC = () => {
               </button>
             </div>
           </div>
+          {!canExport && (
+            <p className="text-right text-xs font-bold text-app-muted">
+              Seu acesso permite visualizar os relatorios, mas nao exportar.
+            </p>
+          )}
 
           <div className="space-y-6">
             {selectedGroup === 'members-statistics' && selectedStatistic === 'total-members' && (

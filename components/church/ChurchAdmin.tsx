@@ -77,11 +77,15 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
   const [isVisitorPermissionModalOpen, setIsVisitorPermissionModalOpen] = useState(false);
   const [isConvertPermissionModalOpen, setIsConvertPermissionModalOpen] = useState(false);
   const [isSitePermissionModalOpen, setIsSitePermissionModalOpen] = useState(false);
+  const [isReportPermissionModalOpen, setIsReportPermissionModalOpen] = useState(false);
+  const [isReportExportPermissionModalOpen, setIsReportExportPermissionModalOpen] = useState(false);
   const [permissionSearch, setPermissionSearch] = useState('');
   const [pastorSearch, setPastorSearch] = useState('');
   const [visitorPermissionSearch, setVisitorPermissionSearch] = useState('');
   const [convertPermissionSearch, setConvertPermissionSearch] = useState('');
   const [sitePermissionSearch, setSitePermissionSearch] = useState('');
+  const [reportPermissionSearch, setReportPermissionSearch] = useState('');
+  const [reportExportPermissionSearch, setReportExportPermissionSearch] = useState('');
   const isEventsMode = mode === 'events';
   const isAdminMode = mode === 'admin';
 
@@ -144,6 +148,28 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
         .filter((item): item is { permission: SupabasePermissaoIgreja; member: SupabaseMembro } => Boolean(item.member)),
     [membersRaw, permissionsRaw]
   );
+  const activeReportViewers = useMemo(
+    () =>
+      (permissionsRaw || [])
+        .filter((permission) => permission.acessar_relatorios_igreja)
+        .map((permission) => ({
+          permission,
+          member: (membersRaw || []).find((member) => member.id === permission.membro_id)
+        }))
+        .filter((item): item is { permission: SupabasePermissaoIgreja; member: SupabaseMembro } => Boolean(item.member)),
+    [membersRaw, permissionsRaw]
+  );
+  const activeReportExporters = useMemo(
+    () =>
+      (permissionsRaw || [])
+        .filter((permission) => permission.exportar_relatorios_igreja)
+        .map((permission) => ({
+          permission,
+          member: (membersRaw || []).find((member) => member.id === permission.membro_id)
+        }))
+        .filter((item): item is { permission: SupabasePermissaoIgreja; member: SupabaseMembro } => Boolean(item.member)),
+    [membersRaw, permissionsRaw]
+  );
   const availableManagers = useMemo(
     () =>
       (membersRaw || [])
@@ -184,6 +210,22 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
         .filter((member) => getDisplayName(member).toLowerCase().includes(sitePermissionSearch.toLowerCase()))
         .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b))),
     [managersByMemberId, membersRaw, sitePermissionSearch]
+  );
+  const availableReportViewers = useMemo(
+    () =>
+      (membersRaw || [])
+        .filter((member) => !managersByMemberId.get(member.id)?.acessar_relatorios_igreja)
+        .filter((member) => getDisplayName(member).toLowerCase().includes(reportPermissionSearch.toLowerCase()))
+        .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b))),
+    [managersByMemberId, membersRaw, reportPermissionSearch]
+  );
+  const availableReportExporters = useMemo(
+    () =>
+      (membersRaw || [])
+        .filter((member) => !managersByMemberId.get(member.id)?.exportar_relatorios_igreja)
+        .filter((member) => getDisplayName(member).toLowerCase().includes(reportExportPermissionSearch.toLowerCase()))
+        .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b))),
+    [managersByMemberId, membersRaw, reportExportPermissionSearch]
   );
   const orderedEvents = useMemo(
     () =>
@@ -420,7 +462,9 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
       mostrar_pastor_inicio: existing?.mostrar_pastor_inicio || false,
       gerenciar_visitantes_igreja: existing?.gerenciar_visitantes_igreja || false,
       gerenciar_novos_convertidos_igreja: existing?.gerenciar_novos_convertidos_igreja || false,
-      gerenciar_site_igreja: existing?.gerenciar_site_igreja || false
+      gerenciar_site_igreja: existing?.gerenciar_site_igreja || false,
+      acessar_relatorios_igreja: existing?.acessar_relatorios_igreja || false,
+      exportar_relatorios_igreja: existing?.exportar_relatorios_igreja || false
     };
     const request = existing
       ? supabase.from('permissoes_igreja').update(payload).eq('id', existing.id)
@@ -465,7 +509,9 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
       mostrar_pastor_inicio: visible,
       gerenciar_visitantes_igreja: existing?.gerenciar_visitantes_igreja || false,
       gerenciar_novos_convertidos_igreja: existing?.gerenciar_novos_convertidos_igreja || false,
-      gerenciar_site_igreja: existing?.gerenciar_site_igreja || false
+      gerenciar_site_igreja: existing?.gerenciar_site_igreja || false,
+      acessar_relatorios_igreja: existing?.acessar_relatorios_igreja || false,
+      exportar_relatorios_igreja: existing?.exportar_relatorios_igreja || false
     };
     const request = existing
       ? supabase.from('permissoes_igreja').update(payload).eq('id', existing.id)
@@ -499,7 +545,12 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
 
   const toggleChurchPermission = async (
     member: SupabaseMembro,
-    field: 'gerenciar_visitantes_igreja' | 'gerenciar_novos_convertidos_igreja' | 'gerenciar_site_igreja',
+    field:
+      | 'gerenciar_visitantes_igreja'
+      | 'gerenciar_novos_convertidos_igreja'
+      | 'gerenciar_site_igreja'
+      | 'acessar_relatorios_igreja'
+      | 'exportar_relatorios_igreja',
     allowed: boolean,
     successCallback?: () => void
   ) => {
@@ -516,7 +567,9 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
       gerenciar_visitantes_igreja: field === 'gerenciar_visitantes_igreja' ? allowed : existing?.gerenciar_visitantes_igreja || false,
       gerenciar_novos_convertidos_igreja:
         field === 'gerenciar_novos_convertidos_igreja' ? allowed : existing?.gerenciar_novos_convertidos_igreja || false,
-      gerenciar_site_igreja: field === 'gerenciar_site_igreja' ? allowed : existing?.gerenciar_site_igreja || false
+      gerenciar_site_igreja: field === 'gerenciar_site_igreja' ? allowed : existing?.gerenciar_site_igreja || false,
+      acessar_relatorios_igreja: field === 'acessar_relatorios_igreja' ? allowed : existing?.acessar_relatorios_igreja || false,
+      exportar_relatorios_igreja: field === 'exportar_relatorios_igreja' ? allowed : existing?.exportar_relatorios_igreja || false
     };
 
     const request = existing
@@ -782,6 +835,92 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
             </div>
       </form>
         </div>
+      )}
+
+      {isAdminMode && (
+      <div className="app-card rounded-2xl border p-4 sm:p-5">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
+            Quem pode acessar relatorios
+          </h2>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setIsReportPermissionModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20"
+            >
+              <i className="fas fa-user-plus" />
+              Liberar pessoa
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          {activeReportViewers.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:text-slate-400">
+              Ninguem liberado para visualizar relatorios ainda.
+            </div>
+          ) : (
+            activeReportViewers.map(({ member }) => (
+              <div key={member.id} className="flex items-center justify-between gap-3 rounded-xl bg-app-surface-strong px-4 py-3">
+                <span className="truncate text-sm font-bold text-slate-700 dark:text-slate-200">{getDisplayName(member)}</span>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => toggleChurchPermission(member, 'acessar_relatorios_igreja', false)}
+                    className="rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  >
+                    Remover
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+      )}
+
+      {isAdminMode && (
+      <div className="app-card rounded-2xl border p-4 sm:p-5">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
+            Quem pode exportar relatorios
+          </h2>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setIsReportExportPermissionModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20"
+            >
+              <i className="fas fa-user-plus" />
+              Liberar pessoa
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          {activeReportExporters.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:text-slate-400">
+              Ninguem liberado para exportar relatorios ainda.
+            </div>
+          ) : (
+            activeReportExporters.map(({ member }) => (
+              <div key={member.id} className="flex items-center justify-between gap-3 rounded-xl bg-app-surface-strong px-4 py-3">
+                <span className="truncate text-sm font-bold text-slate-700 dark:text-slate-200">{getDisplayName(member)}</span>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => toggleChurchPermission(member, 'exportar_relatorios_igreja', false)}
+                    className="rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  >
+                    Remover
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
       )}
 
       {isAdminMode && (
@@ -1178,6 +1317,44 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
             toggleChurchPermission(member, 'gerenciar_site_igreja', true, () => {
               setIsSitePermissionModalOpen(false);
               setSitePermissionSearch('');
+            })
+          }
+          emptyLabel="Nenhum membro disponivel."
+        />
+      )}
+
+      {isAdminMode && isReportPermissionModalOpen && (
+        <PermissionModal
+          title="Adicionar acesso a relatorios"
+          subtitle="Relatorios"
+          search={reportPermissionSearch}
+          setSearch={setReportPermissionSearch}
+          placeholder="Buscar membro"
+          onClose={() => setIsReportPermissionModalOpen(false)}
+          members={availableReportViewers}
+          onSelect={(member) =>
+            toggleChurchPermission(member, 'acessar_relatorios_igreja', true, () => {
+              setIsReportPermissionModalOpen(false);
+              setReportPermissionSearch('');
+            })
+          }
+          emptyLabel="Nenhum membro disponivel."
+        />
+      )}
+
+      {isAdminMode && isReportExportPermissionModalOpen && (
+        <PermissionModal
+          title="Adicionar permissao para exportar relatorios"
+          subtitle="Exportacao"
+          search={reportExportPermissionSearch}
+          setSearch={setReportExportPermissionSearch}
+          placeholder="Buscar membro"
+          onClose={() => setIsReportExportPermissionModalOpen(false)}
+          members={availableReportExporters}
+          onSelect={(member) =>
+            toggleChurchPermission(member, 'exportar_relatorios_igreja', true, () => {
+              setIsReportExportPermissionModalOpen(false);
+              setReportExportPermissionSearch('');
             })
           }
           emptyLabel="Nenhum membro disponivel."

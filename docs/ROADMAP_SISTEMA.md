@@ -9,11 +9,11 @@ Legenda:
 ## Fase 1 - Base forte
 
 ### Permissoes e seguranca
-- [ ] Revisar todas as permissoes do modulo igreja
+- [x] Revisar todas as permissoes do modulo igreja
 - [ ] Revisar todas as permissoes do modulo ministerio
-- [ ] Definir claramente quem pode ver, criar, editar, excluir e exportar em cada area
-- [ ] Revisar regras de acesso dos relatorios
-- [ ] Revisar regras de acesso dos cadastros da igreja
+- [x] Definir claramente quem pode ver, criar, editar, excluir e exportar em cada area
+- [x] Revisar regras de acesso dos relatorios
+- [x] Revisar regras de acesso dos cadastros da igreja
 
 ### Auditoria basica
 - [x] Criar historico basico de acoes do modulo igreja
