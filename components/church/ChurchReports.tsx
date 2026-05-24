@@ -23,6 +23,18 @@ const formatDateLabel = (value?: string | null) => {
   return new Intl.DateTimeFormat('pt-BR').format(date);
 };
 
+const getPreviousMonthValue = (value: string) => {
+  const [year, month] = value.split('-').map(Number);
+  const date = new Date(year, month - 2, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const getDeltaLabel = (current: number, previous: number) => {
+  const delta = current - previous;
+  if (delta === 0) return 'Estavel';
+  return `${delta > 0 ? '+' : ''}${delta}`;
+};
+
 type ReportGroup = 'members-statistics' | 'monthly-consolidation';
 type MemberStatisticType = 'total-members' | 'by-neighborhood' | 'by-gender' | 'by-education';
 type ReportDetailRow = {
@@ -250,10 +262,17 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
   }, [membersFiltered]);
 
   const [selectedYear, selectedMonthNumber] = selectedMonth.split('-').map(Number);
+  const previousMonth = getPreviousMonthValue(selectedMonth);
+  const [previousYear, previousMonthNumber] = previousMonth.split('-').map(Number);
   const isInSelectedMonth = (value?: string | null) => {
     if (!value) return false;
     const date = new Date(`${value}T00:00:00`);
     return date.getFullYear() === selectedYear && date.getMonth() + 1 === selectedMonthNumber;
+  };
+  const isInPreviousMonth = (value?: string | null) => {
+    if (!value) return false;
+    const date = new Date(`${value}T00:00:00`);
+    return date.getFullYear() === previousYear && date.getMonth() + 1 === previousMonthNumber;
   };
 
   const isInCustomPeriod = (value?: string | null) => {
@@ -287,6 +306,27 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
       }),
     [periodEnd, periodStart, selectedMonth, visitors]
   );
+  const previousMonthConvertsList = useMemo(
+    () =>
+      converts.filter((item) => {
+        const matchesMonth = isInPreviousMonth(item.data_conversao);
+        const matchesPeriod = isInCustomPeriod(item.data_conversao);
+        const matchesState =
+          convertMaritalStatusFilter === 'todos' ||
+          (item.estado_civil || '').trim() === convertMaritalStatusFilter;
+        return matchesMonth && matchesPeriod && matchesState;
+      }),
+    [converts, convertMaritalStatusFilter, periodEnd, periodStart, previousMonth]
+  );
+  const previousMonthVisitorsList = useMemo(
+    () =>
+      visitors.filter((item) => {
+        const matchesMonth = isInPreviousMonth(item.data_ficha);
+        const matchesPeriod = isInCustomPeriod(item.data_ficha);
+        return matchesMonth && matchesPeriod;
+      }),
+    [periodEnd, periodStart, previousMonth, visitors]
+  );
 
   const monthlySummary = useMemo(
     () => ({
@@ -297,6 +337,16 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
       infoRequests: monthlyVisitorsList.filter((item) => item.deseja_informacoes_igreja).length
     }),
     [monthlyConvertsList, monthlyVisitorsList]
+  );
+  const previousMonthlySummary = useMemo(
+    () => ({
+      newConverts: previousMonthConvertsList.length,
+      totalVisitors: previousMonthVisitorsList.length,
+      homePrayerRequests: previousMonthVisitorsList.filter((item) => item.deseja_oracao_lar).length,
+      counselingRequests: previousMonthVisitorsList.filter((item) => item.deseja_aconselhamento).length,
+      infoRequests: previousMonthVisitorsList.filter((item) => item.deseja_informacoes_igreja).length
+    }),
+    [previousMonthConvertsList, previousMonthVisitorsList]
   );
 
   const selectedReportLabel =
@@ -378,11 +428,13 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
         selectedGroup,
         selectedStatistic,
         selectedMonth,
+        previousMonth,
         totalMembers,
         neighborhoodDistribution,
         genderSummary,
         educationSummary,
         monthlySummary,
+        previousMonthlySummary,
         selectedDetail
       });
       printWindow.document.write(`
@@ -453,11 +505,13 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
         selectedGroup,
         selectedStatistic,
         selectedMonth,
+        previousMonth,
         totalMembers,
         neighborhoodDistribution,
         genderSummary,
         educationSummary,
         monthlySummary,
+        previousMonthlySummary,
         issuerName,
         selectedDetail
       });
@@ -490,11 +544,13 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
         selectedGroup,
         selectedStatistic,
         selectedMonth,
+        previousMonth,
         totalMembers,
         neighborhoodDistribution,
         genderSummary,
         educationSummary,
         monthlySummary,
+        previousMonthlySummary,
         selectedDetail,
         issuerName
       });
@@ -871,6 +927,26 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
                   <MetricCard label="Solicitacoes de aconselhamento" value={monthlySummary.counselingRequests} onClick={() => openDetail('Solicitacoes de aconselhamento', `Visitantes que pediram aconselhamento em ${formatMonthLabel(selectedMonth)}.`, ['Nome', 'Telefone', 'Bairro'], monthlyVisitorsList.filter((item) => item.deseja_aconselhamento).map((item) => ({ title: item.nome || 'Visitante sem nome', meta: item.telefone || 'Sem telefone', extra: item.bairro || '' })))} />
                   <MetricCard label="Busca por informacoes" value={monthlySummary.infoRequests} onClick={() => openDetail('Busca por informacoes', `Visitantes que pediram informacoes em ${formatMonthLabel(selectedMonth)}.`, ['Nome', 'Telefone', 'Endereco'], monthlyVisitorsList.filter((item) => item.deseja_informacoes_igreja).map((item) => ({ title: item.nome || 'Visitante sem nome', meta: item.telefone || 'Sem telefone', extra: item.endereco || '' })))} />
                 </div>
+                <div className="app-card-muted mt-6 rounded-2xl border p-5">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-brand">Comparativo mensal</p>
+                      <h3 className="mt-2 text-lg font-black text-slate-900 dark:text-white">
+                        {formatMonthLabel(selectedMonth)} x {formatMonthLabel(previousMonth)}
+                      </h3>
+                    </div>
+                    <p className="text-xs font-medium text-app-muted">
+                      O comparativo usa os mesmos filtros aplicados no consolidado.
+                    </p>
+                  </div>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                    <ComparisonCard label="Novas conversoes" current={monthlySummary.newConverts} previous={previousMonthlySummary.newConverts} />
+                    <ComparisonCard label="Visitantes" current={monthlySummary.totalVisitors} previous={previousMonthlySummary.totalVisitors} />
+                    <ComparisonCard label="Oracao no lar" current={monthlySummary.homePrayerRequests} previous={previousMonthlySummary.homePrayerRequests} />
+                    <ComparisonCard label="Aconselhamento" current={monthlySummary.counselingRequests} previous={previousMonthlySummary.counselingRequests} />
+                    <ComparisonCard label="Informacoes" current={monthlySummary.infoRequests} previous={previousMonthlySummary.infoRequests} />
+                  </div>
+                </div>
                 <div className="app-panel mt-6 rounded-2xl p-5">
                   <p className="text-sm font-bold italic text-slate-700 dark:text-slate-200">Equipe de Consolidacao</p>
                   <p className="mt-2 text-sm font-medium text-app-muted">
@@ -976,23 +1052,53 @@ const SummaryLine = ({ label, value, onClick }: { label: string; value: number; 
   </button>
 );
 
+const ComparisonCard = ({
+  label,
+  current,
+  previous
+}: {
+  label: string;
+  current: number;
+  previous: number;
+}) => {
+  const delta = current - previous;
+  const tone =
+    delta > 0
+      ? 'text-emerald-600 dark:text-emerald-300'
+      : delta < 0
+        ? 'text-rose-600 dark:text-rose-300'
+        : 'text-slate-500 dark:text-slate-400';
+
+  return (
+    <div className="app-panel rounded-2xl p-4">
+      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
+      <p className="mt-3 text-3xl font-black text-slate-900 dark:text-white">{current}</p>
+      <p className="mt-2 text-xs font-bold text-app-muted">Mes anterior: {previous}</p>
+      <p className={`mt-1 text-xs font-black uppercase tracking-widest ${tone}`}>{getDeltaLabel(current, previous)}</p>
+    </div>
+  );
+};
+
 export default ChurchReports;
 
 function buildSpreadsheetRows({
   selectedGroup,
   selectedStatistic,
   selectedMonth,
+  previousMonth,
   totalMembers,
   neighborhoodDistribution,
   genderSummary,
   educationSummary,
   monthlySummary,
+  previousMonthlySummary,
   issuerName,
   selectedDetail
 }: {
   selectedGroup: ReportGroup;
   selectedStatistic: MemberStatisticType;
   selectedMonth: string;
+  previousMonth: string;
   totalMembers: number;
   neighborhoodDistribution: Array<[string, number]>;
   genderSummary: { feminino: number; masculino: number; naoInformado: number };
@@ -1006,6 +1112,13 @@ function buildSpreadsheetRows({
     naoInformado: number;
   };
   monthlySummary: {
+    newConverts: number;
+    totalVisitors: number;
+    homePrayerRequests: number;
+    counselingRequests: number;
+    infoRequests: number;
+  };
+  previousMonthlySummary: {
     newConverts: number;
     totalVisitors: number;
     homePrayerRequests: number;
@@ -1027,12 +1140,13 @@ function buildSpreadsheetRows({
     const rows = [
       ...headerRows,
       ['Mes de referencia', formatMonthLabel(selectedMonth)],
-      ['Indicador', 'Valor'],
-      ['Novas conversoes', monthlySummary.newConverts],
-      ['Total de visitantes', monthlySummary.totalVisitors],
-      ['Pedidos de oracao no lar', monthlySummary.homePrayerRequests],
-      ['Solicitacoes de aconselhamento', monthlySummary.counselingRequests],
-      ['Busca por informacoes', monthlySummary.infoRequests]
+      ['Mes comparado', formatMonthLabel(previousMonth)],
+      ['Indicador', 'Mes atual', 'Mes anterior', 'Variacao'],
+      ['Novas conversoes', monthlySummary.newConverts, previousMonthlySummary.newConverts, getDeltaLabel(monthlySummary.newConverts, previousMonthlySummary.newConverts)],
+      ['Total de visitantes', monthlySummary.totalVisitors, previousMonthlySummary.totalVisitors, getDeltaLabel(monthlySummary.totalVisitors, previousMonthlySummary.totalVisitors)],
+      ['Pedidos de oracao no lar', monthlySummary.homePrayerRequests, previousMonthlySummary.homePrayerRequests, getDeltaLabel(monthlySummary.homePrayerRequests, previousMonthlySummary.homePrayerRequests)],
+      ['Solicitacoes de aconselhamento', monthlySummary.counselingRequests, previousMonthlySummary.counselingRequests, getDeltaLabel(monthlySummary.counselingRequests, previousMonthlySummary.counselingRequests)],
+      ['Busca por informacoes', monthlySummary.infoRequests, previousMonthlySummary.infoRequests, getDeltaLabel(monthlySummary.infoRequests, previousMonthlySummary.infoRequests)]
     ];
     return appendDetailRows(rows, selectedDetail);
   }
@@ -1076,16 +1190,19 @@ function buildPrintableReport({
   selectedGroup,
   selectedStatistic,
   selectedMonth,
+  previousMonth,
   totalMembers,
   neighborhoodDistribution,
   genderSummary,
   educationSummary,
   monthlySummary,
+  previousMonthlySummary,
   selectedDetail
 }: {
   selectedGroup: ReportGroup;
   selectedStatistic: MemberStatisticType;
   selectedMonth: string;
+  previousMonth: string;
   totalMembers: number;
   neighborhoodDistribution: Array<[string, number]>;
   genderSummary: { feminino: number; masculino: number; naoInformado: number };
@@ -1105,6 +1222,13 @@ function buildPrintableReport({
     counselingRequests: number;
     infoRequests: number;
   };
+  previousMonthlySummary: {
+    newConverts: number;
+    totalVisitors: number;
+    homePrayerRequests: number;
+    counselingRequests: number;
+    infoRequests: number;
+  };
   selectedDetail: ReportDetail | null;
 }) {
   if (selectedGroup === 'monthly-consolidation') {
@@ -1118,6 +1242,15 @@ function buildPrintableReport({
         <div class="metric"><span class="label">Pedidos de oracao no lar</span><span class="value">${monthlySummary.homePrayerRequests}</span></div>
         <div class="metric"><span class="label">Solicitacoes de aconselhamento</span><span class="value">${monthlySummary.counselingRequests}</span></div>
         <div class="metric"><span class="label">Busca por informacoes</span><span class="value">${monthlySummary.infoRequests}</span></div>
+      </div>
+      <div class="eyebrow">Comparativo mensal</div>
+      <h2>${formatMonthLabel(selectedMonth)} x ${formatMonthLabel(previousMonth)}</h2>
+      <div class="card">
+        <div class="metric"><span class="label">Novas conversoes</span><span class="value">${monthlySummary.newConverts} / ${previousMonthlySummary.newConverts} (${getDeltaLabel(monthlySummary.newConverts, previousMonthlySummary.newConverts)})</span></div>
+        <div class="metric"><span class="label">Total de visitantes</span><span class="value">${monthlySummary.totalVisitors} / ${previousMonthlySummary.totalVisitors} (${getDeltaLabel(monthlySummary.totalVisitors, previousMonthlySummary.totalVisitors)})</span></div>
+        <div class="metric"><span class="label">Pedidos de oracao no lar</span><span class="value">${monthlySummary.homePrayerRequests} / ${previousMonthlySummary.homePrayerRequests} (${getDeltaLabel(monthlySummary.homePrayerRequests, previousMonthlySummary.homePrayerRequests)})</span></div>
+        <div class="metric"><span class="label">Solicitacoes de aconselhamento</span><span class="value">${monthlySummary.counselingRequests} / ${previousMonthlySummary.counselingRequests} (${getDeltaLabel(monthlySummary.counselingRequests, previousMonthlySummary.counselingRequests)})</span></div>
+        <div class="metric"><span class="label">Busca por informacoes</span><span class="value">${monthlySummary.infoRequests} / ${previousMonthlySummary.infoRequests} (${getDeltaLabel(monthlySummary.infoRequests, previousMonthlySummary.infoRequests)})</span></div>
       </div>
       <div class="quote">
         <strong>Equipe de Consolidacao</strong><br />
@@ -1227,17 +1360,20 @@ function buildTextReport({
   selectedGroup,
   selectedStatistic,
   selectedMonth,
+  previousMonth,
   totalMembers,
   neighborhoodDistribution,
   genderSummary,
   educationSummary,
   monthlySummary,
+  previousMonthlySummary,
   selectedDetail,
   issuerName
 }: {
   selectedGroup: ReportGroup;
   selectedStatistic: MemberStatisticType;
   selectedMonth: string;
+  previousMonth: string;
   totalMembers: number;
   neighborhoodDistribution: Array<[string, number]>;
   genderSummary: { feminino: number; masculino: number; naoInformado: number };
@@ -1251,6 +1387,13 @@ function buildTextReport({
     naoInformado: number;
   };
   monthlySummary: {
+    newConverts: number;
+    totalVisitors: number;
+    homePrayerRequests: number;
+    counselingRequests: number;
+    infoRequests: number;
+  };
+  previousMonthlySummary: {
     newConverts: number;
     totalVisitors: number;
     homePrayerRequests: number;
@@ -1275,7 +1418,14 @@ function buildTextReport({
       `Total de visitantes: ${monthlySummary.totalVisitors}`,
       `Pedidos de oracao no lar: ${monthlySummary.homePrayerRequests}`,
       `Solicitacoes de aconselhamento: ${monthlySummary.counselingRequests}`,
-      `Busca por informacoes: ${monthlySummary.infoRequests}`
+      `Busca por informacoes: ${monthlySummary.infoRequests}`,
+      '',
+      `Comparativo com ${formatMonthLabel(previousMonth)}`,
+      `Novas conversoes: ${monthlySummary.newConverts} x ${previousMonthlySummary.newConverts} (${getDeltaLabel(monthlySummary.newConverts, previousMonthlySummary.newConverts)})`,
+      `Total de visitantes: ${monthlySummary.totalVisitors} x ${previousMonthlySummary.totalVisitors} (${getDeltaLabel(monthlySummary.totalVisitors, previousMonthlySummary.totalVisitors)})`,
+      `Pedidos de oracao no lar: ${monthlySummary.homePrayerRequests} x ${previousMonthlySummary.homePrayerRequests} (${getDeltaLabel(monthlySummary.homePrayerRequests, previousMonthlySummary.homePrayerRequests)})`,
+      `Solicitacoes de aconselhamento: ${monthlySummary.counselingRequests} x ${previousMonthlySummary.counselingRequests} (${getDeltaLabel(monthlySummary.counselingRequests, previousMonthlySummary.counselingRequests)})`,
+      `Busca por informacoes: ${monthlySummary.infoRequests} x ${previousMonthlySummary.infoRequests} (${getDeltaLabel(monthlySummary.infoRequests, previousMonthlySummary.infoRequests)})`
     );
   } else if (selectedStatistic === 'total-members') {
     lines.push('Relatorio Estatistico de Membros', '', `Total geral de membros: ${totalMembers}`);

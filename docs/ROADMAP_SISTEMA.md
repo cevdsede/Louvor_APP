@@ -43,7 +43,7 @@ Legenda:
 - [x] Adicionar filtros por genero
 - [x] Adicionar filtros por escolaridade
 - [x] Adicionar filtros por estado civil
-- [ ] Criar comparativos mensais
+- [x] Criar comparativos mensais
 
 ### Busca e produtividade
 - [ ] Criar busca global por membros
