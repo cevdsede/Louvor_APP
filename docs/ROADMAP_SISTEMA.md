@@ -10,7 +10,7 @@ Legenda:
 
 ### Permissoes e seguranca
 - [x] Revisar todas as permissoes do modulo igreja
-- [ ] Revisar todas as permissoes do modulo ministerio
+- [x] Revisar todas as permissoes do modulo ministerio
 - [x] Definir claramente quem pode ver, criar, editar, excluir e exportar em cada area
 - [x] Revisar regras de acesso dos relatorios
 - [x] Revisar regras de acesso dos cadastros da igreja

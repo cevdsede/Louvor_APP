@@ -223,7 +223,7 @@ export const MinistryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       loading: !authResolved || membrosLoading || ministeriosLoading || membrosMinisteriosLoading,
       isGlobalAdmin,
       isGlobalAdminOrLeader,
-      canManageCurrentMinisterio: isGlobalAdminOrLeader || isManagerRole(activeMembership?.papel),
+      canManageCurrentMinisterio: isGlobalAdmin || isManagerRole(activeMembership?.papel),
       setActiveMinisterioId,
       canAccessModule
     }),
