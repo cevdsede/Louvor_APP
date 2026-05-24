@@ -25,7 +25,7 @@ Legenda:
 ### Validacao e consistencia de dados
 - [x] Melhorar validacoes dos formularios de visitantes
 - [x] Melhorar validacoes dos formularios de novos convertidos
-- [ ] Revisar consistencia entre app, site e banco
+- [x] Revisar consistencia entre app, site e banco
 - [x] Reduzir risco de cadastros duplicados
 - [x] Melhorar mensagens de erro e sucesso nas rotinas mais criticas
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChurchSiteContent, loadSiteContent } from './siteContent';
+import { ChurchSiteContent, fetchSiteContent, loadSiteContent } from './siteContent';
 import { supabase } from '../../supabaseClient';
 import { SupabaseEventoIgreja } from '../../types-supabase';
 import { generateChurchEventOccurrences } from '../../utils/churchEvents';
@@ -119,6 +119,18 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
 
   useEffect(() => {
     let mounted = true;
+
+    const loadSiteSettings = async () => {
+      try {
+        const remoteContent = await fetchSiteContent();
+        if (mounted) setContent(remoteContent);
+      } catch (error) {
+        console.warn('Nao foi possivel carregar configuracoes do site do banco. Usando cache local:', error);
+      }
+    };
+
+    loadSiteSettings();
+
     const loadPublicData = async () => {
       setEventsLoading(true);
       const [eventsResponse, pastorsResponse, verse] = await Promise.all([

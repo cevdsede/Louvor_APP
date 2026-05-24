@@ -1,3 +1,6 @@
+import { supabase } from '../../supabaseClient';
+import { SupabaseConfiguracaoSiteIgreja } from '../../types-supabase';
+
 export interface SiteEvent {
   date: string;
   title: string;
@@ -41,6 +44,7 @@ export interface ChurchSiteContent {
 }
 
 export const SITE_CONTENT_STORAGE_KEY = 'church_site_content_v1';
+const SITE_CONTENT_DB_KEY = 'principal';
 
 export const defaultSiteContent: ChurchSiteContent = {
   churchName: 'Comunidade Evangelica Valentes de Davi',
@@ -118,13 +122,115 @@ export const loadSiteContent = (): ChurchSiteContent => {
   try {
     const saved = localStorage.getItem(SITE_CONTENT_STORAGE_KEY);
     if (!saved) return defaultSiteContent;
-    return { ...defaultSiteContent, ...JSON.parse(saved) };
+    return normalizeSiteContent(JSON.parse(saved));
   } catch {
     return defaultSiteContent;
   }
 };
 
-export const saveSiteContent = (content: ChurchSiteContent) => {
-  localStorage.setItem(SITE_CONTENT_STORAGE_KEY, JSON.stringify(content));
-  window.dispatchEvent(new CustomEvent('church-site-content-updated', { detail: content }));
+export const normalizeSiteContent = (content?: Partial<ChurchSiteContent> | null): ChurchSiteContent => {
+  const next = { ...defaultSiteContent, ...(content || {}) };
+
+  return {
+    ...next,
+    churchName: String(next.churchName || defaultSiteContent.churchName),
+    logoText: String(next.logoText || defaultSiteContent.logoText),
+    logoImage: String(next.logoImage || ''),
+    heroTitle: String(next.heroTitle || defaultSiteContent.heroTitle),
+    heroSubtitle: String(next.heroSubtitle || defaultSiteContent.heroSubtitle),
+    heroImage: String(next.heroImage || defaultSiteContent.heroImage),
+    serviceInfo: String(next.serviceInfo || defaultSiteContent.serviceInfo),
+    whatsapp: String(next.whatsapp || defaultSiteContent.whatsapp),
+    address: String(next.address || defaultSiteContent.address),
+    mapUrl: String(next.mapUrl || defaultSiteContent.mapUrl),
+    instagram: String(next.instagram || defaultSiteContent.instagram),
+    instagramUrl: String(next.instagramUrl || defaultSiteContent.instagramUrl),
+    pixKey: String(next.pixKey || defaultSiteContent.pixKey),
+    pixQrImage: String(next.pixQrImage || ''),
+    primaryColor: String(next.primaryColor || defaultSiteContent.primaryColor),
+    goldColor: String(next.goldColor || defaultSiteContent.goldColor),
+    instagramPosts: Array.isArray(next.instagramPosts) ? next.instagramPosts : defaultSiteContent.instagramPosts,
+    events: Array.isArray(next.events) ? next.events : defaultSiteContent.events,
+    ministries: Array.isArray(next.ministries) ? next.ministries : defaultSiteContent.ministries
+  };
+};
+
+export const cacheSiteContent = (content: ChurchSiteContent) => {
+  const normalized = normalizeSiteContent(content);
+  localStorage.setItem(SITE_CONTENT_STORAGE_KEY, JSON.stringify(normalized));
+  window.dispatchEvent(new CustomEvent('church-site-content-updated', { detail: normalized }));
+  return normalized;
+};
+
+const fromDatabaseRow = (row?: SupabaseConfiguracaoSiteIgreja | null): ChurchSiteContent => {
+  if (!row) return defaultSiteContent;
+  return normalizeSiteContent({
+    churchName: row.church_name,
+    logoText: row.logo_text,
+    logoImage: row.logo_image,
+    heroTitle: row.hero_title,
+    heroSubtitle: row.hero_subtitle,
+    heroImage: row.hero_image,
+    serviceInfo: row.service_info,
+    whatsapp: row.whatsapp,
+    address: row.address,
+    mapUrl: row.map_url,
+    instagram: row.instagram,
+    instagramUrl: row.instagram_url,
+    instagramPosts: Array.isArray(row.instagram_posts) ? (row.instagram_posts as InstagramPost[]) : defaultSiteContent.instagramPosts,
+    pixKey: row.pix_key,
+    pixQrImage: row.pix_qr_image,
+    primaryColor: row.primary_color,
+    goldColor: row.gold_color,
+    events: Array.isArray(row.events) ? (row.events as SiteEvent[]) : defaultSiteContent.events,
+    ministries: Array.isArray(row.ministries) ? (row.ministries as SiteMinistry[]) : defaultSiteContent.ministries
+  });
+};
+
+const toDatabasePayload = (content: ChurchSiteContent) => {
+  const normalized = normalizeSiteContent(content);
+  return {
+    key: SITE_CONTENT_DB_KEY,
+    church_name: normalized.churchName,
+    logo_text: normalized.logoText,
+    logo_image: normalized.logoImage,
+    hero_title: normalized.heroTitle,
+    hero_subtitle: normalized.heroSubtitle,
+    hero_image: normalized.heroImage,
+    service_info: normalized.serviceInfo,
+    whatsapp: normalized.whatsapp,
+    address: normalized.address,
+    map_url: normalized.mapUrl,
+    instagram: normalized.instagram,
+    instagram_url: normalized.instagramUrl,
+    instagram_posts: normalized.instagramPosts,
+    pix_key: normalized.pixKey,
+    pix_qr_image: normalized.pixQrImage,
+    primary_color: normalized.primaryColor,
+    gold_color: normalized.goldColor,
+    events: normalized.events,
+    ministries: normalized.ministries
+  };
+};
+
+export const fetchSiteContent = async () => {
+  const { data, error } = await supabase
+    .from('configuracoes_site_igreja')
+    .select('*')
+    .eq('key', SITE_CONTENT_DB_KEY)
+    .maybeSingle();
+
+  if (error) throw error;
+  return cacheSiteContent(fromDatabaseRow((data || null) as SupabaseConfiguracaoSiteIgreja | null));
+};
+
+export const saveSiteContent = async (content: ChurchSiteContent) => {
+  const { data, error } = await supabase
+    .from('configuracoes_site_igreja')
+    .upsert(toDatabasePayload(content), { onConflict: 'key' })
+    .select('*')
+    .single();
+
+  if (error) throw error;
+  return cacheSiteContent(fromDatabaseRow(data as SupabaseConfiguracaoSiteIgreja));
 };

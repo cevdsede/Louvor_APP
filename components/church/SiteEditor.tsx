@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { ChurchSiteContent, defaultSiteContent, loadSiteContent, saveSiteContent } from './siteContent';
+import { showError, showSuccess } from '../../utils/toast';
+import { ChurchSiteContent, defaultSiteContent, fetchSiteContent, loadSiteContent, saveSiteContent } from './siteContent';
 
 const inputClass =
   'app-input w-full rounded-2xl px-4 py-3 text-sm font-semibold outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10';
@@ -17,17 +18,54 @@ const tabs: Array<{ id: EditorTab; label: string; icon: string }> = [
 
 const SiteEditor: React.FC = () => {
   const [content, setContent] = useState<ChurchSiteContent>(() => loadSiteContent());
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState(true);
   const [activeTab, setActiveTab] = useState<EditorTab>('branding');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  React.useEffect(() => {
+    let mounted = true;
+
+    const loadFromDatabase = async () => {
+      setLoading(true);
+      try {
+        const remoteContent = await fetchSiteContent();
+        if (!mounted) return;
+        setContent(remoteContent);
+        setSaved(true);
+      } catch (error) {
+        console.error('Erro ao carregar configuracoes do site:', error);
+        showError('Nao foi possivel carregar o conteudo mais recente do site. Usando cache local.');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    loadFromDatabase();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const update = <K extends keyof ChurchSiteContent>(key: K, value: ChurchSiteContent[K]) => {
     setContent((current) => ({ ...current, [key]: value }));
     setSaved(false);
   };
 
-  const handleSave = () => {
-    saveSiteContent(content);
-    setSaved(true);
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const nextContent = await saveSiteContent(content);
+      setContent(nextContent);
+      setSaved(true);
+      showSuccess('Conteudo do site salvo no banco com sucesso.');
+    } catch (error) {
+      console.error('Erro ao salvar configuracoes do site:', error);
+      showError('Nao foi possivel salvar o conteudo do site agora.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleReset = () => {
@@ -59,6 +97,20 @@ const SiteEditor: React.FC = () => {
         : activeTab === 'contact'
           ? 'Canais e localizacao'
           : 'Blocos de conteudo';
+
+  if (loading) {
+    return (
+      <div className="app-card rounded-[2rem] border p-6">
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand border-t-transparent" />
+          <p className="mt-5 text-sm font-bold text-slate-700 dark:text-slate-200">Carregando configuracoes do site</p>
+          <p className="mt-1 max-w-xl text-xs font-medium text-app-muted">
+            Estamos sincronizando o editor com o conteudo oficial salvo no banco.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -117,10 +169,11 @@ const SiteEditor: React.FC = () => {
             <button
               type="button"
               onClick={handleSave}
-              className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-brand px-5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20"
+              disabled={saving}
+              className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-brand px-5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-brand/20 disabled:opacity-60"
             >
-              <i className="fas fa-floppy-disk" />
-              {saved ? 'Salvo' : 'Salvar'}
+              <i className={`fas ${saving ? 'fa-spinner animate-spin' : 'fa-floppy-disk'}`} />
+              {saving ? 'Salvando...' : saved ? 'Salvo' : 'Salvar'}
             </button>
           </div>
         </div>

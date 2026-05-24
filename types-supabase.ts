@@ -188,6 +188,31 @@ export interface SupabaseAuditoriaIgreja {
   created_at: string;
 }
 
+export interface SupabaseConfiguracaoSiteIgreja {
+  key: string;
+  church_name: string;
+  logo_text: string;
+  logo_image: string;
+  hero_title: string;
+  hero_subtitle: string;
+  hero_image: string;
+  service_info: string;
+  whatsapp: string;
+  address: string;
+  map_url: string;
+  instagram: string;
+  instagram_url: string;
+  instagram_posts: unknown;
+  pix_key: string;
+  pix_qr_image: string;
+  primary_color: string;
+  gold_color: string;
+  events: unknown;
+  ministries: unknown;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SupabaseMembroFuncao {
   id: string;
   id_membro: string;
