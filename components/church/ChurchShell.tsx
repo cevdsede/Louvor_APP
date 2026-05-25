@@ -11,6 +11,7 @@ import { buildMemberPhotoPath, getPublicAssetsPathFromUrl, sanitizeImageUrl } fr
 import logger from '../../utils/logger';
 import { showError, showSuccess } from '../../utils/toast';
 import { toTitleCasePt } from '../../utils/textFormat';
+import { APP_BACKGROUND_THEMES, AppBackgroundThemeId } from '../../utils/appBackgroundThemes';
 
 export type ChurchView = 'dashboard' | 'agenda' | 'members' | 'reports' | 'church-events' | 'visitors' | 'converts' | 'site' | 'admin';
 
@@ -31,6 +32,8 @@ interface ChurchShellProps {
   onToggleTheme: () => void;
   brandColor: string;
   onColorChange: (color: string) => void;
+  backgroundTheme: AppBackgroundThemeId;
+  onBackgroundThemeChange: (theme: AppBackgroundThemeId) => void;
   requestedView?: ChurchView | null;
   onRequestedViewHandled?: () => void;
   onOpenSearch: () => void;
@@ -51,6 +54,8 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
   onToggleTheme,
   brandColor,
   onColorChange,
+  backgroundTheme,
+  onBackgroundThemeChange,
   requestedView = null,
   onRequestedViewHandled,
   onOpenSearch
@@ -454,18 +459,40 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
               <i className={`fas fa-chevron-up text-[9px] text-slate-400 transition-transform ${isThemeExpanded ? 'rotate-180' : ''}`} />
             </button>
             {isThemeExpanded && (
-              <div className="flex justify-between gap-1 px-4 pb-3 animate-fade-in">
-                {themeColors.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => onColorChange(color)}
-                    className={`h-6 w-6 rounded-lg border-2 transition-all ${
-                      brandColor === color ? 'scale-110 border-brand/50' : 'border-transparent opacity-60 hover:opacity-100'
-                    }`}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
+              <div className="space-y-3 px-4 pb-3 animate-fade-in">
+                <div className="flex justify-between gap-1">
+                  {themeColors.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => onColorChange(color)}
+                      className={`h-6 w-6 rounded-lg border-2 transition-all ${
+                        brandColor === color ? 'scale-110 border-brand/50' : 'border-transparent opacity-60 hover:opacity-100'
+                      }`}
+                      style={{ backgroundColor: color }}
+                      title="Cor principal"
+                    />
+                  ))}
+                </div>
+                <div>
+                  <span className="mb-2 block text-[7px] font-black uppercase tracking-widest text-slate-400">Fundo</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {APP_BACKGROUND_THEMES.map((theme) => (
+                      <button
+                        key={theme.id}
+                        type="button"
+                        onClick={() => onBackgroundThemeChange(theme.id)}
+                        className={`flex items-center gap-2 rounded-xl border px-2 py-2 text-left transition ${
+                          backgroundTheme === theme.id ? 'border-brand bg-brand/10 text-brand' : 'border-app bg-app-surface text-app-muted hover:text-brand'
+                        }`}
+                        title={theme.label}
+                      >
+                        <span className="h-4 w-4 shrink-0 rounded-md border border-black/5" style={{ backgroundColor: theme.preview }} />
+                        <span className="truncate text-[7px] font-black uppercase tracking-widest">{theme.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -610,6 +637,24 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
                         style={{ backgroundColor: color }}
                       />
                     ))}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[8px] font-black uppercase tracking-widest text-slate-400">Fundo</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {APP_BACKGROUND_THEMES.map((theme) => (
+                        <button
+                          key={theme.id}
+                          type="button"
+                          onClick={() => onBackgroundThemeChange(theme.id)}
+                          className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 transition ${
+                            backgroundTheme === theme.id ? 'border-brand bg-brand/10 text-brand' : 'border-app bg-app-surface-strong text-app-muted'
+                          }`}
+                        >
+                          <span className="h-5 w-5 rounded-lg border border-black/5" style={{ backgroundColor: theme.preview }} />
+                          <span className="text-[8px] font-black uppercase tracking-widest">{theme.label}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   <button
                     type="button"

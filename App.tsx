@@ -11,6 +11,7 @@ import LocalStorageFirstService from './services/LocalStorageFirstService';
 import { ViewType } from './types';
 import { getDefaultViewForModules, getModuleForView } from './utils/ministry';
 import { isMusicView, isTeamView, isToolsView } from './utils/views';
+import { AppBackgroundThemeId, getAppBackgroundTheme } from './utils/appBackgroundThemes';
 import type { ChurchView } from './components/church/ChurchShell';
 
 const NotificationCenterModal = lazy(() => import('./components/layout/NotificationCenterModal'));
@@ -56,6 +57,8 @@ interface AppContentProps {
   toggleDarkMode: () => void;
   brandColor: string;
   setBrandColor: React.Dispatch<React.SetStateAction<string>>;
+  backgroundTheme: AppBackgroundThemeId;
+  setBackgroundTheme: React.Dispatch<React.SetStateAction<AppBackgroundThemeId>>;
   isProfileModalOpen: boolean;
   setIsProfileModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isAvisoModalOpen: boolean;
@@ -91,6 +94,8 @@ const AppContent: React.FC<AppContentProps> = ({
   toggleDarkMode,
   brandColor,
   setBrandColor,
+  backgroundTheme,
+  setBackgroundTheme,
   isProfileModalOpen,
   setIsProfileModalOpen,
   isAvisoModalOpen,
@@ -171,6 +176,8 @@ const AppContent: React.FC<AppContentProps> = ({
           onToggleTheme={toggleDarkMode}
           brandColor={brandColor}
           onColorChange={setBrandColor}
+          backgroundTheme={backgroundTheme}
+          onBackgroundThemeChange={setBackgroundTheme}
           isProfileModalOpen={isProfileModalOpen}
           setIsProfileModalOpen={setIsProfileModalOpen}
           onOpenNotifications={() => setIsNotificationsOpen(true)}
@@ -241,6 +248,10 @@ const App: React.FC = () => {
     if (typeof window === 'undefined') return '#3b82f6';
     return localStorage.getItem('brandColor') || '#3b82f6';
   });
+  const [backgroundTheme, setBackgroundTheme] = useState<AppBackgroundThemeId>(() => {
+    if (typeof window === 'undefined') return 'warm';
+    return (localStorage.getItem('backgroundTheme') as AppBackgroundThemeId) || 'warm';
+  });
 
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [activeArea, setActiveArea] = useState<'church' | 'ministry'>('church');
@@ -305,12 +316,23 @@ const App: React.FC = () => {
   }, [brandColor]);
 
   useEffect(() => {
+    const theme = getAppBackgroundTheme(backgroundTheme);
+    const gradient = isDarkMode ? theme.darkGradient : theme.lightGradient;
+    document.documentElement.style.setProperty('--app-shell-gradient', gradient);
+    document.body.style.setProperty('--app-shell-gradient', gradient);
+  }, [backgroundTheme, isDarkMode]);
+
+  useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
   }, [isDarkMode]);
 
   useEffect(() => {
     localStorage.setItem('brandColor', brandColor);
   }, [brandColor]);
+
+  useEffect(() => {
+    localStorage.setItem('backgroundTheme', backgroundTheme);
+  }, [backgroundTheme]);
 
   useEffect(() => {
     if (isProfileModalOpen || isAvisoModalOpen || isNotificationsOpen) {
@@ -507,6 +529,8 @@ const App: React.FC = () => {
                 onToggleTheme={toggleDarkMode}
                 brandColor={brandColor}
                 onColorChange={setBrandColor}
+                backgroundTheme={backgroundTheme}
+                onBackgroundThemeChange={setBackgroundTheme}
                 requestedView={requestedChurchView}
                 onRequestedViewHandled={() => setRequestedChurchView(null)}
                 onOpenSearch={() => setIsSearchOpen(true)}
@@ -520,6 +544,8 @@ const App: React.FC = () => {
               toggleDarkMode={toggleDarkMode}
               brandColor={brandColor}
               setBrandColor={setBrandColor}
+              backgroundTheme={backgroundTheme}
+              setBackgroundTheme={setBackgroundTheme}
               isProfileModalOpen={isProfileModalOpen}
               setIsProfileModalOpen={setIsProfileModalOpen}
               isAvisoModalOpen={isAvisoModalOpen}

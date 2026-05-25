@@ -13,6 +13,7 @@ import AvailabilityPanel from './AvailabilityPanel';
 import { buildLocalAvatar } from '../../utils/avatar';
 import PushNotificationService from '../../services/PushNotificationService';
 import { toTitleCasePt } from '../../utils/textFormat';
+import { APP_BACKGROUND_THEMES, AppBackgroundThemeId } from '../../utils/appBackgroundThemes';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -22,6 +23,8 @@ interface SidebarProps {
   onToggleTheme: () => void;
   brandColor: string;
   onColorChange: (color: string) => void;
+  backgroundTheme: AppBackgroundThemeId;
+  onBackgroundThemeChange: (theme: AppBackgroundThemeId) => void;
   isProfileModalOpen: boolean;
   setIsProfileModalOpen: (open: boolean) => void;
   onOpenNotifications: () => void;
@@ -36,6 +39,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   onToggleTheme,
   brandColor,
   onColorChange,
+  backgroundTheme,
+  onBackgroundThemeChange,
   isProfileModalOpen,
   setIsProfileModalOpen,
   onOpenNotifications,
@@ -446,15 +451,37 @@ const Sidebar: React.FC<SidebarProps> = ({
             <i className={`fas fa-chevron-up text-[9px] text-slate-400 transition-transform ${isThemeExpanded ? 'rotate-180' : ''}`}></i>
           </button>
           {isThemeExpanded && (
-            <div className="px-4 pb-3 flex justify-between gap-1 animate-fade-in">
-              {themeColors.map(color => (
-                <button
-                  key={color}
-                  onClick={() => onColorChange(color)}
-                  className={`w-6 h-6 rounded-lg border-2 transition-all ${brandColor === color ? 'border-brand/50 scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}
-                  style={{ backgroundColor: color }}
-                />
-              ))}
+            <div className="animate-fade-in space-y-3 px-4 pb-3">
+              <div className="flex justify-between gap-1">
+                {themeColors.map(color => (
+                  <button
+                    key={color}
+                    onClick={() => onColorChange(color)}
+                    className={`h-6 w-6 rounded-lg border-2 transition-all ${brandColor === color ? 'scale-110 border-brand/50' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                    style={{ backgroundColor: color }}
+                    title="Cor principal"
+                  />
+                ))}
+              </div>
+              <div>
+                <span className="mb-2 block text-[7px] font-black uppercase tracking-widest text-slate-400">Fundo</span>
+                <div className="grid grid-cols-3 gap-2">
+                  {APP_BACKGROUND_THEMES.map((theme) => (
+                    <button
+                      key={theme.id}
+                      type="button"
+                      onClick={() => onBackgroundThemeChange(theme.id)}
+                      className={`flex items-center gap-2 rounded-xl border px-2 py-2 text-left transition ${
+                        backgroundTheme === theme.id ? 'border-brand bg-brand/10 text-brand' : 'border-app bg-app-surface text-app-muted hover:text-brand'
+                      }`}
+                      title={theme.label}
+                    >
+                      <span className="h-4 w-4 shrink-0 rounded-md border border-black/5" style={{ backgroundColor: theme.preview }} />
+                      <span className="truncate text-[7px] font-black uppercase tracking-widest">{theme.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -639,6 +666,24 @@ const Sidebar: React.FC<SidebarProps> = ({
                       style={{ backgroundColor: color }}
                     />
                   ))}
+                </div>
+                <div>
+                  <label className="mb-2 block text-[8px] font-black uppercase tracking-widest text-slate-400">Fundo</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {APP_BACKGROUND_THEMES.map((theme) => (
+                      <button
+                        key={theme.id}
+                        type="button"
+                        onClick={() => onBackgroundThemeChange(theme.id)}
+                        className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 transition ${
+                          backgroundTheme === theme.id ? 'border-brand bg-brand/10 text-brand' : 'border-app bg-app-surface-strong text-app-muted'
+                        }`}
+                      >
+                        <span className="h-5 w-5 rounded-lg border border-black/5" style={{ backgroundColor: theme.preview }} />
+                        <span className="text-[8px] font-black uppercase tracking-widest">{theme.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <button onClick={onToggleTheme} className="app-btn-muted w-full py-3 rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2">
                   <i className={`fas ${isDarkMode ? 'fa-sun text-brand-gold' : 'fa-moon text-brand'}`}></i>
