@@ -642,6 +642,7 @@ const VisitorFormFields: React.FC<{
         <input
           value={form.nome}
           onChange={(event) => setForm((prev) => ({ ...prev, nome: event.target.value }))}
+          onBlur={() => setForm((prev) => ({ ...prev, nome: toTitleCasePt(prev.nome) }))}
           className={inputClass}
         />
       </Field>
@@ -671,6 +672,7 @@ const VisitorFormFields: React.FC<{
         <input
           value={form.bairro}
           onChange={(event) => setForm((prev) => ({ ...prev, bairro: event.target.value }))}
+          onBlur={() => setForm((prev) => ({ ...prev, bairro: toTitleCasePt(prev.bairro) }))}
           className={inputClass}
         />
       </Field>
@@ -740,6 +742,7 @@ const ConvertFormFields: React.FC<{
       <input
         value={form.nome}
         onChange={(event) => setForm((prev) => ({ ...prev, nome: event.target.value }))}
+        onBlur={() => setForm((prev) => ({ ...prev, nome: toTitleCasePt(prev.nome) }))}
         className={inputClass}
       />
     </Field>
@@ -768,6 +771,7 @@ const ConvertFormFields: React.FC<{
       <input
         value={form.bairro}
         onChange={(event) => setForm((prev) => ({ ...prev, bairro: event.target.value }))}
+        onBlur={() => setForm((prev) => ({ ...prev, bairro: toTitleCasePt(prev.bairro) }))}
         className={inputClass}
       />
     </Field>
@@ -822,6 +826,7 @@ const ConvertFormFields: React.FC<{
       <input
         value={form.nome_contato_recado}
         onChange={(event) => setForm((prev) => ({ ...prev, nome_contato_recado: event.target.value }))}
+        onBlur={() => setForm((prev) => ({ ...prev, nome_contato_recado: toTitleCasePt(prev.nome_contato_recado) }))}
         className={inputClass}
       />
     </Field>

@@ -367,7 +367,13 @@ const PublicMemberRegistration: React.FC = () => {
 
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Nome completo" className="md:col-span-2">
-              <input className={inputClass} value={form.nome} onChange={(event) => updateForm('nome', event.target.value)} required />
+              <input
+                className={inputClass}
+                value={form.nome}
+                onChange={(event) => updateForm('nome', event.target.value)}
+                onBlur={() => updateForm('nome', toTitleCasePt(form.nome))}
+                required
+              />
             </Field>
 
             <Field label="E-mail">
@@ -421,7 +427,13 @@ const PublicMemberRegistration: React.FC = () => {
             </Field>
 
             <Field label="Bairro">
-              <input className={inputClass} value={form.bairro} onChange={(event) => updateForm('bairro', event.target.value)} required />
+              <input
+                className={inputClass}
+                value={form.bairro}
+                onChange={(event) => updateForm('bairro', event.target.value)}
+                onBlur={() => updateForm('bairro', toTitleCasePt(form.bairro))}
+                required
+              />
             </Field>
 
             <Field label="Nome do pai">

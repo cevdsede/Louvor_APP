@@ -1240,6 +1240,7 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
                     type="text"
                     value={editingMember.display_name || ''}
                     onChange={(e) => setEditingMember({ ...editingMember, display_name: e.target.value })}
+                    onBlur={() => setEditingMember({ ...editingMember, display_name: toTitleCasePt(editingMember.display_name || '') })}
                     className="app-input w-full rounded-lg px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand"
                   />
                 </div>
