@@ -873,6 +873,13 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
             {selectedGroup === 'members-statistics' && selectedStatistic === 'by-neighborhood' && (
               <ReportCard eyebrow="Relatorio estatistico" title="Distribuicao por bairro" description="Quantidade de membros cadastrados agrupados por bairro.">
                 <div className="app-card-muted rounded-2xl border p-5">
+                  <BarChartList
+                    className="mb-5"
+                    items={neighborhoodDistribution.map(([bairro, total]) => ({
+                      label: bairro,
+                      value: total
+                    }))}
+                  />
                   <div className="space-y-3">
                     {neighborhoodDistribution.map(([bairro, total]) => (
                       <button
@@ -896,6 +903,14 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
 
             {selectedGroup === 'members-statistics' && selectedStatistic === 'by-gender' && (
               <ReportCard eyebrow="Relatorio estatistico" title="Perfil por genero" description="Distribuicao atual dos membros cadastrados por genero.">
+                <DonutLegend
+                  className="mb-5"
+                  items={[
+                    { label: 'Feminino', value: genderSummary.feminino, color: 'bg-rose-500' },
+                    { label: 'Masculino', value: genderSummary.masculino, color: 'bg-sky-500' },
+                    { label: 'Nao informado', value: genderSummary.naoInformado, color: 'bg-slate-400' }
+                  ]}
+                />
                 <div className="grid gap-4 md:grid-cols-3">
                   <MetricCard label="Feminino" value={genderSummary.feminino} onClick={() => openDetail('Genero: Feminino', 'Membros classificados como feminino.', ['Nome', 'Genero', 'Bairro'], getMembersByGender('feminino'))} />
                   <MetricCard label="Masculino" value={genderSummary.masculino} onClick={() => openDetail('Genero: Masculino', 'Membros classificados como masculino.', ['Nome', 'Genero', 'Bairro'], getMembersByGender('masculino'))} />
@@ -906,6 +921,18 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
 
             {selectedGroup === 'members-statistics' && selectedStatistic === 'by-education' && (
               <ReportCard eyebrow="Relatorio estatistico" title="Nivel de escolaridade" description="Resumo dos membros cadastrados por escolaridade.">
+                <BarChartList
+                  className="mb-5"
+                  items={[
+                    { label: 'Ensino Medio Completo', value: educationSummary.medioCompleto },
+                    { label: 'Ensino Medio Incompleto', value: educationSummary.medioIncompleto },
+                    { label: 'Ensino Superior Completo', value: educationSummary.superiorCompleto },
+                    { label: 'Ensino Superior Incompleto', value: educationSummary.superiorIncompleto },
+                    { label: 'Ensino Fundamental', value: educationSummary.fundamental },
+                    { label: 'Nenhuma', value: educationSummary.nenhuma },
+                    { label: 'Nao Informado', value: educationSummary.naoInformado }
+                  ]}
+                />
                 <div className="app-card-muted rounded-2xl border p-5 space-y-3">
                   <SummaryLine label="Ensino Medio Completo" value={educationSummary.medioCompleto} onClick={() => openDetail('Escolaridade: Ensino Medio Completo', 'Membros nesta faixa de escolaridade.', ['Nome', 'Escolaridade', 'Bairro'], getMembersByEducation('medioCompleto'))} />
                   <SummaryLine label="Ensino Medio Incompleto" value={educationSummary.medioIncompleto} onClick={() => openDetail('Escolaridade: Ensino Medio Incompleto', 'Membros nesta faixa de escolaridade.', ['Nome', 'Escolaridade', 'Bairro'], getMembersByEducation('medioIncompleto'))} />
@@ -920,6 +947,16 @@ const ChurchReports: React.FC<{ canExport?: boolean }> = ({ canExport = false })
 
             {selectedGroup === 'monthly-consolidation' && (
               <ReportCard eyebrow="Relatorio mensal de consolidacao" title={formatMonthLabel(selectedMonth)} description="Balanco das atividades de recepcao e integracao de novos membros e visitantes.">
+                <BarChartList
+                  className="mb-5"
+                  items={[
+                    { label: 'Conversoes', value: monthlySummary.newConverts },
+                    { label: 'Visitantes', value: monthlySummary.totalVisitors },
+                    { label: 'Oracao no lar', value: monthlySummary.homePrayerRequests },
+                    { label: 'Aconselhamento', value: monthlySummary.counselingRequests },
+                    { label: 'Informacoes', value: monthlySummary.infoRequests }
+                  ]}
+                />
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
                   <MetricCard label="Novas conversoes" value={monthlySummary.newConverts} onClick={() => openDetail('Novas conversoes', `Registros de ${formatMonthLabel(selectedMonth)}.`, ['Nome', 'Bairro', 'Data'], monthlyConvertsList.map((item) => ({ title: item.nome || 'Novo convertido sem nome', meta: item.bairro || 'Sem bairro', extra: item.data_conversao || '' })))} />
                   <MetricCard label="Total de visitantes" value={monthlySummary.totalVisitors} onClick={() => openDetail('Total de visitantes', `Visitantes de ${formatMonthLabel(selectedMonth)}.`, ['Nome', 'Telefone', 'Data'], monthlyVisitorsList.map((item) => ({ title: item.nome || 'Visitante sem nome', meta: item.telefone || 'Sem telefone', extra: item.data_ficha || '' })))} />
@@ -1075,6 +1112,87 @@ const ComparisonCard = ({
       <p className="mt-3 text-3xl font-black text-slate-900 dark:text-white">{current}</p>
       <p className="mt-2 text-xs font-bold text-app-muted">Mes anterior: {previous}</p>
       <p className={`mt-1 text-xs font-black uppercase tracking-widest ${tone}`}>{getDeltaLabel(current, previous)}</p>
+    </div>
+  );
+};
+
+const BarChartList = ({
+  items,
+  className = ''
+}: {
+  items: Array<{ label: string; value: number }>;
+  className?: string;
+}) => {
+  const max = Math.max(...items.map((item) => item.value), 1);
+
+  return (
+    <div className={`app-panel rounded-2xl p-4 ${className}`.trim()}>
+      <div className="space-y-3">
+        {items.map((item) => (
+          <div key={item.label}>
+            <div className="mb-1 flex items-center justify-between gap-3 text-xs">
+              <span className="font-bold text-slate-700 dark:text-slate-200">{item.label}</span>
+              <span className="font-black text-brand">{item.value}</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-sky-100 dark:bg-slate-700">
+              <div
+                className="h-full rounded-full bg-brand"
+                style={{ width: `${Math.max((item.value / max) * 100, item.value > 0 ? 8 : 0)}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const DonutLegend = ({
+  items,
+  className = ''
+}: {
+  items: Array<{ label: string; value: number; color: string }>;
+  className?: string;
+}) => {
+  const total = items.reduce((sum, item) => sum + item.value, 0) || 1;
+
+  return (
+    <div className={`app-panel flex flex-col gap-4 rounded-2xl p-4 md:flex-row md:items-center ${className}`.trim()}>
+      <div
+        className="mx-auto h-40 w-40 shrink-0 rounded-full"
+        style={{
+          background: `conic-gradient(${items
+            .map((item, index) => {
+              const previous = items.slice(0, index).reduce((sum, current) => sum + current.value, 0);
+              const start = (previous / total) * 100;
+              const end = ((previous + item.value) / total) * 100;
+              const color =
+                item.color === 'bg-rose-500'
+                  ? '#f43f5e'
+                  : item.color === 'bg-sky-500'
+                    ? '#0ea5e9'
+                    : '#94a3b8';
+              return `${color} ${start}% ${end}%`;
+            })
+            .join(', ')})`
+        }}
+      />
+      <div className="grid flex-1 gap-3">
+        {items.map((item) => (
+          <div key={item.label} className="flex items-center justify-between gap-3 rounded-2xl bg-app-surface px-4 py-3">
+            <div className="flex items-center gap-3">
+              <span className={`h-3 w-3 rounded-full ${item.color}`} />
+              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.label}</span>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-black text-slate-900 dark:text-white">{item.value}</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-app-muted">
+                {Math.round((item.value / total) * 100)}%
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

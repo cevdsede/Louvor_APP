@@ -70,7 +70,7 @@ Legenda:
 - [ ] Criar auditoria avancada
 - [ ] Criar notificacoes internas mais inteligentes
 - [ ] Criar automacoes e lembretes internos
-- [ ] Adicionar graficos mais avancados
+- [x] Adicionar graficos mais avancados
 
 ### Acabamento final
 - [ ] Revisar padrao visual final do app
