@@ -46,10 +46,10 @@ Legenda:
 - [x] Criar comparativos mensais
 
 ### Busca e produtividade
-- [ ] Criar busca global por membros
-- [ ] Criar busca global por visitantes
-- [ ] Criar busca global por novos convertidos
-- [ ] Criar busca global por musicas e eventos
+- [x] Criar busca global por membros
+- [x] Criar busca global por visitantes
+- [x] Criar busca global por novos convertidos
+- [x] Criar busca global por musicas e eventos
 - [ ] Melhorar filtros em listas principais
 
 ### Dashboard e acompanhamento

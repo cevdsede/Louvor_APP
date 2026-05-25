@@ -23,6 +23,7 @@ interface SidebarProps {
   isProfileModalOpen: boolean;
   setIsProfileModalOpen: (open: boolean) => void;
   onOpenNotifications: () => void;
+  onOpenSearch: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -35,7 +36,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   onColorChange,
   isProfileModalOpen,
   setIsProfileModalOpen,
-  onOpenNotifications
+  onOpenNotifications,
+  onOpenSearch
 }) => {
   const {
     activeModules,
@@ -428,6 +430,14 @@ const Sidebar: React.FC<SidebarProps> = ({
               iconClassName="text-lg"
             />
           </div>
+          <button
+            type="button"
+            onClick={onOpenSearch}
+            className="app-panel flex h-[60px] w-10 shrink-0 items-center justify-center rounded-2xl text-app-muted transition-all hover:bg-app-surface-muted hover:text-brand"
+            title="Busca global"
+          >
+            <i className="fas fa-search text-lg"></i>
+          </button>
           <button
             onClick={handleLogout}
             className="flex h-[60px] w-10 shrink-0 items-center justify-center rounded-2xl border border-red-100 bg-red-50 text-red-500 transition-all hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 group"

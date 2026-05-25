@@ -4,6 +4,7 @@ import { useMinistryContext } from '../../contexts/MinistryContext';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import { SupabaseMembro, SupabasePermissaoIgreja } from '../../types-supabase';
+import { ViewType } from '../../types';
 import ChurchAdmin from './ChurchAdmin';
 import ChurchAgenda from './ChurchAgenda';
 import ChurchDashboard from './ChurchDashboard';
@@ -17,17 +18,20 @@ import { buildMemberPhotoPath, getPublicAssetsPathFromUrl, sanitizeImageUrl } fr
 import logger from '../../utils/logger';
 import { showError, showSuccess } from '../../utils/toast';
 
-type ChurchView = 'dashboard' | 'agenda' | 'members' | 'reports' | 'church-events' | 'visitors' | 'converts' | 'site' | 'admin';
+export type ChurchView = 'dashboard' | 'agenda' | 'members' | 'reports' | 'church-events' | 'visitors' | 'converts' | 'site' | 'admin';
 
 const normalize = (value?: string | null) =>
   (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 interface ChurchShellProps {
-  onOpenMinistry: () => void;
+  onOpenMinistry: (targetView?: ViewType) => void;
   isDarkMode: boolean;
   onToggleTheme: () => void;
   brandColor: string;
   onColorChange: (color: string) => void;
+  requestedView?: ChurchView | null;
+  onRequestedViewHandled?: () => void;
+  onOpenSearch: () => void;
 }
 
 const themeColors = ['#3b82f6', '#ef4444', '#f59e0b', '#10b981', '#ec4899', '#6366f1'];
@@ -37,7 +41,10 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
   isDarkMode,
   onToggleTheme,
   brandColor,
-  onColorChange
+  onColorChange,
+  requestedView = null,
+  onRequestedViewHandled,
+  onOpenSearch
 }) => {
   const [currentView, setCurrentView] = useState<ChurchView>('dashboard');
   const [isRegistryExpanded, setIsRegistryExpanded] = useState(false);
@@ -109,6 +116,15 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
       setCurrentView('dashboard');
     }
   }, [canViewReports, currentView]);
+
+  useEffect(() => {
+    if (!requestedView) return;
+    setCurrentView(requestedView);
+    if (requestedView === 'church-events' || requestedView === 'visitors' || requestedView === 'converts' || requestedView === 'site') {
+      setIsRegistryExpanded(true);
+    }
+    onRequestedViewHandled?.();
+  }, [onRequestedViewHandled, requestedView]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -233,6 +249,14 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onOpenSearch}
+            className="app-panel text-app-muted flex h-10 w-10 items-center justify-center rounded-xl"
+            aria-label="Abrir busca global"
+          >
+            <i className="fas fa-search" />
+          </button>
           <button
             type="button"
             onClick={() => setIsProfileOpen(true)}
@@ -402,6 +426,15 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
         </nav>
 
         <div className="mt-auto hidden flex-col gap-3 border-t border-app px-4 pb-6 pt-4 lg:flex">
+          <button
+            type="button"
+            onClick={onOpenSearch}
+            className="app-btn-muted flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-[9px] font-black uppercase tracking-widest text-app-muted transition-all hover:text-brand"
+          >
+            <i className="fas fa-search"></i>
+            Busca Global
+          </button>
+
           <div className="app-panel flex flex-col overflow-hidden rounded-2xl">
             <button
               type="button"

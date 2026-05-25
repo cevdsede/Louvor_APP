@@ -9,9 +9,10 @@ interface HeaderProps {
   onSync: () => void;
   onOpenProfile: () => void;
   onOpenNotifications: () => void;
+  onOpenSearch: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onSync, onOpenProfile, onOpenNotifications }) => {
+const Header: React.FC<HeaderProps> = ({ onSync, onOpenProfile, onOpenNotifications, onOpenSearch }) => {
   const { userMinisterios, currentMember } = useMinistryContext();
   const memberPhoto = (currentMember as any)?.foto || buildLocalAvatar(currentMember?.nome || 'Usuario');
 
@@ -27,6 +28,14 @@ const Header: React.FC<HeaderProps> = ({ onSync, onOpenProfile, onOpenNotificati
             className="bg-app-surface-strong text-app-muted border-app flex h-10 w-10 items-center justify-center rounded-xl border shadow-sm transition-all hover:text-brand"
           />
         </div>
+
+        <button
+          onClick={onOpenSearch}
+          className="bg-app-surface-strong text-app-muted border-app flex h-10 w-10 items-center justify-center rounded-xl border shadow-sm transition-all hover:text-brand"
+          title="Busca global"
+        >
+          <i className="fas fa-search text-sm"></i>
+        </button>
 
         <button 
           onClick={onSync}

@@ -11,11 +11,13 @@ import LocalStorageFirstService from './services/LocalStorageFirstService';
 import { ViewType } from './types';
 import { getDefaultViewForModules, getModuleForView } from './utils/ministry';
 import { isMusicView, isTeamView, isToolsView } from './utils/views';
+import type { ChurchView } from './components/church/ChurchShell';
 
 const NotificationCenterModal = lazy(() => import('./components/layout/NotificationCenterModal'));
 const PublicMemberRegistration = lazy(() => import('./components/auth/PublicMemberRegistration'));
 const ChurchShell = lazy(() => import('./components/church/ChurchShell'));
 const PublicChurchShell = lazy(() => import('./components/church/PublicChurchShell'));
+const GlobalSearchModal = lazy(() => import('./components/search/GlobalSearchModal'));
 const DesignLabView = lazy(() => import('./components/lab/DesignLabView'));
 const DashboardView = lazy(() => import('./components/dashboard/DashboardView'));
 const ListView = lazy(() => import('./components/escalas/ListView'));
@@ -65,6 +67,7 @@ interface AppContentProps {
   openAviso: (eventId: string) => void;
   handleSync: () => Promise<void>;
   isLoading: boolean;
+  onOpenSearch: () => void;
 }
 
 const getAccentColor = (primaryColor: string) => {
@@ -98,7 +101,8 @@ const AppContent: React.FC<AppContentProps> = ({
   onBackToChurch,
   openAviso,
   handleSync,
-  isLoading
+  isLoading,
+  onOpenSearch
 }) => {
   const { activeModules, isGlobalAdmin, loading: ministryLoading } = useMinistryContext();
 
@@ -153,6 +157,7 @@ const AppContent: React.FC<AppContentProps> = ({
           isProfileModalOpen={isProfileModalOpen}
           setIsProfileModalOpen={setIsProfileModalOpen}
           onOpenNotifications={() => setIsNotificationsOpen(true)}
+          onOpenSearch={onOpenSearch}
         />
 
         <div className="flex flex-1 flex-col overflow-hidden pt-16 lg:ml-[280px] lg:pt-0">
@@ -160,6 +165,7 @@ const AppContent: React.FC<AppContentProps> = ({
             onSync={handleSync}
             onOpenProfile={() => setIsProfileModalOpen(true)}
             onOpenNotifications={() => setIsNotificationsOpen(true)}
+            onOpenSearch={onOpenSearch}
           />
 
           <Toolbar currentView={currentView} onViewChange={setCurrentView} />
@@ -226,6 +232,8 @@ const App: React.FC = () => {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [requestedChurchView, setRequestedChurchView] = useState<ChurchView | null>(null);
   const [sessionCached, setSessionCached] = useState<any>(() => {
     if (typeof window === 'undefined') return null;
     const saved = localStorage.getItem('supabase_session_cache');
@@ -392,6 +400,18 @@ const App: React.FC = () => {
     setIsAvisoModalOpen(true);
   };
 
+  const openChurchView = (view: ChurchView) => {
+    setRequestedChurchView(view);
+    setActiveArea('church');
+    setIsSearchOpen(false);
+  };
+
+  const openMinistryView = (view: ViewType) => {
+    setCurrentView(view);
+    setActiveArea('ministry');
+    setIsSearchOpen(false);
+  };
+
   const toggleDarkMode = () => {
     setIsDarkMode((previous) => !previous);
   };
@@ -462,11 +482,17 @@ const App: React.FC = () => {
           {activeArea === 'church' ? (
             <Suspense fallback={<LoadingBlock />}>
               <ChurchShell
-                onOpenMinistry={() => setActiveArea('ministry')}
+                onOpenMinistry={(targetView) => {
+                  if (targetView) setCurrentView(targetView);
+                  setActiveArea('ministry');
+                }}
                 isDarkMode={isDarkMode}
                 onToggleTheme={toggleDarkMode}
                 brandColor={brandColor}
                 onColorChange={setBrandColor}
+                requestedView={requestedChurchView}
+                onRequestedViewHandled={() => setRequestedChurchView(null)}
+                onOpenSearch={() => setIsSearchOpen(true)}
               />
             </Suspense>
           ) : (
@@ -488,10 +514,25 @@ const App: React.FC = () => {
               openAviso={openAviso}
               handleSync={handleSync}
               isLoading={isLoading}
+              onOpenSearch={() => setIsSearchOpen(true)}
             />
           )}
         </MinistryProvider>
       </LocalStorageFirstInitializer>
+      <Suspense fallback={null}>
+        {isSearchOpen && (
+          <GlobalSearchModal
+            onClose={() => setIsSearchOpen(false)}
+            onNavigate={(target) => {
+              if (target.area === 'church') {
+                openChurchView(target.view);
+                return;
+              }
+              openMinistryView(target.view);
+            }}
+          />
+        )}
+      </Suspense>
     </div>
   );
 };
