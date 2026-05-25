@@ -249,6 +249,14 @@ const SiteEditor: React.FC = () => {
                     }}
                   />
                 </label>
+                <label>
+                  <span className={labelClass}>Titulo da secao sobre</span>
+                  <input className={inputClass} value={content.aboutTitle} onChange={(event) => update('aboutTitle', event.target.value)} />
+                </label>
+                <label>
+                  <span className={labelClass}>Texto da secao sobre</span>
+                  <textarea className={`${inputClass} min-h-28`} value={content.aboutBody} onChange={(event) => update('aboutBody', event.target.value)} />
+                </label>
               </div>
             )}
 
@@ -291,11 +299,100 @@ const SiteEditor: React.FC = () => {
                     }}
                   />
                 </label>
+                <label>
+                  <span className={labelClass}>Titulo do bloco de oracao</span>
+                  <input className={inputClass} value={content.prayerTitle} onChange={(event) => update('prayerTitle', event.target.value)} />
+                </label>
+                <label>
+                  <span className={labelClass}>Texto do bloco de oracao</span>
+                  <textarea className={`${inputClass} min-h-28`} value={content.prayerSubtitle} onChange={(event) => update('prayerSubtitle', event.target.value)} />
+                </label>
+                <label>
+                  <span className={labelClass}>Titulo do bloco PIX</span>
+                  <input className={inputClass} value={content.givingTitle} onChange={(event) => update('givingTitle', event.target.value)} />
+                </label>
+                <label>
+                  <span className={labelClass}>Texto do bloco PIX</span>
+                  <textarea className={`${inputClass} min-h-28`} value={content.givingSubtitle} onChange={(event) => update('givingSubtitle', event.target.value)} />
+                </label>
+                <label className="lg:col-span-2">
+                  <span className={labelClass}>Texto do rodape</span>
+                  <textarea className={`${inputClass} min-h-24`} value={content.footerText} onChange={(event) => update('footerText', event.target.value)} />
+                </label>
               </div>
             )}
 
             {activeTab === 'content' && (
               <div className="space-y-6">
+                <div className="rounded-[1.5rem] border border-app p-5">
+                  <div className="mb-5 flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-black text-slate-900 dark:text-white">Cards de destaque</h3>
+                      <p className="mt-1 text-sm font-medium text-app-muted">Blocos exibidos ao lado da secao sobre.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        update('highlights', [
+                          ...content.highlights,
+                          { title: 'Novo destaque', description: 'Descreva o foco deste bloco.', icon: 'fa-star' }
+                        ])
+                      }
+                      className="app-btn-muted rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest"
+                    >
+                      Adicionar
+                    </button>
+                  </div>
+                  <div className="grid gap-4 lg:grid-cols-3">
+                    {content.highlights.map((highlight, index) => (
+                      <div key={index} className="app-card-muted rounded-2xl border p-4">
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Destaque {index + 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => update('highlights', content.highlights.filter((_, itemIndex) => itemIndex !== index))}
+                            className="rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                          >
+                            Excluir
+                          </button>
+                        </div>
+                        <div className="space-y-3">
+                          <input
+                            className={inputClass}
+                            placeholder="Titulo"
+                            value={highlight.title}
+                            onChange={(event) => {
+                              const next = [...content.highlights];
+                              next[index] = { ...next[index], title: event.target.value };
+                              update('highlights', next);
+                            }}
+                          />
+                          <input
+                            className={inputClass}
+                            placeholder="Icone FontAwesome"
+                            value={highlight.icon}
+                            onChange={(event) => {
+                              const next = [...content.highlights];
+                              next[index] = { ...next[index], icon: event.target.value };
+                              update('highlights', next);
+                            }}
+                          />
+                          <textarea
+                            className={`${inputClass} min-h-24`}
+                            placeholder="Descricao"
+                            value={highlight.description}
+                            onChange={(event) => {
+                              const next = [...content.highlights];
+                              next[index] = { ...next[index], description: event.target.value };
+                              update('highlights', next);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="rounded-[1.5rem] border border-app p-5">
                   <div className="mb-5 flex items-center justify-between gap-3">
                     <div>
@@ -492,6 +589,30 @@ const SiteEditor: React.FC = () => {
                     <p className="text-xs font-medium text-app-muted">{content.address}</p>
                   </div>
                 </div>
+                <div className="mt-5 rounded-2xl border border-app bg-app-surface-strong p-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-brand">Sobre</p>
+                  <h4 className="mt-2 text-lg font-black text-slate-900 dark:text-white">{content.aboutTitle}</h4>
+                  <p className="mt-2 text-sm leading-6 text-app-muted">{content.aboutBody}</p>
+                </div>
+                <div className="mt-4 grid gap-3">
+                  {content.highlights.slice(0, 3).map((highlight, index) => (
+                    <div key={`${highlight.title}-${index}`} className="rounded-2xl bg-slate-900 p-4 text-white">
+                      <i className={`fas ${highlight.icon || 'fa-star'} text-sm`} style={{ color: content.goldColor }} />
+                      <p className="mt-3 text-sm font-black">{highlight.title}</p>
+                      <p className="mt-1 text-xs leading-5 text-white/60">{highlight.description}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 rounded-2xl border border-app bg-app-surface-strong p-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-brand">Oracao</p>
+                  <h4 className="mt-2 text-base font-black text-slate-900 dark:text-white">{content.prayerTitle}</h4>
+                  <p className="mt-1 text-xs leading-5 text-app-muted">{content.prayerSubtitle}</p>
+                </div>
+                <div className="mt-4 rounded-2xl p-4 text-white" style={{ backgroundColor: content.primaryColor }}>
+                  <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: content.goldColor }}>PIX</p>
+                  <h4 className="mt-2 text-base font-black">{content.givingTitle}</h4>
+                  <p className="mt-1 text-xs leading-5 text-white/65">{content.givingSubtitle}</p>
+                </div>
               </div>
             </div>
           </section>
@@ -501,6 +622,8 @@ const SiteEditor: React.FC = () => {
             <div className="mt-4 space-y-3">
               <ChecklistItem label="Logo configurada" ok={Boolean(content.logoImage || content.logoText)} />
               <ChecklistItem label="Hero com imagem" ok={Boolean(content.heroImage)} />
+              <ChecklistItem label="Secao sobre preenchida" ok={Boolean(content.aboutTitle && content.aboutBody)} />
+              <ChecklistItem label="Destaques configurados" ok={content.highlights.length > 0} />
               <ChecklistItem label="WhatsApp preenchido" ok={Boolean(content.whatsapp)} />
               <ChecklistItem label="Endereco preenchido" ok={Boolean(content.address)} />
               <ChecklistItem label="Instagram preenchido" ok={Boolean(content.instagram && content.instagramUrl)} />

@@ -159,6 +159,19 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
   }, []);
 
   useEffect(() => {
+    document.title = `${content.churchName} | Valentes Connected`;
+    const description = content.heroSubtitle || content.aboutBody;
+
+    let meta = document.querySelector('meta[name="description"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'description');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', description);
+  }, [content.aboutBody, content.churchName, content.heroSubtitle]);
+
+  useEffect(() => {
     let mounted = true;
     const loadInstagramPosts = async () => {
       const { data, error } = await supabase.functions.invoke('instagram-feed');
@@ -290,17 +303,17 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
             <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
               Sobre a igreja
             </p>
-            <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">Uma casa organizada para servir pessoas.</h2>
+            <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">{content.aboutTitle}</h2>
             <p className="mt-5 text-base leading-8 text-zinc-600">
-              Acolhemos familias, discipulamos pessoas e criamos ambientes onde fe, comunidade e excelencia caminham juntos.
+              {content.aboutBody}
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-            {['Comunidade', 'Louvor', 'Cuidado'].map((item) => (
-              <div key={item} className="rounded-[2rem] border border-black/5 p-6 text-white shadow-xl shadow-black/10" style={{ backgroundColor: content.primaryColor }}>
-                <i className="fas fa-sparkles mb-8 text-xl" style={{ color: content.goldColor }} />
-                <h3 className="text-2xl font-black">{item}</h3>
-                <p className="mt-2 text-sm leading-6 text-white/60">Experiencias simples, bonitas e preparadas com excelencia.</p>
+            {content.highlights.map((item) => (
+              <div key={item.title} className="rounded-[2rem] border border-black/5 p-6 text-white shadow-xl shadow-black/10" style={{ backgroundColor: content.primaryColor }}>
+                <i className={`fas ${item.icon || 'fa-sparkles'} mb-8 text-xl`} style={{ color: content.goldColor }} />
+                <h3 className="text-2xl font-black">{item.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-white/60">{item.description}</p>
               </div>
             ))}
           </div>
@@ -516,8 +529,8 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
               <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
                 Pedido de Oracao
               </p>
-              <h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Queremos orar por voce.</h2>
-              <p className="mt-5 text-base leading-8 text-zinc-600">Envie seu pedido e nossa equipe pastoral vai receber sua mensagem.</p>
+              <h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">{content.prayerTitle}</h2>
+              <p className="mt-5 text-base leading-8 text-zinc-600">{content.prayerSubtitle}</p>
             </div>
             <form className="site-panel-dark rounded-[2rem] p-6 shadow-2xl shadow-black/15">
               <input className="site-input-glass mb-3 w-full rounded-2xl px-5 py-4 outline-none" placeholder="Seu nome" />
@@ -535,8 +548,8 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
             <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
               Dizimos e Ofertas
             </p>
-            <h2 className="mt-3 text-4xl font-black tracking-tight">Contribua com seguranca via PIX.</h2>
-            <p className="mt-5 text-sm leading-7 text-white/60">Use a chave abaixo ou aponte a camera para o QR Code.</p>
+            <h2 className="mt-3 text-4xl font-black tracking-tight">{content.givingTitle}</h2>
+            <p className="mt-5 text-sm leading-7 text-white/60">{content.givingSubtitle}</p>
             <div className="site-glass mt-8 rounded-2xl p-4 text-sm font-bold">{content.pixKey}</div>
           </div>
           <div className="site-card flex min-h-80 items-center justify-center rounded-[2rem] border border-black/5 p-8 shadow-xl shadow-black/5">
@@ -560,7 +573,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
               </div>
               <h2 className="text-xl font-black">{content.churchName}</h2>
             </div>
-            <p className="max-w-md text-sm leading-7 text-white/55">Fe, comunidade e proposito em uma experiencia acolhedora e organizada.</p>
+            <p className="max-w-md text-sm leading-7 text-white/55">{content.footerText}</p>
           </div>
           <div className="space-y-3 text-sm text-white/65">
             <p><i className="fas fa-location-dot mr-2" />{content.address}</p>

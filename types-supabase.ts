@@ -196,6 +196,9 @@ export interface SupabaseConfiguracaoSiteIgreja {
   hero_title: string;
   hero_subtitle: string;
   hero_image: string;
+  about_title: string;
+  about_body: string;
+  highlights: unknown;
   service_info: string;
   whatsapp: string;
   address: string;
@@ -203,8 +206,13 @@ export interface SupabaseConfiguracaoSiteIgreja {
   instagram: string;
   instagram_url: string;
   instagram_posts: unknown;
+  prayer_title: string;
+  prayer_subtitle: string;
   pix_key: string;
   pix_qr_image: string;
+  giving_title: string;
+  giving_subtitle: string;
+  footer_text: string;
   primary_color: string;
   gold_color: string;
   events: unknown;

@@ -61,10 +61,10 @@ Legenda:
 ## Fase 3 - Refinamento premium
 
 ### Site publico
-- [ ] Melhorar preview do editor do site
-- [ ] Adicionar mais blocos configuraveis no site
+- [x] Melhorar preview do editor do site
+- [x] Adicionar mais blocos configuraveis no site
 - [ ] Refinar identidade visual do site publico
-- [ ] Melhorar SEO basico e estrutura publica
+- [x] Melhorar SEO basico e estrutura publica
 
 ### Auditoria e inteligencia
 - [ ] Criar auditoria avancada

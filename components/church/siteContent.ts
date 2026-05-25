@@ -21,6 +21,12 @@ export interface InstagramPost {
   url: string;
 }
 
+export interface SiteHighlight {
+  title: string;
+  description: string;
+  icon: string;
+}
+
 export interface ChurchSiteContent {
   churchName: string;
   logoText: string;
@@ -28,6 +34,9 @@ export interface ChurchSiteContent {
   heroTitle: string;
   heroSubtitle: string;
   heroImage: string;
+  aboutTitle: string;
+  aboutBody: string;
+  highlights: SiteHighlight[];
   serviceInfo: string;
   whatsapp: string;
   address: string;
@@ -35,8 +44,13 @@ export interface ChurchSiteContent {
   instagram: string;
   instagramUrl: string;
   instagramPosts: InstagramPost[];
+  prayerTitle: string;
+  prayerSubtitle: string;
   pixKey: string;
   pixQrImage: string;
+  givingTitle: string;
+  givingSubtitle: string;
+  footerText: string;
   primaryColor: string;
   goldColor: string;
   events: SiteEvent[];
@@ -55,6 +69,14 @@ export const defaultSiteContent: ChurchSiteContent = {
     'Cultos inspiradores, comunhao verdadeira e uma casa preparada para receber voce e sua familia.',
   heroImage:
     'https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=1800&q=85',
+  aboutTitle: 'Uma casa organizada para servir pessoas.',
+  aboutBody:
+    'Acolhemos familias, discipulamos pessoas e criamos ambientes onde fe, comunidade e excelencia caminham juntos.',
+  highlights: [
+    { title: 'Comunidade', description: 'Relacoes saudaveis e uma igreja presente na vida real das pessoas.', icon: 'fa-people-group' },
+    { title: 'Louvor', description: 'Cultos preparados com excelencia, sensibilidade e reverencia.', icon: 'fa-music' },
+    { title: 'Cuidado', description: 'Acompanhamento pastoral e consolidacao para quem chega e para quem caminha.', icon: 'fa-hand-holding-heart' }
+  ],
   serviceInfo: 'Domingo 18h30 | Quarta 19h30',
   whatsapp: '(68) 99999-9999',
   address: 'Rua Mamed Saad, 210 - Wanderley Dantas',
@@ -78,8 +100,13 @@ export const defaultSiteContent: ChurchSiteContent = {
       url: 'https://www.instagram.com/cevdsedeoficial/'
     }
   ],
+  prayerTitle: 'Queremos orar por voce.',
+  prayerSubtitle: 'Envie seu pedido e nossa equipe pastoral vai receber sua mensagem.',
   pixKey: '23604144000152',
   pixQrImage: '',
+  givingTitle: 'Contribua com seguranca via PIX.',
+  givingSubtitle: 'Use a chave abaixo ou aponte a camera para o QR Code.',
+  footerText: 'Fe, comunidade e proposito em uma experiencia acolhedora e organizada.',
   primaryColor: '#09090b',
   goldColor: '#d6a84f',
   events: [
@@ -139,14 +166,22 @@ export const normalizeSiteContent = (content?: Partial<ChurchSiteContent> | null
     heroTitle: String(next.heroTitle || defaultSiteContent.heroTitle),
     heroSubtitle: String(next.heroSubtitle || defaultSiteContent.heroSubtitle),
     heroImage: String(next.heroImage || defaultSiteContent.heroImage),
+    aboutTitle: String(next.aboutTitle || defaultSiteContent.aboutTitle),
+    aboutBody: String(next.aboutBody || defaultSiteContent.aboutBody),
+    highlights: Array.isArray(next.highlights) ? next.highlights : defaultSiteContent.highlights,
     serviceInfo: String(next.serviceInfo || defaultSiteContent.serviceInfo),
     whatsapp: String(next.whatsapp || defaultSiteContent.whatsapp),
     address: String(next.address || defaultSiteContent.address),
     mapUrl: String(next.mapUrl || defaultSiteContent.mapUrl),
     instagram: String(next.instagram || defaultSiteContent.instagram),
     instagramUrl: String(next.instagramUrl || defaultSiteContent.instagramUrl),
+    prayerTitle: String(next.prayerTitle || defaultSiteContent.prayerTitle),
+    prayerSubtitle: String(next.prayerSubtitle || defaultSiteContent.prayerSubtitle),
     pixKey: String(next.pixKey || defaultSiteContent.pixKey),
     pixQrImage: String(next.pixQrImage || ''),
+    givingTitle: String(next.givingTitle || defaultSiteContent.givingTitle),
+    givingSubtitle: String(next.givingSubtitle || defaultSiteContent.givingSubtitle),
+    footerText: String(next.footerText || defaultSiteContent.footerText),
     primaryColor: String(next.primaryColor || defaultSiteContent.primaryColor),
     goldColor: String(next.goldColor || defaultSiteContent.goldColor),
     instagramPosts: Array.isArray(next.instagramPosts) ? next.instagramPosts : defaultSiteContent.instagramPosts,
@@ -171,6 +206,9 @@ const fromDatabaseRow = (row?: SupabaseConfiguracaoSiteIgreja | null): ChurchSit
     heroTitle: row.hero_title,
     heroSubtitle: row.hero_subtitle,
     heroImage: row.hero_image,
+    aboutTitle: row.about_title,
+    aboutBody: row.about_body,
+    highlights: Array.isArray(row.highlights) ? (row.highlights as SiteHighlight[]) : defaultSiteContent.highlights,
     serviceInfo: row.service_info,
     whatsapp: row.whatsapp,
     address: row.address,
@@ -178,8 +216,13 @@ const fromDatabaseRow = (row?: SupabaseConfiguracaoSiteIgreja | null): ChurchSit
     instagram: row.instagram,
     instagramUrl: row.instagram_url,
     instagramPosts: Array.isArray(row.instagram_posts) ? (row.instagram_posts as InstagramPost[]) : defaultSiteContent.instagramPosts,
+    prayerTitle: row.prayer_title,
+    prayerSubtitle: row.prayer_subtitle,
     pixKey: row.pix_key,
     pixQrImage: row.pix_qr_image,
+    givingTitle: row.giving_title,
+    givingSubtitle: row.giving_subtitle,
+    footerText: row.footer_text,
     primaryColor: row.primary_color,
     goldColor: row.gold_color,
     events: Array.isArray(row.events) ? (row.events as SiteEvent[]) : defaultSiteContent.events,
@@ -197,6 +240,9 @@ const toDatabasePayload = (content: ChurchSiteContent) => {
     hero_title: normalized.heroTitle,
     hero_subtitle: normalized.heroSubtitle,
     hero_image: normalized.heroImage,
+    about_title: normalized.aboutTitle,
+    about_body: normalized.aboutBody,
+    highlights: normalized.highlights,
     service_info: normalized.serviceInfo,
     whatsapp: normalized.whatsapp,
     address: normalized.address,
@@ -204,8 +250,13 @@ const toDatabasePayload = (content: ChurchSiteContent) => {
     instagram: normalized.instagram,
     instagram_url: normalized.instagramUrl,
     instagram_posts: normalized.instagramPosts,
+    prayer_title: normalized.prayerTitle,
+    prayer_subtitle: normalized.prayerSubtitle,
     pix_key: normalized.pixKey,
     pix_qr_image: normalized.pixQrImage,
+    giving_title: normalized.givingTitle,
+    giving_subtitle: normalized.givingSubtitle,
+    footer_text: normalized.footerText,
     primary_color: normalized.primaryColor,
     gold_color: normalized.goldColor,
     events: normalized.events,
