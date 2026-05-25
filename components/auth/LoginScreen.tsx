@@ -97,9 +97,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
       <div className="app-card relative w-full max-w-md rounded-[3rem] border p-10 backdrop-blur-xl animate-fade-in lg:p-14">
         <div className="mb-10 flex flex-col items-center">
           <div className="mb-6 flex flex-col items-center">
-            <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-brand/10 shadow-md dark:bg-brand/20">
-              <i className="fa-solid fa-shield text-5xl text-transparent [-webkit-text-stroke:2px_var(--brand-primary)]"></i>
-              <i className="fa-solid fa-crown absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[55%] text-base text-brand-gold"></i>
+            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl bg-brand/10 p-2 shadow-md dark:bg-brand/20">
+              <img src="/VC.svg" alt="Valentes Connected" className="h-full w-full object-contain" />
             </div>
           </div>
           <h2 className="text-app text-center text-2xl font-black uppercase leading-none tracking-tighter">
