@@ -1,17 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../supabaseClient';
 import { useMinistryContext } from '../../contexts/MinistryContext';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import { SupabaseMembro, SupabasePermissaoIgreja } from '../../types-supabase';
 import { ViewType } from '../../types';
-import ChurchAdmin from './ChurchAdmin';
-import ChurchAgenda from './ChurchAgenda';
-import ChurchDashboard from './ChurchDashboard';
-import ChurchMembers from './ChurchMembers';
-import ChurchRegistryView from './ChurchRegistryView';
-import ChurchReports from './ChurchReports';
-import SiteEditor from './SiteEditor';
 import { buildLocalAvatar } from '../../utils/avatar';
 import { compressImageFile } from '../../utils/imageCompression';
 import { buildMemberPhotoPath, getPublicAssetsPathFromUrl, sanitizeImageUrl } from '../../utils/imageUrl';
@@ -19,6 +12,14 @@ import logger from '../../utils/logger';
 import { showError, showSuccess } from '../../utils/toast';
 
 export type ChurchView = 'dashboard' | 'agenda' | 'members' | 'reports' | 'church-events' | 'visitors' | 'converts' | 'site' | 'admin';
+
+const ChurchAdmin = lazy(() => import('./ChurchAdmin'));
+const ChurchAgenda = lazy(() => import('./ChurchAgenda'));
+const ChurchDashboard = lazy(() => import('./ChurchDashboard'));
+const ChurchMembers = lazy(() => import('./ChurchMembers'));
+const ChurchRegistryView = lazy(() => import('./ChurchRegistryView'));
+const ChurchReports = lazy(() => import('./ChurchReports'));
+const SiteEditor = lazy(() => import('./SiteEditor'));
 
 const normalize = (value?: string | null) =>
   (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -35,6 +36,13 @@ interface ChurchShellProps {
 }
 
 const themeColors = ['#3b82f6', '#ef4444', '#f59e0b', '#10b981', '#ec4899', '#6366f1'];
+
+const ChurchLoadingBlock = () => (
+  <div className="flex min-h-[420px] flex-col items-center justify-center">
+    <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand border-t-transparent" />
+    <p className="mt-5 text-[10px] font-black uppercase tracking-widest text-app-muted">Carregando area...</p>
+  </div>
+);
 
 const ChurchShell: React.FC<ChurchShellProps> = ({
   onOpenMinistry,
@@ -502,15 +510,17 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
 
       <main className="min-h-screen bg-transparent pb-28 pt-16 sm:pb-32 lg:ml-[280px] lg:pb-0 lg:pt-0">
         <div className="container mx-auto px-3 py-5 sm:px-6 lg:px-8">
-          {currentView === 'dashboard' && <ChurchDashboard currentMember={(currentMemberRecord || currentMember) as SupabaseMembro | null} />}
-          {currentView === 'agenda' && <ChurchAgenda />}
-          {currentView === 'members' && <ChurchMembers />}
-          {currentView === 'reports' && <ChurchReports canExport={canExportReports} />}
-          {currentView === 'church-events' && <ChurchAdmin currentUserId={currentMember?.id || null} isAdmin={isGlobalAdmin} mode="events" />}
-          {currentView === 'visitors' && <ChurchRegistryView mode="visitors" currentUserId={currentMember?.id || null} />}
-          {currentView === 'converts' && <ChurchRegistryView mode="converts" currentUserId={currentMember?.id || null} />}
-          {currentView === 'site' && <SiteEditor />}
-          {currentView === 'admin' && <ChurchAdmin currentUserId={currentMember?.id || null} isAdmin={isGlobalAdmin} mode="admin" />}
+          <Suspense fallback={<ChurchLoadingBlock />}>
+            {currentView === 'dashboard' && <ChurchDashboard currentMember={(currentMemberRecord || currentMember) as SupabaseMembro | null} />}
+            {currentView === 'agenda' && <ChurchAgenda />}
+            {currentView === 'members' && <ChurchMembers />}
+            {currentView === 'reports' && <ChurchReports canExport={canExportReports} />}
+            {currentView === 'church-events' && <ChurchAdmin currentUserId={currentMember?.id || null} isAdmin={isGlobalAdmin} mode="events" />}
+            {currentView === 'visitors' && <ChurchRegistryView mode="visitors" currentUserId={currentMember?.id || null} />}
+            {currentView === 'converts' && <ChurchRegistryView mode="converts" currentUserId={currentMember?.id || null} />}
+            {currentView === 'site' && <SiteEditor />}
+            {currentView === 'admin' && <ChurchAdmin currentUserId={currentMember?.id || null} isAdmin={isGlobalAdmin} mode="admin" />}
+          </Suspense>
         </div>
       </main>
 
