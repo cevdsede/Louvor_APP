@@ -217,6 +217,29 @@ body.modal-open {
   background-color: var(--app-surface-muted);
 }
 
+.app-icon-button {
+  display: inline-flex;
+  height: 2.5rem;
+  width: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--app-border);
+  border-radius: 0.75rem;
+  background-color: var(--app-surface-strong);
+  color: var(--app-text-muted);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.app-icon-button:hover {
+  color: var(--brand-primary);
+  background-color: var(--app-surface-muted);
+}
+
+.app-icon-button:active {
+  transform: scale(0.96);
+}
+
 .app-panel {
   background-color: var(--app-surface-strong);
   border: 1px solid var(--app-border);

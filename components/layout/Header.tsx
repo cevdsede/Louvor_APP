@@ -25,13 +25,13 @@ const Header: React.FC<HeaderProps> = ({ onSync, onOpenProfile, onOpenNotificati
         <div className="relative">
           <NotificationButton
             onClick={onOpenNotifications}
-            className="bg-app-surface-strong text-app-muted border-app flex h-10 w-10 items-center justify-center rounded-xl border shadow-sm transition-all hover:text-brand"
+            className="app-icon-button"
           />
         </div>
 
         <button
           onClick={onOpenSearch}
-          className="bg-app-surface-strong text-app-muted border-app flex h-10 w-10 items-center justify-center rounded-xl border shadow-sm transition-all hover:text-brand"
+          className="app-icon-button"
           title="Busca global"
         >
           <i className="fas fa-search text-sm"></i>
@@ -39,13 +39,13 @@ const Header: React.FC<HeaderProps> = ({ onSync, onOpenProfile, onOpenNotificati
 
         <button 
           onClick={onSync}
-          className="bg-app-surface-strong text-app-muted border-app flex h-10 w-10 items-center justify-center rounded-xl border shadow-sm transition-all hover:text-brand"
+          className="app-icon-button"
           title="Sincronizar"
         >
           <i className="fas fa-sync-alt text-sm"></i>
         </button>
 
-        {/* Seletor de Ministério no Mobile Header */}
+        {/* Seletor de Ministerio no Mobile Header */}
         {userMinisterios.length > 1 && <MinistrySwitcher variant="mobile" />}
 
         <button 

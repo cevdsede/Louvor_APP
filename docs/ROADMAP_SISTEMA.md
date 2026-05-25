@@ -73,7 +73,7 @@ Legenda:
 - [x] Adicionar graficos mais avancados
 
 ### Acabamento final
-- [ ] Revisar padrao visual final do app
+- [x] Revisar padrao visual final do app
 - [x] Revisar consistencia final entre site e app
 - [x] Revisar performance das telas principais
 - [x] Revisar experiencia mobile completa
