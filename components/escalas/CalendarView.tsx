@@ -299,13 +299,15 @@ const CalendarView: React.FC = () => {
           {monthDates.map(day => {
             const dayEvents = getEventsForDate(day);
             const hasEvent = dayEvents.length > 0;
+            const today = new Date();
+            const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
             return (
               <div
                 key={day}
                 onClick={() => hasEvent && setSelectedDateEvents(dayEvents)}
-                className={`bg-app-surface border-app p-2 h-16 md:h-24 transition-all group relative cursor-pointer overflow-hidden hover:bg-app-surface-strong ${hasEvent ? 'ring-1 ring-inset ring-brand/20' : ''}`}
+                className={`bg-app-surface border-app p-2 h-16 md:h-24 transition-all group relative cursor-pointer overflow-hidden hover:bg-app-surface-strong ${isToday ? 'ring-2 ring-inset ring-brand bg-brand/5' : hasEvent ? 'ring-1 ring-inset ring-brand/20' : ''}`}
               >
-                <span className={`text-[10px] font-black transition-colors ${hasEvent ? 'text-brand' : 'text-slate-300 dark:text-slate-700'}`}>
+                <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black transition-colors ${isToday ? 'bg-brand text-white shadow-sm shadow-brand/30' : hasEvent ? 'text-brand' : 'text-slate-300 dark:text-slate-700'}`}>
                   {day.toString().padStart(2, '0')}
                 </span>
                 {hasEvent && (

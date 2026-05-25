@@ -118,13 +118,15 @@ const ChurchAgenda: React.FC<{ publicMode?: boolean }> = ({ publicMode = false }
           {monthDates.map(day => {
             const dayEvents = getEventsForDate(day);
             const hasEvent = dayEvents.length > 0;
+            const today = new Date();
+            const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
             return (
               <div
                 key={day}
                 onClick={() => hasEvent && setSelectedDateEvents(dayEvents)}
-                className={`bg-app-surface relative h-16 cursor-pointer overflow-hidden p-2 transition-all group hover:bg-app-surface-strong md:h-24 ${hasEvent ? 'ring-1 ring-inset ring-brand/20' : ''}`}
+                className={`bg-app-surface relative h-16 cursor-pointer overflow-hidden p-2 transition-all group hover:bg-app-surface-strong md:h-24 ${isToday ? 'ring-2 ring-inset ring-brand bg-brand/5' : hasEvent ? 'ring-1 ring-inset ring-brand/20' : ''}`}
               >
-                <span className={`text-[10px] font-black transition-colors ${hasEvent ? 'text-brand' : 'text-slate-300 dark:text-slate-700'}`}>
+                <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black transition-colors ${isToday ? 'bg-brand text-white shadow-sm shadow-brand/30' : hasEvent ? 'text-brand' : 'text-slate-300 dark:text-slate-700'}`}>
                   {day.toString().padStart(2, '0')}
                 </span>
                 {hasEvent && (
