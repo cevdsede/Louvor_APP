@@ -76,7 +76,7 @@ Legenda:
 - [ ] Revisar padrao visual final do app
 - [x] Revisar consistencia final entre site e app
 - [x] Revisar performance das telas principais
-- [ ] Revisar experiencia mobile completa
+- [x] Revisar experiencia mobile completa
 
 ## Ordem recomendada
 

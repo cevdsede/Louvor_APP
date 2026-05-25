@@ -75,6 +75,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
   const [instagramPosts, setInstagramPosts] = useState(content.instagramPosts);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [eventSlide, setEventSlide] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { start, end } = useMemo(getCurrentWeekRange, []);
   const siteEvents = useMemo(() => {
     const grouped = new Map<string, any>();
@@ -246,15 +247,41 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
             ))}
           </nav>
 
-          <button
-            type="button"
-            onClick={onLoginClick}
-            className="site-button-light flex h-11 items-center gap-2 rounded-full px-4 text-xs font-black uppercase tracking-widest shadow-xl transition"
-          >
-            <i className="fas fa-right-to-bracket" />
-            Login
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((current) => !current)}
+              className="site-glass flex h-11 w-11 items-center justify-center rounded-full text-white transition hover:bg-white/20 lg:hidden"
+              aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+            >
+              <i className={`fas ${mobileMenuOpen ? 'fa-xmark' : 'fa-bars'}`} />
+            </button>
+            <button
+              type="button"
+              onClick={onLoginClick}
+              className="site-button-light flex h-11 items-center gap-2 rounded-full px-4 text-xs font-black uppercase tracking-widest shadow-xl transition"
+            >
+              <i className="fas fa-right-to-bracket" />
+              <span className="hidden sm:inline">Login</span>
+            </button>
+          </div>
         </div>
+
+        {mobileMenuOpen && (
+          <nav className="mx-4 mb-4 grid gap-2 rounded-3xl border border-white/10 bg-black/80 p-3 shadow-2xl backdrop-blur-xl lg:hidden">
+            {navItems.map((item) => (
+              <a
+                key={item}
+                href={`#${sectionId(item)}`}
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between rounded-2xl px-4 py-3 text-sm font-black uppercase tracking-widest text-white/75 transition hover:bg-white/10 hover:text-white"
+              >
+                {item}
+                <i className="fas fa-chevron-right text-[10px] text-white/35" />
+              </a>
+            ))}
+          </nav>
+        )}
       </header>
 
       <main>
