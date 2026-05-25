@@ -12,6 +12,44 @@ import { getMemberIdsForMinisterio } from '../../utils/memberMinistry';
 import { buildLocalAvatar } from '../../utils/avatar';
 import { ImageCache } from '../ui/ImageCache';
 
+const OperationalMetric: React.FC<{ label: string; value: number; detail: string }> = ({ label, value, detail }) => (
+  <div className="app-panel rounded-2xl px-4 py-4">
+    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-app-muted">{label}</p>
+    <p className="mt-2 text-3xl font-black leading-none text-slate-900 dark:text-white">{value}</p>
+    <p className="mt-2 text-xs font-medium leading-relaxed text-app-muted">{detail}</p>
+  </div>
+);
+
+const alertToneClasses: Record<'warning' | 'info' | 'success', string> = {
+  warning: 'border-amber-200/80 bg-amber-50/90 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200',
+  info: 'border-sky-200/80 bg-sky-50/90 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200',
+  success: 'border-emerald-200/80 bg-emerald-50/90 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200'
+};
+
+const alertToneIcons: Record<'warning' | 'info' | 'success', string> = {
+  warning: 'fas fa-triangle-exclamation',
+  info: 'fas fa-circle-info',
+  success: 'fas fa-circle-check'
+};
+
+const DashboardAlertCard: React.FC<{
+  tone: 'warning' | 'info' | 'success';
+  title: string;
+  detail: string;
+}> = ({ tone, title, detail }) => (
+  <div className={`rounded-2xl border px-4 py-4 ${alertToneClasses[tone]}`}>
+    <div className="flex items-start gap-3">
+      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/70 dark:bg-slate-950/30">
+        <i className={`${alertToneIcons[tone]} text-sm`} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-black leading-tight">{title}</p>
+        <p className="mt-1 text-xs font-medium leading-relaxed opacity-90">{detail}</p>
+      </div>
+    </div>
+  </div>
+);
+
 const DashboardView: React.FC = () => {
   const { activeMinisterio, activeMinisterioId, activeModules } = useMinistryContext();
   const { data: membrosMinisteriosRaw } = useLocalStorageFirst<any>({ table: 'membros_ministerios' });
@@ -325,6 +363,90 @@ const DashboardView: React.FC = () => {
     }
     return `${names.slice(0, 3).join(', ')} e mais ${names.length - 3}`;
   };
+
+  const weeklyEventsDetailed = useMemo(
+    () =>
+      (escalaSemana?.items || [])
+        .map((item) => eventsByCultoId.get(item.idCulto))
+        .filter(Boolean) as ScheduleEvent[],
+    [escalaSemana?.items, eventsByCultoId]
+  );
+
+  const ministryOperationalSummary = useMemo(() => {
+    const uniqueScaledMembers = new Set(
+      weeklyEventsDetailed.flatMap((event) => event.members.map((member) => member.id))
+    );
+    const eventsWithoutTeam = weeklyEventsDetailed.filter((event) => event.members.length === 0).length;
+    const eventsWithoutRepertoire = canViewRepertoire
+      ? weeklyEventsDetailed.filter((event) => event.repertoire.length === 0).length
+      : 0;
+    const membersWithoutScale = Math.max(totalMembrosAtivos - uniqueScaledMembers.size, 0);
+    const avgFrequency = frequenciaMembros.length
+      ? Math.round(
+          frequenciaMembros.reduce((sum, member) => sum + member.quantidade, 0) / frequenciaMembros.length
+        )
+      : 0;
+
+    return {
+      scalesThisWeek: escalaSemana?.items.length || 0,
+      uniqueScaledMembers: uniqueScaledMembers.size,
+      membersWithoutScale,
+      eventsWithoutTeam,
+      eventsWithoutRepertoire,
+      avgFrequency
+    };
+  }, [canViewRepertoire, escalaSemana?.items.length, frequenciaMembros, totalMembrosAtivos, weeklyEventsDetailed]);
+
+  const ministryAlerts = useMemo(() => {
+    const alerts: Array<{ id: string; tone: 'warning' | 'info' | 'success'; title: string; detail: string }> = [];
+
+    if (ministryOperationalSummary.scalesThisWeek === 0) {
+      alerts.push({
+        id: 'no-scales',
+        tone: 'warning',
+        title: 'Nenhuma escala encontrada nesta semana',
+        detail: 'Revise as escalas do ministerio para evitar uma semana sem planejamento.'
+      });
+    }
+
+    if (ministryOperationalSummary.eventsWithoutTeam > 0) {
+      alerts.push({
+        id: 'events-without-team',
+        tone: 'warning',
+        title: `${ministryOperationalSummary.eventsWithoutTeam} evento(s) sem equipe escalada`,
+        detail: 'Ha culto(s) da semana sem membros vinculados nas funcoes.'
+      });
+    }
+
+    if (canViewRepertoire && ministryOperationalSummary.eventsWithoutRepertoire > 0) {
+      alerts.push({
+        id: 'events-without-repertoire',
+        tone: 'info',
+        title: `${ministryOperationalSummary.eventsWithoutRepertoire} evento(s) sem repertorio`,
+        detail: 'Vale revisar o repertorio dos proximos cultos para evitar lacunas.'
+      });
+    }
+
+    if (ministryOperationalSummary.membersWithoutScale > 0) {
+      alerts.push({
+        id: 'members-without-scale',
+        tone: 'info',
+        title: `${ministryOperationalSummary.membersWithoutScale} membro(s) sem escala nesta semana`,
+        detail: 'Use esse numero para redistribuir o time com mais equilibrio.'
+      });
+    }
+
+    if (ministryOperationalSummary.scalesThisWeek > 0 && ministryOperationalSummary.eventsWithoutTeam === 0) {
+      alerts.push({
+        id: 'week-covered',
+        tone: 'success',
+        title: 'Semana com equipes vinculadas',
+        detail: 'Os eventos atuais ja possuem equipe associada no painel.'
+      });
+    }
+
+    return alerts.slice(0, 4);
+  }, [canViewRepertoire, ministryOperationalSummary]);
 
   // Função isolada para atualizar o gráfico
   const updateChart = useCallback(() => {
@@ -885,7 +1007,7 @@ const DashboardView: React.FC = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-5 sm:mb-6">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4 mb-5 sm:mb-6">
           <div className="app-card group aspect-square rounded-[1.35rem] border border-sky-100/90 bg-white/94 p-2.5 backdrop-blur-xl transition-all duration-300 hover:shadow-xl hover:shadow-brand/10 sm:aspect-auto sm:rounded-[1.65rem] sm:p-4 dark:border-white/10 dark:bg-slate-900/88">
             <div className="flex h-full flex-col items-center justify-center text-center gap-2 sm:flex-row sm:items-center sm:justify-between sm:text-left sm:gap-0">
               <div className="order-1 flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 transition-transform group-hover:scale-110 dark:bg-emerald-900/30 dark:text-emerald-400 sm:order-2 sm:h-12 sm:w-12 sm:rounded-2xl">
@@ -926,6 +1048,61 @@ const DashboardView: React.FC = () => {
                   <span className="hidden sm:inline">{loading ? '...' : renderBirthdayNames()}</span>
                 </p>
               </div>
+            </div>
+          </div>
+
+          <div className="app-card group aspect-square rounded-[1.35rem] border border-sky-100/90 bg-white/94 p-2.5 backdrop-blur-xl transition-all duration-300 hover:shadow-xl hover:shadow-brand/10 sm:aspect-auto sm:rounded-[1.65rem] sm:p-4 dark:border-white/10 dark:bg-slate-900/88">
+            <div className="flex h-full flex-col items-center justify-center text-center gap-2 sm:flex-row sm:items-center sm:justify-between sm:text-left sm:gap-0">
+              <div className="order-1 flex h-8 w-8 items-center justify-center rounded-xl bg-violet-100 text-violet-600 transition-transform group-hover:scale-110 dark:bg-violet-900/30 dark:text-violet-400 sm:order-2 sm:h-12 sm:w-12 sm:rounded-2xl">
+                <i className="fas fa-music text-sm sm:text-lg"></i>
+              </div>
+              <div className="order-2 sm:order-1">
+                <p className="text-[9px] sm:text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-normal sm:tracking-wider leading-tight mb-1">Musicas</p>
+                <p className="text-lg sm:text-2xl font-black text-slate-800 dark:text-white group-hover:text-brand transition-colors">
+                  {loading ? '...' : totalMusicas}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-5 mb-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+          <div className="app-card rounded-[1.75rem] border border-sky-100/90 bg-white/94 p-5 shadow-[0_28px_70px_-42px_rgba(14,116,144,0.28)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/88 sm:p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand">Operacao</p>
+                <h2 className="mt-2 text-xl font-black text-slate-900 dark:text-white">Indicadores do ministerio</h2>
+              </div>
+              <span className="rounded-full bg-brand/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-brand">
+                Semana atual
+              </span>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <OperationalMetric label="Escalas na semana" value={ministryOperationalSummary.scalesThisWeek} detail="Cultos com escala visivel no painel atual" />
+              <OperationalMetric label="Membros escalados" value={ministryOperationalSummary.uniqueScaledMembers} detail="Pessoas unicas vinculadas nesta semana" />
+              <OperationalMetric label="Sem escala" value={ministryOperationalSummary.membersWithoutScale} detail="Membros ativos ainda fora da distribuicao da semana" />
+              <OperationalMetric label="Eventos sem equipe" value={ministryOperationalSummary.eventsWithoutTeam} detail="Cultos sem membros escalados" />
+              <OperationalMetric label="Media de frequencia" value={ministryOperationalSummary.avgFrequency} detail="Media de participacoes por membro no recorte atual" />
+              <OperationalMetric label="Eventos sem repertorio" value={canViewRepertoire ? ministryOperationalSummary.eventsWithoutRepertoire : 0} detail={canViewRepertoire ? 'Cultos da semana ainda sem musicas vinculadas' : 'Repertorio indisponivel para este modulo'} />
+            </div>
+          </div>
+
+          <div className="app-card rounded-[1.75rem] border border-sky-100/90 bg-white/94 p-5 shadow-[0_28px_70px_-42px_rgba(14,116,144,0.28)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/88 sm:p-6">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand">Alertas</p>
+              <h2 className="mt-2 text-xl font-black text-slate-900 dark:text-white">Pontos de atencao</h2>
+            </div>
+            <div className="mt-5 space-y-3">
+              {ministryAlerts.length === 0 ? (
+                <div className="app-panel-muted rounded-2xl border border-dashed border-app px-5 py-8 text-center">
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Nenhum alerta relevante agora</p>
+                  <p className="mt-1 text-xs font-medium text-app-muted">
+                    O dashboard nao encontrou pendencias operacionais no ministerio neste momento.
+                  </p>
+                </div>
+              ) : (
+                ministryAlerts.map((alert) => <DashboardAlertCard key={alert.id} {...alert} />)
+              )}
             </div>
           </div>
         </div>

@@ -54,7 +54,7 @@ Legenda:
 
 ### Dashboard e acompanhamento
 - [x] Melhorar indicadores do dashboard da igreja
-- [ ] Melhorar indicadores do dashboard do ministerio
+- [x] Melhorar indicadores do dashboard do ministerio
 - [x] Adicionar alertas realmente uteis para operacao
 - [x] Melhorar acompanhamentos de consolidacao
 
