@@ -69,7 +69,7 @@ Legenda:
 ### Auditoria e inteligencia
 - [ ] Criar auditoria avancada
 - [x] Criar notificacoes internas mais inteligentes
-- [ ] Criar automacoes e lembretes internos
+- [x] Criar automacoes e lembretes internos
 - [x] Adicionar graficos mais avancados
 
 ### Acabamento final

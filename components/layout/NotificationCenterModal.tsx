@@ -55,6 +55,15 @@ const getNotificationPriority = (notification: AvisoGeral, today: string, tomorr
   return { label: 'Aviso', className: 'bg-app-surface text-brand', level: 3 };
 };
 
+const getDaysUntil = (dateString?: string | null) => {
+  if (!dateString) return null;
+  const target = new Date(`${dateString.split('T')[0]}T12:00:00`);
+  if (Number.isNaN(target.getTime())) return null;
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  return Math.round((target.getTime() - today.getTime()) / 86400000);
+};
+
 const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClose }) => {
   const { currentMember, activeMinisterio, activeMinisterioId } = useMinistryContext();
   const { data: avisosRaw, forceSync, loadData, removeItem } = useLocalStorageFirst<AvisoGeral>({ table: 'aviso_geral' });
@@ -148,6 +157,30 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
   const tomorrow = getTomorrowDateOnly();
   const urgentCount = notifications.filter((notification) => getNotificationPriority(notification, today, tomorrow).level <= 1).length;
   const weeklyScaleCount = notifications.filter((notification) => notification.tipo === 'escala_aviso').length;
+  const nextScaleReminder = useMemo(() => {
+    const nextScale = notifications
+      .filter((notification) => notification.tipo === 'escala_aviso')
+      .map((notification) => ({
+        notification,
+        daysUntil: getDaysUntil(notification.created_at)
+      }))
+      .filter((item): item is { notification: AvisoGeral; daysUntil: number } => item.daysUntil !== null && item.daysUntil >= 0)
+      .sort((a, b) => a.daysUntil - b.daysUntil)[0];
+
+    if (!nextScale) return null;
+
+    const when =
+      nextScale.daysUntil === 0
+        ? 'hoje'
+        : nextScale.daysUntil === 1
+          ? 'amanha'
+          : `em ${nextScale.daysUntil} dias`;
+
+    return {
+      title: `Lembrete automatico: escala ${when}`,
+      text: nextScale.notification.texto
+    };
+  }, [notifications]);
 
   useEffect(() => {
     setSelectedNotifications((current) =>
@@ -435,6 +468,20 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                 >
                   {isSubmitting ? 'Enviando...' : 'Enviar Aviso'}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {nextScaleReminder && (
+            <div className="mt-4 rounded-2xl border border-brand/20 bg-brand/10 p-4">
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand text-white">
+                  <i className="fas fa-bell" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-app text-sm font-black">{nextScaleReminder.title}</p>
+                  <p className="text-app-muted mt-1 text-sm font-semibold leading-6">{nextScaleReminder.text}</p>
+                </div>
               </div>
             </div>
           )}
