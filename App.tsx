@@ -58,7 +58,7 @@ interface AppContentProps {
   brandColor: string;
   setBrandColor: React.Dispatch<React.SetStateAction<string>>;
   backgroundTheme: AppBackgroundThemeId;
-  setBackgroundTheme: React.Dispatch<React.SetStateAction<AppBackgroundThemeId>>;
+  setBackgroundTheme: (theme: AppBackgroundThemeId) => void;
   isProfileModalOpen: boolean;
   setIsProfileModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isAvisoModalOpen: boolean;
@@ -349,6 +349,12 @@ const App: React.FC = () => {
     localStorage.setItem('backgroundTheme', backgroundTheme);
   }, [backgroundTheme]);
 
+  const handleBackgroundThemeChange = (themeId: AppBackgroundThemeId) => {
+    const theme = getAppBackgroundTheme(themeId);
+    setBackgroundTheme(theme.id);
+    setBrandColor(theme.recommendedBrand);
+  };
+
   useEffect(() => {
     if (isProfileModalOpen || isAvisoModalOpen || isNotificationsOpen) {
       document.body.classList.add('modal-open');
@@ -545,7 +551,7 @@ const App: React.FC = () => {
                 brandColor={brandColor}
                 onColorChange={setBrandColor}
                 backgroundTheme={backgroundTheme}
-                onBackgroundThemeChange={setBackgroundTheme}
+                onBackgroundThemeChange={handleBackgroundThemeChange}
                 requestedView={requestedChurchView}
                 onRequestedViewHandled={() => setRequestedChurchView(null)}
                 onOpenSearch={() => setIsSearchOpen(true)}
@@ -560,7 +566,7 @@ const App: React.FC = () => {
               brandColor={brandColor}
               setBrandColor={setBrandColor}
               backgroundTheme={backgroundTheme}
-              setBackgroundTheme={setBackgroundTheme}
+              setBackgroundTheme={handleBackgroundThemeChange}
               isProfileModalOpen={isProfileModalOpen}
               setIsProfileModalOpen={setIsProfileModalOpen}
               isAvisoModalOpen={isAvisoModalOpen}

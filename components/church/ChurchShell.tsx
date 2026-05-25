@@ -39,7 +39,7 @@ interface ChurchShellProps {
   onOpenSearch: () => void;
 }
 
-const themeColors = ['#3b82f6', '#ef4444', '#f59e0b', '#10b981', '#ec4899', '#6366f1'];
+const themeColors = ['#1e3a8a', '#2563eb', '#0e7490', '#059669', '#7c3aed', '#334155'];
 
 const ChurchLoadingBlock = () => (
   <div className="flex min-h-[420px] flex-col items-center justify-center">

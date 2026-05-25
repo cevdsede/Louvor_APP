@@ -366,7 +366,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'tools', default: 'tools-admin', label: 'Ferramentas', icon: 'fas fa-tools' },
   ];
 
-  const themeColors = ['#3b82f6', '#ef4444', '#f59e0b', '#10b981', '#ec4899', '#6366f1'];
+  const themeColors = ['#1e3a8a', '#2563eb', '#0e7490', '#059669', '#7c3aed', '#334155'];
 
   const visibleMenuItems = menuItems.filter((item) => {
     if (item.id === 'church') return true;

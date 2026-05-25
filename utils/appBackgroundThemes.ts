@@ -4,6 +4,7 @@ export type AppBackgroundTheme = {
   id: AppBackgroundThemeId;
   label: string;
   preview: string;
+  recommendedBrand: string;
   lightGradient: string;
   darkGradient: string;
   lightTokens: AppBackgroundTokens;
@@ -35,6 +36,7 @@ export const APP_BACKGROUND_THEMES: AppBackgroundTheme[] = [
     id: 'warm',
     label: 'Quente',
     preview: '#f7f1e6',
+    recommendedBrand: '#1e3a8a',
     lightGradient:
       'radial-gradient(circle at top left, rgba(234, 179, 8, 0.1), transparent 28%), radial-gradient(circle at top right, rgba(30, 58, 138, 0.1), transparent 30%), linear-gradient(180deg, #faf6ef 0%, #f7f1e6 52%, #f1e6d4 100%)',
     darkGradient:
@@ -54,6 +56,7 @@ export const APP_BACKGROUND_THEMES: AppBackgroundTheme[] = [
     id: 'ice',
     label: 'Gelo',
     preview: '#fafbfc',
+    recommendedBrand: '#334155',
     lightGradient:
       'radial-gradient(circle at top left, rgba(148, 163, 184, 0.12), transparent 28%), radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 30%), linear-gradient(180deg, #ffffff 0%, #fafbfc 52%, #f3f6f9 100%)',
     darkGradient:
@@ -73,6 +76,7 @@ export const APP_BACKGROUND_THEMES: AppBackgroundTheme[] = [
     id: 'blue',
     label: 'Azul',
     preview: '#f4f8ff',
+    recommendedBrand: '#2563eb',
     lightGradient:
       'radial-gradient(circle at top left, rgba(59, 130, 246, 0.14), transparent 28%), radial-gradient(circle at top right, rgba(14, 165, 233, 0.1), transparent 30%), linear-gradient(180deg, #fbfdff 0%, #f4f8ff 52%, #eaf2ff 100%)',
     darkGradient:
@@ -98,6 +102,7 @@ export const APP_BACKGROUND_THEMES: AppBackgroundTheme[] = [
     id: 'cyan',
     label: 'Petroleo',
     preview: '#eef7fa',
+    recommendedBrand: '#0e7490',
     lightGradient:
       'radial-gradient(circle at top left, rgba(6, 182, 212, 0.12), transparent 28%), radial-gradient(circle at top right, rgba(30, 58, 138, 0.1), transparent 30%), linear-gradient(180deg, #fbfeff 0%, #eef7fa 52%, #e0f1f5 100%)',
     darkGradient:
@@ -123,6 +128,7 @@ export const APP_BACKGROUND_THEMES: AppBackgroundTheme[] = [
     id: 'mint',
     label: 'Menta',
     preview: '#f1faf7',
+    recommendedBrand: '#059669',
     lightGradient:
       'radial-gradient(circle at top left, rgba(16, 185, 129, 0.12), transparent 28%), radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 30%), linear-gradient(180deg, #fbfffd 0%, #f1faf7 52%, #e5f5ef 100%)',
     darkGradient:
@@ -148,6 +154,7 @@ export const APP_BACKGROUND_THEMES: AppBackgroundTheme[] = [
     id: 'lavender',
     label: 'Lavanda',
     preview: '#f7f4ff',
+    recommendedBrand: '#7c3aed',
     lightGradient:
       'radial-gradient(circle at top left, rgba(139, 92, 246, 0.11), transparent 28%), radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 30%), linear-gradient(180deg, #fefdff 0%, #f7f4ff 52%, #eee8ff 100%)',
     darkGradient:
