@@ -9,6 +9,17 @@ import { getDisplayName } from '../../utils/displayName';
 import { getPublicAssetsPathFromUrl } from '../../utils/imageUrl';
 import { showError, showSuccess } from '../../utils/toast';
 
+type ChurchAuditLog = {
+  id: string;
+  acao: string;
+  entidade: string;
+  entidade_id?: string | null;
+  descricao: string;
+  payload?: Record<string, unknown> | null;
+  created_by?: string | null;
+  created_at?: string | null;
+};
+
 type EventForm = {
   titulo: string;
   descricao: string;
@@ -68,6 +79,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
   const { data: membersRaw } = useLocalStorageFirst<SupabaseMembro>({ table: 'membros' });
   const { data: permissionsRaw } = useLocalStorageFirst<SupabasePermissaoIgreja>({ table: 'permissoes_igreja' });
   const { data: cultNamesRaw } = useLocalStorageFirst<{ nome_culto: string }>({ table: 'nome_cultos' });
+  const { data: auditRaw } = useLocalStorageFirst<ChurchAuditLog>({ table: 'auditoria_igreja' });
   const [form, setForm] = useState<EventForm>(INITIAL_FORM);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -178,6 +190,33 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
         .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b))),
     [managersByMemberId, membersRaw, permissionSearch]
   );
+  const auditSummary = useMemo(() => {
+    const logs = [...(auditRaw || [])].sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+    const lastSevenDays = new Date();
+    lastSevenDays.setDate(lastSevenDays.getDate() - 7);
+
+    const recentLogs = logs.filter((log) => {
+      const date = new Date(log.created_at || '');
+      return !Number.isNaN(date.getTime()) && date >= lastSevenDays;
+    });
+
+    const countByAction = recentLogs.reduce<Record<string, number>>((accumulator, log) => {
+      accumulator[log.acao] = (accumulator[log.acao] || 0) + 1;
+      return accumulator;
+    }, {});
+
+    const countByEntity = recentLogs.reduce<Record<string, number>>((accumulator, log) => {
+      accumulator[log.entidade] = (accumulator[log.entidade] || 0) + 1;
+      return accumulator;
+    }, {});
+
+    return {
+      logs,
+      recentLogs,
+      countByAction,
+      countByEntity
+    };
+  }, [auditRaw]);
   const availablePastors = useMemo(
     () =>
       (membersRaw || [])
@@ -852,6 +891,80 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
             </div>
       </form>
         </div>
+      )}
+
+      {isAdminMode && (
+      <div className="app-card rounded-2xl border p-4 sm:p-5">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand">Auditoria avancada</p>
+            <h2 className="mt-1 text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
+              Atividade recente da igreja
+            </h2>
+          </div>
+          <span className="rounded-full bg-app-surface-strong px-3 py-2 text-[10px] font-black uppercase tracking-widest text-app-muted">
+            {auditSummary.recentLogs.length} acoes em 7 dias
+          </span>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-3">
+          {[
+            { label: 'Criacoes', value: auditSummary.countByAction.create || 0, icon: 'fa-plus' },
+            { label: 'Edicoes', value: auditSummary.countByAction.update || 0, icon: 'fa-pen' },
+            { label: 'Permissoes', value: (auditSummary.countByAction.grant || 0) + (auditSummary.countByAction.revoke || 0), icon: 'fa-shield-halved' }
+          ].map((item) => (
+            <div key={item.label} className="rounded-2xl bg-app-surface-strong p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[9px] font-black uppercase tracking-widest text-app-muted">{item.label}</p>
+                <i className={`fas ${item.icon} text-brand`} />
+              </div>
+              <p className="mt-3 text-2xl font-black text-slate-900 dark:text-white">{item.value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+          <div className="rounded-2xl bg-app-surface-strong p-4">
+            <p className="text-[9px] font-black uppercase tracking-widest text-app-muted">Areas mais alteradas</p>
+            <div className="mt-3 space-y-2">
+              {Object.entries(auditSummary.countByEntity).slice(0, 5).map(([entity, count]) => (
+                <div key={entity} className="flex items-center justify-between gap-3 rounded-xl bg-app-surface px-3 py-2">
+                  <span className="truncate text-xs font-black text-slate-700 dark:text-slate-200">{entity}</span>
+                  <span className="text-xs font-black text-brand">{count}</span>
+                </div>
+              ))}
+              {Object.keys(auditSummary.countByEntity).length === 0 && (
+                <p className="text-xs font-bold text-app-muted">Nenhuma atividade recente registrada.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-app-surface-strong p-4">
+            <p className="text-[9px] font-black uppercase tracking-widest text-app-muted">Ultimas atividades</p>
+            <div className="mt-3 space-y-2">
+              {auditSummary.logs.slice(0, 6).map((log) => {
+                const author = (membersRaw || []).find((member) => member.id === log.created_by);
+                return (
+                  <div key={log.id} className="rounded-xl bg-app-surface px-3 py-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="min-w-0 flex-1 text-xs font-black text-slate-800 dark:text-white">{log.descricao}</p>
+                      <span className="rounded-full bg-brand/10 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-brand">
+                        {log.acao}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-app-muted">
+                      {getDisplayName(author, 'Sistema')} · {log.created_at ? new Date(log.created_at).toLocaleDateString('pt-BR') : 'sem data'}
+                    </p>
+                  </div>
+                );
+              })}
+              {auditSummary.logs.length === 0 && (
+                <p className="text-xs font-bold text-app-muted">Nenhum registro de auditoria encontrado.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
       )}
 
       {isAdminMode && (

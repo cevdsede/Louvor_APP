@@ -67,7 +67,7 @@ Legenda:
 - [x] Melhorar SEO basico e estrutura publica
 
 ### Auditoria e inteligencia
-- [ ] Criar auditoria avancada
+- [x] Criar auditoria avancada
 - [x] Criar notificacoes internas mais inteligentes
 - [x] Criar automacoes e lembretes internos
 - [x] Adicionar graficos mais avancados
