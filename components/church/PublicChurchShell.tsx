@@ -215,20 +215,17 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
 
   return (
     <div
-      className="site-theme min-h-screen bg-[#f7f3ea] text-zinc-950"
+      className="site-theme min-h-screen text-zinc-950"
       style={{
         ['--site-primary' as string]: content.primaryColor,
         ['--site-brand-primary' as string]: content.primaryColor,
         ['--site-brand-accent' as string]: content.goldColor
       }}
     >
-      <header className="site-glass fixed inset-x-0 top-0 z-50 border-b bg-black/35">
+      <header className="site-glass fixed inset-x-0 top-0 z-50 border-b bg-black/45">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           <a href="#inicio" className="flex min-w-0 items-center gap-3">
-            <div
-              className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl text-sm font-black text-black shadow-lg"
-              style={{ backgroundColor: content.goldColor }}
-            >
+            <div className="site-mark flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl text-sm font-black shadow-lg">
               {content.logoImage ? <img src={content.logoImage} alt={content.churchName} className="h-full w-full object-cover" /> : content.logoText}
             </div>
             <div className="min-w-0">
@@ -264,7 +261,9 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
         <section id="inicio" className="relative min-h-[92vh] overflow-hidden" style={{ backgroundColor: content.primaryColor }}>
           <img src={content.heroImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-60" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/45 to-black" />
-          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#f7f3ea] to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-[#faf7ef] to-transparent" />
+          <div className="absolute bottom-16 right-[8%] hidden h-72 w-72 rounded-full border border-white/10 lg:block" />
+          <div className="absolute bottom-28 right-[14%] hidden h-36 w-36 rounded-full border border-white/15 lg:block" />
 
           <div className="relative mx-auto flex min-h-[92vh] max-w-7xl flex-col justify-end px-4 pb-16 pt-28 sm:px-6 lg:px-8 lg:pb-24">
             <div className="max-w-4xl">
@@ -272,7 +271,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
                 <span className="h-2 w-2 rounded-full" style={{ backgroundColor: content.goldColor }} />
                 {content.serviceInfo}
               </div>
-              <h1 className="max-w-5xl text-5xl font-black leading-[0.95] text-white sm:text-6xl lg:text-8xl">
+              <h1 className="max-w-5xl text-5xl font-black leading-[0.96] text-white sm:text-6xl lg:text-8xl">
                 {content.heroTitle}
               </h1>
               <p className="mt-6 max-w-2xl text-lg font-medium leading-8 text-white/75 sm:text-xl">{content.heroSubtitle}</p>
@@ -295,22 +294,40 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
                 </a>
               </div>
             </div>
+
+            <div className="mt-12 grid gap-3 sm:grid-cols-3 lg:max-w-3xl">
+              {[
+                { value: 'Família', label: 'ambiente de cuidado e comunhao' },
+                { value: 'Palavra', label: 'ensino biblico para a vida real' },
+                { value: 'Serviço', label: 'pessoas preparadas para acolher' }
+              ].map((item) => (
+                <div key={item.value} className="site-glass rounded-2xl p-4 text-white">
+                  <p className="text-lg font-black">{item.value}</p>
+                  <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-white/50">{item.label}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
         <section id="sobre" className="mx-auto grid max-w-7xl gap-6 px-4 py-16 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
-          <div className="site-card rounded-[2rem] p-8 shadow-xl shadow-black/5 sm:p-10">
-            <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
-              Sobre a igreja
-            </p>
+          <div className="site-card rounded-3xl p-8 shadow-xl shadow-black/5 sm:p-10">
+            <p className="site-overline">Sobre a igreja</p>
             <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">{content.aboutTitle}</h2>
             <p className="mt-5 text-base leading-8 text-zinc-600">
               {content.aboutBody}
             </p>
+            <div className="mt-8 flex flex-wrap gap-2">
+              {['Acolhimento', 'Discipulado', 'Excelencia', 'Comunidade'].map((item) => (
+                <span key={item} className="rounded-full border border-black/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-zinc-500">
+                  {item}
+                </span>
+              ))}
+            </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
             {content.highlights.map((item) => (
-              <div key={item.title} className="rounded-[2rem] border border-black/5 p-6 text-white shadow-xl shadow-black/10" style={{ backgroundColor: content.primaryColor }}>
+              <div key={item.title} className="rounded-3xl border border-black/5 p-6 text-white shadow-xl shadow-black/10" style={{ backgroundColor: content.primaryColor }}>
                 <i className={`fas ${item.icon || 'fa-sparkles'} mb-8 text-xl`} style={{ color: content.goldColor }} />
                 <h3 className="text-2xl font-black">{item.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-white/60">{item.description}</p>
@@ -323,9 +340,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
-                  Eventos
-                </p>
+                <p className="site-overline">Eventos</p>
                 <h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Proximos encontros</h2>
               </div>
               <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
@@ -364,7 +379,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
                           {page.map((event, index) => (
                             <article
                               key={event.id}
-                              className="group relative h-[380px] overflow-hidden rounded-[2rem] bg-zinc-900 shadow-2xl shadow-black/40"
+                              className="group relative h-[380px] overflow-hidden rounded-3xl bg-zinc-900 shadow-2xl shadow-black/40"
                             >
                               <img
                                 src={event.imagem_url_desktop || event.imagem_url || eventFallbackImages[(pageIndex * 3 + index) % eventFallbackImages.length]}
@@ -432,16 +447,14 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
         </section>
 
         <section id="ministerios" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
-            Ministerios
-          </p>
+          <p className="site-overline">Ministerios</p>
           <h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Encontre seu lugar</h2>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {content.ministries.map((ministry) => (
-              <div key={ministry.name} className="site-card group overflow-hidden rounded-[2rem] border border-black/5 shadow-lg shadow-black/5 transition hover:-translate-y-1 hover:shadow-2xl">
+              <div key={ministry.name} className="site-card group overflow-hidden rounded-3xl shadow-lg shadow-black/5 transition hover:-translate-y-1 hover:shadow-2xl">
                 {ministry.image && <img src={ministry.image} alt="" className="h-36 w-full object-cover" />}
                 <div className="p-6">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl text-white transition group-hover:scale-110" style={{ backgroundColor: content.primaryColor }}>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl text-white transition group-hover:scale-110" style={{ backgroundColor: content.primaryColor }}>
                     <i className={`fas ${ministry.icon || 'fa-cross'}`} style={{ color: content.goldColor }} />
                   </div>
                 <h3 className="mt-8 text-xl font-black">{ministry.name}</h3>
@@ -451,19 +464,15 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
           </div>
         </section>
 
-        <section className="site-card py-16">
+        <section className="site-band py-16">
           <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
-            <div className="rounded-[2rem] p-8 text-white shadow-2xl shadow-black/15" style={{ backgroundColor: content.primaryColor }}>
-              <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
-                Versiculo do dia
-              </p>
+            <div className="rounded-3xl p-8 text-white shadow-2xl shadow-black/15" style={{ backgroundColor: content.primaryColor }}>
+              <p className="site-overline">Versiculo do dia</p>
               <p className="mt-8 text-2xl font-semibold italic leading-10 text-white/90">"{dailyVerse || 'Carregando...'}"</p>
             </div>
 
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
-                Lideranca
-              </p>
+              <p className="site-overline">Lideranca</p>
               <h2 className="mt-3 text-4xl font-black tracking-tight">Pastores presidentes</h2>
               <div className="mt-8 grid gap-4 sm:grid-cols-2">
                 {publicPastors.length === 0 && (
@@ -475,8 +484,8 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
                   const name = getDisplayName(pastor);
                   const photo = sanitizeImageUrl(pastor.foto) || buildLocalAvatar(name);
                   return (
-                    <article key={pastor.id} className="site-card-muted flex items-center gap-4 rounded-[2rem] border border-black/5 p-4 shadow-lg shadow-black/5">
-                      <img src={photo} alt={name} className="h-20 w-20 rounded-2xl object-cover" />
+                    <article key={pastor.id} className="site-card-muted flex items-center gap-4 rounded-3xl p-4 shadow-lg shadow-black/5">
+                      <img src={photo} alt={name} className="h-20 w-20 rounded-xl object-cover" />
                       <div className="min-w-0">
                         <h3 className="truncate text-lg font-black">{name}</h3>
                         <p className="text-sm font-bold" style={{ color: content.goldColor }}>{pastor.posicao_igreja || 'Pastor(a)'}</p>
@@ -492,9 +501,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
         <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
-                Instagram
-              </p>
+              <p className="site-overline">Instagram</p>
               <h2 className="mt-3 text-4xl font-black tracking-tight">Ultimas postagens</h2>
             </div>
             <a href={content.instagramUrl} target="_blank" rel="noreferrer" className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-black px-5 text-xs font-black uppercase tracking-widest text-white">
@@ -504,7 +511,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
           </div>
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
             {instagramPosts.map((post) => (
-              <a key={`${post.title}-${post.url}`} href={post.url} target="_blank" rel="noreferrer" className="site-card group overflow-hidden rounded-[2rem] shadow-xl shadow-black/5">
+              <a key={`${post.title}-${post.url}`} href={post.url} target="_blank" rel="noreferrer" className="site-card group overflow-hidden rounded-3xl shadow-xl shadow-black/5">
                 {post.image ? (
                   <img src={post.image} alt="" className="h-72 w-full object-cover transition duration-500 group-hover:scale-105" />
                 ) : (
@@ -523,16 +530,14 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
           </div>
         </section>
 
-        <section id="pedido-de-oracao" className="site-card py-16">
+        <section id="pedido-de-oracao" className="site-band py-16">
           <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
-                Pedido de Oracao
-              </p>
+              <p className="site-overline">Pedido de Oracao</p>
               <h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">{content.prayerTitle}</h2>
               <p className="mt-5 text-base leading-8 text-zinc-600">{content.prayerSubtitle}</p>
             </div>
-            <form className="site-panel-dark rounded-[2rem] p-6 shadow-2xl shadow-black/15">
+            <form className="site-panel-dark rounded-3xl p-6 shadow-2xl shadow-black/15">
               <input className="site-input-glass mb-3 w-full rounded-2xl px-5 py-4 outline-none" placeholder="Seu nome" />
               <input className="site-input-glass mb-3 w-full rounded-2xl px-5 py-4 outline-none" placeholder="WhatsApp" />
               <textarea className="site-input-glass mb-3 min-h-32 w-full rounded-2xl px-5 py-4 outline-none" placeholder="Pedido de oracao" />
@@ -544,15 +549,13 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
         </section>
 
         <section id="contribua" className="mx-auto grid max-w-7xl gap-8 px-4 py-16 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
-          <div className="rounded-[2rem] p-8 text-white shadow-2xl shadow-black/20" style={{ backgroundColor: content.primaryColor }}>
-            <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: content.goldColor }}>
-              Dizimos e Ofertas
-            </p>
+          <div className="rounded-3xl p-8 text-white shadow-2xl shadow-black/20" style={{ backgroundColor: content.primaryColor }}>
+            <p className="site-overline">Dizimos e Ofertas</p>
             <h2 className="mt-3 text-4xl font-black tracking-tight">{content.givingTitle}</h2>
             <p className="mt-5 text-sm leading-7 text-white/60">{content.givingSubtitle}</p>
             <div className="site-glass mt-8 rounded-2xl p-4 text-sm font-bold">{content.pixKey}</div>
           </div>
-          <div className="site-card flex min-h-80 items-center justify-center rounded-[2rem] border border-black/5 p-8 shadow-xl shadow-black/5">
+          <div className="site-card flex min-h-80 items-center justify-center rounded-3xl p-8 shadow-xl shadow-black/5">
             {content.pixQrImage ? (
               <img src={content.pixQrImage} alt="QR Code PIX" className="h-64 w-64 rounded-2xl object-cover" />
             ) : (
@@ -568,7 +571,7 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.1fr_0.9fr_0.9fr]">
           <div>
             <div className="mb-5 flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-black text-black" style={{ backgroundColor: content.goldColor }}>
+              <div className="site-mark flex h-12 w-12 items-center justify-center rounded-xl text-sm font-black">
                 {content.logoImage ? <img src={content.logoImage} alt={content.churchName} className="h-full w-full rounded-2xl object-cover" /> : content.logoText}
               </div>
               <h2 className="text-xl font-black">{content.churchName}</h2>
@@ -580,7 +583,13 @@ const PublicChurchShell: React.FC<PublicChurchShellProps> = ({ onLoginClick }) =
             <p><i className="fab fa-whatsapp mr-2" />{content.whatsapp}</p>
             <p><i className="fab fa-instagram mr-2" />{content.instagram}</p>
           </div>
-          <div className="site-glass rounded-2xl p-5 text-sm font-bold text-white/70">Mapa moderno: conectar iframe do Google Maps aqui.</div>
+          <div className="site-glass rounded-2xl p-5 text-sm font-bold text-white/70">
+            <p className="text-xs font-black uppercase tracking-widest" style={{ color: content.goldColor }}>Como chegar</p>
+            <a href={content.mapUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-2 text-white">
+              Abrir localizacao no Google Maps
+              <i className="fas fa-arrow-up-right-from-square text-xs" />
+            </a>
+          </div>
         </div>
         <div className="mx-auto mt-10 max-w-7xl border-t border-white/10 pt-6 text-xs font-bold uppercase tracking-widest text-white/35">
           Todos os direitos reservados.

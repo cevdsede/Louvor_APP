@@ -33,7 +33,9 @@
     linear-gradient(180deg, #faf6ef 0%, #f7f1e6 52%, #f1e6d4 100%);
 
   /* Site surfaces */
-  --site-shell-background: linear-gradient(180deg, #f7f3ea 0%, #efe4d1 100%);
+  --site-shell-background: radial-gradient(circle at top left, color-mix(in srgb, var(--site-brand-accent) 18%, transparent), transparent 30%),
+    radial-gradient(circle at 85% 18%, color-mix(in srgb, var(--site-brand-primary) 18%, transparent), transparent 26%),
+    linear-gradient(180deg, #faf7ef 0%, #f3eadc 52%, #efe3cf 100%);
   --site-surface: #ffffff;
   --site-surface-muted: rgba(255, 255, 255, 0.7);
   --site-text: #18181b;
@@ -49,6 +51,7 @@
 .site-theme {
   --brand-primary: var(--site-brand-primary);
   --brand-accent: var(--site-brand-accent);
+  background: var(--site-shell-background);
 }
 
 /* Global Base */
@@ -230,11 +233,13 @@ body.modal-open {
 .site-card {
   background-color: var(--site-surface);
   color: var(--site-text);
+  border: 1px solid rgba(24, 24, 27, 0.07);
 }
 
 .site-card-muted {
   background-color: var(--site-surface-muted);
   color: var(--site-text-muted);
+  border: 1px solid rgba(24, 24, 27, 0.07);
 }
 
 .site-glass {
@@ -259,6 +264,35 @@ body.modal-open {
 
 .site-button-light:hover {
   transform: scale(1.02);
+}
+
+.site-band {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.72)),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--site-brand-accent) 22%, transparent), transparent 34%);
+}
+
+.site-overline {
+  color: var(--site-brand-accent);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.site-mark {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--site-brand-accent) 95%, white), var(--site-brand-accent));
+  color: #09090b;
+}
+
+.site-action-dark {
+  background: var(--site-brand-primary);
+  color: white;
+}
+
+.site-action-dark:hover {
+  filter: brightness(1.08);
 }
 
 .site-panel-dark {

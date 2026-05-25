@@ -63,7 +63,7 @@ Legenda:
 ### Site publico
 - [x] Melhorar preview do editor do site
 - [x] Adicionar mais blocos configuraveis no site
-- [ ] Refinar identidade visual do site publico
+- [x] Refinar identidade visual do site publico
 - [x] Melhorar SEO basico e estrutura publica
 
 ### Auditoria e inteligencia
