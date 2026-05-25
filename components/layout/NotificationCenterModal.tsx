@@ -31,6 +31,30 @@ const formatNotificationTime = (value?: string | null) => {
   });
 };
 
+const getTomorrowDateOnly = () => {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  return formatDateOnly(date);
+};
+
+const getNotificationPriority = (notification: AvisoGeral, today: string, tomorrow: string) => {
+  const notificationDate = (notification.created_at || '').split('T')[0];
+
+  if (notification.tipo === 'escala_aviso' && notificationDate === today) {
+    return { label: 'Hoje', className: 'bg-red-500 text-white', level: 0 };
+  }
+
+  if (notification.tipo === 'escala_aviso' && notificationDate === tomorrow) {
+    return { label: 'Amanha', className: 'bg-amber-500 text-white', level: 1 };
+  }
+
+  if (notification.tipo === 'escala_aviso') {
+    return { label: 'Semana', className: 'bg-brand text-white', level: 2 };
+  }
+
+  return { label: 'Aviso', className: 'bg-app-surface text-brand', level: 3 };
+};
+
 const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClose }) => {
   const { currentMember, activeMinisterio, activeMinisterioId } = useMinistryContext();
   const { data: avisosRaw, forceSync, loadData, removeItem } = useLocalStorageFirst<AvisoGeral>({ table: 'aviso_geral' });
@@ -64,6 +88,7 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
       .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
 
     const today = formatDateOnly(new Date());
+    const tomorrow = getTomorrowDateOnly();
     const scaleNotifications: AvisoGeral[] = buildWeeklyScaleItems({
       userId: currentMember.id,
       escalas: escalasRaw || [],
@@ -75,14 +100,17 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
       const id = `scale:${activeMinisterioId || 'all'}:${item.idCulto}:${item.data}`;
       const roles = item.funcoes.join(' / ');
       const isToday = item.data === today;
+      const isTomorrow = item.data === tomorrow;
 
       return {
         id,
         created_at: `${item.data}T${item.horario || '00:00:00'}`,
         id_membro: currentMember.id,
-        titulo: isToday ? 'Sua escala e hoje' : 'Voce esta escalado esta semana',
+        titulo: isToday ? 'Sua escala e hoje' : isTomorrow ? 'Sua escala e amanha' : 'Voce esta escalado esta semana',
         texto: isToday
           ? `Sua escala de ${roles || 'servico'} e hoje${item.horario ? ` as ${item.horario.slice(0, 5)}` : ''}.`
+          : isTomorrow
+            ? `Sua escala de ${roles || 'servico'} e amanha em ${item.culto}${item.horario ? ` as ${item.horario.slice(0, 5)}` : ''}.`
           : `Voce esta escalado esta semana em ${item.culto}${roles ? ` como ${roles}` : ''}.`,
         tipo: 'escala_aviso',
         remetente_id: null,
@@ -93,7 +121,13 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
       };
     });
 
-    return [...scaleNotifications, ...storedNotifications].sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+    return [...scaleNotifications, ...storedNotifications].sort((a, b) => {
+      const today = formatDateOnly(new Date());
+      const tomorrow = getTomorrowDateOnly();
+      const priorityCompare = getNotificationPriority(a, today, tomorrow).level - getNotificationPriority(b, today, tomorrow).level;
+      if (priorityCompare !== 0) return priorityCompare;
+      return (b.created_at || '').localeCompare(a.created_at || '');
+    });
   }, [
     activeMinisterioId,
     avisosRaw,
@@ -110,6 +144,10 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
   const unreadCount = unreadNotifications.length;
   const selectedCount = selectedNotifications.length;
   const selectedSet = new Set(selectedNotifications);
+  const today = formatDateOnly(new Date());
+  const tomorrow = getTomorrowDateOnly();
+  const urgentCount = notifications.filter((notification) => getNotificationPriority(notification, today, tomorrow).level <= 1).length;
+  const weeklyScaleCount = notifications.filter((notification) => notification.tipo === 'escala_aviso').length;
 
   useEffect(() => {
     setSelectedNotifications((current) =>
@@ -308,6 +346,14 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                 <p className="text-app-muted text-[8px] font-black uppercase tracking-widest">Nao lidas</p>
                 <p className="text-app mt-1 text-2xl font-black tracking-tight">{unreadCount}</p>
               </div>
+              <div className="bg-app-surface-muted rounded-2xl px-4 py-3">
+                <p className="text-app-muted text-[8px] font-black uppercase tracking-widest">Urgentes</p>
+                <p className="text-app mt-1 text-2xl font-black tracking-tight">{urgentCount}</p>
+              </div>
+              <div className="bg-app-surface-muted rounded-2xl px-4 py-3">
+                <p className="text-app-muted text-[8px] font-black uppercase tracking-widest">Escalas</p>
+                <p className="text-app mt-1 text-2xl font-black tracking-tight">{weeklyScaleCount}</p>
+              </div>
 
               {notifications.length > 0 && (
                 <button
@@ -420,6 +466,9 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                 ) : (
                   <div className="space-y-3">
                     {unreadNotifications.map((notification) => (
+                      (() => {
+                        const priority = getNotificationPriority(notification, today, tomorrow);
+                        return (
                       <div
                         key={String(notification.id)}
                         className="rounded-2xl border border-brand/20 bg-brand/5 p-4 transition-colors dark:border-brand/30 dark:bg-brand/10"
@@ -442,6 +491,9 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                             <div className="mb-2 flex items-center gap-2">
                               <span className="bg-app-surface rounded-full px-2 py-1 text-[8px] font-black uppercase tracking-widest text-brand">
                                 {notification.titulo || 'Notificacao'}
+                              </span>
+                              <span className={`rounded-full px-2 py-1 text-[8px] font-black uppercase tracking-widest ${priority.className}`}>
+                                {priority.label}
                               </span>
                               <span className="rounded-full bg-red-500 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-white">
                                 Nova
@@ -474,6 +526,8 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                           </div>
                         </div>
                       </div>
+                        );
+                      })()
                     ))}
                   </div>
                 )}
@@ -493,6 +547,9 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                 ) : (
                   <div className="space-y-3">
                     {readNotifications.map((notification) => (
+                      (() => {
+                        const priority = getNotificationPriority(notification, today, tomorrow);
+                        return (
                       <div
                         key={String(notification.id)}
                         className="bg-app-surface-muted border-app rounded-2xl border p-4 transition-colors"
@@ -515,6 +572,9 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                             <div className="mb-2 flex items-center gap-2">
                               <span className="bg-app-surface rounded-full px-2 py-1 text-[8px] font-black uppercase tracking-widest text-brand">
                                 {notification.titulo || 'Notificacao'}
+                              </span>
+                              <span className={`rounded-full px-2 py-1 text-[8px] font-black uppercase tracking-widest ${priority.className}`}>
+                                {priority.label}
                               </span>
                             </div>
 
@@ -544,6 +604,8 @@ const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ onClo
                           </div>
                         </div>
                       </div>
+                        );
+                      })()
                     ))}
                   </div>
                 )}
