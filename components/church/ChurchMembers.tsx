@@ -40,16 +40,37 @@ const ChurchMembers: React.FC = () => {
   const { currentMember } = useMinistryContext();
   const { data: membersRaw, loading } = useLocalStorageFirst<SupabaseMembro>({ table: 'membros' });
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedBairro, setSelectedBairro] = useState('todos');
+  const [selectedRole, setSelectedRole] = useState('todos');
   const [selectedMember, setSelectedMember] = useState<SupabaseMembro | null>(null);
 
   const viewer = currentMember as SupabaseMembro | null;
+  const bairroOptions = useMemo(() => {
+    const bairros = Array.from(
+      new Set((membersRaw || []).map((member) => (member.bairro || '').trim()).filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    return ['todos', ...bairros];
+  }, [membersRaw]);
+
+  const roleOptions = useMemo(() => {
+    const roles = Array.from(
+      new Set((membersRaw || []).map((member) => getPublicRole(member).trim()).filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    return ['todos', ...roles];
+  }, [membersRaw]);
+
   const members = useMemo(() => {
     if (!viewer) return [];
 
     return (membersRaw || [])
-      .filter((member) => getDisplayName(member).toLowerCase().includes(searchTerm.toLowerCase()))
+      .filter((member) => {
+        const matchesSearch = getDisplayName(member).toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesBairro = selectedBairro === 'todos' || (member.bairro || '').trim() === selectedBairro;
+        const matchesRole = selectedRole === 'todos' || getPublicRole(member).trim() === selectedRole;
+        return matchesSearch && matchesBairro && matchesRole;
+      })
       .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b)));
-  }, [membersRaw, searchTerm, viewer]);
+  }, [membersRaw, searchTerm, selectedBairro, selectedRole, viewer]);
 
   const showFullDetails = canViewFullMember(viewer, selectedMember);
 
@@ -62,12 +83,38 @@ const ChurchMembers: React.FC = () => {
             Cadastro da igreja
           </h1>
         </div>
-        <input
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-          placeholder="Buscar membro"
-          className="bg-app-surface border-app text-app w-full rounded-xl border px-4 py-3 text-sm font-bold outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 sm:max-w-xs"
-        />
+        <div className="grid w-full gap-3 sm:max-w-3xl sm:grid-cols-3">
+          <input
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Buscar membro"
+            className="bg-app-surface border-app text-app w-full rounded-xl border px-4 py-3 text-sm font-bold outline-none focus:border-brand focus:ring-2 focus:ring-brand/10"
+          />
+          <select
+            value={selectedBairro}
+            onChange={(event) => setSelectedBairro(event.target.value)}
+            className="app-input w-full rounded-xl px-4 py-3 text-sm font-semibold"
+          >
+            <option value="todos">Todos os bairros</option>
+            {bairroOptions.filter((option) => option !== 'todos').map((bairro) => (
+              <option key={bairro} value={bairro}>
+                {bairro}
+              </option>
+            ))}
+          </select>
+          <select
+            value={selectedRole}
+            onChange={(event) => setSelectedRole(event.target.value)}
+            className="app-input w-full rounded-xl px-4 py-3 text-sm font-semibold"
+          >
+            <option value="todos">Todos os perfis</option>
+            {roleOptions.filter((option) => option !== 'todos').map((role) => (
+              <option key={role} value={role}>
+                {role}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {loading ? (

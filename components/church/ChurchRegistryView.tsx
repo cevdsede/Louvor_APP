@@ -74,6 +74,12 @@ const inputClass =
 const textareaClass = `${inputClass} min-h-[110px] resize-y`;
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const formatMonthLabel = (value: string) => {
+  const [year, month] = value.split('-');
+  const date = new Date(Number(year), Number(month) - 1, 1);
+  return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(date);
+};
+
 const isFutureDate = (value?: string) => Boolean(value) && new Date(`${value}T00:00:00`).getTime() > Date.now();
 
 interface ChurchRegistryViewProps {
@@ -90,6 +96,9 @@ const ChurchRegistryView: React.FC<ChurchRegistryViewProps> = ({ mode, currentUs
     table: 'novos_convertidos_igreja'
   });
   const [search, setSearch] = useState('');
+  const [selectedBairro, setSelectedBairro] = useState('todos');
+  const [selectedStatus, setSelectedStatus] = useState('todos');
+  const [selectedMonth, setSelectedMonth] = useState('todos');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -99,16 +108,59 @@ const ChurchRegistryView: React.FC<ChurchRegistryViewProps> = ({ mode, currentUs
   const isVisitors = mode === 'visitors';
   const loading = isVisitors ? visitorsLoading : convertsLoading;
   const hasSearch = search.trim().length > 0;
+  const sourceItems = isVisitors ? visitorsRaw || [] : convertsRaw || [];
+  const bairroOptions = useMemo(() => {
+    const bairros = Array.from(
+      new Set(
+        sourceItems
+          .map((item) => ('bairro' in item ? (item.bairro || '').trim() : ''))
+          .filter(Boolean)
+      )
+    ).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    return ['todos', ...bairros];
+  }, [sourceItems]);
+
+  const monthOptions = useMemo(() => {
+    const values = Array.from(
+      new Set(
+        sourceItems
+          .map((item) =>
+            isVisitors
+              ? (item as SupabaseVisitanteIgreja).data_ficha?.slice(0, 7)
+              : (item as SupabaseNovoConvertidoIgreja).data_conversao?.slice(0, 7)
+          )
+          .filter(Boolean) as string[]
+      )
+    ).sort((a, b) => b.localeCompare(a));
+    return ['todos', ...values];
+  }, [isVisitors, sourceItems]);
 
   const items = useMemo(() => {
-    const source = isVisitors ? visitorsRaw || [] : convertsRaw || [];
     const normalizedSearch = search.trim().toLowerCase();
-    return [...source]
+    return [...sourceItems]
       .filter((item) => {
         const haystack = isVisitors
-          ? `${(item as SupabaseVisitanteIgreja).nome} ${(item as SupabaseVisitanteIgreja).bairro || ''} ${(item as SupabaseVisitanteIgreja).convidado_por || ''}`
-          : `${(item as SupabaseNovoConvertidoIgreja).nome} ${(item as SupabaseNovoConvertidoIgreja).bairro || ''} ${(item as SupabaseNovoConvertidoIgreja).contato || ''}`;
-        return haystack.toLowerCase().includes(normalizedSearch);
+          ? `${(item as SupabaseVisitanteIgreja).nome} ${(item as SupabaseVisitanteIgreja).bairro || ''} ${(item as SupabaseVisitanteIgreja).convidado_por || ''} ${(item as SupabaseVisitanteIgreja).telefone || ''}`
+          : `${(item as SupabaseNovoConvertidoIgreja).nome} ${(item as SupabaseNovoConvertidoIgreja).bairro || ''} ${(item as SupabaseNovoConvertidoIgreja).contato || ''} ${(item as SupabaseNovoConvertidoIgreja).estado_civil || ''}`;
+        const matchesSearch = haystack.toLowerCase().includes(normalizedSearch);
+        const matchesBairro =
+          selectedBairro === 'todos' || (('bairro' in item ? item.bairro : '') || '').trim() === selectedBairro;
+        const matchesMonth =
+          selectedMonth === 'todos' ||
+          (isVisitors
+            ? (item as SupabaseVisitanteIgreja).data_ficha?.slice(0, 7)
+            : (item as SupabaseNovoConvertidoIgreja).data_conversao?.slice(0, 7)) === selectedMonth;
+        const matchesStatus = isVisitors
+          ? selectedStatus === 'todos' ||
+            (selectedStatus === 'oracao' && (item as SupabaseVisitanteIgreja).deseja_oracao_lar) ||
+            (selectedStatus === 'aconselhamento' && (item as SupabaseVisitanteIgreja).deseja_aconselhamento) ||
+            (selectedStatus === 'informacoes' && (item as SupabaseVisitanteIgreja).deseja_informacoes_igreja) ||
+            (selectedStatus === 'cristao' && (item as SupabaseVisitanteIgreja).e_cristao === true) ||
+            (selectedStatus === 'nao_cristao' && (item as SupabaseVisitanteIgreja).e_cristao === false)
+          : selectedStatus === 'todos' ||
+            (item as SupabaseNovoConvertidoIgreja).estado_civil === selectedStatus;
+
+        return matchesSearch && matchesBairro && matchesMonth && matchesStatus;
       })
       .sort((a, b) => {
         const left = isVisitors
@@ -119,7 +171,7 @@ const ChurchRegistryView: React.FC<ChurchRegistryViewProps> = ({ mode, currentUs
           : (b as SupabaseNovoConvertidoIgreja).data_conversao || (b as SupabaseNovoConvertidoIgreja).created_at;
         return new Date(right).getTime() - new Date(left).getTime();
       });
-  }, [convertsRaw, isVisitors, search, visitorsRaw]);
+  }, [isVisitors, search, selectedBairro, selectedMonth, selectedStatus, sourceItems]);
 
   const resetState = () => {
     setEditingId(null);
@@ -383,7 +435,7 @@ const ChurchRegistryView: React.FC<ChurchRegistryViewProps> = ({ mode, currentUs
       </div>
 
       <div className="app-card rounded-2xl border p-4 sm:p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3">
           <div>
             <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
               {isVisitors ? 'Cadastros de visitantes' : 'Cadastros de novos convertidos'}
@@ -396,14 +448,65 @@ const ChurchRegistryView: React.FC<ChurchRegistryViewProps> = ({ mode, currentUs
                   : `${items.length} registro(s) encontrado(s)`}
             </p>
           </div>
-          <div className="relative w-full sm:max-w-xs">
-            <i className="fas fa-search pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xs text-app-muted" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={isVisitors ? 'Buscar visitante...' : 'Buscar cadastro...'}
-              className="app-input w-full rounded-xl py-3 pl-10 pr-4 text-sm font-semibold"
-            />
+          <div className="grid gap-3 lg:grid-cols-4">
+            <div className="relative w-full">
+              <i className="fas fa-search pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xs text-app-muted" />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={isVisitors ? 'Buscar visitante...' : 'Buscar cadastro...'}
+                className="app-input w-full rounded-xl py-3 pl-10 pr-4 text-sm font-semibold"
+              />
+            </div>
+            <select
+              value={selectedBairro}
+              onChange={(event) => setSelectedBairro(event.target.value)}
+              className="app-input w-full rounded-xl px-4 py-3 text-sm font-semibold"
+            >
+              <option value="todos">Todos os bairros</option>
+              {bairroOptions.filter((option) => option !== 'todos').map((bairro) => (
+                <option key={bairro} value={bairro}>
+                  {bairro}
+                </option>
+              ))}
+            </select>
+            <select
+              value={selectedMonth}
+              onChange={(event) => setSelectedMonth(event.target.value)}
+              className="app-input w-full rounded-xl px-4 py-3 text-sm font-semibold"
+            >
+              <option value="todos">Todos os meses</option>
+              {monthOptions.filter((option) => option !== 'todos').map((month) => (
+                <option key={month} value={month}>
+                  {formatMonthLabel(month)}
+                </option>
+              ))}
+            </select>
+            <select
+              value={selectedStatus}
+              onChange={(event) => setSelectedStatus(event.target.value)}
+              className="app-input w-full rounded-xl px-4 py-3 text-sm font-semibold"
+            >
+              {isVisitors ? (
+                <>
+                  <option value="todos">Todos os status</option>
+                  <option value="oracao">Com pedido de oracao</option>
+                  <option value="aconselhamento">Com aconselhamento</option>
+                  <option value="informacoes">Pediu informacoes</option>
+                  <option value="cristao">Cristao</option>
+                  <option value="nao_cristao">Nao cristao</option>
+                </>
+              ) : (
+                <>
+                  <option value="todos">Todos os estados civis</option>
+                  <option value="Solteiro(a)">Solteiro(a)</option>
+                  <option value="Casado(a)">Casado(a)</option>
+                  <option value="Viuvo(a)">Viuvo(a)</option>
+                  <option value="Divorciado(a)">Divorciado(a)</option>
+                  <option value="Concubinato">Concubinato</option>
+                </>
+              )}
+            </select>
           </div>
         </div>
 

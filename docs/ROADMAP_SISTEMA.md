@@ -50,7 +50,7 @@ Legenda:
 - [x] Criar busca global por visitantes
 - [x] Criar busca global por novos convertidos
 - [x] Criar busca global por musicas e eventos
-- [ ] Melhorar filtros em listas principais
+- [x] Melhorar filtros em listas principais
 
 ### Dashboard e acompanhamento
 - [x] Melhorar indicadores do dashboard da igreja
