@@ -88,3 +88,12 @@ Legenda:
 6. Editor do site
 7. Busca global
 8. Automacoes e inteligencia
+
+## Fase 4 - Push e automacoes externas
+
+### Notificacoes push
+- [x] Criar base de subscriptions push por dispositivo
+- [x] Adicionar permissao e teste de push no app
+- [x] Criar Edge Function para envio via Web Push
+- [ ] Configurar chaves VAPID no ambiente de producao
+- [ ] Aplicar migration e deploy da Edge Function

@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => {
           registerType: 'autoUpdate',
           includeAssets: ['logo.png', 'logo-192.png', 'logo-512.png'],
           workbox: {
+            importScripts: ['push-sw.js'],
             runtimeCaching: [
               {
                 urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/public\/.*/i,

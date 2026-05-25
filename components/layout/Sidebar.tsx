@@ -11,6 +11,7 @@ import { showError, showSuccess } from '../../utils/toast';
 import { isMusicView, isScaleView, isTeamView, isToolsView } from '../../utils/views';
 import AvailabilityPanel from './AvailabilityPanel';
 import { buildLocalAvatar } from '../../utils/avatar';
+import PushNotificationService from '../../services/PushNotificationService';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -65,6 +66,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     confirmPassword: ''
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [pushStatus, setPushStatus] = useState<'unsupported' | NotificationPermission>('default');
+  const [isPushSaving, setIsPushSaving] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   // Carregar dados do usuario logado
@@ -125,6 +128,15 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     loadUserData();
   }, []); // Executar apenas uma vez ao montar o componente
+
+  useEffect(() => {
+    if (!PushNotificationService.isSupported()) {
+      setPushStatus(PushNotificationService.getPublicKeyConfigured() ? 'unsupported' : 'unsupported');
+      return;
+    }
+
+    PushNotificationService.getPermissionState().then((permission) => setPushStatus(permission as NotificationPermission));
+  }, [isProfileModalOpen]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -284,6 +296,50 @@ const Sidebar: React.FC<SidebarProps> = ({
       }
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleEnablePush = async () => {
+    if (!currentUser?.id) {
+      showError('Usuario nao encontrado.');
+      return;
+    }
+
+    setIsPushSaving(true);
+    try {
+      await PushNotificationService.enable(currentUser.id);
+      setPushStatus('granted');
+      showSuccess('Notificacoes push ativadas.');
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Nao foi possivel ativar notificacoes push.');
+    } finally {
+      setIsPushSaving(false);
+    }
+  };
+
+  const handleDisablePush = async () => {
+    if (!currentUser?.id) return;
+
+    setIsPushSaving(true);
+    try {
+      await PushNotificationService.disable(currentUser.id);
+      showSuccess('Notificacoes push desativadas neste dispositivo.');
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Nao foi possivel desativar notificacoes push.');
+    } finally {
+      setIsPushSaving(false);
+    }
+  };
+
+  const handleTestPush = async () => {
+    setIsPushSaving(true);
+    try {
+      await PushNotificationService.sendTest();
+      showSuccess('Push de teste enviado.');
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Nao foi possivel enviar push de teste.');
+    } finally {
+      setIsPushSaving(false);
     }
   };
 
@@ -520,6 +576,56 @@ const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               <AvailabilityPanel memberId={currentUser?.id || null} />
+
+              <div className="app-panel-muted rounded-2xl border border-app p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Push real</p>
+                    <h4 className="mt-1 text-sm font-black text-slate-800 dark:text-white">Notificacoes no dispositivo</h4>
+                    <p className="mt-1 text-xs font-medium leading-5 text-app-muted">
+                      Receba avisos e lembretes mesmo com o app fechado.
+                    </p>
+                  </div>
+                  <span className={`rounded-full px-3 py-1 text-[8px] font-black uppercase tracking-widest ${
+                    pushStatus === 'granted'
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
+                      : 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
+                  }`}>
+                    {pushStatus === 'granted' ? 'Ativo' : pushStatus === 'denied' ? 'Bloqueado' : 'Inativo'}
+                  </span>
+                </div>
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                  <button
+                    type="button"
+                    onClick={handleEnablePush}
+                    disabled={isPushSaving || pushStatus === 'denied'}
+                    className="rounded-xl bg-brand px-3 py-2.5 text-[8px] font-black uppercase tracking-widest text-white disabled:opacity-50"
+                  >
+                    Ativar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleTestPush}
+                    disabled={isPushSaving || pushStatus !== 'granted'}
+                    className="app-btn-muted rounded-xl px-3 py-2.5 text-[8px] font-black uppercase tracking-widest disabled:opacity-50"
+                  >
+                    Testar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDisablePush}
+                    disabled={isPushSaving || pushStatus !== 'granted'}
+                    className="rounded-xl border border-red-100 bg-red-50 px-3 py-2.5 text-[8px] font-black uppercase tracking-widest text-red-500 disabled:opacity-50 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400"
+                  >
+                    Desativar
+                  </button>
+                </div>
+                {!PushNotificationService.getPublicKeyConfigured() && (
+                  <p className="mt-3 text-[10px] font-bold text-amber-600 dark:text-amber-300">
+                    Configure VITE_PUSH_VAPID_PUBLIC_KEY para liberar o recurso neste ambiente.
+                  </p>
+                )}
+              </div>
 
               <div className="lg:hidden space-y-4 pt-4 border-t border-app">
                 <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest block ml-1">Temas</label>
