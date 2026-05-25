@@ -74,7 +74,7 @@ Legenda:
 
 ### Acabamento final
 - [ ] Revisar padrao visual final do app
-- [ ] Revisar consistencia final entre site e app
+- [x] Revisar consistencia final entre site e app
 - [ ] Revisar performance das telas principais
 - [ ] Revisar experiencia mobile completa
 

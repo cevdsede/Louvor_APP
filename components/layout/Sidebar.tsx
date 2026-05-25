@@ -46,14 +46,14 @@ const Sidebar: React.FC<SidebarProps> = ({
   } = useMinistryContext();
   const [isThemeExpanded, setIsThemeExpanded] = useState(false);
   const [profileData, setProfileData] = useState({
-    name: 'Usuário',
+    name: 'Usuario',
     email: '', // Garantir que sempre tenha um valor inicial
     password: '',
     perfil: 'Admin',
     foto: null
   });
   const [originalProfileData, setOriginalProfileData] = useState({
-    name: 'Usuário',
+    name: 'Usuario',
     email: '',
     password: '',
     perfil: 'Admin',
@@ -67,7 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Carregar dados do usuário logado
+  // Carregar dados do usuario logado
   useEffect(() => {
     const loadUserData = async () => {
       try {
@@ -118,7 +118,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           }
         }
       } catch (error) {
-        console.error('Erro ao carregar dados do usuário:', error);
+        console.error('Erro ao carregar dados do usuario:', error);
       }
 
     };
@@ -130,7 +130,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     await supabase.auth.signOut();
   };
 
-  // Função para detectar campos alterados
+  // Funcao para detectar campos alterados
   const getChangedFields = () => {
     const changed: any = {};
 
@@ -142,14 +142,14 @@ const Sidebar: React.FC<SidebarProps> = ({
       changed.email = profileData.email;
     }
 
-    // Senha não é mais alterada aqui - tem modal separado
+    // Senha nao e mais alterada aqui - tem modal separado
 
     return changed;
   };
 
-  // Função para alterar apenas a senha
+  // Funcao para alterar apenas a senha
   const handleChangePassword = async () => {
-    // Proteger contra múltiplos cliques
+    // Proteger contra multiplos cliques
     if (isSaving) {
       return;
     }
@@ -157,15 +157,15 @@ const Sidebar: React.FC<SidebarProps> = ({
     try {
       setIsSaving(true);
 
-      // Validação de senha
+      // Validacao de senha
       if (!passwordData.newPassword || passwordData.newPassword.length < 6) {
         showError('A senha deve ter pelo menos 6 caracteres');
         return;
       }
 
-      // Validação de confirmação
+      // Validacao de confirmacao
       if (passwordData.newPassword !== passwordData.confirmPassword) {
-        showError('As senhas não coincidem');
+        showError('As senhas nao coincidem');
         return;
       }
 
@@ -182,11 +182,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     } catch (error: any) {
       console.error('Erro ao alterar senha:', error);
 
-      // Tratamento específico de erros
+      // Tratamento especifico de erros
       if (error.message?.includes('Password should be at least 6 characters')) {
         showError('A senha deve ter pelo menos 6 caracteres');
       } else if (error.message?.includes('email rate limit exceeded')) {
-        showError('Muitas tentativas de alteração. Aguarde alguns minutos antes de tentar novamente.');
+        showError('Muitas tentativas de alteracao. Aguarde alguns minutos antes de tentar novamente.');
       } else if (error.message?.includes('For security purposes')) {
         showError('Aguarde alguns segundos antes de tentar novamente');
       } else if (error.message?.includes('rate limit')) {
@@ -200,7 +200,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const handleSaveProfile = async () => {
-    // Proteger contra múltiplos cliques
+    // Proteger contra multiplos cliques
     if (isSaving) {
       return;
     }
@@ -211,24 +211,24 @@ const Sidebar: React.FC<SidebarProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        showError('Usuário não encontrado');
+        showError('Usuario nao encontrado');
         return;
       }
 
       // Detectar quais campos foram alterados
       const changedFields = getChangedFields();
 
-      // Se nada foi alterado, não fazer nada
+      // Se nada foi alterado, nao fazer nada
       if (Object.keys(changedFields).length === 0) {
-        showError('Nenhuma alteração detectada');
+        showError('Nenhuma alteracao detectada');
         return;
       }
 
-      // Validação de email (só se email foi alterado)
+      // Validacao de email (so se email foi alterado)
       if (changedFields.email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(changedFields.email)) {
-          showError('Email inválido');
+          showError('Email invalido');
           return;
         }
       }
@@ -236,7 +236,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       // Atualizar apenas os campos alterados
       const updateData: any = {};
 
-      // Atualizar nome de exibição se foi alterado
+      // Atualizar nome de exibicao se foi alterado
       if (changedFields.name) {
         updateData.data = {
           display_name: changedFields.name
@@ -248,19 +248,19 @@ const Sidebar: React.FC<SidebarProps> = ({
         updateData.email = changedFields.email;
       }
 
-      // Senha não é mais alterada aqui - tem modal separado
+      // Senha nao e mais alterada aqui - tem modal separado
 
-      // Só fazer a requisição se houver dados para atualizar
+      // So fazer a requisicao se houver dados para atualizar
       if (Object.keys(updateData).length > 0) {
         const { error } = await supabase.auth.updateUser(updateData);
 
         if (error) throw error;
 
-        // Atualizar os dados originais após sucesso
+        // Atualizar os dados originais apos sucesso
         setOriginalProfileData(prev => ({
           ...prev,
           ...changedFields,
-          password: '' // Limpar senha após sucesso
+          password: '' // Limpar senha apos sucesso
         }));
       }
 
@@ -270,11 +270,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     } catch (error: any) {
       console.error('Erro ao salvar perfil:', error);
 
-      // Tratamento específico de erros
+      // Tratamento especifico de erros
       if (error.message?.includes('Email address') && error.message?.includes('is invalid')) {
-        showError('Email inválido');
+        showError('Email invalido');
       } else if (error.message?.includes('email rate limit exceeded')) {
-        showError('Muitas tentativas de alteração de email. Aguarde alguns minutos antes de tentar novamente.');
+        showError('Muitas tentativas de alteracao de email. Aguarde alguns minutos antes de tentar novamente.');
       } else if (error.message?.includes('For security purposes')) {
         showError('Aguarde alguns segundos antes de tentar novamente');
       } else if (error.message?.includes('rate limit')) {
@@ -297,9 +297,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const menuItems = [
     { id: 'church', default: null, label: 'Igreja', icon: 'fas fa-church' },
-    { id: 'dashboard', default: 'dashboard', label: 'Início', icon: 'fas fa-th-large' },
+    { id: 'dashboard', default: 'dashboard', label: 'Inicio', icon: 'fas fa-th-large' },
     { id: 'scales', default: 'list', label: 'Escalas', icon: 'fas fa-calendar-alt' },
-    { id: 'music', default: 'music-list', label: 'Músicas', icon: 'fas fa-music' },
+    { id: 'music', default: 'music-list', label: 'Musicas', icon: 'fas fa-music' },
     { id: 'team', default: 'team', label: 'Equipe', icon: 'fas fa-users' },
     { id: 'tools', default: 'tools-admin', label: 'Ferramentas', icon: 'fas fa-tools' },
   ];
@@ -466,7 +466,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex min-h-full items-start justify-center sm:items-center">
           <div className="app-card relative mx-auto mt-2 max-h-[calc(100dvh-7rem)] w-full max-w-md overflow-y-auto rounded-[2rem] p-5 shadow-2xl animate-fade-in no-scrollbar sm:max-h-[90vh] sm:rounded-[2.5rem] sm:p-6 lg:p-8">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter">Configurações</h3>
+              <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter">Configuracoes</h3>
               <button onClick={() => setIsProfileModalOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors"><i className="fas fa-times text-lg"></i></button>
             </div>
 
@@ -557,7 +557,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
       )}
-      {/* Modal de Alteração de Senha */}
+      {/* Modal de Alteracao de Senha */}
       {isPasswordModalOpen && (
         <div className="fixed inset-0 z-[600] overflow-y-auto px-3 py-4 pb-24 sm:p-4 lg:p-8">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsPasswordModalOpen(false)}></div>
