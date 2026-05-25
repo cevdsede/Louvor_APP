@@ -500,7 +500,7 @@ const App: React.FC = () => {
             <Suspense fallback={<LoadingBlock />}>
               <ChurchShell
                 onOpenMinistry={(targetView) => {
-                  if (targetView) setCurrentView(targetView);
+                  setCurrentView(targetView || 'dashboard');
                   setActiveArea('ministry');
                 }}
                 isDarkMode={isDarkMode}

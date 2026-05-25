@@ -423,7 +423,7 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
           {(userMinisterios.length > 0 || isGlobalAdmin) && (
             <button
               type="button"
-              onClick={onOpenMinistry}
+              onClick={() => onOpenMinistry()}
               className="flex min-w-0 flex-1 max-w-none flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 text-app-muted transition-all hover:text-app lg:flex-none lg:flex-row lg:justify-start lg:gap-4 lg:rounded-2xl lg:px-5 lg:py-4 lg:hover:bg-app-surface-strong"
             >
               <i className="fas fa-layer-group w-5 text-center text-base lg:w-6 lg:text-lg" />
