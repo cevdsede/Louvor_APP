@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { supabase } from './supabaseClient';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
@@ -104,7 +104,24 @@ const AppContent: React.FC<AppContentProps> = ({
   isLoading,
   onOpenSearch
 }) => {
-  const { activeModules, isGlobalAdmin, loading: ministryLoading } = useMinistryContext();
+  const { activeMinisterioId, activeModules, isGlobalAdmin, loading: ministryLoading } = useMinistryContext();
+  const previousMinisterioIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (ministryLoading || !activeMinisterioId) {
+      return;
+    }
+
+    if (previousMinisterioIdRef.current === null) {
+      previousMinisterioIdRef.current = activeMinisterioId;
+      return;
+    }
+
+    if (previousMinisterioIdRef.current !== activeMinisterioId) {
+      previousMinisterioIdRef.current = activeMinisterioId;
+      setCurrentView(getDefaultViewForModules(activeModules, isGlobalAdmin));
+    }
+  }, [activeMinisterioId, activeModules, isGlobalAdmin, ministryLoading, setCurrentView]);
 
   useEffect(() => {
     const targetModule = getModuleForView(currentView);
