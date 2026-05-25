@@ -3,6 +3,7 @@ import { supabase } from '../../supabaseClient';
 import { buildLocalAvatar } from '../../utils/avatar';
 import { compressImageFile } from '../../utils/imageCompression';
 import { logger } from '../../utils/logger';
+import { nullableTitleCasePt, toTitleCasePt } from '../../utils/textFormat';
 
 type FormState = {
   nome: string;
@@ -215,33 +216,35 @@ const PublicMemberRegistration: React.FC = () => {
     try {
       const email = form.email.trim().toLowerCase();
       const fotoUrl = await uploadPhoto();
+      const memberName = toTitleCasePt(form.nome);
+      const neighborhood = nullableTitleCasePt(form.bairro);
       const profilePayload = {
-        nome: form.nome.trim(),
-        display_name: form.nome.trim(),
-        nome_planilha: form.nome.trim(),
+        nome: memberName,
+        display_name: memberName,
+        nome_planilha: memberName,
         email,
         endereco: form.endereco.trim() || null,
         numero_casa: form.numero_casa.trim() || null,
         cep: form.cep.trim() || null,
-        bairro: form.bairro.trim() || null,
+        bairro: neighborhood,
         data_nasc: form.data_nasc || null,
         genero: form.genero,
-        nome_pai: form.nome_pai.trim() || null,
-        nome_mae: form.nome_mae.trim() || null,
+        nome_pai: nullableTitleCasePt(form.nome_pai),
+        nome_mae: nullableTitleCasePt(form.nome_mae),
         data_batismo: form.batizado ? form.data_batismo || null : null,
         igreja_batismo: form.batizado ? form.igreja_batismo.trim() || null : null,
         estado_civil: form.estado_civil || null,
-        nome_conjuge: form.estado_civil === 'Casado(a)' ? form.nome_conjuge.trim() || null : null,
-        profissao: form.profissao.trim() || null,
+        nome_conjuge: form.estado_civil === 'Casado(a)' ? nullableTitleCasePt(form.nome_conjuge) : null,
+        profissao: nullableTitleCasePt(form.profissao),
         escolaridade: form.escolaridade || null,
         telefone: form.telefone_celular || null,
         telefone_celular: form.telefone_celular.trim() || null,
         telefone_recados: form.telefone_recados.trim() || null,
         posicao_igreja: form.posicao_igreja,
         ministerio_levita: form.posicao_igreja === 'Levita' ? form.ministerio_levita || null : null,
-        nome_discipulador: form.nome_discipulador.trim() || null,
+        nome_discipulador: nullableTitleCasePt(form.nome_discipulador),
         esta_em_celula: form.esta_em_celula,
-        qual_celula: form.esta_em_celula ? form.qual_celula.trim() || null : null,
+        qual_celula: form.esta_em_celula ? nullableTitleCasePt(form.qual_celula) : null,
         foto: fotoUrl,
         perfil: 'user'
       };
@@ -269,32 +272,32 @@ const PublicMemberRegistration: React.FC = () => {
 
       const payload = {
         ...profilePayload,
-        nome: form.nome.trim(),
-        display_name: form.nome.trim(),
-        nome_planilha: form.nome.trim(),
+        nome: memberName,
+        display_name: memberName,
+        nome_planilha: memberName,
         email,
         endereco: form.endereco.trim() || null,
         numero_casa: form.numero_casa.trim() || null,
         cep: form.cep.trim() || null,
-        bairro: form.bairro.trim() || null,
+        bairro: neighborhood,
         data_nasc: form.data_nasc || null,
         genero: form.genero,
-        nome_pai: form.nome_pai.trim() || null,
-        nome_mae: form.nome_mae.trim() || null,
+        nome_pai: nullableTitleCasePt(form.nome_pai),
+        nome_mae: nullableTitleCasePt(form.nome_mae),
         data_batismo: form.batizado ? form.data_batismo || null : null,
         igreja_batismo: form.batizado ? form.igreja_batismo.trim() || null : null,
         estado_civil: form.estado_civil || null,
-        nome_conjuge: form.estado_civil === 'Casado(a)' ? form.nome_conjuge.trim() || null : null,
-        profissao: form.profissao.trim() || null,
+        nome_conjuge: form.estado_civil === 'Casado(a)' ? nullableTitleCasePt(form.nome_conjuge) : null,
+        profissao: nullableTitleCasePt(form.profissao),
         escolaridade: form.escolaridade || null,
         telefone: form.telefone_celular || null,
         telefone_celular: form.telefone_celular.trim() || null,
         telefone_recados: form.telefone_recados.trim() || null,
         posicao_igreja: form.posicao_igreja,
         ministerio_levita: form.posicao_igreja === 'Levita' ? form.ministerio_levita || null : null,
-        nome_discipulador: form.nome_discipulador.trim() || null,
+        nome_discipulador: nullableTitleCasePt(form.nome_discipulador),
         esta_em_celula: form.esta_em_celula,
-        qual_celula: form.esta_em_celula ? form.qual_celula.trim() || null : null,
+        qual_celula: form.esta_em_celula ? nullableTitleCasePt(form.qual_celula) : null,
         perfil: 'user'
       };
 

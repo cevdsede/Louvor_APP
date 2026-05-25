@@ -15,12 +15,12 @@ import {
   SupabaseMinisterio,
   SupabaseMembroMinisterio
 } from '../../types-supabase';
-import ApprovalsPanel from './ApprovalsPanel';
 import MinisterioManager from './MinisterioManager';
 import NomeCultosManager from './NomeCultosManager';
 import TemasManager from './TemasManager';
+import { nullableTitleCasePt, toTitleCasePt } from '../../utils/textFormat';
 
-type ToolsSubView = 'tools-admin' | 'tools-users' | 'tools-approvals' | 'tools-performance';
+type ToolsSubView = 'tools-admin' | 'tools-users' | 'tools-performance';
 
 interface ToolsViewProps {
   subView: ToolsSubView;
@@ -258,15 +258,16 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
       const { error: memberError } = await supabase
         .from('membros')
         .update({
-          nome: updatedMember.nome,
-          display_name: updatedMember.display_name,
-          nome_planilha: updatedMember.nome_planilha,
+          nome: toTitleCasePt(updatedMember.nome),
+          display_name: toTitleCasePt(updatedMember.display_name || updatedMember.nome),
+          nome_planilha: toTitleCasePt(updatedMember.nome_planilha || updatedMember.nome),
           email: updatedMember.email,
           telefone: updatedMember.telefone,
           data_nasc: updatedMember.data_nasc,
           genero: updatedMember.genero || 'Homem',
           perfil: updatedMember.perfil,
-          foto: updatedMember.foto
+          foto: updatedMember.foto,
+          bairro: nullableTitleCasePt((updatedMember as any).bairro)
         })
         .eq('id', updatedMember.id);
 
@@ -360,9 +361,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
             hydrateUserManagementState();
             syncUserManagementState().catch(() => {});
             break;
-          case 'tools-approvals':
-            setData(null);
-            break;
           case 'tools-performance':
             setData({
               // Dados administrativos
@@ -403,10 +401,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
         <p className="mt-4 text-slate-400 font-bold uppercase tracking-widest text-[9px]">Carregando...</p>
       </div>
     );
-  }
-
-  if (subView === 'tools-approvals') {
-    return <ApprovalsPanel />;
   }
 
   const adminCards = [
@@ -844,9 +838,6 @@ const ToolsView: React.FC<ToolsViewProps> = ({ subView }) => {
             </div>
           </div>
         );
-
-      case 'tools-approvals':
-        return <ApprovalsPanel />;
 
       case 'tools-performance':
         return (

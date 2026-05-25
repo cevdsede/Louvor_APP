@@ -35,7 +35,6 @@ const TEAM_TABS: ToolbarTab[] = [
 const TOOLS_TABS: ToolbarTab[] = [
   { view: 'tools-admin', label: 'Admin', icon: 'fas fa-cog' },
   { view: 'tools-users', label: 'Usuarios', icon: 'fas fa-user-cog' },
-  { view: 'tools-approvals', label: 'Aprovacoes', icon: 'fas fa-shield-alt' },
   { view: 'tools-performance', label: 'Desempenho', icon: 'fas fa-chart-line' }
 ];
 
@@ -94,7 +93,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ currentView, onViewChange }) => {
             <div
               className={`bg-app-surface border-app shadow-app rounded-2xl border p-1.5 backdrop-blur-xl ${
                 isToolsToolbar
-                  ? 'grid w-full grid-cols-4 gap-1.5'
+                  ? 'grid w-full grid-cols-3 gap-1.5'
                   : 'mx-auto inline-flex min-w-max items-center justify-center gap-1.5'
               }`}
             >

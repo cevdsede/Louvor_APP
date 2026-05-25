@@ -10,6 +10,7 @@ import { compressImageFile } from '../../utils/imageCompression';
 import { buildMemberPhotoPath, getPublicAssetsPathFromUrl, sanitizeImageUrl } from '../../utils/imageUrl';
 import logger from '../../utils/logger';
 import { showError, showSuccess } from '../../utils/toast';
+import { toTitleCasePt } from '../../utils/textFormat';
 
 export type ChurchView = 'dashboard' | 'agenda' | 'members' | 'reports' | 'church-events' | 'visitors' | 'converts' | 'site' | 'admin';
 
@@ -193,14 +194,14 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
       const { error } = await supabase
         .from('membros')
         .update({
-          nome: profileName.trim(),
-          display_name: profileName.trim(),
+          nome: toTitleCasePt(profileName),
+          display_name: toTitleCasePt(profileName),
           email: profileEmail.trim().toLowerCase()
         })
         .eq('id', currentMember.id);
       if (error) throw error;
 
-      const authPayload: any = { data: { display_name: profileName.trim() } };
+      const authPayload: any = { data: { display_name: toTitleCasePt(profileName) } };
       if (profileEmail.trim().toLowerCase() !== currentMemberRecord?.email?.toLowerCase()) {
         authPayload.email = profileEmail.trim().toLowerCase();
       }

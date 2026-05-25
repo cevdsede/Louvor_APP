@@ -4,6 +4,7 @@ import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import { SupabaseNovoConvertidoIgreja, SupabaseVisitanteIgreja } from '../../types-supabase';
 import { recordChurchAudit } from '../../utils/churchAudit';
+import { nullableTitleCasePt, toTitleCasePt } from '../../utils/textFormat';
 import { showError, showSuccess } from '../../utils/toast';
 
 type RegistryMode = 'visitors' | 'converts';
@@ -285,10 +286,10 @@ const ChurchRegistryView: React.FC<ChurchRegistryViewProps> = ({ mode, currentUs
 
       const payload = {
         data_ficha: visitorForm.data_ficha || new Date().toISOString().slice(0, 10),
-        nome: visitorForm.nome.trim(),
+        nome: toTitleCasePt(visitorForm.nome),
         data_nascimento: visitorForm.data_nascimento || null,
         endereco: visitorForm.endereco.trim() || null,
-        bairro: visitorForm.bairro.trim() || null,
+        bairro: nullableTitleCasePt(visitorForm.bairro),
         telefone: visitorForm.telefone.trim() || null,
         e_cristao:
           visitorForm.e_cristao === 'sim' ? true : visitorForm.e_cristao === 'nao' ? false : null,
@@ -365,17 +366,17 @@ const ChurchRegistryView: React.FC<ChurchRegistryViewProps> = ({ mode, currentUs
       }
 
       const payload = {
-        nome: convertForm.nome.trim(),
+        nome: toTitleCasePt(convertForm.nome),
         endereco: convertForm.endereco.trim() || null,
         numero: convertForm.numero.trim() || null,
-        bairro: convertForm.bairro.trim() || null,
+        bairro: nullableTitleCasePt(convertForm.bairro),
         data_nascimento: convertForm.data_nascimento || null,
         data_conversao: convertForm.data_conversao || null,
         estado_civil: convertForm.estado_civil || null,
         email: convertForm.email.trim().toLowerCase() || null,
         contato: convertForm.contato.trim() || null,
         contato_recado: convertForm.contato_recado.trim() || null,
-        nome_contato_recado: convertForm.nome_contato_recado.trim() || null,
+        nome_contato_recado: nullableTitleCasePt(convertForm.nome_contato_recado),
         observacoes: convertForm.observacoes.trim() || null,
         ...(editingId ? {} : { created_by: currentUserId || null })
       };

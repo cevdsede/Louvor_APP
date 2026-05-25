@@ -12,6 +12,7 @@ import { isMusicView, isScaleView, isTeamView, isToolsView } from '../../utils/v
 import AvailabilityPanel from './AvailabilityPanel';
 import { buildLocalAvatar } from '../../utils/avatar';
 import PushNotificationService from '../../services/PushNotificationService';
+import { toTitleCasePt } from '../../utils/textFormat';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -147,7 +148,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     const changed: any = {};
 
     if (profileData.name !== originalProfileData.name && profileData.name !== 'Administrador do Sistema') {
-      changed.name = profileData.name;
+      changed.name = toTitleCasePt(profileData.name);
     }
 
     if (profileData.email !== originalProfileData.email && profileData.email !== '') {
