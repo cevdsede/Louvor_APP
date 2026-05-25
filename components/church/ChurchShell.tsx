@@ -283,8 +283,9 @@ const ChurchShell: React.FC<ChurchShellProps> = ({
       <aside className="app-card shadow-app fixed inset-x-0 bottom-2 z-[100] mx-auto flex min-h-16 w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] rounded-2xl backdrop-blur-xl transition-all sm:bottom-3 sm:w-[calc(100%-1.5rem)] sm:max-w-[720px] lg:inset-x-auto lg:bottom-0 lg:left-0 lg:mx-0 lg:h-full lg:w-[280px] lg:max-w-none lg:flex-col lg:rounded-none lg:border-r lg:border-b-0 lg:border-l-0 lg:border-t-0 lg:shadow-none">
         <div className="hidden flex-col items-center px-6 py-10 lg:flex">
           <div className="flex flex-col items-center gap-2">
-            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-brand/10 p-2 shadow-md dark:bg-brand/20">
-              <img src="/VC.svg" alt="Valentes Connected" className="h-full w-full object-contain" />
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-brand/10 shadow-md dark:bg-brand/20">
+              <i className="fa-solid fa-shield text-5xl text-transparent [-webkit-text-stroke:2px_var(--brand-primary)]" />
+              <i className="fa-solid fa-crown absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[55%] text-base text-brand-gold" />
             </div>
             <h2 className="mt-2 text-center text-xl font-extrabold uppercase leading-none tracking-tighter text-slate-800 dark:text-white">
               Valentes <span className="text-brand">Connected</span>

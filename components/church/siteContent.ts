@@ -45,12 +45,11 @@ export interface ChurchSiteContent {
 
 export const SITE_CONTENT_STORAGE_KEY = 'church_site_content_v1';
 const SITE_CONTENT_DB_KEY = 'principal';
-export const DEFAULT_SITE_LOGO = '/VC.svg';
 
 export const defaultSiteContent: ChurchSiteContent = {
   churchName: 'Comunidade Evangelica Valentes de Davi',
   logoText: 'CV',
-  logoImage: DEFAULT_SITE_LOGO,
+  logoImage: '',
   heroTitle: 'Uma igreja para viver fe, familia e proposito.',
   heroSubtitle:
     'Cultos inspiradores, comunhao verdadeira e uma casa preparada para receber voce e sua familia.',
@@ -136,7 +135,7 @@ export const normalizeSiteContent = (content?: Partial<ChurchSiteContent> | null
     ...next,
     churchName: String(next.churchName || defaultSiteContent.churchName),
     logoText: String(next.logoText || defaultSiteContent.logoText),
-    logoImage: String(next.logoImage || DEFAULT_SITE_LOGO),
+    logoImage: String(next.logoImage || ''),
     heroTitle: String(next.heroTitle || defaultSiteContent.heroTitle),
     heroSubtitle: String(next.heroSubtitle || defaultSiteContent.heroSubtitle),
     heroImage: String(next.heroImage || defaultSiteContent.heroImage),
@@ -168,7 +167,7 @@ const fromDatabaseRow = (row?: SupabaseConfiguracaoSiteIgreja | null): ChurchSit
   return normalizeSiteContent({
     churchName: row.church_name,
     logoText: row.logo_text,
-    logoImage: row.logo_image || DEFAULT_SITE_LOGO,
+    logoImage: row.logo_image,
     heroTitle: row.hero_title,
     heroSubtitle: row.hero_subtitle,
     heroImage: row.hero_image,
