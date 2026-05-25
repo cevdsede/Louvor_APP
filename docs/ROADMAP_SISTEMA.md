@@ -53,10 +53,10 @@ Legenda:
 - [ ] Melhorar filtros em listas principais
 
 ### Dashboard e acompanhamento
-- [ ] Melhorar indicadores do dashboard da igreja
+- [x] Melhorar indicadores do dashboard da igreja
 - [ ] Melhorar indicadores do dashboard do ministerio
-- [ ] Adicionar alertas realmente uteis para operacao
-- [ ] Melhorar acompanhamentos de consolidacao
+- [x] Adicionar alertas realmente uteis para operacao
+- [x] Melhorar acompanhamentos de consolidacao
 
 ## Fase 3 - Refinamento premium
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import useLocalStorageFirst from '../../hooks/useLocalStorageFirst';
 import { supabase } from '../../supabaseClient';
-import { SupabaseEventoIgreja, SupabaseMembro } from '../../types-supabase';
+import { SupabaseEventoIgreja, SupabaseMembro, SupabaseNovoConvertidoIgreja, SupabaseVisitanteIgreja } from '../../types-supabase';
 import { generateChurchEventOccurrences } from '../../utils/churchEvents';
 import DashboardService from '../../services/DashboardService';
 import { buildLocalAvatar } from '../../utils/avatar';
@@ -54,6 +54,44 @@ const formatGroupedDates = (event: any) => {
 const normalize = (value?: string | null) =>
   (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
+const OperationalMetric: React.FC<{ label: string; value: number; detail: string }> = ({ label, value, detail }) => (
+  <div className="app-panel rounded-2xl px-4 py-4">
+    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-app-muted">{label}</p>
+    <p className="mt-2 text-3xl font-black leading-none text-slate-900 dark:text-white">{value}</p>
+    <p className="mt-2 text-xs font-medium leading-relaxed text-app-muted">{detail}</p>
+  </div>
+);
+
+const alertToneClasses: Record<'warning' | 'info' | 'success', string> = {
+  warning: 'border-amber-200/80 bg-amber-50/90 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200',
+  info: 'border-sky-200/80 bg-sky-50/90 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200',
+  success: 'border-emerald-200/80 bg-emerald-50/90 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200'
+};
+
+const alertToneIcons: Record<'warning' | 'info' | 'success', string> = {
+  warning: 'fas fa-triangle-exclamation',
+  info: 'fas fa-circle-info',
+  success: 'fas fa-circle-check'
+};
+
+const ChurchAlertCard: React.FC<{
+  tone: 'warning' | 'info' | 'success';
+  title: string;
+  detail: string;
+}> = ({ tone, title, detail }) => (
+  <div className={`rounded-2xl border px-4 py-4 ${alertToneClasses[tone]}`}>
+    <div className="flex items-start gap-3">
+      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/70 dark:bg-slate-950/30">
+        <i className={`${alertToneIcons[tone]} text-sm`} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-black leading-tight">{title}</p>
+        <p className="mt-1 text-xs font-medium leading-relaxed opacity-90">{detail}</p>
+      </div>
+    </div>
+  </div>
+);
+
 type PublicStats = {
   total_membros: number;
   aniversariantes_mes: number;
@@ -73,6 +111,16 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
   });
   const { data: membersRaw } = useLocalStorageFirst<SupabaseMembro>({
     table: 'membros',
+    enableBackgroundSync: !publicMode,
+    autoRefresh: !publicMode
+  });
+  const { data: visitorsRaw } = useLocalStorageFirst<SupabaseVisitanteIgreja>({
+    table: 'visitantes_igreja',
+    enableBackgroundSync: !publicMode,
+    autoRefresh: !publicMode
+  });
+  const { data: convertsRaw } = useLocalStorageFirst<SupabaseNovoConvertidoIgreja>({
+    table: 'novos_convertidos_igreja',
     enableBackgroundSync: !publicMode,
     autoRefresh: !publicMode
   });
@@ -149,6 +197,8 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
   );
 
   const members = publicMode ? [] : membersRaw || [];
+  const visitors = publicMode ? [] : visitorsRaw || [];
+  const converts = publicMode ? [] : convertsRaw || [];
   const birthdays = useMemo(() => {
     const currentMonth = new Date().getMonth() + 1;
     return members
@@ -167,6 +217,89 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
     () => members.filter((member) => normalize(member.posicao_igreja || 'membro') !== 'membro'),
     [members]
   );
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+  const currentMonthVisitors = useMemo(
+    () =>
+      visitors.filter((item) => {
+        if (!item.data_ficha) return false;
+        const date = new Date(`${item.data_ficha}T12:00:00`);
+        return date.getMonth() + 1 === currentMonth && date.getFullYear() === currentYear;
+      }),
+    [currentMonth, currentYear, visitors]
+  );
+  const currentMonthConverts = useMemo(
+    () =>
+      converts.filter((item) => {
+        if (!item.data_conversao) return false;
+        const date = new Date(`${item.data_conversao}T12:00:00`);
+        return date.getMonth() + 1 === currentMonth && date.getFullYear() === currentYear;
+      }),
+    [converts, currentMonth, currentYear]
+  );
+  const followUpSummary = useMemo(
+    () => ({
+      visitorsThisMonth: currentMonthVisitors.length,
+      convertsThisMonth: currentMonthConverts.length,
+      prayerRequests: currentMonthVisitors.filter((item) => item.deseja_oracao_lar).length,
+      counselingRequests: currentMonthVisitors.filter((item) => item.deseja_aconselhamento).length,
+      infoRequests: currentMonthVisitors.filter((item) => item.deseja_informacoes_igreja).length,
+      eventsThisWeek: weekEvents.length
+    }),
+    [currentMonthConverts.length, currentMonthVisitors, weekEvents.length]
+  );
+  const churchAlerts = useMemo(() => {
+    if (publicMode) return [];
+
+    const alerts: Array<{ id: string; tone: 'warning' | 'info' | 'success'; title: string; detail: string }> = [];
+
+    if (followUpSummary.prayerRequests > 0) {
+      alerts.push({
+        id: 'prayer-requests',
+        tone: 'warning',
+        title: `${followUpSummary.prayerRequests} pedido(s) de oracao no lar`,
+        detail: 'Ha visitantes aguardando retorno pastoral ou contato da equipe.'
+      });
+    }
+
+    if (followUpSummary.counselingRequests > 0) {
+      alerts.push({
+        id: 'counseling-requests',
+        tone: 'warning',
+        title: `${followUpSummary.counselingRequests} pedido(s) de aconselhamento`,
+        detail: 'Vale conferir quem pediu apoio espiritual neste mes.'
+      });
+    }
+
+    if (followUpSummary.convertsThisMonth > 0) {
+      alerts.push({
+        id: 'new-converts',
+        tone: 'success',
+        title: `${followUpSummary.convertsThisMonth} novo(s) convertido(s) neste mes`,
+        detail: 'Ha registros novos para acompanhamento e consolidacao.'
+      });
+    }
+
+    if (followUpSummary.eventsThisWeek === 0) {
+      alerts.push({
+        id: 'no-week-events',
+        tone: 'info',
+        title: 'Nenhum evento ativo nesta semana',
+        detail: 'A agenda desta semana esta vazia. Revise Cadastros > Eventos se isso nao era esperado.'
+      });
+    }
+
+    if (followUpSummary.visitorsThisMonth > 0 && !followUpSummary.prayerRequests && !followUpSummary.counselingRequests) {
+      alerts.push({
+        id: 'visitors-month',
+        tone: 'info',
+        title: `${followUpSummary.visitorsThisMonth} visitante(s) registrados neste mes`,
+        detail: 'Os visitantes deste periodo podem ser revisados para acompanhamento da equipe.'
+      });
+    }
+
+    return alerts.slice(0, 4);
+  }, [followUpSummary, publicMode]);
 
   const totalMembersCount = publicMode ? publicStats?.total_membros || 0 : members.length;
   const birthdaysCount = publicMode ? publicStats?.aniversariantes_mes || 0 : birthdays.length;
@@ -250,6 +383,20 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
       icon: 'fas fa-hands-praying',
       className: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
       onClick: () => setKpiModal('servants')
+    },
+    {
+      label: 'Visitantes do mes',
+      value: publicMode ? 0 : followUpSummary.visitorsThisMonth,
+      detail: publicMode ? 'Acompanhamento interno' : `${followUpSummary.prayerRequests} com pedido de oracao`,
+      icon: 'fas fa-user-plus',
+      className: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+    },
+    {
+      label: 'Novos convertidos',
+      value: publicMode ? 0 : followUpSummary.convertsThisMonth,
+      detail: publicMode ? 'Acompanhamento interno' : 'Registros do mes atual',
+      icon: 'fas fa-seedling',
+      className: 'bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400'
     }
   ];
 
@@ -330,7 +477,7 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
       </section>
 
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)] lg:items-stretch">
-        <div className="order-1 grid grid-cols-3 gap-2 sm:gap-3 lg:col-span-2">
+        <div className="order-1 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:col-span-2 xl:grid-cols-5">
           {kpiCards.map(renderKpiCard)}
         </div>
 
@@ -402,6 +549,49 @@ const ChurchDashboard: React.FC<ChurchDashboardProps> = ({ currentMember = null,
         </div>
 
       </section>
+
+      {!publicMode && (
+        <section className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+          <div className="app-card rounded-[1.75rem] border border-sky-100/90 bg-white/94 p-5 shadow-[0_28px_70px_-42px_rgba(14,116,144,0.28)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/88 sm:p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand">Consolidacao</p>
+                <h2 className="mt-2 text-xl font-black text-slate-900 dark:text-white">Indicadores do mes</h2>
+              </div>
+              <span className="rounded-full bg-brand/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-brand">
+                {new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date())}
+              </span>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <OperationalMetric label="Visitantes registrados" value={followUpSummary.visitorsThisMonth} detail="Cadastros feitos neste mes" />
+              <OperationalMetric label="Pedidos de oracao" value={followUpSummary.prayerRequests} detail="Visitantes pedindo oracao no lar" />
+              <OperationalMetric label="Aconselhamentos" value={followUpSummary.counselingRequests} detail="Solicitacoes de apoio espiritual" />
+              <OperationalMetric label="Busca por informacoes" value={followUpSummary.infoRequests} detail="Interessados em conhecer a igreja" />
+              <OperationalMetric label="Novos convertidos" value={followUpSummary.convertsThisMonth} detail="Registros com data de conversao neste mes" />
+              <OperationalMetric label="Eventos nesta semana" value={followUpSummary.eventsThisWeek} detail="Eventos ativos visiveis no inicio da igreja" />
+            </div>
+          </div>
+
+          <div className="app-card rounded-[1.75rem] border border-sky-100/90 bg-white/94 p-5 shadow-[0_28px_70px_-42px_rgba(14,116,144,0.28)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/88 sm:p-6">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand">Alertas</p>
+              <h2 className="mt-2 text-xl font-black text-slate-900 dark:text-white">Pontos que pedem atencao</h2>
+            </div>
+            <div className="mt-5 space-y-3">
+              {churchAlerts.length === 0 ? (
+                <div className="app-panel-muted rounded-2xl border border-dashed border-app px-5 py-8 text-center">
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Nenhum alerta relevante agora</p>
+                  <p className="mt-1 text-xs font-medium text-app-muted">
+                    O painel nao encontrou pendencias criticas com base em visitantes, convertidos e agenda.
+                  </p>
+                </div>
+              ) : (
+                churchAlerts.map((alert) => <ChurchAlertCard key={alert.id} {...alert} />)
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {expandedEvent && (
         <div className="fixed inset-0 z-[760] flex items-center justify-center bg-slate-950/80 p-3 backdrop-blur-sm">
