@@ -318,8 +318,23 @@ const App: React.FC = () => {
   useEffect(() => {
     const theme = getAppBackgroundTheme(backgroundTheme);
     const gradient = isDarkMode ? theme.darkGradient : theme.lightGradient;
+    const tokens = isDarkMode ? theme.darkTokens : theme.lightTokens;
     document.documentElement.style.setProperty('--app-shell-gradient', gradient);
+    document.documentElement.style.setProperty('--app-bg', tokens.bg);
+    document.documentElement.style.setProperty('--app-bg-strong', tokens.bgStrong);
+    document.documentElement.style.setProperty('--app-surface', tokens.surface);
+    document.documentElement.style.setProperty('--app-surface-strong', tokens.surfaceStrong);
+    document.documentElement.style.setProperty('--app-surface-muted', tokens.surfaceMuted);
+    document.documentElement.style.setProperty('--app-border', tokens.border);
+    document.documentElement.style.setProperty('--app-shadow', tokens.shadow);
     document.body.style.setProperty('--app-shell-gradient', gradient);
+    document.body.style.setProperty('--app-bg', tokens.bg);
+    document.body.style.setProperty('--app-bg-strong', tokens.bgStrong);
+    document.body.style.setProperty('--app-surface', tokens.surface);
+    document.body.style.setProperty('--app-surface-strong', tokens.surfaceStrong);
+    document.body.style.setProperty('--app-surface-muted', tokens.surfaceMuted);
+    document.body.style.setProperty('--app-border', tokens.border);
+    document.body.style.setProperty('--app-shadow', tokens.shadow);
   }, [backgroundTheme, isDarkMode]);
 
   useEffect(() => {
