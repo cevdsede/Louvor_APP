@@ -98,6 +98,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
   const [sitePermissionSearch, setSitePermissionSearch] = useState('');
   const [reportPermissionSearch, setReportPermissionSearch] = useState('');
   const [reportExportPermissionSearch, setReportExportPermissionSearch] = useState('');
+  const [openAdminSection, setOpenAdminSection] = useState<string | null>('permissions-events');
   const isEventsMode = mode === 'events';
   const isAdminMode = mode === 'admin';
 
@@ -894,7 +895,45 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
       )}
 
       {isAdminMode && (
-      <div className="app-card rounded-2xl border p-4 sm:p-5">
+        <div className="app-card rounded-2xl border p-4 sm:p-5">
+          <div className="mb-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand">Painel admin</p>
+            <h2 className="mt-1 text-base font-black text-slate-900 dark:text-white">Escolha uma area para gerenciar</h2>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              { id: 'permissions-events', label: 'Agenda/cards', count: activeManagers.length, icon: 'fa-calendar-check' },
+              { id: 'permissions-site', label: 'Site', count: activeSiteManagers.length, icon: 'fa-globe' },
+              { id: 'permissions-reports', label: 'Relatorios', count: activeReportViewers.length + activeReportExporters.length, icon: 'fa-chart-line' },
+              { id: 'permissions-registry', label: 'Cadastros', count: activeVisitorManagers.length + activeConvertManagers.length, icon: 'fa-address-book' },
+              { id: 'pastors', label: 'Pastores no inicio', count: featuredPastors.length, icon: 'fa-user-tie' },
+              { id: 'audit', label: 'Auditoria', count: auditSummary.recentLogs.length, icon: 'fa-shield-halved' }
+            ].map((section) => (
+              <button
+                key={section.id}
+                type="button"
+                onClick={() => setOpenAdminSection(section.id)}
+                className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition ${
+                  openAdminSection === section.id
+                    ? 'border-brand bg-brand text-white shadow-lg shadow-brand/20'
+                    : 'border-app bg-app-surface-strong text-app hover:border-brand/40 hover:text-brand'
+                }`}
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-black uppercase tracking-widest">{section.label}</p>
+                  <p className={`mt-1 text-[10px] font-bold ${openAdminSection === section.id ? 'text-white/75' : 'text-app-muted'}`}>
+                    {section.count} ativo{section.count === 1 ? '' : 's'}
+                  </p>
+                </div>
+                <i className={`fas ${section.icon} shrink-0 text-sm`} />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {isAdminMode && (
+      <div className={`app-card rounded-2xl border p-4 sm:p-5 ${openAdminSection === 'audit' ? '' : 'hidden'}`}>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand">Auditoria avancada</p>
@@ -968,7 +1007,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
       )}
 
       {isAdminMode && (
-      <div className="app-card rounded-2xl border p-4 sm:p-5">
+      <div className={`app-card rounded-2xl border p-4 sm:p-5 ${openAdminSection === 'permissions-reports' ? '' : 'hidden'}`}>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
             Quem pode acessar relatorios
@@ -1011,7 +1050,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
       )}
 
       {isAdminMode && (
-      <div className="app-card rounded-2xl border p-4 sm:p-5">
+      <div className={`app-card rounded-2xl border p-4 sm:p-5 ${openAdminSection === 'permissions-reports' ? '' : 'hidden'}`}>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
             Quem pode exportar relatorios
@@ -1054,7 +1093,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
       )}
 
       {isAdminMode && (
-      <div className="app-card rounded-2xl border p-4 sm:p-5">
+      <div className={`app-card rounded-2xl border p-4 sm:p-5 ${openAdminSection === 'permissions-events' ? '' : 'hidden'}`}>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
             Quem pode alterar agenda/cards
@@ -1097,7 +1136,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
       )}
 
       {isAdminMode && (
-      <div className="app-card rounded-2xl border p-4 sm:p-5">
+      <div className={`app-card rounded-2xl border p-4 sm:p-5 ${openAdminSection === 'permissions-site' ? '' : 'hidden'}`}>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
             Quem pode alterar o site
@@ -1140,7 +1179,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
       )}
 
       {isAdminMode && (
-      <div className="app-card rounded-2xl border p-4 sm:p-5">
+      <div className={`app-card rounded-2xl border p-4 sm:p-5 ${openAdminSection === 'permissions-registry' ? '' : 'hidden'}`}>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
             Quem pode acessar visitantes
@@ -1183,7 +1222,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
       )}
 
       {isAdminMode && (
-      <div className="app-card rounded-2xl border p-4 sm:p-5">
+      <div className={`app-card rounded-2xl border p-4 sm:p-5 ${openAdminSection === 'permissions-registry' ? '' : 'hidden'}`}>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
             Quem pode acessar novos convertidos
@@ -1226,7 +1265,7 @@ const ChurchAdmin: React.FC<{ currentUserId?: string | null; isAdmin: boolean; m
       )}
 
       {isAdminMode && (
-      <div className="app-card rounded-2xl border p-4 sm:p-5">
+      <div className={`app-card rounded-2xl border p-4 sm:p-5 ${openAdminSection === 'pastors' ? '' : 'hidden'}`}>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
             Pastores presidentes no inicio
