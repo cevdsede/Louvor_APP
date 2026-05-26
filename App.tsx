@@ -1,4 +1,5 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { supabase } from './supabaseClient';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
@@ -237,6 +238,7 @@ const AppContent: React.FC<AppContentProps> = ({
 const App: React.FC = () => {
   const [routePath, setRoutePath] = useState(() => getCurrentRoute());
   const isPublicRegistrationRoute = routePath === '/cadastro';
+  const isNativeApp = Capacitor.isNativePlatform();
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -477,6 +479,11 @@ const App: React.FC = () => {
   };
 
   if (isPublicRegistrationRoute) {
+    if (isNativeApp) {
+      navigateTo('/app');
+      return null;
+    }
+
     return (
       <div className="site-theme">
         <Suspense fallback={<LoadingBlock label="Carregando cadastro..." />}>
@@ -487,6 +494,11 @@ const App: React.FC = () => {
   }
 
   if (routePath === '/' || routePath === '') {
+    if (isNativeApp) {
+      navigateTo('/app');
+      return null;
+    }
+
     return (
       <div className="site-theme">
         <Suspense fallback={<LoadingBlock />}>
@@ -505,6 +517,11 @@ const App: React.FC = () => {
   }
 
   if (routePath === '/design-lab') {
+    if (isNativeApp) {
+      navigateTo('/app');
+      return null;
+    }
+
     return (
       <div className="app-theme">
         <Suspense fallback={<LoadingBlock label="Carregando laboratorio..." />}>
@@ -515,7 +532,7 @@ const App: React.FC = () => {
   }
 
   if (!routePath.startsWith('/app')) {
-    navigateTo('/');
+    navigateTo(isNativeApp ? '/app' : '/');
     return null;
   }
 
