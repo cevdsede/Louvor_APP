@@ -4,10 +4,10 @@ setlocal
 cd /d C:\Apps\Louvor
 if errorlevel 1 exit /b %errorlevel%
 
-call npm run build
+call npm run android:sync
 if errorlevel 1 exit /b %errorlevel%
 
-call npm run android:sync
+call powershell -NoProfile -ExecutionPolicy Bypass -File scripts\generate-android-assets.ps1
 if errorlevel 1 exit /b %errorlevel%
 
 cd /d C:\Apps\Louvor\android
