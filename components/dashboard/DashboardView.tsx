@@ -11,6 +11,7 @@ import { getDisplayName } from '../../utils/displayName';
 import { getMemberIdsForMinisterio } from '../../utils/memberMinistry';
 import { buildLocalAvatar } from '../../utils/avatar';
 import { ImageCache } from '../ui/ImageCache';
+import { getChartTheme } from '../../utils/chartTheme';
 
 const DashboardView: React.FC = () => {
   const { activeMinisterio, activeMinisterioId, activeModules } = useMinistryContext();
@@ -351,12 +352,8 @@ const DashboardView: React.FC = () => {
       return;
     }
 
-    const isDark = document.documentElement.classList.contains('dark');
-    const computedStyles = getComputedStyle(document.documentElement);
-    const primaryColor =
-      computedStyles.getPropertyValue('--brand-primary').trim() ||
-      computedStyles.getPropertyValue('--app-brand-primary').trim() ||
-      '#3b82f6';
+    const chartTheme = getChartTheme();
+    const primaryColor = chartTheme.brand;
 
     if (chartInstance.current) {
       chartInstance.current.destroy();
@@ -574,10 +571,10 @@ const DashboardView: React.FC = () => {
           },
           // Tooltip melhorado
           tooltip: {
-            backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-            titleColor: isDark ? '#f1f5f9' : '#1e293b',
-            bodyColor: isDark ? '#cbd5e1' : '#475569',
-            borderColor: isDark ? 'rgba(148, 163, 184, 0.2)' : 'rgba(100, 116, 139, 0.2)',
+            backgroundColor: chartTheme.surfaceStrong,
+            titleColor: chartTheme.text,
+            bodyColor: chartTheme.mutedText,
+            borderColor: chartTheme.border,
             borderWidth: 1,
             padding: 12,
             cornerRadius: 8,
@@ -608,7 +605,7 @@ const DashboardView: React.FC = () => {
                 size: 11,
                 family: 'Inter, system-ui, sans-serif'
               },
-              color: isDark ? '#94a3b8' : '#64748b',
+              color: chartTheme.mutedText,
               padding: 8,
               // Rotação para nomes longos
               maxRotation: 45,
@@ -618,13 +615,13 @@ const DashboardView: React.FC = () => {
           y: {
             beginAtZero: true,
             grid: { 
-              color: isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(100, 116, 139, 0.1)',
+              color: chartTheme.grid,
               drawBorder: false,
               borderDash: [8, 4]
             },
             ticks: { 
               stepSize: 1,
-              color: isDark ? '#94a3b8' : '#64748b',
+              color: chartTheme.mutedText,
               font: { 
                 weight: '500', 
                 size: 10,

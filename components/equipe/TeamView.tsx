@@ -18,6 +18,7 @@ import LocalStorageFirstService from '../../services/LocalStorageFirstService';
 import { getDisplayName } from '../../utils/displayName';
 import { buildLocalAvatar } from '../../utils/avatar';
 import { showError, showSuccess } from '../../utils/toast';
+import { getChartTheme } from '../../utils/chartTheme';
 
 interface TeamViewProps {
   currentView: ViewType;
@@ -29,6 +30,7 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [memberSearch, setMemberSearch] = useState('');
   const [isAddingMember, setIsAddingMember] = useState(false);
+  const [chartThemeVersion, setChartThemeVersion] = useState(0);
   const { activeMinisterioId, canManageCurrentMinisterio } = useMinistryContext();
   const { data: allChurchMembers } = useLocalStorageFirst<any>({ table: 'membros' });
   const { data: membrosMinisteriosRaw } = useLocalStorageFirst<any>({ table: 'membros_ministerios' });
@@ -188,11 +190,27 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
 
   // Gráfico de gênero
   useEffect(() => {
+    if (typeof MutationObserver === 'undefined') return;
+
+    const observer = new MutationObserver(() => {
+      setChartThemeVersion((version) => version + 1);
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'style']
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     if (currentView === 'team' && genderChartRef.current) {
       if (chartInstance.current) chartInstance.current.destroy();
       
       // Verificar se Chart está disponível globalmente
       if (typeof window !== 'undefined' && (window as any).Chart) {
+        const chartTheme = getChartTheme();
         chartInstance.current = new (window as any).Chart(genderChartRef.current, {
           type: 'doughnut',
           data: {
@@ -200,11 +218,11 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
             datasets: [{
               data: [maleCount, femaleCount],
               backgroundColor: [
-                getComputedStyle(document.documentElement).getPropertyValue('--brand-primary').trim() || '#1e3a8a', 
-                '#f472b6'
+                chartTheme.brand,
+                chartTheme.accent
               ],
               borderWidth: 4,
-              borderColor: '#ffffff',
+              borderColor: chartTheme.surfaceStrong,
               hoverOffset: 8,
               hoverBorderWidth: 6
             }]
@@ -242,7 +260,7 @@ const TeamView: React.FC<TeamViewProps> = ({ currentView }) => {
         });
       }
     }
-  }, [currentView, maleCount, femaleCount, members]);
+  }, [currentView, maleCount, femaleCount, members, chartThemeVersion]);
 
   const handleFilter = (filter: string) => {
     setActiveFilter(activeFilter === filter ? null : filter);

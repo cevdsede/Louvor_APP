@@ -7,6 +7,7 @@ import { logger } from '../../utils/logger';
 import { ChartInstances, EscalaMusicView, RepertorioMusicView, EscalaEvent, EscalaItem } from '../../types-supabase';
 import { getMemberIdsForMinisterio } from '../../utils/memberMinistry';
 import { getDisplayName } from '../../utils/displayName';
+import { getChartTheme } from '../../utils/chartTheme';
 
 interface Music {
   id: string;
@@ -72,8 +73,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
   const rankingChartRef = useRef<HTMLCanvasElement>(null);
   const chartInstances = useRef<ChartInstances>({});
 
-  // Paleta de cores solicitada
-  const themeColorsPalette = ['#3b82f6', '#ef4444', '#f59e0b', '#10b981', '#ec4899'];
+  const [chartThemeVersion, setChartThemeVersion] = useState(0);
 
   // --- STATES ---
   const [songs, setSongs] = useState<Music[]>([]);
@@ -592,10 +592,26 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
   }, [isOnline]);
 
   useEffect(() => {
+    if (typeof MutationObserver === 'undefined') return;
+
+    const observer = new MutationObserver(() => {
+      setChartThemeVersion((version) => version + 1);
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'style']
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     if (!loading && (subView === 'music-list' || subView === 'music-repertoire')) {
       // ... (Chart logic - same as before but using real 'songs' state)
       // Re-use the existing chart logic inside setTimeout
       const timer = setTimeout(() => {
+        const chartTheme = getChartTheme();
         // Gráficos Estilos e Temas para aba Lista
         if (subView === 'music-list') {
           if (stylesChartRef.current) {
@@ -606,7 +622,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                 labels: ['Adoração', 'Celebração'],
                 datasets: [{
                   data: [songs.filter(s => s.style === 'Adoração').length, songs.filter(s => s.style === 'Celebração').length],
-                  backgroundColor: ['#3b82f6', '#f59e0b'],
+                  backgroundColor: [chartTheme.brand, chartTheme.accent],
                   borderWidth: 0
                 }]
               },
@@ -622,7 +638,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                 labels: uniqueThemes,
                 datasets: [{
                   data: uniqueThemes.map(t => songs.filter(s => s.theme === t).length),
-                  backgroundColor: themeColorsPalette,
+                  backgroundColor: chartTheme.paletteSoft,
                   borderWidth: 0
                 }]
               },
@@ -643,7 +659,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                 datasets: [{
                   label: 'Execuções',
                   data: ranking.map(r => r.count),
-                  backgroundColor: '#1e3a8a',
+                  backgroundColor: chartTheme.brand,
                   borderRadius: 6
                 }]
               },
@@ -652,8 +668,8 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
                 plugins: { legend: { display: false } },
                 maintainAspectRatio: false,
                 scales: {
-                  x: { grid: { display: false } },
-                  y: { grid: { display: false } }
+                  x: { grid: { display: false }, ticks: { color: chartTheme.mutedText } },
+                  y: { grid: { display: false }, ticks: { color: chartTheme.mutedText } }
                 }
               }
             });
@@ -662,7 +678,7 @@ const MusicView: React.FC<{ subView: string }> = ({ subView }) => {
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [subView, songs, repertoires, loading]);
+  }, [subView, songs, repertoires, loading, chartThemeVersion]);
 
   const getLink = (type: string, song: string, singer: string) => {
     const query = encodeURIComponent(`${song} ${singer}`);
